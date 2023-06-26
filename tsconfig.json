@@ -1,0 +1,10 @@
+{
+  "extends": "@tsconfig/node12/tsconfig.json",
+  "compilerOptions": {
+    "module": "CommonJS",
+    "outDir": "dist",
+    "types": ["node"]
+  },
+  "include": ["src/bot.ts", "environment.d.ts"],
+  "exclude": ["node_modules"]
+}
