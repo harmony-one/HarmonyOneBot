@@ -1,26 +1,25 @@
 import express from "express";
-import { initTelegramClient } from './telegramApi'
-import {NewMessage, NewMessageEvent} from "telegram/events";
-import { VoiceMemo } from './modules/voice-memo'
+import {Bot, CommandContext, Context} from "grammy";
+import config from './config'
+import {VoiceMemo} from "./modules/voice-memo";
 
-const listenEvents = async () => {
-  const client = await initTelegramClient()
-  const voiceMemo = new VoiceMemo(client)
+const bot = new Bot(config.telegramBotAuthToken);
 
-  async function onEvent(event: NewMessageEvent) {
-    if(voiceMemo.isSupportedEvent(event)) {
-      voiceMemo.onEvent(event)
-    }
+const voiceMemo = new VoiceMemo()
+
+const onMessage = async (ctx: any) => {
+  if(voiceMemo.isSupportedEvent(ctx)) {
+    voiceMemo.onEvent(ctx)
   }
-
-  client.addEventHandler(onEvent, new NewMessage({}));
 }
+
+bot.command("start", (ctx) => ctx.reply("Welcome! Up and running."));
+bot.on("message", onMessage);
 
 const app = express();
 app.use(express.json());
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Bot listening on port ${PORT}`);
+app.listen(config.port, () => {
+  console.log(`Bot listening on port ${config.port}`);
+  bot.start();
 });
-listenEvents()

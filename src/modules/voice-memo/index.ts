@@ -1,27 +1,15 @@
-import {NewMessageEvent} from "telegram/events";
-import {TelegramClient} from "telegram";
-
 export class VoiceMemo {
-  private readonly client: TelegramClient
 
-  constructor(client: TelegramClient) {
-    this.client = client
-  }
+  constructor() {}
 
-  public isSupportedEvent(event: NewMessageEvent) {
+  public isSupportedEvent(ctx: any) {
     return true
   }
 
-  public async onEvent(event: NewMessageEvent) {
-    const { message, sender, chatId } = event.message;
+  public async onEvent(ctx: any) {
+    const { text } = ctx.update.message
+    console.log('Text: ', text)
 
-    console.log(`New message "${message}" from ${sender?.id}`)
-
-    if(chatId) {
-      await this.client.sendMessage(chatId, {
-          message: 'Test reply message',
-          replyTo: event.message
-        })
-    }
+    ctx.reply('Voice memo reply');
   }
 }
