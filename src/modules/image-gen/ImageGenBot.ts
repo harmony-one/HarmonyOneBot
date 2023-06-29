@@ -24,8 +24,8 @@ imageGen.command("gen", async (ctx) => {
   const payload = {
     chatId: ctx.chat.id,
     prompt: ctx.match,
-    numImages: ctx.session.imageGen.numImages,
-    imgSize: ctx.session.imageGen.imgSize,
+    numImages: await ctx.session.imageGen.numImages, // lazy load
+    imgSize: await ctx.session.imageGen.imgSize, // lazy load
   };
   await imgGen(payload);
 });
@@ -60,8 +60,8 @@ imageGen.on("message", async (ctx) => {
         const payload = {
           chatId: ctx.chat.id,
           prompt: prompt,
-          numImages: ctx.session.imageGen.numImages,
-          imgSize: ctx.session.imageGen.imgSize,
+          numImages: await ctx.session.imageGen.numImages,
+          imgSize: await ctx.session.imageGen.imgSize,
           filePath: filePath,
         };
         await alterImg(payload);
