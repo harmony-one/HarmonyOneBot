@@ -6,9 +6,11 @@ import {
 } from "grammy";
 import config from "./config";
 import {BotContext, BotSessionData, OnMessageContext} from "./modules/types";
-import { VoiceMemo } from "./modules/voice-memo";
-import { imageGen } from "./modules/image-gen/ImageGenBot";
 import { mainMenu } from './pages'
+
+import { VoiceMemo } from "./modules/voice-memo";
+import { QRCodeBot } from "./modules/qrcode/QRCodeBot";
+import { imageGen } from "./modules/image-gen/ImageGenBot";
 
 export const bot = new Bot<BotContext>(config.telegramBotAuthToken);
 
@@ -27,8 +29,12 @@ bot.use(session({ initial: createInitialSessionData, storage: new MemorySessionS
 bot.use(mainMenu);
 
 const voiceMemo = new VoiceMemo();
+const qrCodeBot = new QRCodeBot();
 
-const onMessage = async (ctx: any) => {
+const onMessage = async (ctx: OnMessageContext) => {
+  if (qrCodeBot.isSupportedEvent(ctx)) {
+    qrCodeBot.onEvent(ctx);
+  }
   if(voiceMemo.isSupportedEvent(ctx)) {
     voiceMemo.onEvent(ctx)
   }

@@ -16,5 +16,8 @@ export default {
       numImages: 1,
       imgSize: '1024x1024'
     },
+  stableDiffusionHost: process.env.SD_HOST || '',
+  qr: {
+    checkReadable: false,
   }
 }

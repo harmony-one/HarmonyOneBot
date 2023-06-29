@@ -1,3 +1,5 @@
+import {BotContext} from "../types";
+
 export class VoiceMemo {
 
   constructor() {}
