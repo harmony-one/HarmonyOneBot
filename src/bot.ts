@@ -1,11 +1,24 @@
 import express from "express";
-import {Bot, CommandContext, Context} from "grammy";
+import {Bot, CommandContext, Context, MemorySessionStorage, session} from "grammy";
 import config from './config'
 import {VoiceMemo} from "./modules/voice-memo";
+import {BotContext, BotSessionData} from "./modules/types";
+import {QRCodeBot} from "./modules/qrcode/QRCodeBot";
 
-const bot = new Bot(config.telegramBotAuthToken);
+const bot = new Bot<BotContext>(config.telegramBotAuthToken);
 
-const voiceMemo = new VoiceMemo()
+function createInitialSessionData(): BotSessionData {
+  return { qrMargin: 1 };
+}
+
+bot.use(session({
+  initial: createInitialSessionData,
+  storage: new MemorySessionStorage()
+}));
+
+const voiceMemo = new VoiceMemo();
+const qrCodeBot = new QRCodeBot(bot);
+qrCodeBot.init();
 
 const onMessage = async (ctx: any) => {
   if(voiceMemo.isSupportedEvent(ctx)) {
