@@ -6,15 +6,14 @@ export default {
   telegramBotAuthToken: process.env.TELEGRAM_BOT_AUTH_TOKEN || '',
   openAiKey: process.env.OPENAI_API_KEY,
   imageGen: {
-    telegramFileUrl: 'https://api.telegram.org/file/bot',
+    telegramFileUrl: process.env.TELEGRAM_FILE_URL || 'https://api.telegram.org/file/bot',
     completions: {
-      model: 'text-davinci-003',
-      maxTokens: 140,
-      temperature: 0.8
+      model: process.env.OPENAI_MODEL || 'text-davinci-003',
+      maxTokens: process.env.OPENAI_MAX_TOKENS || 140,
+      temperature: process.env.OPENAI_TEMPERATURE || 0.8
     },
     sessionDefault: {
       numImages: 1,
-      lastImages: [],
       imgSize: '1024x1024'
     },
   }
