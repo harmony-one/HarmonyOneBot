@@ -56,12 +56,12 @@ imageGen.on("message", async (ctx) => {
       if (prompt) {
         const file_id = photo.pop()?.file_id; // with pop() get full image quality
         const file = await ctx.api.getFile(file_id!);
-        const filePath = `${config.imageGen.telegramFileUrl}${config.telegramBotAuthToken}/${file.file_path}`; //  bot.token
+        const filePath = `${config.imageGen.telegramFileUrl}${config.telegramBotAuthToken}/${file.file_path}`;
         const payload = {
           chatId: ctx.chat.id,
           prompt: prompt,
-          numImages: await ctx.session.imageGen.numImages,
-          imgSize: await ctx.session.imageGen.imgSize,
+          numImages: ctx.session.imageGen.numImages,
+          imgSize: ctx.session.imageGen.imgSize,
           filePath: filePath,
         };
         await alterImg(payload);

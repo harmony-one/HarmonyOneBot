@@ -8,7 +8,7 @@ import {
 } from "grammy";
 import config from "./config";
 import { VoiceMemo } from "./modules/voice-memo";
-import { ImageGenSessionData, imageGen } from "./modules/image-gen";
+import { ImageGenSessionData, imageGen } from "./modules/image-gen/ImageGenBot";
 import { mainMenu } from './pages'
 
 export interface SessionData {
