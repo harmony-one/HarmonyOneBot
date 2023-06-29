@@ -1,15 +1,10 @@
 import { Composer } from "grammy";
 import config from "../../config";
-import { BotContext } from "../../bot";
 import { imgGen, imgGenEnhanced, alterImg } from "./controller";
+import { BotContext } from "../types";
 
 interface Image {
   url: string;
-}
-
-export interface ImageGenSessionData {
-  numImages: number;
-  imgSize: string;
 }
 
 export const imageGen = new Composer<BotContext>();

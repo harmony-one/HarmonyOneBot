@@ -2,32 +2,27 @@ import express from "express";
 import {
   Bot,
   session,
-  Context,
-  SessionFlavor,
   MemorySessionStorage,
 } from "grammy";
 import config from "./config";
+import {BotContext, BotSessionData, OnMessageContext} from "./modules/types";
 import { VoiceMemo } from "./modules/voice-memo";
-import { ImageGenSessionData, imageGen } from "./modules/image-gen/ImageGenBot";
+import { imageGen } from "./modules/image-gen/ImageGenBot";
 import { mainMenu } from './pages'
-
-export interface SessionData {
-  imageGen: ImageGenSessionData;
-}
-export type BotContext = Context & SessionFlavor<SessionData>;
 
 export const bot = new Bot<BotContext>(config.telegramBotAuthToken);
 
-function initial(): SessionData {
+function createInitialSessionData(): BotSessionData {
   return {
     imageGen: {
       numImages: config.imageGen.sessionDefault.numImages,
       imgSize: config.imageGen.sessionDefault.imgSize,
     },
+    qrMargin: 1
   };
 }
 
-bot.use(session({ initial, storage: new MemorySessionStorage() }));
+bot.use(session({ initial: createInitialSessionData, storage: new MemorySessionStorage() }));
 
 bot.use(mainMenu);
 

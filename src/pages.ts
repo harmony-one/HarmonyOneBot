@@ -1,6 +1,6 @@
 import { Menu } from "@grammyjs/menu";
-import { BotContext } from "./bot";
 import { imageGenMainMenu } from "./modules/image-gen/pages/main";
+import { BotContext } from "./modules/types";
 
 export const mainMenu = new Menu<BotContext>("main-menu") //<MyContext>
   .text("One Wallet", (ctx) => ctx.reply("Menu to be define"))
