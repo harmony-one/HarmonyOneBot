@@ -1,13 +1,17 @@
 import {StableDiffusionClient} from "./StableDiffusionClient";
 import {createQRCode, isQRCodeReadable, retryAsync} from "./utils";
 import config from "../../config";
-import {InputFile} from "grammy";
-import {OnMessageContext} from "../types";
+import {InlineKeyboard, InputFile} from "grammy";
+import {OnCallBackQueryData, OnMessageContext} from "../types";
 
 enum SupportedCommands {
   QR = 'qr',
   QR2 = 'qr2',
-  QR_MARGIN = 'qrMargin'
+  QR_MARGIN = 'qrMargin',
+}
+
+enum Callbacks {
+  Regenerate = 'qr-regenerate',
 }
 
 export class QRCodeBot {
@@ -19,23 +23,51 @@ export class QRCodeBot {
   //   this.bot.command('qrMargin', (ctx) => this.onQrMargin(ctx))
   // }
 
-  public isSupportedEvent(ctx: OnMessageContext): boolean {
-    return ctx.hasCommand(Object.values(SupportedCommands));
+  public isSupportedEvent(ctx: OnMessageContext | OnCallBackQueryData): boolean {
+    return ctx.hasCommand(Object.values(SupportedCommands)) || ctx.hasCallbackQuery(Object.values(Callbacks));
   }
 
-  public async onEvent(ctx: OnMessageContext) {
+  public async onEvent(ctx: OnMessageContext | OnCallBackQueryData) {
     if (!this.isSupportedEvent(ctx)) {
-      console.log(`### unsupported command ${ctx.message.text}`);
+      ctx.reply(`Unsupported command: ${ctx.message?.text}`);
       return false;
     }
 
+    if (ctx.hasCallbackQuery(Callbacks.Regenerate)) {
+      await ctx.answerCallbackQuery();
+
+      const msg = ctx.callbackQuery.message?.text || '';
+
+      if (!msg) {
+        ctx.reply('Error: message is too old');
+        return;
+      }
+
+      const cmd = this.parseQrCommand(msg);
+
+      if (cmd.error || !cmd.command || !cmd.url || !cmd.prompt) {
+        ctx.reply('Message haven\'t contain command: ' + msg);
+        return;
+      }
+
+      if (cmd.command === SupportedCommands.QR) {
+        this.onQr(ctx, msg, 'img2img');
+        return;
+      }
+
+      if (cmd.command === SupportedCommands.QR2) {
+        this.onQr(ctx, msg, 'txt2img');
+        return;
+      }
+    }
+
     if (ctx.hasCommand(SupportedCommands.QR)) {
-      this.onQr(ctx, 'img2img');
+      this.onQr(ctx, ctx.message.text, 'img2img');
       return;
     }
 
     if (ctx.hasCommand(SupportedCommands.QR2)) {
-      this.onQr(ctx, 'txt2img');
+      this.onQr(ctx, ctx.message.text, 'txt2img');
       return;
     }
 
@@ -44,16 +76,25 @@ export class QRCodeBot {
       return;
     }
 
-    console.log(`### unsupported command`);
-    ctx.reply('### unsupported command');
+    ctx.reply('Unsupported command');
   }
 
   public parseQrCommand(message: string) {
     // command: /qr url prompt1, prompt2, prompt3
+
+    if (!message.startsWith('/')) {
+      return {
+        command: '',
+        url: '',
+        prompt: '',
+        error: true,
+      }
+    }
+
     const [command, url, ...rest] = message.split(' ');
 
     return {
-      command,
+      command: command.replace('/', ''),
       url,
       prompt: rest.join(' '),
     }
@@ -70,11 +111,11 @@ export class QRCodeBot {
     return ctx.reply('qrMargin: ' + ctx.session.qrMargin)
   }
 
-  private async onQr(ctx: OnMessageContext, method: 'txt2img' | 'img2img') {
+  private async onQr(ctx: OnMessageContext | OnCallBackQueryData, message: string, method: 'txt2img' | 'img2img') {
     ctx.reply("Wait a minute...")
 
-    const command = this.parseQrCommand(ctx.message?.text || '');
-    const messageText = ctx.message?.text;
+    const command = this.parseQrCommand(message);
+    const messageText = message;
 
     const operation = async (retryAttempts: number) => {
 
@@ -108,12 +149,16 @@ export class QRCodeBot {
 
     } catch (ex) {
       console.log('### ex', ex);
-      ctx.reply("internal error")
+      ctx.reply("Internal error")
       return;
     }
 
+    const regenButton = new InlineKeyboard()
+      .text("Regenerate", Callbacks.Regenerate)
+
     await ctx.replyWithPhoto(new InputFile(qrImgBuffer, `qr_code_${Date.now()}.png`), {
       caption: messageText,
+      reply_markup: regenButton,
     })
   }
 
