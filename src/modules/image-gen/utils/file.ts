@@ -26,7 +26,6 @@ export const getImage = async (filePath: string) => {
     })
     .toFile(convertedFilename);
   deleteFile(imageFilename);
-  console.log(imageInfo);
   if (imageInfo.format !== "png") {
     deleteFile(convertedFilename);
     return {
