@@ -6,43 +6,6 @@ const base = axios.create({
   timeout: 10000,
 });
 
-export interface ParsedNftMetada {
-  expirationDate: string;
-  image: string;
-  name: string;
-  registrationDate: string;
-  tier: string;
-  length: number;
-}
-
-export interface RenewNftMetada {
-  renewed: boolean;
-  metadata?: any;
-  expiry?: any;
-  error?: string;
-}
-
-export interface RenewCert {
-  success: boolean;
-  sld?: string;
-  mcJobId?: any;
-  nakedJobId?: any;
-  error?: any;
-  certExist?: boolean;
-}
-
-export interface JobLookup {
-  completed?: boolean;
-  success?: boolean;
-  domain?: string;
-  attempts?: number;
-  jobId?: string;
-  wc?: boolean;
-  creationTime?: number;
-  timeUpdated?: number;
-  error?: any;
-  certExist?: boolean;
-}
 export const relayApi = () => {
   return {
     enableSubdomains: async (domainName: string) => {
