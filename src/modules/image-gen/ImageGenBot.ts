@@ -42,7 +42,7 @@ imageGen.command("genEn", async (ctx) => {
   await imgGenEnhanced(payload);
 });
 
-imageGen.on("message", async (ctx) => {
+imageGen.on("message", async (ctx, next) => {
   try {
     const photo = ctx.message.photo || ctx.message.reply_to_message?.photo;
     if (photo) {
@@ -61,8 +61,11 @@ imageGen.on("message", async (ctx) => {
         };
         await alterImg(payload);
       } else {
-        ctx.reply("Please add edit prompt");
+        // ctx.reply("Please add edit prompt");
+        next();
       }
+
+      next();
     }
   } catch (e: any) {
     console.log(e);
