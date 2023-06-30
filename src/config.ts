@@ -21,5 +21,9 @@ export default {
       numImages: 1,
       imgSize: "1024x1024",
     },
+  },
+  country: {
+    relayApiUrl: 'https://1ns-registrar-relayer.hiddenstate.xyz',
+    tld: '.country'
   }
 };
