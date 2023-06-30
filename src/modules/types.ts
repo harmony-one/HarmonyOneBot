@@ -1,5 +1,5 @@
-import {Context, SessionFlavor} from "grammy";
-import {Filter} from "grammy/out/filter";
+import {Context, Middleware, SessionFlavor} from "grammy";
+import {Filter, FilterQuery} from "grammy/out/filter";
 
 export interface ImageGenSessionData {
   numImages: number;
@@ -13,4 +13,6 @@ export interface BotSessionData {
 
 export type BotContext = Context & SessionFlavor<BotSessionData>;
 
-export type OnMessageContext = Filter<BotContext, 'message'>
+export type CustomContext<Q extends FilterQuery> = Filter<BotContext, Q>
+export type OnMessageContext = CustomContext<'message'>
+export type OnCallBackQueryData = CustomContext<'callback_query:data'>

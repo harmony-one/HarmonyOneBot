@@ -1,7 +1,7 @@
 import express from "express";
 import {Bot, MemorySessionStorage, session} from "grammy";
 import config from './config'
-import {BotContext, BotSessionData, OnMessageContext} from "./modules/types";
+import { BotContext, BotSessionData, OnCallBackQueryData, OnMessageContext } from "./modules/types";
 import { mainMenu } from './pages'
 import { VoiceMemo } from "./modules/voice-memo";
 import { QRCodeBot } from "./modules/qrcode/QRCodeBot";
@@ -37,9 +37,16 @@ const onMessage = async (ctx: OnMessageContext) => {
   if (sdImagesBot.isSupportedEvent(ctx)) {
     return sdImagesBot.onEvent(ctx);
   }
-  
+
   if(voiceMemo.isSupportedEvent(ctx)) {
     voiceMemo.onEvent(ctx)
+  }
+}
+
+const onCallback = async (ctx: OnCallBackQueryData) => {
+  if (qrCodeBot.isSupportedEvent(ctx)) {
+    qrCodeBot.onEvent(ctx);
+    return;
   }
 }
 
@@ -57,6 +64,7 @@ bot.use(oneCountry)
 bot.use(imageGen)
 
 bot.on("message", onMessage);
+bot.on("callback_query:data", onCallback);
 
 const app = express();
 
