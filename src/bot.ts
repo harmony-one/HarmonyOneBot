@@ -11,6 +11,7 @@ import { mainMenu } from './pages'
 import { VoiceMemo } from "./modules/voice-memo";
 import { QRCodeBot } from "./modules/qrcode/QRCodeBot";
 import { imageGen } from "./modules/image-gen/ImageGenBot";
+import { oneCountry } from "./modules/1country/oneCountryBot";
 
 export const bot = new Bot<BotContext>(config.telegramBotAuthToken);
 
@@ -50,6 +51,7 @@ bot.command("help", async (ctx) => {
   });
 });
 
+bot.use(oneCountry)
 bot.use(imageGen)
 
 bot.on("message", onMessage);
