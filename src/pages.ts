@@ -12,6 +12,8 @@ export const mainMenu = new Menu<BotContext>("main-menu") //<MyContext>
   .row()
   .text("QR Generation", (ctx) => ctx.reply("Menu to be define"))
   .row()
+  .text("Image Generation Stable Diffusion", (ctx) => ctx.reply("Menu to be define"))
+  .row()
   .submenu("Image Generation AI", "image-gen-main")
 
 mainMenu.register(imageGenMainMenu);
