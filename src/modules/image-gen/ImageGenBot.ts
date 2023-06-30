@@ -64,9 +64,8 @@ imageGen.on("message", async (ctx, next) => {
         // ctx.reply("Please add edit prompt");
         next();
       }
-
-      next();
     }
+    next();
   } catch (e: any) {
     console.log(e);
     ctx.reply("An error occurred while generating the AI edit");
