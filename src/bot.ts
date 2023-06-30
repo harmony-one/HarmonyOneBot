@@ -2,6 +2,7 @@ import express from "express";
 import {Bot, MemorySessionStorage, session} from "grammy";
 import config from './config'
 import {VoiceMemo} from "./modules/voice-memo";
+import {SDImagesBot} from "./modules/sd-images";
 import {BotContext, BotSessionData, OnMessageContext} from "./modules/types";
 import {QRCodeBot} from "./modules/qrcode/QRCodeBot";
 
@@ -18,10 +19,15 @@ bot.use(session({
 
 const voiceMemo = new VoiceMemo();
 const qrCodeBot = new QRCodeBot();
+const sdImagesBot = new SDImagesBot();
 
 const onMessage = async (ctx: OnMessageContext) => {
   if (qrCodeBot.isSupportedEvent(ctx)) {
     qrCodeBot.onEvent(ctx);
+  }
+
+  if (sdImagesBot.isSupportedEvent(ctx)) {
+    return sdImagesBot.onEvent(ctx);
   }
 
   if(voiceMemo.isSupportedEvent(ctx)) {
