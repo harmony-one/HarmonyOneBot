@@ -31,7 +31,7 @@ const sdImagesBot = new SDImagesBot();
 
 const onMessage = async (ctx: OnMessageContext) => {
   if (qrCodeBot.isSupportedEvent(ctx)) {
-    qrCodeBot.onEvent(ctx);
+    return qrCodeBot.onEvent(ctx);
   }
 
   if (sdImagesBot.isSupportedEvent(ctx)) {
