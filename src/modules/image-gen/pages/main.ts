@@ -43,16 +43,14 @@ const imageGenNumberOptions = new Menu<BotContext>("image-gen-number")
   .back("Back to Menu");
 
 const imageGenSizeOptions = new Menu<BotContext>("image-gen-size")
-  .text("256x256", (ctx) => {
-    console.log(typeof ctx)
-    setImageSize("256x256", ctx)
-  })
+  .text("256x256", (ctx) => setImageSize("256x256", ctx))
   .text("512x512", (ctx) => setImageSize("512x512", ctx))
   .text("1024x1024", (ctx) => setImageSize("1024x1024", ctx))
   .row()
   .back("Back to Menu");
 
-function setImageNumber(n: number, ctx: any) { //Filter<BotContext,''
+function setImageNumber(n: number, ctx: any) {
+  //Filter<BotContext,''
   ctx.session.imageGen.numImages = n;
   ctx.reply("Images generated per prompt updated");
   ctx.menu.back();
