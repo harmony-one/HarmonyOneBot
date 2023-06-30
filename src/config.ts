@@ -10,8 +10,7 @@ export default {
     checkReadable: false,
   },
   imageGen: {
-    telegramFileUrl:
-      process.env.TELEGRAM_FILE_URL || "https://api.telegram.org/file/bot",
+    telegramFileUrl: "https://api.telegram.org/file/bot",
     completions: {
       model: process.env.OPENAI_MODEL || "text-davinci-003",
       maxTokens: process.env.OPENAI_MAX_TOKENS || 140,
