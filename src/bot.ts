@@ -1,15 +1,11 @@
 import express from "express";
-import {
-  Bot,
-  session,
-  MemorySessionStorage,
-} from "grammy";
-import config from "./config";
+import {Bot, MemorySessionStorage, session} from "grammy";
+import config from './config'
 import {BotContext, BotSessionData, OnMessageContext} from "./modules/types";
 import { mainMenu } from './pages'
-
 import { VoiceMemo } from "./modules/voice-memo";
 import { QRCodeBot } from "./modules/qrcode/QRCodeBot";
+import {SDImagesBot} from "./modules/sd-images";
 import { imageGen } from "./modules/image-gen/ImageGenBot";
 import { oneCountry } from "./modules/1country/oneCountryBot";
 
@@ -31,11 +27,17 @@ bot.use(mainMenu);
 
 const voiceMemo = new VoiceMemo();
 const qrCodeBot = new QRCodeBot();
+const sdImagesBot = new SDImagesBot();
 
 const onMessage = async (ctx: OnMessageContext) => {
   if (qrCodeBot.isSupportedEvent(ctx)) {
     qrCodeBot.onEvent(ctx);
   }
+
+  if (sdImagesBot.isSupportedEvent(ctx)) {
+    return sdImagesBot.onEvent(ctx);
+  }
+  
   if(voiceMemo.isSupportedEvent(ctx)) {
     voiceMemo.onEvent(ctx)
   }
