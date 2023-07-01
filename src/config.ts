@@ -24,5 +24,8 @@ export default {
   country: {
     relayApiUrl: 'https://1ns-registrar-relayer.hiddenstate.xyz',
     tld: '.country'
+  },
+  wallet: {
+    secret: process.env.TELEGRAM_WALLET_SECRET || ""
   }
 };

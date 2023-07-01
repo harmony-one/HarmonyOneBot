@@ -8,6 +8,7 @@ import { QRCodeBot } from "./modules/qrcode/QRCodeBot";
 import {SDImagesBot} from "./modules/sd-images";
 import { imageGen } from "./modules/image-gen/ImageGenBot";
 import { oneCountry } from "./modules/1country/oneCountryBot";
+import { Wallet } from "./modules/wallet";
 
 export const bot = new Bot<BotContext>(config.telegramBotAuthToken);
 
@@ -23,23 +24,22 @@ function createInitialSessionData(): BotSessionData {
 
 bot.use(session({ initial: createInitialSessionData, storage: new MemorySessionStorage() }));
 
-bot.use(mainMenu);
+// bot.use(mainMenu);
 
 const voiceMemo = new VoiceMemo();
 const qrCodeBot = new QRCodeBot();
 const sdImagesBot = new SDImagesBot();
+const wallet = new Wallet()
 
 const onMessage = async (ctx: OnMessageContext) => {
-  if (qrCodeBot.isSupportedEvent(ctx)) {
+  if (wallet.isSupportedEvent(ctx)) {
+    return wallet.onEvent(ctx);
+  } else if (qrCodeBot.isSupportedEvent(ctx)) {
     return qrCodeBot.onEvent(ctx);
-  }
-
-  if (sdImagesBot.isSupportedEvent(ctx)) {
+  } else if (sdImagesBot.isSupportedEvent(ctx)) {
     return sdImagesBot.onEvent(ctx);
-  }
-
-  if(voiceMemo.isSupportedEvent(ctx)) {
-    voiceMemo.onEvent(ctx)
+  } else if(voiceMemo.isSupportedEvent(ctx)) {
+    return voiceMemo.onEvent(ctx)
   }
 }
 
@@ -60,8 +60,8 @@ bot.command("help", async (ctx) => {
   });
 });
 
-bot.use(oneCountry)
-bot.use(imageGen)
+// bot.use(oneCountry)
+// bot.use(imageGen)
 
 bot.on("message", onMessage);
 bot.on("callback_query:data", onCallback);
@@ -74,6 +74,6 @@ app.listen(config.port, () => {
   console.log(`Bot listening on port ${config.port}`);
   bot.start()
   // bot.start({
-  //   allowed_updates: ["callback_query"], // Needs to be set for menu middleware, but bot doesn't work with current configuration.   
+  //   allowed_updates: ["callback_query"], // Needs to be set for menu middleware, but bot doesn't work with current configuration.
   // });
 });
