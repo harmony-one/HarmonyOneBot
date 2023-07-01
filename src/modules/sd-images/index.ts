@@ -1,7 +1,7 @@
 import { SDNodeApi } from "./sd-node-api";
 import config from "../../config";
 import { InlineKeyboard, InputFile } from "grammy";
-import { OnMessageContext } from "../types";
+import { OnMessageContext, OnCallBackQueryData } from "../types";
 import { sleep, uuidv4 } from "./utils";
 
 enum SupportedCommands {
@@ -28,23 +28,31 @@ export class SDImagesBot {
     private queue: string[] = [];
     private sessions: ISession[] = [];
 
-    callbackQuerys: string[] = [];
-
     constructor() {
         this.sdNodeApi = new SDNodeApi({ apiUrl: config.stableDiffusionHost });
     }
 
-    public isSupportedEvent(ctx: OnMessageContext): boolean {
+    public isSupportedEvent(ctx: OnMessageContext | OnCallBackQueryData): boolean {
         const hasCommand = ctx.hasCommand(Object.values(SupportedCommands));
 
-        const hasCallbackQuery = ctx.hasCallbackQuery(this.callbackQuerys);
+        const hasCallbackQuery = this.isSupportedCallbackQuery(ctx);
 
         return hasCallbackQuery || hasCommand;
     }
 
-    public async onEvent(ctx: OnMessageContext) {
+    public isSupportedCallbackQuery(ctx: OnMessageContext | OnCallBackQueryData): boolean {
+        if (!ctx.callbackQuery?.data) {
+            return false;
+        }
+
+        const [sessionId] = ctx.callbackQuery.data.split('_');
+
+        return !!this.sessions.find(s => s.id === sessionId);
+    }
+
+    public async onEvent(ctx: OnMessageContext | OnCallBackQueryData) {
         if (!this.isSupportedEvent(ctx)) {
-            console.log(`### unsupported command ${ctx.message.text}`);
+            console.log(`### unsupported command ${ctx.message?.text}`);
             return false;
         }
 
@@ -58,7 +66,7 @@ export class SDImagesBot {
             return;
         }
 
-        if (ctx.hasCallbackQuery(this.callbackQuerys)) {
+        if (this.isSupportedCallbackQuery(ctx)) {
             this.onImgSelected(ctx);
             return;
         }
@@ -67,7 +75,7 @@ export class SDImagesBot {
         ctx.reply('### unsupported command');
     }
 
-    onImageCmd = async (ctx: OnMessageContext) => {
+    onImageCmd = async (ctx: OnMessageContext | OnCallBackQueryData) => {
         const uuid = uuidv4()
 
         try {
@@ -107,7 +115,7 @@ export class SDImagesBot {
         this.queue = this.queue.filter(v => v !== uuid);
     }
 
-    onImagesCmd = async (ctx: OnMessageContext) => {
+    onImagesCmd = async (ctx: OnMessageContext | OnCallBackQueryData) => {
         const uuid = uuidv4();
 
         try {
@@ -167,10 +175,6 @@ export class SDImagesBot {
                     .text("4", `${newSession.id}_4`)
                     .row()
             });
-
-            [1, 2, 3, 4].forEach(
-                key => this.callbackQuerys.push(`${newSession.id}_${key}`)
-            );
         } catch (e: any) {
             console.log(e);
             ctx.reply(`Error: something went wrong...`);
@@ -179,7 +183,7 @@ export class SDImagesBot {
         this.queue = this.queue.filter(v => v !== uuid);
     }
 
-    async onImgSelected(ctx: OnMessageContext): Promise<any> {
+    async onImgSelected(ctx: OnMessageContext | OnCallBackQueryData): Promise<any> {
         try {
             const authorObj = await ctx.getAuthor();
             const author = `@${authorObj.user.username}`;

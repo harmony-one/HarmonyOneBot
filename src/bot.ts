@@ -48,6 +48,11 @@ const onCallback = async (ctx: OnCallBackQueryData) => {
     qrCodeBot.onEvent(ctx);
     return;
   }
+
+  if (sdImagesBot.isSupportedEvent(ctx)) {
+    sdImagesBot.onEvent(ctx);
+    return;
+  }
 }
 
 bot.command("start", (ctx) => ctx.reply("Welcome! Up and running."));
