@@ -50,14 +50,11 @@ const onCallback = async (ctx: OnCallBackQueryData) => {
   }
 }
 
-bot.command("start", (ctx) => ctx.reply("Welcome! Up and running."));
+bot.command("start", (ctx) => ctx.reply("Welcome! Use /test command to check the wallet."));
 
 bot.command("help", async (ctx) => {
   console.log("help command", ctx.session);
-  await ctx.reply('Help text...', {
-    parse_mode: "HTML",
-    reply_markup: mainMenu,
-  });
+  await ctx.reply('Use /test command to check the wallet.');
 });
 
 // bot.use(oneCountry)
