@@ -7,7 +7,7 @@ export default {
   openAiKey: process.env.OPENAI_API_KEY,
   stableDiffusionHost: process.env.SD_HOST || "",
   qr: {
-    checkReadable: false,
+    checkReadable: true,
   },
   imageGen: {
     telegramFileUrl: "https://api.telegram.org/file/bot",

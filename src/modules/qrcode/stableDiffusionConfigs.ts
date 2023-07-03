@@ -13,11 +13,11 @@ export const getTxt2ImgConfig = (conf: SDConfig) => {
   const {
     imgBase64,
     prompt,
-    steps = 60,
-    guidanceStart = 0.05,
-    guidanceEnd = 0.8,
-    width = 500,
-    height = 500,
+    steps = 40,
+    guidanceStart = 0.02,
+    guidanceEnd = 0.9,
+    width = 600,
+    height = 600,
   } = conf;
 
   return {
@@ -27,7 +27,7 @@ export const getTxt2ImgConfig = (conf: SDConfig) => {
     "subseed": -1,
     "subseed_strength": 0,
     "sampler_name": "DPM++ 2M Karras",
-    "batch_count": 100,
+    "batch_count": 1,
     "batch_size": 1,
     "n_iter": 1,
     steps: steps,
@@ -51,7 +51,7 @@ export const getTxt2ImgConfig = (conf: SDConfig) => {
             "control_mode": 0,
             "guidance_start": guidanceStart,
             "guidance_end": guidanceEnd,
-            "pixel_perfect": false,
+            "pixel_perfect": true,
           }
         ]
       }
@@ -59,25 +59,15 @@ export const getTxt2ImgConfig = (conf: SDConfig) => {
   }
 }
 
-export interface Img2ImgConfig {
-  prompt: string,
-  imgBase64: string,
-  guidanceStart?: number,
-  guidanceEnd?: number,
-  steps?: number,
-  width?: number,
-  height?: number,
-}
-
-export const getImg2ImgConfig = (conf: Img2ImgConfig) => {
+export const getImg2ImgConfig = (conf: SDConfig) => {
   const {
     imgBase64,
     prompt,
     steps = 60,
-    guidanceStart = 0.8,
-    guidanceEnd = 0.8,
-    width = 600,
-    height = 600,
+    guidanceStart = 0.17,
+    guidanceEnd = 0.7,
+    width = 500,
+    height = 500,
   } = conf;
 
   return {
