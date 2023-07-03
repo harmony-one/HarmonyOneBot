@@ -36,7 +36,7 @@ export class QRCodeBot {
     if (ctx.hasCallbackQuery(Callbacks.Regenerate)) {
       await ctx.answerCallbackQuery();
 
-      const msg = ctx.callbackQuery.message?.text || '';
+      const msg = ctx.callbackQuery.message?.text || ctx.callbackQuery.message?.caption || '';
 
       if (!msg) {
         ctx.reply('Error: message is too old');
@@ -119,11 +119,11 @@ export class QRCodeBot {
 
     const operation = async (retryAttempts: number) => {
 
-      console.log(`### retry: ${retryAttempts} ${messageText}`);
+      console.log(`### generate: ${retryAttempts} ${messageText}`);
 
       const props = {
         qrUrl: command.url,
-        qrMargin: 1,
+        qrMargin: ctx.session.qrMargin,
         method,
         prompt: command.prompt,
       };
@@ -156,10 +156,14 @@ export class QRCodeBot {
     const regenButton = new InlineKeyboard()
       .text("Regenerate", Callbacks.Regenerate)
 
-    await ctx.replyWithPhoto(new InputFile(qrImgBuffer, `qr_code_${Date.now()}.png`), {
-      caption: messageText,
+
+    await ctx.replyWithPhoto(new InputFile(qrImgBuffer, `qr_code_${Date.now()}.png`))
+    console.log('### qr sent');
+
+    await ctx.reply(messageText, {
       reply_markup: regenButton,
-    })
+      disable_web_page_preview: true,
+    });
   }
 
   private async genQRCode({qrUrl, qrMargin, prompt, method}: {qrUrl: string, qrMargin: number, prompt: string, method: 'img2img' | 'txt2img'}) {
