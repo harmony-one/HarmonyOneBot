@@ -1,6 +1,6 @@
 import axios from "axios";
 import config from "../../config";
-import {getImg2ImgConfig, getTxt2ImgConfig, Img2ImgConfig} from "./stableDiffusionConfigs";
+import {getImg2ImgConfig, getTxt2ImgConfig, SDConfig} from "./stableDiffusionConfigs";
 
 type Img2ImgResponse = {
   images: string[]
@@ -11,7 +11,7 @@ type Img2ImgResponse = {
 const sdHttpClient = axios.create({baseURL: config.stableDiffusionHost, headers: {'Content-Type': 'application/json'}});
 
 export class StableDiffusionClient {
-  async img2img(config: Img2ImgConfig) {
+  async img2img(config: SDConfig) {
     const body = getImg2ImgConfig(config)
 
     try {
@@ -27,11 +27,11 @@ export class StableDiffusionClient {
     }
   }
 
-  async text2img(config: Img2ImgConfig) {
+  async text2img(config: SDConfig) {
     // const filePath = path.join(__dirname, '../../files/qrcodes/h_country.png');
     // const imgBase64 = fs.readFileSync(filePath, 'base64')
 
-    const body = getImg2ImgConfig(config)
+    const body = getTxt2ImgConfig(config);
 
     try {
       const response = await sdHttpClient.post(`/sdapi/v1/txt2img`, body);
