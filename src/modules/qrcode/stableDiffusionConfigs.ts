@@ -64,7 +64,7 @@ export const getImg2ImgConfig = (conf: SDConfig) => {
     imgBase64,
     prompt,
     steps = 60,
-    guidanceStart = 0.17,
+    guidanceStart = 0.14,
     guidanceEnd = 0.7,
     width = 500,
     height = 500,

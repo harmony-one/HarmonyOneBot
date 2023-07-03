@@ -170,10 +170,12 @@ export class QRCodeBot {
     const qrImgBuffer = await createQRCode({url: qrUrl, margin: qrMargin });
     const sdClient = new StableDiffusionClient();
 
+    const _prompt = prompt + ',(masterpiece), (best quality), (ultra-detailed), hires';
+
     if (method === 'txt2img') {
-      return  sdClient.text2img({imgBase64: qrImgBuffer.toString('base64'), prompt});
+      return  sdClient.text2img({imgBase64: qrImgBuffer.toString('base64'), prompt: _prompt});
     }
 
-    return  sdClient.img2img({imgBase64: qrImgBuffer.toString('base64'), prompt});
+    return  sdClient.img2img({imgBase64: qrImgBuffer.toString('base64'), prompt: _prompt});
   }
 }
