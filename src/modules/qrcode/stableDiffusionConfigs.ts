@@ -64,16 +64,16 @@ export const getImg2ImgConfig = (conf: SDConfig) => {
     imgBase64,
     prompt,
     steps = 60,
-    guidanceStart = 0.14,
-    guidanceEnd = 0.7,
-    width = 500,
-    height = 500,
+    guidanceStart = 0.195,
+    guidanceEnd = 0.65,
+    width = 600,
+    height = 600,
   } = conf;
 
   return {
     "init_images": [imgBase64],
     "prompt": prompt,
-    "negative_prompt": "(KHFB, AuroraNegative),(Worst Quality, Low Quality:1.4), (blurry:2), ugly, tiling, poorly drawn hands, poorly drawn feet, poorly drawn face, out of frame, extra limbs, disfigured, deformed, body out of frame, bad anatomy, watermark, signature, cut off, low contrast, underexposed, overexposed, bad art, beginner, amateur, distorted face, blurry, draft, grainy",
+    "negative_prompt": "(KHFB, AuroraNegative),(Worst Quality, Low Quality:1.4), ugly, tiling, poorly drawn hands, poorly drawn feet, poorly drawn face, out of frame, extra limbs, disfigured, deformed, body out of frame, bad anatomy, watermark, signature, cut off, low contrast, underexposed, overexposed, bad art, beginner, amateur, distorted face, blurry, draft, grainy",
     "seed": -1,
     "subseed": -1,
     "subseed_strength": 0,
