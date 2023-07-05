@@ -67,10 +67,10 @@ export const getImg2ImgConfig = (conf: SDConfig) => {
     prompt,
     negativePrompt = '',
     steps = 60,
-    guidanceStart = 0.17,
-    guidanceEnd = 0.7,
-    width = 500,
-    height = 500,
+    guidanceStart = 0.195,
+    guidanceEnd = 0.65,
+    width = 600,
+    height = 600,
   } = conf;
 
   return {
