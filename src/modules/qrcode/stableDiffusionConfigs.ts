@@ -1,5 +1,6 @@
 export interface SDConfig {
   prompt: string,
+  negativePrompt?: string,
   imgBase64: string,
   guidanceStart?: number,
   guidanceEnd?: number,
@@ -13,6 +14,7 @@ export const getTxt2ImgConfig = (conf: SDConfig) => {
   const {
     imgBase64,
     prompt,
+    negativePrompt = '',
     steps = 40,
     guidanceStart = 0.02,
     guidanceEnd = 0.9,
@@ -22,7 +24,7 @@ export const getTxt2ImgConfig = (conf: SDConfig) => {
 
   return {
     "prompt": prompt,
-    "negative_prompt": "(KHFB, AuroraNegative),(Worst Quality, Low Quality:1.4), (blurry:2), overexposure, watermark, text, easynegative, ugly, tiling, poorly drawn hands, poorly drawn feet, poorly drawn face, out of frame, extra limbs, disfigured, deformed, body out of frame, bad anatomy, watermark, signature, cut off, low contrast, underexposed, overexposed, bad art, beginner, amateur, distorted face, blurry, draft, grainy",
+    "negative_prompt": negativePrompt,
     "seed": -1,
     "subseed": -1,
     "subseed_strength": 0,
@@ -63,17 +65,18 @@ export const getImg2ImgConfig = (conf: SDConfig) => {
   const {
     imgBase64,
     prompt,
+    negativePrompt = '',
     steps = 60,
-    guidanceStart = 0.195,
-    guidanceEnd = 0.65,
-    width = 600,
-    height = 600,
+    guidanceStart = 0.17,
+    guidanceEnd = 0.7,
+    width = 500,
+    height = 500,
   } = conf;
 
   return {
     "init_images": [imgBase64],
     "prompt": prompt,
-    "negative_prompt": "(KHFB, AuroraNegative),(Worst Quality, Low Quality:1.4), ugly, tiling, poorly drawn hands, poorly drawn feet, poorly drawn face, out of frame, extra limbs, disfigured, deformed, body out of frame, bad anatomy, watermark, signature, cut off, low contrast, underexposed, overexposed, bad art, beginner, amateur, distorted face, blurry, draft, grainy",
+    "negative_prompt": negativePrompt,
     "seed": -1,
     "subseed": -1,
     "subseed_strength": 0,
