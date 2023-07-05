@@ -32,14 +32,10 @@ const sdImagesBot = new SDImagesBot();
 const onMessage = async (ctx: OnMessageContext) => {
   if (qrCodeBot.isSupportedEvent(ctx)) {
     return qrCodeBot.onEvent(ctx);
-  }
-
-  if (sdImagesBot.isSupportedEvent(ctx)) {
+  } else if (sdImagesBot.isSupportedEvent(ctx)) {
     return sdImagesBot.onEvent(ctx);
-  }
-
-  if(voiceMemo.isSupportedEvent(ctx)) {
-    voiceMemo.onEvent(ctx)
+  } else if(voiceMemo.isSupportedEvent(ctx)) {
+    return voiceMemo.onEvent(ctx)
   }
 }
 
@@ -79,6 +75,6 @@ app.listen(config.port, () => {
   console.log(`Bot listening on port ${config.port}`);
   bot.start()
   // bot.start({
-  //   allowed_updates: ["callback_query"], // Needs to be set for menu middleware, but bot doesn't work with current configuration.   
+  //   allowed_updates: ["callback_query"], // Needs to be set for menu middleware, but bot doesn't work with current configuration.
   // });
 });

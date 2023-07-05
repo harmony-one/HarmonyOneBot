@@ -24,5 +24,10 @@ export default {
   country: {
     relayApiUrl: 'https://1ns-registrar-relayer.hiddenstate.xyz',
     tld: '.country'
+  },
+  voiceMemo: {
+    telegramApiId: parseInt(process.env.TELEGRAM_API_ID || ''),
+    telegramApiHash: process.env.TELEGRAM_API_HASH || '',
+    speechmaticsApiKey: process.env.SPEECHMATICS_API_KEY || '',
   }
 };
