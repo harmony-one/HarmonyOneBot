@@ -62,8 +62,8 @@ export class VoiceMemo {
       const { mimeType = '', size } = media.document
       const checkKey = `${senderId}_${size.toString()}`
       this.logger.info(`onTelegramClientEvent: ${checkKey}`)
-      const queueDocument = this.audioQueue.get(checkKey)
-      if(mimeType.includes('audio') && queueDocument) {
+      // const queueDocument = this.audioQueue.get(checkKey)
+      if(mimeType.includes('audio')) {
         const buffer = await this.telegramClient?.downloadMedia(media);
         if(buffer) {
           const fileName = `${media.document.id.toString()}.ogg`
@@ -140,8 +140,8 @@ export class VoiceMemo {
 
   public async onEvent(ctx: OnMessageContext) {
     const { voice, from } = ctx.update.message
-    const key = `${from.id}_${voice?.file_size}`
-    this.audioQueue.set(key, Date.now())
-    this.logger.info(`onEvent: ${key}`)
+    // const key = `${from.id}_${voice?.file_size}`
+    // this.audioQueue.set(key, Date.now())
+    // this.logger.info(`onEvent: ${key}`)
   }
 }
