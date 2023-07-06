@@ -26,11 +26,11 @@ export class Speechmatics {
         "enable_entities": true,
         "diarization": "speaker",
       },
-      "summarization_config": {
-        "content_type": "conversational",
-        "summary_length": "brief",
-        "summary_type": "paragraphs"
-      }
+      // "summarization_config": {
+      //   "content_type": "conversational",
+      //   "summary_length": "brief",
+      //   "summary_type": "paragraphs"
+      // }
     }
 
     if(type === 'url') {
@@ -85,6 +85,9 @@ export class Speechmatics {
         resultText += '\n\n'
       }
     }
+    if(!resultText.endsWith('.')) {
+      resultText += '.'
+    }
     console.log('Result summary:', resultText)
     return resultText
   }
@@ -102,10 +105,10 @@ export class Speechmatics {
     for(let i = 0; i < 30 * 60; i++) {
       try {
         const translation = await this.getJobResult(jobId)
-        const summarization = await this.getJobSummarization(jobId)
+        // const summarization = await this.getJobSummarization(jobId)
         return {
           translation,
-          summarization: this.enrichSummarization(summarization)
+          summarization: ''
         }
       } catch (e) {}
       finally {

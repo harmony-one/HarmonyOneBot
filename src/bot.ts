@@ -32,9 +32,11 @@ const sdImagesBot = new SDImagesBot();
 const onMessage = async (ctx: OnMessageContext) => {
   if (qrCodeBot.isSupportedEvent(ctx)) {
     return qrCodeBot.onEvent(ctx);
-  } else if (sdImagesBot.isSupportedEvent(ctx)) {
+  }
+  if (sdImagesBot.isSupportedEvent(ctx)) {
     return sdImagesBot.onEvent(ctx);
-  } else if(voiceMemo.isSupportedEvent(ctx)) {
+  }
+  if(voiceMemo.isSupportedEvent(ctx)) {
     return voiceMemo.onEvent(ctx)
   }
 }
@@ -70,6 +72,7 @@ bot.on("callback_query:data", onCallback);
 const app = express();
 
 app.use(express.json());
+app.use(express.static('./public')) // Public directory, used in voice-memo bot
 
 app.listen(config.port, () => {
   console.log(`Bot listening on port ${config.port}`);

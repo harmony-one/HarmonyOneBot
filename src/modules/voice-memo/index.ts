@@ -9,13 +9,15 @@ import config from "../../config";
 import {Buffer} from "buffer";
 import fs from "fs";
 import moment from 'moment'
+import {Kagi} from "./kagi";
 
 export class VoiceMemo {
   private logger: Logger
-  private tempDirectory = 'temp'
+  private tempDirectory = 'public'
   private telegramClient?: TelegramClient
   private speechmatics = new Speechmatics(config.voiceMemo.speechmaticsApiKey)
-  private audioQueue = new LRUCache({ max: 500, ttl: 1000 * 60 * 10 })
+  private kagi = new Kagi(config.voiceMemo.kagiApiKey)
+  private audioQueue = new LRUCache({ max: 100, ttl: 1000 * 60 * 5 })
 
   constructor() {
     this.logger = pino({
@@ -28,7 +30,6 @@ export class VoiceMemo {
       }
     })
     this.initTgClient()
-    this.logger.info('VoiceMemo started')
   }
 
   private getTempFilePath (filename: string) {
@@ -51,63 +52,96 @@ export class VoiceMemo {
   private async initTgClient () {
     this.telegramClient = await initTelegramClient()
     this.telegramClient.addEventHandler(this.onTelegramClientEvent.bind(this), new NewMessage({}));
+    this.logger.info('VoiceMemo bot started')
   }
 
   private async onTelegramClientEvent(event: NewMessageEvent) {
-    const { media, chatId, message, senderId, sender } = event.message;
-
+    const { media, chatId, senderId } = event.message;
     if(chatId && media instanceof Api.MessageMediaDocument && media && media.document) {
-      const buffer = await this.telegramClient?.downloadMedia(media);
-      if(buffer instanceof Buffer) {
-        const fileName = `${media.document.id.toString()}.ogg`
-        const filePath = this.writeTempFile(buffer, fileName)
-        const translation = await this.speechmatics.getTranslation(filePath)
-        this.deleteTempFile(fileName)
+      // @ts-ignore
+      const { mimeType = '', size } = media.document
+      const checkKey = `${senderId}_${size.toString()}`
+      this.logger.info(`onTelegramClientEvent: ${checkKey}`)
+      const queueDocument = this.audioQueue.get(checkKey)
+      if(mimeType.includes('audio') && queueDocument) {
+        const buffer = await this.telegramClient?.downloadMedia(media);
+        if(buffer) {
+          const fileName = `${media.document.id.toString()}.ogg`
+          const filePath = this.writeTempFile(buffer, fileName)
+          const publicFileUrl = `${config.voiceMemo.servicePublicUrl}/${fileName}`
 
-        if(translation) {
-          this.onTranslationReady(event, translation)
+          try {
+            const [translation, kagiSummarization] = await Promise.all([
+              this.speechmatics.getTranslation(filePath),
+              this.kagi.getSummarization(publicFileUrl)
+            ])
+            this.logger.info('Raw summarization:', kagiSummarization)
+            if(translation) {
+              this.onTranslationReady(event, translation, this.enrichSummarization(kagiSummarization))
+            }
+          } catch (e) {
+            this.logger.error('Translation error:', e)
+          } finally {
+            this.deleteTempFile(fileName)
+          }
         }
       }
     }
   }
 
-  private async onTranslationReady(event: NewMessageEvent, result: TranslationResult) {
+  private enrichSummarization(text: string) {
+    text = text.replace('The speakers', 'We')
+    const splitText = text.split('.').map(part => part.trim())
+    let resultText = ''
+    for(let i = 0; i < splitText.length; i++) {
+      if(i % 2 !== 0) {
+        continue
+      }
+      const sentence1 = splitText[i]
+      const sentence2 = splitText[i + 1] || ''
+      const twoSentences = sentence1 + (sentence2 ? '. ' + sentence2 + '.' : '')
+      resultText +=  twoSentences
+      if(i < splitText.length - 3) {
+        resultText += '\n\n'
+      }
+    }
+    return resultText
+  }
+
+  private async onTranslationReady(event: NewMessageEvent, result: TranslationResult, kagiSummarization: string) {
     const { chatId, sender } = event.message;
-    const { translation, summarization } = result
+    const { translation } = result
 
     const senderUsername = sender instanceof Api.User && sender.username ? sender.username : ''
-
+    this.logger.info(`Translation for ${senderUsername} ready, length: ${translation.length}`)
     if(translation.length < 512) {
-      console.log('Translation ready:', translation)
       await this.telegramClient?.sendMessage(chatId as any, {
         message: translation,
         replyTo: event.message
       })
     } else {
-      console.log('Translation ready, length:', translation.length)
       const file = new Buffer(translation)
-
       const messageDate = moment(event.message.date * 1000).utcOffset(-7).format('MM-DD h:mm a')
-      const fileName = `${senderUsername ? 'From  @'+senderUsername : ''} ${messageDate}.txt`
-      console.log('Filename:', fileName)
       // hack from gramjs type docs
       // @ts-ignore
-      file.name = fileName
+      file.name = `${senderUsername ? 'From  @'+senderUsername : ''} ${messageDate}.txt`
       await this.telegramClient?.sendFile(chatId as any, {
         file,
         replyTo: event.message,
-        caption: summarization.slice(0, 1024) || translation.slice(0, 1024)
+        caption: kagiSummarization.slice(0, 512) || translation.slice(0, 512)
       })
     }
   }
 
   public isSupportedEvent(ctx: OnMessageContext) {
-    return !!ctx.update.message.voice
+    const { voice } = ctx.update.message
+    return voice && (voice.mime_type && voice.mime_type.includes('audio'))
   }
 
   public async onEvent(ctx: OnMessageContext) {
-    const { text, voice, from } = ctx.update.message
-    console.log('voice: ', voice)
-    console.log('from.id', from.id)
+    const { voice, from } = ctx.update.message
+    const key = `${from.id}_${voice?.file_size}`
+    this.audioQueue.set(key, Date.now())
+    this.logger.info(`onEvent: ${key}`)
   }
 }
