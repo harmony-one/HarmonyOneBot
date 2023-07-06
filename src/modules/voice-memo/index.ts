@@ -69,13 +69,13 @@ export class VoiceMemo {
           const fileName = `${media.document.id.toString()}.ogg`
           const filePath = this.writeTempFile(buffer, fileName)
           const publicFileUrl = `${config.voiceMemo.servicePublicUrl}/${fileName}`
-
+          this.logger.info(`Public file url: ${publicFileUrl}`)
           try {
             const [translation, kagiSummarization] = await Promise.all([
               this.speechmatics.getTranslation(filePath),
               this.kagi.getSummarization(publicFileUrl)
             ])
-            this.logger.info('Raw summarization:', kagiSummarization)
+            this.logger.info(`Raw summarization: ${kagiSummarization}`)
             if(translation) {
               this.onTranslationReady(event, translation, this.enrichSummarization(kagiSummarization))
             }
@@ -128,7 +128,7 @@ export class VoiceMemo {
       await this.telegramClient?.sendFile(chatId as any, {
         file,
         replyTo: event.message,
-        caption: kagiSummarization.slice(0, 512) || translation.slice(0, 512)
+        caption: kagiSummarization.slice(0, 1024) || translation.slice(0, 512)
       })
     }
   }
