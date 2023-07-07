@@ -29,7 +29,11 @@ export class VoiceMemo {
         }
       }
     })
-    this.initTgClient()
+    if(config.voiceMemo.isEnabled) {
+      this.initTgClient()
+    } else {
+      this.logger.warn('Voice-memo disabled in config')
+    }
   }
 
   private getTempFilePath (filename: string) {
