@@ -4,6 +4,7 @@ import config from "../../config";
 import {InlineKeyboard, InputFile} from "grammy";
 import {OnCallBackQueryData, OnMessageContext} from "../types";
 import {SDConfig} from "./stableDiffusionConfigs";
+import {sdDefaultConfig} from "./sdDefaultConfig";
 
 enum SupportedCommands {
   QR = 'qr',
@@ -171,8 +172,8 @@ export class QRCodeBot {
     const qrImgBuffer = await createQRCode({url: qrUrl, margin: qrMargin });
     const sdClient = new StableDiffusionClient();
 
-    const extendedPrompt = prompt + ', ' + config.qrBot.sdConfig.additionalPrompt;
-    const negativePrompt = config.qrBot.sdConfig.defaultNegativePrompt;
+    const extendedPrompt = prompt + ', ' + sdDefaultConfig.additionalPrompt;
+    const negativePrompt = sdDefaultConfig.defaultNegativePrompt;
 
     const sdConfig: SDConfig = {
       imgBase64: qrImgBuffer.toString('base64'),
@@ -181,9 +182,9 @@ export class QRCodeBot {
     };
 
     if (method === 'txt2img') {
-      return  sdClient.text2img({...config.qrBot.sdConfig.text2img, ...sdConfig});
+      return  sdClient.text2img({...sdDefaultConfig.text2img, ...sdConfig});
     }
 
-    return  sdClient.img2img({...config.qrBot.sdConfig.img2img, ...sdConfig});
+    return  sdClient.img2img({...sdDefaultConfig.img2img, ...sdConfig});
   }
 }
