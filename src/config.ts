@@ -6,8 +6,8 @@ export default {
   telegramBotAuthToken: process.env.TELEGRAM_BOT_AUTH_TOKEN || "",
   openAiKey: process.env.OPENAI_API_KEY,
   stableDiffusionHost: process.env.SD_HOST || "",
-  qr: {
-    checkReadable: false,
+  qrBot: {
+    checkReadable: Boolean(process.env.QRBOT_CHECK_READABLE) || false,
   },
   imageGen: {
     telegramFileUrl: "https://api.telegram.org/file/bot",

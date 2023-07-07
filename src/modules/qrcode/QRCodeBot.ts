@@ -3,6 +3,8 @@ import {createQRCode, isQRCodeReadable, retryAsync} from "./utils";
 import config from "../../config";
 import {InlineKeyboard, InputFile} from "grammy";
 import {OnCallBackQueryData, OnMessageContext} from "../types";
+import {SDConfig} from "./stableDiffusionConfigs";
+import {sdDefaultConfig} from "./sdDefaultConfig";
 
 enum SupportedCommands {
   QR = 'qr',
@@ -134,7 +136,7 @@ export class QRCodeBot {
         throw new Error('internal error');
       }
 
-      if(config.qr.checkReadable && isQRCodeReadable(qrImgBuffer)) {
+      if(config.qrBot.checkReadable && isQRCodeReadable(qrImgBuffer)) {
         console.log('### qr unreadable');
         return qrImgBuffer;
       }
@@ -170,12 +172,19 @@ export class QRCodeBot {
     const qrImgBuffer = await createQRCode({url: qrUrl, margin: qrMargin });
     const sdClient = new StableDiffusionClient();
 
-    const _prompt = prompt + ',(masterpiece), (best quality), (ultra-detailed), hires';
+    const extendedPrompt = prompt + ', ' + sdDefaultConfig.additionalPrompt;
+    const negativePrompt = sdDefaultConfig.defaultNegativePrompt;
+
+    const sdConfig: SDConfig = {
+      imgBase64: qrImgBuffer.toString('base64'),
+      prompt: extendedPrompt,
+      negativePrompt,
+    };
 
     if (method === 'txt2img') {
-      return  sdClient.text2img({imgBase64: qrImgBuffer.toString('base64'), prompt: _prompt});
+      return  sdClient.text2img({...sdDefaultConfig.text2img, ...sdConfig});
     }
 
-    return  sdClient.img2img({imgBase64: qrImgBuffer.toString('base64'), prompt: _prompt});
+    return  sdClient.img2img({...sdDefaultConfig.img2img, ...sdConfig});
   }
 }

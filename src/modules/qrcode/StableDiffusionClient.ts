@@ -31,7 +31,7 @@ export class StableDiffusionClient {
     // const filePath = path.join(__dirname, '../../files/qrcodes/h_country.png');
     // const imgBase64 = fs.readFileSync(filePath, 'base64')
 
-    const body = getTxt2ImgConfig(config);
+    const body = getTxt2ImgConfig(config)
 
     try {
       const response = await sdHttpClient.post(`/sdapi/v1/txt2img`, body);
