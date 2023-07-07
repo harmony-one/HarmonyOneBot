@@ -3,10 +3,12 @@ import config from "../../config";
 import { InlineKeyboard, InputFile } from "grammy";
 import { OnMessageContext, OnCallBackQueryData } from "../types";
 import { sleep, uuidv4 } from "./utils";
+import { showcasePrompts } from './showcase';
 
 enum SupportedCommands {
     IMAGE = 'image',
     IMAGES = 'images',
+    SHOWCASE = 'image_example',
 }
 
 enum SESSION_STEP {
@@ -27,6 +29,7 @@ export class SDImagesBot {
 
     private queue: string[] = [];
     private sessions: ISession[] = [];
+    private showcaseCount = 0;
 
     constructor() {
         this.sdNodeApi = new SDNodeApi({ apiUrl: config.stableDiffusionHost });
@@ -63,6 +66,12 @@ export class SDImagesBot {
 
         if (ctx.hasCommand(SupportedCommands.IMAGES)) {
             this.onImagesCmd(ctx);
+            return;
+        }
+
+
+        if (ctx.hasCommand(SupportedCommands.SHOWCASE)) {
+            this.onShowcaseCmd(ctx);
             return;
         }
 
@@ -215,4 +224,28 @@ export class SDImagesBot {
             ctx.reply(`Error: something went wrong...`);
         }
     }
+
+    onShowcaseCmd = async (ctx: OnMessageContext | OnCallBackQueryData) => {
+        const uuid = uuidv4()
+
+        try {
+            if(this.showcaseCount >= showcasePrompts.length) {
+                this.showcaseCount = 0;
+            }
+
+            const prompt = showcasePrompts[this.showcaseCount++];
+
+            ctx.reply(`/image ${prompt}`);
+
+            const imageBuffer = await this.sdNodeApi.generateImage(prompt);
+
+            ctx.replyWithPhoto(new InputFile(imageBuffer));
+        } catch (e: any) {
+            console.log(e);
+            ctx.reply(`Error: something went wrong...`);
+        }
+    }
 }
+
+
+// ng_deepnegative_v1_75t, (badhandv4), (worst quality:2), (low quality:2), (normal quality:2), lowres, bad anatomy, bad hands, ((monochrome)), ((grayscale)) watermark, (moles:2)
