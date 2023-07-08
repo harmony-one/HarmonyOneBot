@@ -2,6 +2,7 @@ import { Menu } from "@grammyjs/menu";
 import { imageGenMainMenu } from "./modules/image-gen/pages/main";
 import { oneCountryMainMenu } from './modules/1country/pages/main'
 import { BotContext } from "./modules/types";
+import {QRBotMenuIds, qrCodeBotMenu} from "./modules/qrcode/menu";
 
 export const mainMenu = new Menu<BotContext>("main-menu") //<MyContext>
   .text("One Wallet", (ctx) => ctx.reply("Menu to be define"))
@@ -10,7 +11,8 @@ export const mainMenu = new Menu<BotContext>("main-menu") //<MyContext>
   .row()
   .text("Voice Memo", (ctx) => ctx.reply("Menu to be define"))
   .row()
-  .text("QR Generation", (ctx) => ctx.reply("Menu to be define"))
+  .submenu('QR Generation', QRBotMenuIds.MAIN)
+  // .text("QR Generation", (ctx) => ctx.reply("Menu to be define"))
   .row()
   .text("Image Generation Stable Diffusion", (ctx) => ctx.reply("Menu to be define"))
   .row()
@@ -18,3 +20,4 @@ export const mainMenu = new Menu<BotContext>("main-menu") //<MyContext>
 
 mainMenu.register(imageGenMainMenu);
 mainMenu.register(oneCountryMainMenu)
+mainMenu.register(qrCodeBotMenu);
