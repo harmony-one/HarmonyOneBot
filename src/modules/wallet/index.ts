@@ -2,6 +2,7 @@ import {InlineKeyboard} from "grammy";
 import otpAuth from 'otpauth'
 import config from '../../config'
 import pino, {Logger} from "pino";
+import {OnMessageContext} from "../types";
 export class Wallet {
   private readonly secret = config.wallet.secret
   private logger: Logger;
@@ -19,12 +20,12 @@ export class Wallet {
     this.logger.info(`Wallet started, web app url: ${config.wallet.webAppUrl}`)
   }
 
-  public isSupportedEvent(ctx: any) {
-    const { text } = ctx.update.message
-    return text.toLowerCase().startsWith('/wallet')
+  public isSupportedEvent(ctx: OnMessageContext) {
+    const { text, chat } = ctx.update.message
+    return chat.type === 'private' && text && text.toLowerCase().startsWith('/wallet')
   }
 
-  public async onEvent(ctx: any) {
+  public async onEvent(ctx: OnMessageContext) {
     const { text, from: { id: userId, username } } = ctx.update.message
     this.logger.info(`Message from ${username} (${userId}): "${text}"`)
 
@@ -35,8 +36,8 @@ export class Wallet {
       `${config.wallet.webAppUrl}/?secret=${secret}&userId=${userId}`,
     );
 
-    // wallet send 0x199177Bcc7cdB22eC10E3A2DA888c7811275fc38 0.01
-    if(text.includes('send')) {
+    // /wallet send 0x199177Bcc7cdB22eC10E3A2DA888c7811275fc38 0.01
+    if(text && text.includes('send')) {
       const [,,to = '', amount = ''] = text.split(' ')
       if(to.startsWith('0x') && +amount) {
         keyboard = new InlineKeyboard().webApp(
