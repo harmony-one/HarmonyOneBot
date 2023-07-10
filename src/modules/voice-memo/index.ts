@@ -29,7 +29,11 @@ export class VoiceMemo {
         }
       }
     })
-    this.initTgClient()
+    if(config.voiceMemo.isEnabled) {
+      this.initTgClient()
+    } else {
+      this.logger.warn('Voice-memo disabled in config')
+    }
   }
 
   private getTempFilePath (filename: string) {
@@ -80,7 +84,7 @@ export class VoiceMemo {
               this.onTranslationReady(event, translation, this.enrichSummarization(kagiSummarization))
             }
           } catch (e) {
-            this.logger.error('Translation error:', e)
+            this.logger.error(`Translation error: ${(e as Error).message}`)
           } finally {
             this.deleteTempFile(fileName)
           }
