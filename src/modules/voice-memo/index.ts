@@ -84,7 +84,7 @@ export class VoiceMemo {
               this.onTranslationReady(event, translation, this.enrichSummarization(kagiSummarization))
             }
           } catch (e) {
-            this.logger.error('Translation error:', e)
+            this.logger.error(`Translation error: ${(e as Error).message}`)
           } finally {
             this.deleteTempFile(fileName)
           }

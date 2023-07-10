@@ -26,15 +26,27 @@ export class Wallet {
 
   public async onEvent(ctx: any) {
     const { text, from: { id: userId, username } } = ctx.update.message
-    console.log(`Message from ${username} (${userId}): "${text}"`)
+    this.logger.info(`Message from ${username} (${userId}): "${text}"`)
 
     const secret = otpAuth.Secret.fromUTF8(`${this.secret}_${userId}`).base32
-    const keyboard = new InlineKeyboard().webApp(
-      "Open Wallet",
+
+    let keyboard = new InlineKeyboard().webApp(
+      "Open",
       `${config.wallet.webAppUrl}/?secret=${secret}&userId=${userId}`,
     );
 
-    ctx.reply('Test', {
+    // wallet send 0x199177Bcc7cdB22eC10E3A2DA888c7811275fc38 0.01
+    if(text.includes('send')) {
+      const [,,to = '', amount = ''] = text.split(' ')
+      if(to.startsWith('0x') && +amount) {
+        keyboard = new InlineKeyboard().webApp(
+          "Confirm transaction",
+          `${config.wallet.webAppUrl}/send?secret=${secret}&userId=${userId}&type=transfer&amount=${amount}&to=${to}&step=confirm`,
+        );
+      }
+    }
+
+    ctx.reply('Telegram wallet', {
       reply_markup: keyboard
     });
   }
