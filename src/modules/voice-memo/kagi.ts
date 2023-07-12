@@ -23,6 +23,7 @@ export class Kagi {
 
   public async getSummarization (audioUrl: string) {
     const url = `https://kagi.com/api/v0/summarize?url=${audioUrl}`
+    console.log('Kagi request url:', url)
     const { data } = await axios.get<SummarizationResponse>(url, {
       headers: {
         'Authorization': `Bot ${this.apiKey}`

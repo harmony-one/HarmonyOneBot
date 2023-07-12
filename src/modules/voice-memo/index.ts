@@ -4,7 +4,7 @@ import {initTelegramClient} from "./MTProtoAPI";
 import {NewMessage, NewMessageEvent} from "telegram/events";
 import { LRUCache } from 'lru-cache'
 import {Api, TelegramClient} from "telegram";
-import {Speechmatics, TranslationResult} from "./speechmatics";
+import {Speechmatics, SpeechmaticsResult} from "./speechmatics";
 import config from "../../config";
 import {Buffer} from "buffer";
 import fs from "fs";
@@ -75,13 +75,18 @@ export class VoiceMemo {
           const publicFileUrl = `${config.voiceMemo.servicePublicUrl}/${fileName}`
           this.logger.info(`Public file url: ${publicFileUrl}`)
           try {
-            const [translation, kagiSummarization] = await Promise.all([
+            const [translation, kagiSummarization] = await Promise.allSettled([
               this.speechmatics.getTranslation(filePath),
               this.kagi.getSummarization(publicFileUrl)
             ])
-            this.logger.info(`Raw summarization: ${kagiSummarization}`)
-            if(translation) {
-              this.onTranslationReady(event, translation, this.enrichSummarization(kagiSummarization))
+            this.logger.info(`Kagi summarization: ${JSON.stringify(kagiSummarization)}`)
+            if(translation && translation.status === 'fulfilled' && translation.value) {
+              const summarization = kagiSummarization.status === 'fulfilled'
+                ? kagiSummarization.value
+                : ''
+              this.onTranslationReady(event, translation.value, summarization)
+            } else {
+              this.logger.error(`Speechmatics translation failed: ${JSON.stringify(translation)}}`)
             }
           } catch (e) {
             this.logger.error(`Translation error: ${(e as Error).message}`)
@@ -112,9 +117,18 @@ export class VoiceMemo {
     return resultText
   }
 
-  private async onTranslationReady(event: NewMessageEvent, result: TranslationResult, kagiSummarization: string) {
+  private async onTranslationReady(event: NewMessageEvent, result: SpeechmaticsResult, kagiSummarization: string) {
     const { chatId, sender } = event.message;
     const { translation } = result
+
+    let summarization = kagiSummarization || result.summarization || ''
+    if(summarization) {
+      summarization = this.enrichSummarization(summarization)
+    }
+
+    if(!kagiSummarization && result.summarization) {
+      summarization = `${summarization}\n\n[Speechmatics]`
+    }
 
     const senderUsername = sender instanceof Api.User && sender.username ? sender.username : ''
     this.logger.info(`Translation for ${senderUsername} ready, length: ${translation.length}`)
@@ -132,7 +146,7 @@ export class VoiceMemo {
       await this.telegramClient?.sendFile(chatId as any, {
         file,
         replyTo: event.message,
-        caption: kagiSummarization.slice(0, 1024) || translation.slice(0, 512)
+        caption: summarization.slice(0, 1024) || translation.slice(0, 512)
       })
     }
   }

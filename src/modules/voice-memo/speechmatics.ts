@@ -2,7 +2,7 @@ import axios from 'axios'
 import FormData from 'form-data';
 import * as fs from "fs";
 
-export interface TranslationResult {
+export interface SpeechmaticsResult {
   translation: string
   summarization: string
 }
@@ -26,11 +26,11 @@ export class Speechmatics {
         "enable_entities": true,
         "diarization": "speaker",
       },
-      // "summarization_config": {
-      //   "content_type": "conversational",
-      //   "summary_length": "brief",
-      //   "summary_type": "paragraphs"
-      // }
+      "summarization_config": {
+        "content_type": "conversational",
+        "summary_length": "brief",
+        "summary_type": "paragraphs"
+      }
     }
 
     if(type === 'url') {
@@ -68,47 +68,23 @@ export class Speechmatics {
     return data
   }
 
-  private enrichSummarization (text: string) {
-    console.log('Raw summary:', text)
-    text = text.replace('The speakers', 'We')
-    const splitText = text.split('.').map(part => part.trim())
-    let resultText = ''
-    for(let i = 0; i < splitText.length; i++) {
-      if(i % 2 !== 0) {
-        continue
-      }
-      const sentence1 = splitText[i]
-      const sentence2 = splitText[i + 1] || ''
-      const twoSentences = sentence1 + (sentence2 ? '. ' + sentence2 + '.' : '')
-      resultText +=  twoSentences
-      if(i < splitText.length - 3) {
-        resultText += '\n\n'
-      }
-    }
-    if(!resultText.endsWith('.')) {
-      resultText += '.'
-    }
-    console.log('Result summary:', resultText)
-    return resultText
-  }
-
   private async getJobSummarization (jobId: string): Promise<string> {
     const { data } = await axios.get(`https://asr.api.speechmatics.com/v2/jobs/${jobId}/transcript?format=json-v2`, {
       headers: {
         'Authorization': `Bearer ${this.apiKey}`
       }
     })
-    return data.summary.content
+    return data.summary.content || ''
   }
 
-  private async pollJobResult (jobId: string): Promise<TranslationResult | null> {
+  private async pollJobResult (jobId: string): Promise<SpeechmaticsResult | null> {
     for(let i = 0; i < 30 * 60; i++) {
       try {
         const translation = await this.getJobResult(jobId)
-        // const summarization = await this.getJobSummarization(jobId)
+        const summarization = await this.getJobSummarization(jobId)
         return {
           translation,
-          summarization: ''
+          summarization
         }
       } catch (e) {}
       finally {
