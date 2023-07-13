@@ -16,19 +16,19 @@ Bot paid features includes audio-to-text translations, AI image generator, QR co
 The bot should support payment in ONE token
 
 ### Requirements
-Each bot user (telegram user) must be mapped to a blockchain account.
+Each bot user (telegram user) should be mapped to a deposit blockchain account.
 
-User blockchain account must have the following properties:
-1) Each blockchain account should be unique to the Telegram userId
-2) Account address should be available for the user and bot
-3) Bot should be able to transfer ONE tokens to another address as a payment
-4) Private key or any sensitive user blockchain account data should not be stored in the persistent storage
+Deposit account must have the following properties:
+1) Each account should be unique to the Telegram userId
+2) Deposit address should be available for the user and the bot
+3) Bot should be able to transfer ONE tokens from deposit address as a payment
+4) Private key of deposit account data should not be stored in the persistent storage
 
 ### Solution (draft)
-Each telegram userId can be mapped to the blockchain account with sha hash function.
+Each telegram userId can be mapped to the deposit account with sha hash function.
 To make it impossible to create the same account, knowing the mapping algorithm, we can add a secret string on the bot side.
 
-Example:
+Example of creation of the deposit account:
 ```javascript
 const privateKey = web3.utils.sha3("<BotSecret>_<TelegramUserId>");
 
@@ -40,14 +40,14 @@ console.log(account.address); // 0xd10063CFC4fEea79367Be6d8C1eC6a2251ebCAD1
 - TelegramUserId is a 8-digit number representing the telegram userId
 
 Pros:
-- Almost unique mapping userId -> blockchain account (sha3 collisions probability is very low)
+- Almost unique mapping userId -> deposit account (sha3 collisions probability is very low)
 - Private key is not stored in the persistent storage
-- A user account can be computed by bot on the fly, based on secret from RAM and telegram userId
+- Deposit account can be computed by bot on the fly, based on secret from RAM and telegram userId from the request
 
 Cons:
 - Deposit blockchain account created in centralized way.
 Considering that the user doesn't need this account to store tokens, but only to refill for the bot's services, this shouldn't be a problem.
 
 ### Payment flow
-<img width="954" alt="Screenshot 2023-07-13 at 9 06 18 AM" src="https://github.com/harmony-one/HarmonyOneBot/assets/8803471/73cf40e4-3fc1-413d-90ec-96123277fc09">
+<img width="953" alt="Screenshot 2023-07-13 at 9 11 35 AM" src="https://github.com/harmony-one/HarmonyOneBot/assets/8803471/1991830c-7a20-413d-b8cf-fba3ce9a3c88">
 
