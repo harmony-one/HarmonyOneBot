@@ -3,9 +3,9 @@ import { Menu } from "@grammyjs/menu";
 import { BotContext } from "../../types";
 import {MenuIds} from "../../../constants";
 
-const help = `# 🌐 Help
+const help = `🌐 *1.country Help*
 
-## Commands
+*Commands*
 
 /check [domain] - Check a 1.country domain status
 /cert [domain] - Check domain's cert status

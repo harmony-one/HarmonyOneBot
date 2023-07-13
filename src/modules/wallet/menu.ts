@@ -6,9 +6,13 @@ const helpText = `🏦 *One Wallet Help*
 
 *Commands*
 
-Send a message with the "wallet send" command, address and amount:
+To create a wallet, enter the command */wallet* and follow the further instructions.
 
-/wallet send *ADDRESS* *AMOUNT*
+*Example:*
+
+\`/wallet\`
+
+To send ONE to another address, enter the command /wallet send ADDRESS AMOUNT.
 
 *Example:*
 /wallet send 0x199177Bcc7cdB22eC10E3A2DA888c7811275fc38 0.01

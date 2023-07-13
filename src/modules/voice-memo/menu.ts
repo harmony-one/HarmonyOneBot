@@ -2,7 +2,7 @@ import { Menu } from "@grammyjs/menu";
 import { BotContext } from "../types";
 import { MenuIds } from "../../constants";
 
-const helpText = `🎙 *VoiceMemo Help*
+const helpText = `🎙 *Voice Memo Help*
 
 I can create a short summary from a voice message.
 

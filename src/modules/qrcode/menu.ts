@@ -2,7 +2,7 @@ import { Menu } from "@grammyjs/menu";
 import {BotContext, MenuContext} from "../types";
 import {MenuIds} from "../../constants";
 
-const helpText = `📷 *QR Help* 
+const helpText = `📷 *QR Generation Help* 
 
 *Commands*
 
