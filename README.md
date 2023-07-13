@@ -13,7 +13,7 @@
 Bot paid features includes audio-to-text translations, AI image generator, QR code generator, etc.
 
 ### Mission
-The bot should support payment in ONE token
+The bot should support payments in ONE token
 
 ### Requirements
 Each bot user (telegram user) should be mapped to a deposit blockchain account.
@@ -24,7 +24,7 @@ Deposit account must have the following properties:
 3) Bot should be able to transfer ONE tokens from deposit address as a payment
 4) Private key of deposit account data should not be stored in the persistent storage
 
-### Solution (draft)
+### Solution
 Each telegram userId can be mapped to the deposit account with sha hash function.
 To make it impossible to create the same account, knowing the mapping algorithm, we can add a secret string on the bot side.
 
