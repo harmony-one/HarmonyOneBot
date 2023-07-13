@@ -9,23 +9,27 @@ interface Image {
 
 export const imageGen = new Composer<BotContext>();
 
-imageGen.command("gen", async (ctx) => {
-  console.log("gen command");
-  const prompt = ctx.match;
-  if (!prompt) {
-    ctx.reply("Error: Missing prompt");
-    return;
+imageGen.command("genImg", async (ctx) => {
+  if (ctx.session.imageGen.isEnabled) {
+    console.log("gen command");
+    const prompt = ctx.match;
+    if (!prompt) {
+      ctx.reply("Error: Missing prompt");
+      return;
+    }
+    const payload = {
+      chatId: ctx.chat.id,
+      prompt: ctx.match,
+      numImages: await ctx.session.imageGen.numImages, // lazy load
+      imgSize: await ctx.session.imageGen.imgSize, // lazy load
+    };
+    await imgGen(payload);
+  } else {
+    ctx.reply("Bot disabled");
   }
-  const payload = {
-    chatId: ctx.chat.id,
-    prompt: ctx.match,
-    numImages: await ctx.session.imageGen.numImages, // lazy load
-    imgSize: await ctx.session.imageGen.imgSize, // lazy load
-  };
-  await imgGen(payload);
 });
 
-imageGen.command("genEn", async (ctx) => {
+imageGen.command("genImgEn", async (ctx) => {
   console.log("genEn command");
   const prompt = ctx.match;
   if (!prompt) {
@@ -45,10 +49,10 @@ imageGen.command("genEn", async (ctx) => {
 imageGen.on("message", async (ctx, next) => {
   try {
     const photo = ctx.message.photo || ctx.message.reply_to_message?.photo;
-    if (photo) {
+    if (photo && ctx.session.imageGen.isEnabled) {
       console.log("Alter img command");
       const prompt = ctx.message.caption || ctx.message.text;
-      if (prompt) {
+      if (prompt && !isNaN(+prompt)) {
         const file_id = photo.pop()?.file_id; // with pop() get full image quality
         const file = await ctx.api.getFile(file_id!);
         const filePath = `${config.imageGen.telegramFileUrl}${config.telegramBotAuthToken}/${file.file_path}`;
@@ -60,9 +64,6 @@ imageGen.on("message", async (ctx, next) => {
           filePath: filePath,
         };
         await alterImg(payload);
-      } else {
-        // ctx.reply("Please add edit prompt");
-        next();
       }
     }
     next();

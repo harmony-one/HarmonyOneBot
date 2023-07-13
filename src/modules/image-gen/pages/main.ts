@@ -11,6 +11,15 @@ export const imageGenMainMenu = new Menu<BotContext>("image-gen-main") //<MyCont
     });
   })
   .row()
+  .text(
+    (ctx) =>
+      `${ctx.session.imageGen.isEnabled ? "🔴 Disabled bot" : "🟢 Enabled bot"}`,
+    (ctx) => {
+      ctx.session.imageGen.isEnabled = !ctx.session.imageGen.isEnabled;
+      ctx.menu.update()
+    }
+  )
+  .row()
   .text("Change default values", (ctx) =>
     ctx.reply(appText.imageGenMain, {
       parse_mode: "HTML",
@@ -50,7 +59,6 @@ const imageGenSizeOptions = new Menu<BotContext>("image-gen-size")
   .back("Back to Menu");
 
 function setImageNumber(n: number, ctx: any) {
-  //Filter<BotContext,''
   ctx.session.imageGen.numImages = n;
   ctx.reply("Images generated per prompt updated");
   ctx.menu.back();

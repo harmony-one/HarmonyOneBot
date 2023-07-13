@@ -7,10 +7,8 @@ import config from "../../../config";
 import { deleteFile, getImage } from "../utils/file";
 import { bot } from "../../../bot";
 
-const apiKey = config.openAiKey;
-
 const configuration = new Configuration({
-  apiKey: apiKey,
+  apiKey: config.openAiKey,
 });
 
 const openai = new OpenAIApi(configuration);
@@ -79,7 +77,7 @@ export async function alterGeneratedImg(
 }
 
 export async function improvePrompt(promptText: string) {
-  const prompt = `Improve this image description using max 100 words and don't add additional text: ${promptText} `;
+  const prompt = `Improve this picture description using max 100 words and don't add additional text to the image: ${promptText} `;
   try {
     const payload = {
       model: config.imageGen.completions.model,
@@ -88,6 +86,7 @@ export async function improvePrompt(promptText: string) {
       temperature: config.imageGen.completions.temperature,
     };
     const response = await openai.createCompletion(payload as CreateCompletionRequest); 
+    console.log(response)
     return response.data.choices[0].text;
   } catch (e) {
     throw e 

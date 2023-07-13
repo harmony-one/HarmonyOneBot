@@ -4,6 +4,7 @@ import {Filter, FilterQuery} from "grammy/out/filter";
 export interface ImageGenSessionData {
   numImages: number;
   imgSize: string;
+  isEnabled: boolean;
 }
 
 export interface BotSessionData {

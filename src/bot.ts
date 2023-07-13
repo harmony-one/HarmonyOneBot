@@ -5,10 +5,10 @@ import { BotContext, BotSessionData, OnCallBackQueryData, OnMessageContext } fro
 import { mainMenu } from './pages'
 import { VoiceMemo } from "./modules/voice-memo";
 import { QRCodeBot } from "./modules/qrcode/QRCodeBot";
-import {SDImagesBot} from "./modules/sd-images";
-// import { imageGen } from "./modules/image-gen/ImageGenBot";
+import { SDImagesBot } from "./modules/sd-images";
+import { imageGen } from "./modules/image-gen/ImageGenBot";
 import { oneCountry } from "./modules/1country/oneCountryBot";
-import {Wallet} from "./modules/wallet";
+import { Wallet } from "./modules/wallet";
 
 export const bot = new Bot<BotContext>(config.telegramBotAuthToken);
 
@@ -17,6 +17,7 @@ function createInitialSessionData(): BotSessionData {
     imageGen: {
       numImages: config.imageGen.sessionDefault.numImages,
       imgSize: config.imageGen.sessionDefault.imgSize,
+      isEnabled: config.imageGen.isEnabled
     },
     qrMargin: 1
   };
@@ -69,7 +70,7 @@ bot.command("help", async (ctx) => {
 });
 
 bot.use(oneCountry)
-// bot.use(imageGen)
+bot.use(imageGen)
 
 bot.on("message", onMessage);
 bot.on("callback_query:data", onCallback);
