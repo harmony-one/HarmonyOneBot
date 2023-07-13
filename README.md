@@ -45,5 +45,5 @@ Pros:
 - A user account can be computed by bot on the fly, based on secret from RAM and telegram userId
 
 Cons:
-- Blockchain accounts created in centralized way.
+- Deposit blockchain account created in centralized way.
 Considering that the user doesn't need this account to store tokens, but only to refill for the bot's services, this shouldn't be a problem.
