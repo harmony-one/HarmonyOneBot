@@ -47,3 +47,7 @@ Pros:
 Cons:
 - Deposit blockchain account created in centralized way.
 Considering that the user doesn't need this account to store tokens, but only to refill for the bot's services, this shouldn't be a problem.
+
+### Payment flow
+<img width="954" alt="Screenshot 2023-07-13 at 9 06 18 AM" src="https://github.com/harmony-one/HarmonyOneBot/assets/8803471/73cf40e4-3fc1-413d-90ec-96123277fc09">
+
