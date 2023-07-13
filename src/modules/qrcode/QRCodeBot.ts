@@ -36,7 +36,12 @@ export class QRCodeBot {
     }
 
     if (ctx.hasCallbackQuery(Callbacks.Regenerate)) {
-      await ctx.answerCallbackQuery();
+      try {
+        await ctx.answerCallbackQuery();
+
+      } catch (ex) {
+        console.log('### ex', ex);
+      }
 
       const msg = ctx.callbackQuery.message?.text || ctx.callbackQuery.message?.caption || '';
 
