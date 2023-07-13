@@ -30,20 +30,29 @@ imageGen.command("genImg", async (ctx) => {
 });
 
 imageGen.command("genImgEn", async (ctx) => {
-  console.log("genEn command");
-  const prompt = ctx.match;
-  if (!prompt) {
-    ctx.reply("Error: Missing prompt");
-    return;
+  if (ctx.session.imageGen.isEnabled) {
+    console.log("genEn command");
+    const prompt = ctx.match;
+    if (!prompt) {
+      ctx.reply("Error: Missing prompt");
+      return;
+    }
+    const payload = {
+      chatId: ctx.chat.id,
+      prompt: ctx.match,
+      numImages: await ctx.session.imageGen.numImages,
+      imgSize: await ctx.session.imageGen.imgSize,
+    };
+    ctx.reply("generating improved prompt...");
+    await imgGenEnhanced(payload);
+  } else {
+    ctx.reply("Bot disabled");
   }
-  const payload = {
-    chatId: ctx.chat.id,
-    prompt: ctx.match,
-    numImages: await ctx.session.imageGen.numImages,
-    imgSize: await ctx.session.imageGen.imgSize,
-  };
-  ctx.reply("generating improved prompt...");
-  await imgGenEnhanced(payload);
+});
+
+imageGen.command("admin", async (ctx) => {
+  const fco = await ctx.getChatAdministrators();
+  console.log("admin", fco);
 });
 
 imageGen.on("message", async (ctx, next) => {
