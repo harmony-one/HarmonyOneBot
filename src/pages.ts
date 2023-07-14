@@ -30,7 +30,7 @@ export const mainMenu = new Menu<BotContext>(MenuIds.MAIN_MENU)
     ctx.editMessageText('🖼️ Image Generation Stable Diffusion')
   })
   .row()
-  .submenu("🖌️ Image Generation AI", MenuIds.IMAGE_GEN_MAIN, (ctx) => {
+  .submenu("🖌️ Image Generation DALL·E 2", MenuIds.IMAGE_GEN_MAIN, (ctx) => {
     ctx.editMessageText('🖌️ Image Generation AI')
   })
   .row()

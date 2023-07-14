@@ -2,28 +2,34 @@ import { Menu } from "@grammyjs/menu";
 
 import { appText } from "../utils/text";
 import { BotContext } from "../../types";
-import {MenuIds} from "../../../constants";
+import { MenuIds } from "../../../constants";
 
 export const imageGenMainMenu = new Menu<BotContext>(MenuIds.IMAGE_GEN_MAIN) //<MyContext>
   .text("Help", (ctx) => {
-    ctx.editMessageText(appText.welcomeText, {parse_mode: 'HTML'}).catch((ex) => {
-      console.log('### ex', ex);
-    })
+    ctx
+      .editMessageText(appText.welcomeText, { parse_mode: "HTML" })
+      .catch((ex) => {
+        console.log("### ex", ex);
+      });
   })
   .row()
   .text(
     (ctx) =>
-      `${ctx.session.imageGen.isEnabled ? "🔴 Disabled bot" : "🟢 Enabled bot"}`,
+      `${
+        ctx.session.imageGen.isEnabled ? "🔴 Disabled bot" : "🟢 Enabled bot"
+      }`,
     (ctx) => {
       ctx.session.imageGen.isEnabled = !ctx.session.imageGen.isEnabled;
-      ctx.menu.update()
+      ctx.menu.update();
     }
   )
   .row()
   .text("Change default values", (ctx) =>
-    ctx.editMessageText(appText.welcomeText, {parse_mode: 'HTML'}).catch((ex) => {
-      console.log('### ex', ex);
-    })
+    ctx
+      .editMessageText(appText.welcomeText, { parse_mode: "HTML" })
+      .catch((ex) => {
+        console.log("### ex", ex);
+      })
   )
   .row()
   .back("Back to the Main Menu");
