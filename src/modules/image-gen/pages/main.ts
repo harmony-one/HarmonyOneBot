@@ -2,8 +2,9 @@ import { Menu } from "@grammyjs/menu";
 
 import { appText } from "../utils/text";
 import { BotContext } from "../../types";
+import { isAdmin } from "../utils/context";
 
-export const imageGenMainMenu = new Menu<BotContext>("image-gen-main") //<MyContext>
+export const imageGenMainMenu = new Menu<BotContext>("image-gen-main") 
   .text("help", (ctx) => {
     ctx.reply(appText.welcomeText, {
       parse_mode: "HTML",
@@ -15,32 +16,42 @@ export const imageGenMainMenu = new Menu<BotContext>("image-gen-main") //<MyCont
     (ctx) =>
       `${ctx.session.imageGen.isEnabled ? "🔴 Disable bot" : "🟢 Enable bot"}`,
     async (ctx) => {
-      let adminsIds: number[] = [];
-      const currentUser = ctx.from.id;
-      if (ctx.chat?.type !== "private") {
-        // getChatAdministrators() returns owner and admins if bot has an admin role
-        const admins = await ctx.getChatAdministrators();
-        adminsIds = admins.reduce<number[]>((result, item) => {
-          result.push(item.user.id);
-          return result;
-        }, []);
-      }
-      if (ctx.chat?.type === "private" || adminsIds.includes(currentUser)) {
+      if (await isAdmin(ctx)) {
         ctx.session.imageGen.isEnabled = !ctx.session.imageGen.isEnabled;
-        // ctx.menu.update();
+        ctx.menu.update();
       } else {
-        ctx.reply("Only the group owner can enable/disable the bot");
+        ctx
+          .editMessageText("Only the group owner can enable/disable the bot", {
+            parse_mode: "Markdown",
+            disable_web_page_preview: true,
+          })
+          .catch((ex) => console.log("### ex", ex));
       }
-      console.log(ctx.session.imageGen);
     }
   )
   .row()
-  .text("Change default values", (ctx) =>
-    ctx.reply(appText.imageGenMain, {
-      parse_mode: "HTML",
-      reply_markup: imageDefaultOptions,
-    })
-  )
+  .text("Change default values", async (ctx) => {
+    if (await isAdmin(ctx)) {
+      ctx
+        .editMessageText(appText.welcomeText, {
+          parse_mode: "HTML",
+          reply_markup: imageDefaultOptions,
+        })
+        .catch((ex) => {
+          console.log("### ex", ex);
+        });
+    } else {
+      ctx
+        .editMessageText(
+          "Only the group owner can change OpenAI configuration",
+          {
+            parse_mode: "Markdown",
+            disable_web_page_preview: true,
+          }
+        )
+        .catch((ex) => console.log("### ex", ex));
+    }
+  })
   .row()
   .back("Back to the Main Menu");
 
