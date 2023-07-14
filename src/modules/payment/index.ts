@@ -4,7 +4,7 @@ export class BotPayments {
   private logger: Logger;
   constructor() {
     this.logger = pino({
-      name: 'Wallet',
+      name: 'Payments',
       transport: {
         target: 'pino-pretty',
         options: {

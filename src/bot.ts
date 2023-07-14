@@ -9,6 +9,7 @@ import { SDImagesBot } from "./modules/sd-images";
 import { imageGen } from "./modules/image-gen/ImageGenBot";
 import { oneCountry } from "./modules/1country/oneCountryBot";
 import { Wallet } from "./modules/wallet";
+import {BotPayments} from "./modules/payment";
 
 export const bot = new Bot<BotContext>(config.telegramBotAuthToken);
 
@@ -31,6 +32,7 @@ const voiceMemo = new VoiceMemo();
 const qrCodeBot = new QRCodeBot();
 const sdImagesBot = new SDImagesBot();
 const wallet = new Wallet()
+const payments = new BotPayments()
 
 const onMessage = async (ctx: OnMessageContext) => {
   if (qrCodeBot.isSupportedEvent(ctx)) {
