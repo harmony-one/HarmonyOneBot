@@ -50,10 +50,14 @@ imageGen.command("genImgEn", async (ctx) => {
   }
 });
 
-imageGen.command("admin", async (ctx) => {
-  const fco = await ctx.getChatAdministrators();
-  console.log("admin", fco);
-});
+// imageGen.command("admin", async (ctx) => {
+//   const admins = await ctx.getChatAdministrators()
+//   const adminsIds = admins.reduce<number[]>((result, item) => {
+//     result.push(item.user.id);
+//     return result;
+//   }, []);
+//   console.log(adminsIds, ctx.from?.id, ctx.from?.first_name, ctx.from)
+// });
 
 imageGen.on("message", async (ctx, next) => {
   try {
