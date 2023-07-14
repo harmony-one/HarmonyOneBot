@@ -13,10 +13,25 @@ export const imageGenMainMenu = new Menu<BotContext>("image-gen-main") //<MyCont
   .row()
   .text(
     (ctx) =>
-      `${ctx.session.imageGen.isEnabled ? "🔴 Disabled bot" : "🟢 Enabled bot"}`,
-    (ctx) => {
-      ctx.session.imageGen.isEnabled = !ctx.session.imageGen.isEnabled;
-      ctx.menu.update()
+      `${ctx.session.imageGen.isEnabled ? "🔴 Disable bot" : "🟢 Enable bot"}`,
+    async (ctx) => {
+      let adminsIds: number[] = [];
+      const currentUser = ctx.from.id;
+      if (ctx.chat?.type !== "private") {
+        // getChatAdministrators() returns owner and admins if bot has an admin role
+        const admins = await ctx.getChatAdministrators();
+        adminsIds = admins.reduce<number[]>((result, item) => {
+          result.push(item.user.id);
+          return result;
+        }, []);
+      }
+      if (ctx.chat?.type === "private" || adminsIds.includes(currentUser)) {
+        ctx.session.imageGen.isEnabled = !ctx.session.imageGen.isEnabled;
+        // ctx.menu.update();
+      } else {
+        ctx.reply("Only the group owner can enable/disable the bot");
+      }
+      console.log(ctx.session.imageGen);
     }
   )
   .row()
