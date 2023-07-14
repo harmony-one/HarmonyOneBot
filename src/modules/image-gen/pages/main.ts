@@ -8,7 +8,7 @@ export const imageGenMainMenu = new Menu<BotContext>(MenuIds.IMAGE_GEN_MAIN) //<
   .text("Help", (ctx) => {
     ctx
       .editMessageText(appText.welcomeText, {
-        parse_mode: "HTML",
+        parse_mode: "Markdown",
         disable_web_page_preview: true,
       })
       .catch((ex) => {
