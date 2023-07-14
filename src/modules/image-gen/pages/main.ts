@@ -2,19 +2,40 @@ import { Menu } from "@grammyjs/menu";
 
 import { appText } from "../utils/text";
 import { BotContext } from "../../types";
-import {MenuIds} from "../../../constants";
+import { MenuIds } from "../../../constants";
 
 export const imageGenMainMenu = new Menu<BotContext>(MenuIds.IMAGE_GEN_MAIN) //<MyContext>
   .text("Help", (ctx) => {
-    ctx.editMessageText(appText.welcomeText, {parse_mode: 'HTML'}).catch((ex) => {
-      console.log('### ex', ex);
-    })
+    ctx
+      .editMessageText(appText.welcomeText, {
+        parse_mode: "Markdown",
+        disable_web_page_preview: true,
+      })
+      .catch((ex) => {
+        console.log("### ex", ex);
+      });
   })
   .row()
+  .text(
+    (ctx) =>
+      `${
+        ctx.session.imageGen.isEnabled ? "🔴 Disabled bot" : "🟢 Enabled bot"
+      }`,
+    (ctx) => {
+      ctx.session.imageGen.isEnabled = !ctx.session.imageGen.isEnabled;
+      ctx.menu.update();
+    }
+  )
+  .row()
   .text("Change default values", (ctx) =>
-    ctx.editMessageText(appText.welcomeText, {parse_mode: 'HTML'}).catch((ex) => {
-      console.log('### ex', ex);
-    })
+    ctx
+      .editMessageText(appText.welcomeText, {
+        parse_mode: "HTML",
+        reply_markup: imageDefaultOptions,
+      })
+      .catch((ex) => {
+        console.log("### ex", ex);
+      })
   )
   .row()
   .back("Back to the Main Menu");
@@ -49,7 +70,6 @@ const imageGenSizeOptions = new Menu<BotContext>(MenuIds.IMAGE_GEN_SIZE)
   .back("Back");
 
 function setImageNumber(n: number, ctx: any) {
-  //Filter<BotContext,''
   ctx.session.imageGen.numImages = n;
   ctx.reply("Images generated per prompt updated");
   ctx.menu.back();

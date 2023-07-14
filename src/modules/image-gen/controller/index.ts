@@ -19,7 +19,7 @@ export const imgGen = async (data: ImageGenPayload) => {
     bot.api.sendMessage(chatId, "generating the output...");
     const imgs = await postGenerateImg(prompt, numImages, imgSize);
     imgs.map((img: any) => {
-      bot.api.sendPhoto(chatId, img.url) //ctx.replyWithPhoto(img.url);
+      bot.api.sendPhoto(chatId, img.url)
     });
     return true
   } catch (e) {
@@ -38,6 +38,7 @@ export const imgGenEnhanced = async (data: ImageGenPayload) => {
         `The following description was added to your prompt: ${upgratedPrompt}`
       );
     }
+    bot.api.sendMessage(chatId, "generating the output...");
     const imgs = await postGenerateImg(
       upgratedPrompt || prompt,
       numImages,

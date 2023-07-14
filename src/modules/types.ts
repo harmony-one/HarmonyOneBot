@@ -5,6 +5,7 @@ import {MenuFlavor} from "@grammyjs/menu/out/menu";
 export interface ImageGenSessionData {
   numImages: number;
   imgSize: string;
+  isEnabled: boolean;
 }
 
 export interface BotSessionData {
