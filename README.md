@@ -1,7 +1,7 @@
 ## Harmony One AI Bot
 
 ### Telegram wallet
-[Telegram Wallets: On-device keys, Web3 bots](http://harmony.one/telegram-wallets)
+[http://harmony.one/telegram-wallets](http://harmony.one/telegram-wallets)
 
 ### Env variables
 | Env variable name       | Required | Default | Description             |                                                                                                                                                                                                                                                                                                                                                                                                                                                
