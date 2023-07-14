@@ -1,5 +1,5 @@
 import express from "express";
-import {Bot, MemorySessionStorage, session} from "grammy";
+import {Bot, BotError, ErrorHandler, MemorySessionStorage, session} from "grammy";
 import config from './config'
 import { BotContext, BotSessionData, OnCallBackQueryData, OnMessageContext } from "./modules/types";
 import { mainMenu } from './pages'
@@ -74,6 +74,10 @@ bot.use(imageGen)
 
 bot.on("message", onMessage);
 bot.on("callback_query:data", onCallback);
+
+bot.catch((err: BotError) => {
+  console.error("Error", err);
+})
 
 const app = express();
 
