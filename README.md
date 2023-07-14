@@ -1,5 +1,9 @@
 ## Harmony One AI Bot
 
+### Telegram wallet
+[http://harmony.one/telegram-wallets](http://harmony.one/telegram-wallets)
+
+### Env variables
 
 | Env variable name       | Required | Default | Description             |                                                                                                                                                                                                                                                                                                                                                                                                                                                
 |-------------------------|----------|---------|-------------------------|
