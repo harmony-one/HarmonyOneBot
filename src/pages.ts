@@ -31,7 +31,7 @@ export const mainMenu = new Menu<BotContext>(MenuIds.MAIN_MENU)
   })
   .row()
   .submenu("🖌️ Image Generation DALL·E 2", MenuIds.IMAGE_GEN_MAIN, (ctx) => {
-    ctx.editMessageText('🖌️ Image Generation AI')
+    ctx.editMessageText('🖌️ Image Generation DALL·E 2')
   })
   .row()
   .text("Close", async (ctx) => {
