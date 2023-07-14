@@ -5,6 +5,8 @@ export default {
   port: +(process.env.PORT || "3000"),
   telegramBotAuthToken: process.env.TELEGRAM_BOT_AUTH_TOKEN || "",
   openAiKey: process.env.OPENAI_API_KEY,
+  comfyHost: process.env.COMFY_HOST || '',
+  comfyWsHost: process.env.COMFY_WS_HOST || '',
   stableDiffusionHost: process.env.SD_HOST || "",
   qrBot: {
     checkReadable: Boolean(process.env.QRBOT_CHECK_READABLE) || false,
