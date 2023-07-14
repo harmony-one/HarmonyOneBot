@@ -7,7 +7,10 @@ import { MenuIds } from "../../../constants";
 export const imageGenMainMenu = new Menu<BotContext>(MenuIds.IMAGE_GEN_MAIN) //<MyContext>
   .text("Help", (ctx) => {
     ctx
-      .editMessageText(appText.welcomeText, { parse_mode: "HTML" })
+      .editMessageText(appText.welcomeText, {
+        parse_mode: "HTML",
+        disable_web_page_preview: true,
+      })
       .catch((ex) => {
         console.log("### ex", ex);
       });
@@ -26,7 +29,10 @@ export const imageGenMainMenu = new Menu<BotContext>(MenuIds.IMAGE_GEN_MAIN) //<
   .row()
   .text("Change default values", (ctx) =>
     ctx
-      .editMessageText(appText.welcomeText, { parse_mode: "HTML" })
+      .editMessageText(appText.welcomeText, {
+        parse_mode: "HTML",
+        reply_markup: imageDefaultOptions,
+      })
       .catch((ex) => {
         console.log("### ex", ex);
       })
