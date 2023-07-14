@@ -10,11 +10,12 @@ export default {
     checkReadable: Boolean(process.env.QRBOT_CHECK_READABLE) || false,
   },
   imageGen: {
+    isEnabled: Boolean(parseInt(process.env.IMAGE_GEN_ENABLED || '1')),
     telegramFileUrl: "https://api.telegram.org/file/bot",
     completions: {
       model: process.env.OPENAI_MODEL || "text-davinci-003",
-      maxTokens: process.env.OPENAI_MAX_TOKENS || 140,
-      temperature: process.env.OPENAI_TEMPERATURE || 0.8,
+      maxTokens: process.env.OPENAI_MAX_TOKENS && parseInt(process.env.OPENAI_MAX_TOKENS) || 140,
+      temperature: process.env.OPENAI_TEMPERATURE && parseInt(process.env.OPENAI_TEMPERATURE) || 0.8,
     },
     sessionDefault: {
       numImages: 1,

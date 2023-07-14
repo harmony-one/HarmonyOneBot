@@ -1,7 +1,7 @@
 import { Menu } from "@grammyjs/menu";
 
 import { BotContext } from "../../types";
-import {MenuIds} from "../../../constants";
+import { MenuIds } from "../../../constants";
 
 const help = `🌐 *1.country Help*
 
@@ -13,7 +13,14 @@ const help = `🌐 *1.country Help*
 `;
 
 export const oneCountryMainMenu = new Menu<BotContext>(MenuIds.ONE_COUNTRY_MAIN) //<MyContext>
-  .text("Help", (ctx) => ctx.editMessageText(help, { parse_mode: "Markdown", }).catch((ex) => console.log('### ex', ex)))
+  .text("Help", (ctx) =>
+    ctx
+      .editMessageText(help, {
+        parse_mode: "Markdown",
+        disable_web_page_preview: true,
+      })
+      .catch((ex) => console.log("### ex", ex))
+  )
   .row()
   .url("Go to 1.country", "https://1.country")
   .row()
