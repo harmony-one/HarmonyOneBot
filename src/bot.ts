@@ -1,5 +1,5 @@
 import express from "express";
-import {Bot, BotError, ErrorHandler, MemorySessionStorage, session} from "grammy";
+import {Bot, BotError, GrammyError, HttpError, MemorySessionStorage, session} from "grammy";
 import config from './config'
 import { BotContext, BotSessionData, OnCallBackQueryData, OnMessageContext } from "./modules/types";
 import { mainMenu } from './pages'
@@ -63,7 +63,7 @@ bot.command("start", (ctx) => ctx.reply("Welcome! Up and running."));
 
 bot.command("help", async (ctx) => {
   console.log("help command", ctx.session);
-  await ctx.reply('Help text...', {
+  await ctx.reply('Menu', {
     parse_mode: "HTML",
     reply_markup: mainMenu,
   });
@@ -75,8 +75,21 @@ bot.use(imageGen)
 bot.on("message", onMessage);
 bot.on("callback_query:data", onCallback);
 
-bot.catch((err: BotError) => {
-  console.error("Error", err);
+bot.catch((err) => {
+  const ctx = err.ctx;
+  console.error(`Error while handling update ${ctx.update.update_id}:`);
+  const e = err.error;
+  if (e instanceof GrammyError) {
+    console.error("Error in request:", e.description);
+  } else if (e instanceof HttpError) {
+    console.error("Could not contact Telegram:", e);
+  } else {
+    console.error("Unknown error:", e);
+  }
+})
+
+bot.errorBoundary((error) => {
+  console.log('### error', error);
 })
 
 const app = express();

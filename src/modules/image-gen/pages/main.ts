@@ -2,13 +2,13 @@ import { Menu } from "@grammyjs/menu";
 
 import { appText } from "../utils/text";
 import { BotContext } from "../../types";
+import {MenuIds} from "../../../constants";
 
-export const imageGenMainMenu = new Menu<BotContext>("image-gen-main") //<MyContext>
-  .text("help", (ctx) => {
-    ctx.reply(appText.welcomeText, {
-      parse_mode: "HTML",
-      reply_markup: imageGenMainMenu,
-    });
+export const imageGenMainMenu = new Menu<BotContext>(MenuIds.IMAGE_GEN_MAIN) //<MyContext>
+  .text("Help", (ctx) => {
+    ctx.editMessageText(appText.welcomeText, {parse_mode: 'HTML'}).catch((ex) => {
+      console.log('### ex', ex);
+    })
   })
   .row()
   .text(
@@ -21,22 +21,21 @@ export const imageGenMainMenu = new Menu<BotContext>("image-gen-main") //<MyCont
   )
   .row()
   .text("Change default values", (ctx) =>
-    ctx.reply(appText.imageGenMain, {
-      parse_mode: "HTML",
-      reply_markup: imageDefaultOptions,
+    ctx.editMessageText(appText.welcomeText, {parse_mode: 'HTML'}).catch((ex) => {
+      console.log('### ex', ex);
     })
   )
   .row()
   .back("Back to the Main Menu");
 
-const imageDefaultOptions = new Menu<BotContext>("image-default-options")
-  .submenu("Change the image number", "image-gen-number")
+const imageDefaultOptions = new Menu<BotContext>(MenuIds.IMAGE_GEN_OPTIONS)
+  .submenu("Change the image number", MenuIds.IMAGE_GEN_NUMBER)
   .row()
-  .submenu("Change the image size", "image-gen-size")
+  .submenu("Change the image size", MenuIds.IMAGE_GEN_SIZE)
   .row()
-  .back("Back to previous Menu");
+  .back("Back");
 
-const imageGenNumberOptions = new Menu<BotContext>("image-gen-number")
+const imageGenNumberOptions = new Menu<BotContext>(MenuIds.IMAGE_GEN_NUMBER)
   .text("1", (ctx) => setImageNumber(1, ctx))
   .text("2", (ctx) => setImageNumber(2, ctx))
   .text("3", (ctx) => setImageNumber(3, ctx))
@@ -49,14 +48,14 @@ const imageGenNumberOptions = new Menu<BotContext>("image-gen-number")
   .text("8", (ctx) => setImageNumber(8, ctx))
   .text("9", (ctx) => setImageNumber(9, ctx))
   .row()
-  .back("Back to Menu");
+  .back("Back");
 
-const imageGenSizeOptions = new Menu<BotContext>("image-gen-size")
+const imageGenSizeOptions = new Menu<BotContext>(MenuIds.IMAGE_GEN_SIZE)
   .text("256x256", (ctx) => setImageSize("256x256", ctx))
   .text("512x512", (ctx) => setImageSize("512x512", ctx))
   .text("1024x1024", (ctx) => setImageSize("1024x1024", ctx))
   .row()
-  .back("Back to Menu");
+  .back("Back");
 
 function setImageNumber(n: number, ctx: any) {
   ctx.session.imageGen.numImages = n;
