@@ -9,9 +9,6 @@ export const isAdmin = async (ctx: BotContext) => {
   const admins = config.appAdmins
   const currentUser = ctx.from?.id || 0
   const chatAdmins = await ctx.getChatAdministrators()
-  const adminsIds = chatAdmins.reduce<number[]>((result, item) => {
-    result.push(item.user.id)
-    return result;
-  }, []).concat(admins);
+  const adminsIds = chatAdmins.map(item => item.user.id).concat(admins)
   return adminsIds.includes(currentUser)
 }
