@@ -19,7 +19,7 @@ export const imageGenMainMenu = new Menu<BotContext>(MenuIds.IMAGE_GEN_MAIN) //<
   .text(
     (ctx) =>
       `${
-        ctx.session.imageGen.isEnabled ? "🔴 Disabled bot" : "🟢 Enabled bot"
+        ctx.session.imageGen.isEnabled ? "🔴 Disable bot" : "🟢 Enable bot"
       }`,
     (ctx) => {
       ctx.session.imageGen.isEnabled = !ctx.session.imageGen.isEnabled;
