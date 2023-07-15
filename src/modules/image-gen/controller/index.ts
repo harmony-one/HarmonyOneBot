@@ -33,24 +33,24 @@ export const imgGenEnhanced = async (data: ImageGenPayload) => {
   const { chatId, prompt, numImages, imgSize } = data
   try {
     const upgratedPrompt = await improvePrompt(prompt);
-    if (upgratedPrompt) {
-      bot.api.sendMessage(chatId, 
-        `The following description was added to your prompt: ${upgratedPrompt}`
-      );
-    }
-    bot.api.sendMessage(chatId, "generating the output...");
-    const imgs = await postGenerateImg(
-      upgratedPrompt || prompt,
-      numImages,
-      imgSize
-    );
-    imgs.map((img: any) => {
-      bot.api.sendPhoto(chatId, img.url);
-    });
+    // if (upgratedPrompt) {
+    //   bot.api.sendMessage(chatId, 
+    //     `The following description was added to your prompt: ${upgratedPrompt}`
+    //   );
+    // }
+    // bot.api.sendMessage(chatId, "generating the output...");
+    // const imgs = await postGenerateImg(
+    //   upgratedPrompt || prompt,
+    //   numImages,
+    //   imgSize
+    // );
+    // imgs.map((img: any) => {
+    //   bot.api.sendPhoto(chatId, img.url);
+    // });
     return true
   } catch (e) {
-    console.log("/genEn Error", e);
-    bot.api.sendMessage(chatId, "There was an error while generating the image");
+    // console.log("/genEn Error", e);
+    // bot.api.sendMessage(chatId, "There was an error while generating the image");
     return false
   }
 }

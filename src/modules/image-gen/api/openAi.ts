@@ -1,11 +1,13 @@
 import { Configuration, 
   OpenAIApi, 
   CreateImageRequest, 
-  CreateCompletionRequest } from "openai";
+  CreateCompletionRequest, 
+  CreateChatCompletionRequest} from "openai";
 
 import config from "../../../config";
 import { deleteFile, getImage } from "../utils/file";
 import { bot } from "../../../bot";
+import { AxiosError } from "axios";
 
 const configuration = new Configuration({
   apiKey: config.openAiKey,
@@ -81,14 +83,20 @@ export async function improvePrompt(promptText: string) {
   try {
     const payload = {
       model: config.imageGen.completions.model,
-      prompt: prompt,
+      // prompt: prompt,
       max_tokens: config.imageGen.completions.maxTokens,
       temperature: config.imageGen.completions.temperature,
+      messages:[{"role": "user", "content": prompt}] //'Translate the following English text to French: "{text}"'}]
     };
-    const response = await openai.createCompletion(payload as CreateCompletionRequest); 
-    console.log(response)
-    return response.data.choices[0].text;
-  } catch (e) {
+    const response = await openai.createChatCompletion(payload as CreateChatCompletionRequest); 
+    console.log(response.data.choices)
+    return 'locura' // response.data.choices[0].text;
+  } catch (e: any) {
+    console.log("DGHSGDJHHFGHJGSJFGJSHGSJFG SHG HJF SFSG", e instanceof AxiosError ? e.response?.data.error : 'PIODJSODOISFOISOIF SUFIOSUOFUFIOSIUFSOIUFFU OSIUF SIOF U PUPU')
+    console.log(e.response)
+    // e instanceof AxiosError
+    //      ? e.response?.data.error
+    //      : "There was an error processing your request"
     throw e 
   }
 }
