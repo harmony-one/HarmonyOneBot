@@ -19,10 +19,15 @@ export const imageGenMainMenu = new Menu<BotContext>(MenuIds.IMAGE_GEN_MAIN)
   .row()
   .text(
     (ctx) =>
-      `${ctx.session.imageGen.isEnabled ? "🔴 Disable bot" : "🟢 Enable bot"}`,
+      `${
+        ctx.session.openAi.imageGen.isEnabled
+          ? "🔴 Disable bot"
+          : "🟢 Enable bot"
+      }`,
     async (ctx) => {
       if (await isAdmin(ctx)) {
-        ctx.session.imageGen.isEnabled = !ctx.session.imageGen.isEnabled;
+        ctx.session.openAi.imageGen.isEnabled =
+          !ctx.session.openAi.imageGen.isEnabled;
         ctx.menu.update();
       } else {
         ctx

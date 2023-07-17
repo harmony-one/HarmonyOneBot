@@ -6,7 +6,8 @@ import { mainMenu } from './pages'
 import { VoiceMemo } from "./modules/voice-memo";
 import { QRCodeBot } from "./modules/qrcode/QRCodeBot";
 import { SDImagesBot } from "./modules/sd-images";
-import { imageGen } from "./modules/image-gen/ImageGenBot";
+import { imageGen } from "./modules/open-ai/ImageGenBot";
+import { chatGpt } from './modules/open-ai/chatGptBot'
 import { oneCountry } from "./modules/1country/oneCountryBot";
 import { Wallet } from "./modules/wallet";
 
@@ -14,10 +15,16 @@ export const bot = new Bot<BotContext>(config.telegramBotAuthToken);
 
 function createInitialSessionData(): BotSessionData {
   return {
-    imageGen: {
-      numImages: config.imageGen.sessionDefault.numImages,
-      imgSize: config.imageGen.sessionDefault.imgSize,
-      isEnabled: config.imageGen.isEnabled
+    openAi: {
+      imageGen: {
+        numImages: config.openAi.imageGen.sessionDefault.numImages,
+        imgSize: config.openAi.imageGen.sessionDefault.imgSize,
+        isEnabled: config.openAi.imageGen.isEnabled
+      },
+      chatGpt: {
+        model: config.openAi.chatGpt.model,
+        isEnabled: config.openAi.chatGpt.isEnabled
+      }
     },
     qrMargin: 1
   };
@@ -71,6 +78,7 @@ bot.command("help", async (ctx) => {
 
 bot.use(oneCountry)
 bot.use(imageGen)
+bot.use(chatGpt)
 
 bot.on("message", onMessage);
 bot.on("callback_query:data", onCallback);

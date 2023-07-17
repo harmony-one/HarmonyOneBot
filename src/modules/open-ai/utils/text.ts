@@ -4,7 +4,7 @@ export const appText = {
   welcomeText: `*🖌️ Image Generation DALL·E 2 Help*
 
 Hello! I can generate AI Images using OpenAI technology.\n
-By default, I generate *${config.imageGen.sessionDefault.numImages} image(s)* per prompt, with *${config.imageGen.sessionDefault.imgSize} size*\n
+By default, I generate *${config.openAi.imageGen.sessionDefault.numImages} image(s)* per prompt, with *${config.openAi.imageGen.sessionDefault.imgSize} size*\n
 *Commands*
 /help - This menu
 /genImg [text] - Generates an Image from a given prompt
