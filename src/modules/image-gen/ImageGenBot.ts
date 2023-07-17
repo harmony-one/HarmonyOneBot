@@ -1,7 +1,8 @@
-import { Composer } from "grammy";
+import { Composer, Context } from "grammy";
 import config from "../../config";
 import { imgGen, imgGenEnhanced, alterImg } from "./controller";
 import { BotContext } from "../types";
+import { isAdmin } from "./utils/context";
 
 interface Image {
   url: string;
@@ -48,11 +49,6 @@ imageGen.command("genImgEn", async (ctx) => {
   } else {
     ctx.reply("Bot disabled");
   }
-});
-
-imageGen.command("admin", async (ctx) => {
-  const fco = await ctx.getChatAdministrators();
-  console.log("admin", fco);
 });
 
 imageGen.on("message", async (ctx, next) => {
