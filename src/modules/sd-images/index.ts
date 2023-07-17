@@ -170,7 +170,7 @@ export class SDImagesBot {
             ctx.replyWithMediaGroup(
                 res.images.map((img, idx) => ({
                     type: "photo",
-                    media: new InputFile(Buffer.from(img, 'base64')),
+                    media: new InputFile(img),
                     caption: String(idx + 1),
                 }))
             )

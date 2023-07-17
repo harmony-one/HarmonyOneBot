@@ -1,8 +1,8 @@
 import {ComfyClient} from "./ComfyClient";
-import {createQRCode} from "../modules/qrcode/utils";
+import {createQRCode} from "../utils";
 import {sha256} from "telegram/Helpers";
 import * as fs from "fs";
-import config from "../config";
+import config from "../../../config";
 
 function isDirectoryExists(path: string) {
   try {
