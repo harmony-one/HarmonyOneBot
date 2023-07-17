@@ -162,4 +162,13 @@ export class VoiceMemo {
     // this.audioQueue.set(key, Date.now())
     // this.logger.info(`onEvent: ${key}`)
   }
+
+  public estimatePrice(ctx: OnMessageContext) {
+    const { update: { message: { voice } } } = ctx
+
+    if(voice) {
+      return this.speechmatics.estimatePrice(voice.duration)
+    }
+    return 0
+  }
 }

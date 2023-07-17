@@ -10,8 +10,19 @@ import { imageGen } from "./modules/image-gen/ImageGenBot";
 import { oneCountry } from "./modules/1country/oneCountryBot";
 import { Wallet } from "./modules/wallet";
 import {BotPayments} from "./modules/payment";
+import pino from "pino";
 
 export const bot = new Bot<BotContext>(config.telegramBotAuthToken);
+
+const logger = pino({
+  name: 'Bot',
+  transport: {
+    target: 'pino-pretty',
+    options: {
+      colorize: true
+    }
+  }
+})
 
 function createInitialSessionData(): BotSessionData {
   return {
@@ -42,7 +53,26 @@ const onMessage = async (ctx: OnMessageContext) => {
     return sdImagesBot.onEvent(ctx);
   }
   if(voiceMemo.isSupportedEvent(ctx)) {
-    return voiceMemo.onEvent(ctx)
+    const userId = ctx.update.message.from.id
+    const userName = ctx.update.message.from.username
+    const amountUSD = voiceMemo.estimatePrice(ctx)
+    const amountONE = payments.convertUSDCentsToOne(amountUSD)
+    const isSufficientBalance = await payments.isEnoughBalance(userId, amountUSD)
+
+    logger.info(`[${userId}(@${userName})] request price: ${amountUSD} $c (${amountONE.toString()} ONE), isSufficientBalance: ${isSufficientBalance}`)
+
+    if(isSufficientBalance) {
+      try {
+        const tx = await payments.withdraw(userId, amountUSD)
+        logger.info(`[${userId}(@${userName})] withdraw successful, txHash: ${tx.transactionHash}, from: ${tx.from}, to: ${tx.to}`)
+        return voiceMemo.onEvent(ctx)
+      } catch (e) {
+        logger.error(`[${userId}(@${userName})] error on withdraw: "${JSON.stringify((e as Error).message)}"`)
+        ctx.reply(`Error on transferring ONE ${JSON.stringify((e as Error).message)}`)
+      }
+    } else {
+      ctx.reply(`Insufficient balance, send ${payments.convertONE(amountONE)}`)
+    }
   }
   if(wallet.isSupportedEvent(ctx)) {
     return wallet.onEvent(ctx)

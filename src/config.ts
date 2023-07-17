@@ -39,6 +39,7 @@ export default {
     webAppUrl: process.env.WALLET_WEB_APP_URL || "https://wallet-web-app.netlify.app",
   },
   payment: {
-    secret: process.env.TELEGRAM_PAYMENT_SECRET || "",
+    secret: process.env.BOT_PAYMENT_SECRET || "",
+    serviceAddress: process.env.BOT_PAYMENT_SERVICE_ADDRESS || "",
   }
 };
