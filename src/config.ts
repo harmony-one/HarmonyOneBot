@@ -3,6 +3,7 @@ dotenv.config();
 
 export default {
   port: +(process.env.PORT || "3000"),
+  appAdmins: process.env.APP_ADMINS && process.env.APP_ADMINS.split(',').map(x => parseInt(x)) || [],
   telegramBotAuthToken: process.env.TELEGRAM_BOT_AUTH_TOKEN || "",
   openAiKey: process.env.OPENAI_API_KEY,
   stableDiffusionHost: process.env.SD_HOST || "",
