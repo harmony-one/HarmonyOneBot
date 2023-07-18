@@ -20,6 +20,10 @@ export class WalletConnect {
     this.logger.info(`Wallet started, web app url: ${config.wallet.webAppUrl}`)
   }
 
+  public getEstimatedPrice(ctx: any) {
+    return 100;
+  }
+
   public isSupportedEvent(ctx: OnMessageContext) {
     const { text, chat } = ctx.update.message
     return chat.type === 'private' && text && text.toLowerCase().startsWith('/walletc')
