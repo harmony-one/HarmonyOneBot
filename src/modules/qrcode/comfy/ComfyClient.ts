@@ -66,18 +66,18 @@ export class ComfyClient {
 
   initWebsocket() {
     this.wsClient.on('connectFailed', function (error) {
-      console.log('Connect Error: ' + error.toString());
+      // console.log('Connect Error: ' + error.toString());
     });
 
     this.wsClient.on('connect', (connection) => {
       this.wsConnection = connection;
 
-      console.log('WebSocket Client Connected');
+      // console.log('WebSocket Client Connected');
       connection.on('error', (error) => {
-        console.log("Connection Error: " + error.toString());
+        // console.log("Connection Error: " + error.toString());
       });
       connection.on('close', () => {
-        console.log('Connection Closed');
+        // console.log('Connection Closed');
         this.wsConnection = null;
       });
 
@@ -85,7 +85,7 @@ export class ComfyClient {
         if (message.type === 'utf8') {
 
           try {
-            console.log('### message.utf8Data', message.utf8Data);
+            // console.log('### message.utf8Data', message.utf8Data);
             const m = JSON.parse(message.utf8Data);
             if (m.type === 'executed') {
 
@@ -114,7 +114,7 @@ export class ComfyClient {
 
         try {
           const data = JSON.parse(message.utf8Data) as {type: string, data: any};
-          if (data.type !== 'executed') {
+          if (!['executed', 'execution_cached_'].includes(data.type)) {
             return;
           }
 

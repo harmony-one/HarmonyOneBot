@@ -115,7 +115,9 @@ export class SDImagesBot {
 
             const imageBuffer = await this.sdNodeApi.generateImage(prompt);
 
-            ctx.replyWithPhoto(new InputFile(imageBuffer));
+            await ctx.replyWithPhoto(new InputFile(imageBuffer));
+
+            await ctx.reply(`/image ${prompt}`);
         } catch (e: any) {
             console.log(e);
             ctx.reply(`Error: something went wrong...`);
@@ -162,12 +164,12 @@ export class SDImagesBot {
                 author,
                 prompt: String(prompt),
                 step: SESSION_STEP.IMAGE_SELECT,
-                all_seeds: JSON.parse(res.info).all_seeds
+                all_seeds: res.all_seeds,
             }
 
             this.sessions.push(newSession);
 
-            ctx.replyWithMediaGroup(
+            await ctx.replyWithMediaGroup(
                 res.images.map((img, idx) => ({
                     type: "photo",
                     media: new InputFile(img),
@@ -175,7 +177,7 @@ export class SDImagesBot {
                 }))
             )
 
-            ctx.reply("Please choose 1 of 4 images for next high quality generation", {
+            await ctx.reply("Please choose 1 of 4 images for next high quality generation", {
                 parse_mode: "HTML",
                 reply_markup: new InlineKeyboard()
                     .text("1", `${newSession.id}_1`)
@@ -218,7 +220,9 @@ export class SDImagesBot {
 
             const imageBuffer = await this.sdNodeApi.generateImageFull(session.prompt, +session.all_seeds[+imageNumber - 1]);
 
-            ctx.replyWithPhoto(new InputFile(imageBuffer));
+            await ctx.replyWithPhoto(new InputFile(imageBuffer));
+
+            await ctx.reply(`/image ${session.prompt}`);
         } catch (e: any) {
             console.log(e);
             ctx.reply(`Error: something went wrong...`);
@@ -235,14 +239,14 @@ export class SDImagesBot {
 
             const prompt = showcasePrompts[this.showcaseCount++];
 
-            ctx.reply(`/image ${prompt}`);
-
             const imageBuffer = await this.sdNodeApi.generateImage(prompt);
 
-            ctx.replyWithPhoto(new InputFile(imageBuffer));
+            await ctx.replyWithPhoto(new InputFile(imageBuffer));
+
+            await ctx.reply(`/image ${prompt}`);
         } catch (e: any) {
             console.log(e);
-            ctx.reply(`Error: something went wrong...`);
+            await ctx.reply(`Error: something went wrong...`);
         }
     }
 }
