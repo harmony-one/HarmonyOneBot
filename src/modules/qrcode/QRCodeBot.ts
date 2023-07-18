@@ -25,6 +25,10 @@ export class QRCodeBot {
   //   this.bot.command('qrMargin', (ctx) => this.onQrMargin(ctx))
   // }
 
+  public getEstimatedPrice(ctx: any) {
+    return 100;
+  }
+
   public isSupportedEvent(ctx: OnMessageContext | OnCallBackQueryData): boolean {
     return ctx.hasCommand(Object.values(SupportedCommands)) || ctx.hasCallbackQuery(Object.values(Callbacks));
   }
