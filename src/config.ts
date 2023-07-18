@@ -37,5 +37,8 @@ export default {
   wallet: {
     secret: process.env.TELEGRAM_WALLET_SECRET || "",
     webAppUrl: process.env.WALLET_WEB_APP_URL || "https://wallet-web-app.netlify.app",
+  },
+  walletc: {
+    webAppUrl: process.env.WALLET_CONNECT_WEB_APP_URL || "https://chimerical-unicorn-78e8d9.netlify.app/",
   }
 };
