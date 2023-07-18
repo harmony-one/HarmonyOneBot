@@ -1,7 +1,7 @@
 // import sdwebui, { Client, SamplingMethod } from 'node-sd-webui'
 import { Client, SamplingMethod } from './sd-node-client'
 
-const NEGATIVE_PROMPT = 'bad anatomy, bad hands, watermark, mutations';
+const NEGATIVE_PROMPT = 'ng_deepnegative_v1_75t, (badhandv4:1.2), (worst quality:2), (low quality:2), (normal quality:2), lowres, bad anatomy, bad hands, ((monochrome)), ((grayscale)) watermark, moles';
 
 export class SDNodeApi {
   client: Client;
