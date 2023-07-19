@@ -1,4 +1,4 @@
-export interface SDConfig {
+export interface Automatic1111Config {
   prompt: string,
   negativePrompt?: string,
   imgBase64: string,
@@ -10,7 +10,7 @@ export interface SDConfig {
 }
 
 
-export const getTxt2ImgConfig = (conf: SDConfig) => {
+export const getTxt2ImgConfig = (conf: Automatic1111Config) => {
   const {
     imgBase64,
     prompt,
@@ -61,7 +61,7 @@ export const getTxt2ImgConfig = (conf: SDConfig) => {
   }
 }
 
-export const getImg2ImgConfig = (conf: SDConfig) => {
+export const getImg2ImgConfig = (conf: Automatic1111Config) => {
   const {
     imgBase64,
     prompt,
