@@ -1,10 +1,8 @@
 import {InlineKeyboard} from "grammy";
-import otpAuth from 'otpauth'
 import config from '../../config'
 import pino, {Logger} from "pino";
 import {OnMessageContext} from "../types";
 export class WalletConnect {
-  private readonly secret = config.wallet.secret
   private logger: Logger;
 
   constructor() {
@@ -17,7 +15,7 @@ export class WalletConnect {
         }
       }
     })
-    this.logger.info(`Wallet started, web app url: ${config.wallet.webAppUrl}`)
+    this.logger.info(`Wallet started, web app url: ${config.walletc.webAppUrl}`)
   }
 
   public getEstimatedPrice(ctx: any) {

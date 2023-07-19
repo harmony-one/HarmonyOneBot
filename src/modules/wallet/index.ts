@@ -22,7 +22,7 @@ export class Wallet {
 
   public isSupportedEvent(ctx: OnMessageContext) {
     const { text, chat } = ctx.update.message
-    return chat.type === 'private' && text && text.toLowerCase().startsWith('/wallet')
+    return chat.type === 'private' && text && text.toLowerCase() === '/wallet'
   }
 
   public async onEvent(ctx: OnMessageContext) {
