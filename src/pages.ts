@@ -1,12 +1,12 @@
 import { Menu } from "@grammyjs/menu";
-import { imageGenMainMenu } from "./modules/open-ai/pages/main";
+import { imageGenMainMenu } from "./modules/open-ai/pages/imagePage";
+import { chatMainMenu } from './modules/open-ai/pages/chatPage'
 import { oneCountryMainMenu } from "./modules/1country/pages/main";
 import { BotContext } from "./modules/types";
 import { qrCodeBotMenu } from "./modules/qrcode/menu";
 import { sdImagesMenu } from "./modules/sd-images/menu";
 import { voiceMemoMenu } from "./modules/voice-memo/menu";
 import { MenuIds } from "./constants";
-import { appText } from "./modules/open-ai/utils/text";
 import { walletMenu } from "./modules/wallet/menu";
 
 export const mainMenu = new Menu<BotContext>(MenuIds.MAIN_MENU)
@@ -26,6 +26,10 @@ export const mainMenu = new Menu<BotContext>(MenuIds.MAIN_MENU)
     ctx.editMessageText("📷 QR Generation");
   })
   .row()
+  .submenu("🖌️ Chat Gpt 4", MenuIds.CHAT_GPT_MAIN, (ctx) => {
+    ctx.editMessageText("🖌️ Chat Gpt 4");
+  })
+  .row()
   .submenu(
     "🖼️ Image Generation Stable Diffusion",
     MenuIds.SD_IMAGES_MAIN,
@@ -34,7 +38,7 @@ export const mainMenu = new Menu<BotContext>(MenuIds.MAIN_MENU)
     }
   )
   .row()
-  .submenu("🖌️ Image Generation DALL·E 2", MenuIds.IMAGE_GEN_MAIN, (ctx) => {
+  .submenu("🎨 Image Generation DALL·E 2", MenuIds.IMAGE_GEN_MAIN, (ctx) => {
     ctx.editMessageText("🖌️ Image Generation DALL·E 2");
   })
   .row()
@@ -49,3 +53,4 @@ mainMenu.register(qrCodeBotMenu);
 mainMenu.register(sdImagesMenu);
 mainMenu.register(voiceMemoMenu);
 mainMenu.register(walletMenu);
+mainMenu.register(chatMainMenu)

@@ -25,7 +25,6 @@ chatGpt.command("chat", async (ctx) => {
       const response = await promptGen(payload);
       ctx.reply(response.completion);
     } else {
-      ctx.session.openAi.chatGpt.chatConversation = [{ role: "user", content: prompt }]
       await ctx.conversation.enter("conversationGpt");
     }
   } else {

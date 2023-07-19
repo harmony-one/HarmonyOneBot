@@ -1,7 +1,7 @@
 import config from "../../../config";
 
 export const appText = {
-  welcomeText: `*🖌️ Image Generation DALL·E 2 Help*
+  imageGenMain: `*🎨 Image Generation DALL·E 2 Help*
 
 Hello! I can generate AI Images using OpenAI technology.\n
 By default, I generate *${config.openAi.imageGen.sessionDefault.numImages} image(s)* per prompt, with *${config.openAi.imageGen.sessionDefault.imgSize} size*\n
@@ -15,8 +15,16 @@ To generates variations of an image using OpenAi API, reply to a message in our 
 with a picture and write the number of variations (max 10). Also, you can upload a 
 photo and write the number of variations in the caption.
 `,
-  imageGenMain: `\n\n*Change images output sizes and numbers*\n
+  imageGenChangeDefault: `*🎨 Image Generation DALL·E 2 Help*\n\n*Change images output sizes and numbers*
 With the following menu, you can choose how many images can be generated on each prompt. Also, you can change the image size`,
+  chatGptMain: `*🖌️ Chat Gpt 4 Help*
+Hello! I can generate AI completions using OpenAI technology.\n
+*Commands*
+/help - This menu
+/chat [text] - Generates a completion from a given prompt.`,
+  chatGptChangeModel: `*🖌️ Chat Gpt 4 Help*\nYou can choose one of the following models`,
+  generatingText: `Generating response...`,
+  helpText: `Write *end* to finish this conversation.\nWrite *help* to repeat this message.`,
 };
 
 // <b>Edit an Image</b>

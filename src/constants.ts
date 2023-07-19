@@ -11,4 +11,6 @@ export enum MenuIds {
   IMAGE_GEN_NUMBER = 'image-gen-number',
   IMAGE_GEN_SIZE = 'image-gen-size',
   WALLET_MAIN = 'wallet-main',
+  CHAT_GPT_MAIN = 'chat-gpt-main',
+  CHAT_GPT_MODEL = 'chat-gpt-model'
 }

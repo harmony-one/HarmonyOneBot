@@ -8,7 +8,7 @@ import { MenuIds } from "../../../constants";
 export const imageGenMainMenu = new Menu<BotContext>(MenuIds.IMAGE_GEN_MAIN)
   .text("help", (ctx) => {
     ctx
-      .editMessageText(appText.welcomeText, {
+      .editMessageText(appText.imageGenMain, {
         parse_mode: "Markdown",
         disable_web_page_preview: true,
       })
@@ -31,7 +31,7 @@ export const imageGenMainMenu = new Menu<BotContext>(MenuIds.IMAGE_GEN_MAIN)
         ctx.menu.update();
       } else {
         ctx
-          .editMessageText("Only the group owner can enable/disable the bot", {
+          .editMessageText("Only the group owner can enable/disable this bot", {
             parse_mode: "Markdown",
             disable_web_page_preview: true,
           })
@@ -43,8 +43,8 @@ export const imageGenMainMenu = new Menu<BotContext>(MenuIds.IMAGE_GEN_MAIN)
   .text("Change default values", async (ctx) => {
     if (await isAdmin(ctx)) {
       ctx
-        .editMessageText(appText.welcomeText, {
-          parse_mode: "HTML",
+        .editMessageText(appText.imageGenChangeDefault, {
+          parse_mode: "Markdown",
           reply_markup: imageDefaultOptions,
         })
         .catch((ex) => {
