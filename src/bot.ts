@@ -1,13 +1,25 @@
 import express from "express";
-import {Bot, BotError, GrammyError, HttpError, MemorySessionStorage, session} from "grammy";
-import config from './config'
-import { BotContext, BotSessionData, OnCallBackQueryData, OnMessageContext } from "./modules/types";
-import { mainMenu } from './pages'
+import {
+  Bot,
+  BotError,
+  GrammyError,
+  HttpError,
+  MemorySessionStorage,
+  session,
+} from "grammy";
+import config from "./config";
+import {
+  BotContext,
+  BotSessionData,
+  OnCallBackQueryData,
+  OnMessageContext,
+} from "./modules/types";
+import { mainMenu } from "./pages";
 import { VoiceMemo } from "./modules/voice-memo";
 import { QRCodeBot } from "./modules/qrcode/QRCodeBot";
 import { SDImagesBot } from "./modules/sd-images";
 import { imageGen } from "./modules/open-ai/ImageGenBot";
-import { chatGpt } from './modules/open-ai/chatGptBot'
+import { chatGpt } from "./modules/open-ai/chatGptBot";
 import { oneCountry } from "./modules/1country/oneCountryBot";
 import { Wallet } from "./modules/wallet";
 
@@ -19,26 +31,31 @@ function createInitialSessionData(): BotSessionData {
       imageGen: {
         numImages: config.openAi.imageGen.sessionDefault.numImages,
         imgSize: config.openAi.imageGen.sessionDefault.imgSize,
-        isEnabled: config.openAi.imageGen.isEnabled
+        isEnabled: config.openAi.imageGen.isEnabled,
       },
       chatGpt: {
         model: config.openAi.chatGpt.model,
         isEnabled: config.openAi.chatGpt.isEnabled,
-        chatConversation: [] //{ content: '', role: 'user' }
-      }
+        chatConversation: [],
+      },
     },
-    qrMargin: 1
+    qrMargin: 1,
   };
 }
 
-bot.use(session({ initial: createInitialSessionData, storage: new MemorySessionStorage<BotSessionData>() }));
+bot.use(
+  session({
+    initial: createInitialSessionData,
+    storage: new MemorySessionStorage<BotSessionData>(),
+  })
+);
 
 bot.use(mainMenu);
 
 const voiceMemo = new VoiceMemo();
 const qrCodeBot = new QRCodeBot();
 const sdImagesBot = new SDImagesBot();
-const wallet = new Wallet()
+const wallet = new Wallet();
 
 const onMessage = async (ctx: OnMessageContext) => {
   if (qrCodeBot.isSupportedEvent(ctx)) {
@@ -47,13 +64,13 @@ const onMessage = async (ctx: OnMessageContext) => {
   if (sdImagesBot.isSupportedEvent(ctx)) {
     return sdImagesBot.onEvent(ctx);
   }
-  if(voiceMemo.isSupportedEvent(ctx)) {
-    return voiceMemo.onEvent(ctx)
+  if (voiceMemo.isSupportedEvent(ctx)) {
+    return voiceMemo.onEvent(ctx);
   }
-  if(wallet.isSupportedEvent(ctx)) {
-    return wallet.onEvent(ctx)
+  if (wallet.isSupportedEvent(ctx)) {
+    return wallet.onEvent(ctx);
   }
-}
+};
 
 const onCallback = async (ctx: OnCallBackQueryData) => {
   if (qrCodeBot.isSupportedEvent(ctx)) {
@@ -65,21 +82,21 @@ const onCallback = async (ctx: OnCallBackQueryData) => {
     sdImagesBot.onEvent(ctx);
     return;
   }
-}
+};
 
 bot.command("start", (ctx) => ctx.reply("Welcome! Up and running."));
 
 bot.command("help", async (ctx) => {
   console.log("help command", ctx.session);
-  await ctx.reply('Menu', {
+  await ctx.reply("Menu", {
     parse_mode: "HTML",
     reply_markup: mainMenu,
   });
 });
 
-bot.use(oneCountry)
-bot.use(imageGen)
-bot.use(chatGpt)
+bot.use(oneCountry);
+bot.use(imageGen);
+bot.use(chatGpt);
 
 bot.on("message", onMessage);
 bot.on("callback_query:data", onCallback);
@@ -95,20 +112,20 @@ bot.catch((err) => {
   } else {
     console.error("Unknown error:", e);
   }
-})
+});
 
 bot.errorBoundary((error) => {
-  console.log('### error', error);
-})
+  console.log("### error", error);
+});
 
 const app = express();
 
 app.use(express.json());
-app.use(express.static('./public')) // Public directory, used in voice-memo bot
+app.use(express.static("./public")); // Public directory, used in voice-memo bot
 
 app.listen(config.port, () => {
   console.log(`Bot listening on port ${config.port}`);
-  bot.start()
+  bot.start();
   // bot.start({
   //   allowed_updates: ["callback_query"], // Needs to be set for menu middleware, but bot doesn't work with current configuration.
   // });
