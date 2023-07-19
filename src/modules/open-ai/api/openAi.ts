@@ -10,7 +10,7 @@ import config from "../../../config";
 import { deleteFile, getImage } from "../utils/file";
 import { bot } from "../../../bot";
 import { AxiosError } from "axios";
-import { ChatConversation } from "../../types";
+import { ChatCompletion, ChatConversation } from "../../types";
 
 const configuration = new Configuration({
   apiKey: config.openAiKey,
@@ -91,7 +91,7 @@ export async function chatCompilation(
   conversation: ChatConversation[],
   model = config.openAi.chatGpt.model,
   limitTokens = true
-) {
+): Promise<ChatCompletion> {
   try {
     const payload = {
       model: model,
@@ -104,8 +104,11 @@ export async function chatCompilation(
     const response = await openai.createChatCompletion(
       payload as CreateChatCompletionRequest
     );
-    console.log(response.data.choices[0].message?.content);
-    return response.data.choices[0].message?.content;
+    console.log(response.data);
+    return {
+      completion: response.data.choices[0].message?.content!,
+      usage: response.data.usage?.total_tokens!
+    }
   } catch (e: any) {
     console.log(e.response);
     throw (
@@ -119,7 +122,8 @@ export async function improvePrompt(promptText: string, model: string) {
   const prompt = `Improve this picture description using max 100 words and don't add additional text to the image: ${promptText} `;
   try {
     const conversation = [{ role: "user", content: prompt }];
-    return await chatCompilation(conversation, model);
+    const response = await chatCompilation(conversation, model);
+    return response.completion
   } catch (e: any) {
     console.log(e.response);
     throw (

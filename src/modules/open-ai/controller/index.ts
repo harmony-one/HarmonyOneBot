@@ -1,5 +1,5 @@
 import { bot } from "../../../bot";
-import { ChatConversation } from "../../types";
+import { ChatCompletion, ChatConversation } from "../../types";
 import {
   improvePrompt,
   postGenerateImg,
@@ -92,7 +92,7 @@ export const alterImg = async (data: ImageGenPayload) => {
   }
 };
 
-export const promptGen = async (data: ChatGptPayload) => {
+export const promptGen = async (data: ChatGptPayload): Promise<ChatCompletion> => {
   const { conversation, model } = data;
   try {
     console.log(data);
@@ -100,6 +100,6 @@ export const promptGen = async (data: ChatGptPayload) => {
     return resp
   } catch (e) {
     console.log("/genEn Error", e);
-    return "There was an error while generating the image"
+    throw "There was an error while generating the image"
   }
 };

@@ -11,6 +11,11 @@ export interface ImageGenSessionData {
   imgSize: string;
   isEnabled: boolean;
 }
+
+export interface ChatCompletion {
+  completion: string
+  usage: number
+}
 export interface ChatConversation {
   role: string;
   content: string;
