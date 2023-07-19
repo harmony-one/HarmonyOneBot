@@ -23,14 +23,15 @@ function createInitialSessionData(): BotSessionData {
       },
       chatGpt: {
         model: config.openAi.chatGpt.model,
-        isEnabled: config.openAi.chatGpt.isEnabled
+        isEnabled: config.openAi.chatGpt.isEnabled,
+        chatConversation: [] //{ content: '', role: 'user' }
       }
     },
     qrMargin: 1
   };
 }
 
-bot.use(session({ initial: createInitialSessionData, storage: new MemorySessionStorage() }));
+bot.use(session({ initial: createInitialSessionData, storage: new MemorySessionStorage<BotSessionData>() }));
 
 bot.use(mainMenu);
 

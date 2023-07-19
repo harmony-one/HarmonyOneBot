@@ -1,40 +1,33 @@
-import { Composer, Context } from "grammy";
-import config from "../../config";
-import { imgGen, imgGenEnhanced, alterImg, promptGen } from "./controller";
-import { BotContext, ChatConversation } from "../types";
-import { isAdmin } from "./utils/context";
+import { Composer } from "grammy";
+import { promptGen } from "./controller";
+import { BotContext } from "../types";
+import { conversations, createConversation } from "@grammyjs/conversations";
+import { conversationGpt } from "./conversations";
 
 export const chatGpt = new Composer<BotContext>();
 
-chatGpt.command("prompt", async (ctx) => {
+chatGpt.use(conversations());
+chatGpt.use(createConversation(conversationGpt));
+
+chatGpt.command("chat", async (ctx) => {
   const prompt = ctx.match;
-  if (!prompt) {
-    ctx.reply("Error: Missing prompt");
-    return;
+  if (ctx.session.openAi.chatGpt.isEnabled) {
+    if (ctx.chat.type !== "private") {
+      if (!prompt) {
+        ctx.reply("Error: Missing prompt");
+        return;
+      }
+      ctx.reply("Generating response...");
+      const payload = {
+        conversation: [{ role: "user", content: prompt }],
+        model: ctx.session.openAi.chatGpt.model,
+      };
+      const response = await promptGen(payload);
+      ctx.reply(response!);
+    } else {
+      await ctx.conversation.enter("conversationGpt");
+    }
+  } else {
+    ctx.reply("Bot disabled");
   }
-  const payload = {
-    chatId: ctx.chat.id,
-    prompt: prompt,
-    conversation:
-      ctx.chat.type !== "private" ? [] : [{ role: "user", content: "test" }],
-  };
-  console.log("PAYLOAD", payload);
-  await promptGen(payload);
-  // if (ctx.session.openAi.chatGpt.isEnabled) {
-  //   console.log("gen command");
-  //   const prompt = ctx.match;
-  //   if (!prompt) {
-  //     ctx.reply("Error: Missing prompt");
-  //     return;
-  //   }
-  //   const payload = {
-  //     chatId: ctx.chat.id,
-  //     prompt: ctx.match,
-  //     numImages: await ctx.session.openAi.imageGen.numImages, // lazy load
-  //     imgSize: await ctx.session.openAi.imageGen.imgSize, // lazy load
-  //   };
-  //   await imgGen(payload);
-  // } else {
-  //   ctx.reply("Bot disabled");
-  // }
 });

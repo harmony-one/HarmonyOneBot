@@ -88,17 +88,18 @@ export async function alterGeneratedImg(
 }
 
 export async function chatCompilation(
-  promptText: string,
   conversation: ChatConversation[],
-  type: boolean
+  model = config.openAi.chatGpt.model,
+  limitTokens = true
 ) {
   try {
     const payload = {
-      model: config.openAi.imageGen.completions.model,
-      // prompt: prompt,
-      max_tokens: config.openAi.imageGen.completions.maxTokens,
+      model: model,
+      max_tokens: limitTokens
+        ? config.openAi.imageGen.completions.maxTokens
+        : undefined,
       temperature: config.openAi.imageGen.completions.temperature,
-      messages: [{ role: "user", content: promptText }],
+      messages: conversation,
     };
     const response = await openai.createChatCompletion(
       payload as CreateChatCompletionRequest
@@ -114,10 +115,11 @@ export async function chatCompilation(
   }
 }
 
-export async function improvePrompt(promptText: string) {
+export async function improvePrompt(promptText: string, model: string) {
   const prompt = `Improve this picture description using max 100 words and don't add additional text to the image: ${promptText} `;
   try {
-    return await chatCompilation(prompt, [], false);
+    const conversation = [{ role: "user", content: prompt }];
+    return await chatCompilation(conversation, model);
   } catch (e: any) {
     console.log(e.response);
     throw (

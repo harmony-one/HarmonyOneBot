@@ -13,12 +13,12 @@ interface ImageGenPayload {
   numImages?: number;
   imgSize?: string;
   filePath?: string;
+  model?: string;
 }
 
 interface ChatGptPayload {
-  chatId: number;
-  prompt: string;
   conversation?: ChatConversation[];
+  model: string;
 }
 
 export const imgGen = async (data: ImageGenPayload) => {
@@ -41,9 +41,9 @@ export const imgGen = async (data: ImageGenPayload) => {
 };
 
 export const imgGenEnhanced = async (data: ImageGenPayload) => {
-  const { chatId, prompt, numImages, imgSize } = data;
+  const { chatId, prompt, numImages, imgSize, model } = data;
   try {
-    const upgratedPrompt = await improvePrompt(prompt);
+    const upgratedPrompt = await improvePrompt(prompt,model!);
     if (upgratedPrompt) {
       bot.api.sendMessage(
         chatId,
@@ -93,17 +93,13 @@ export const alterImg = async (data: ImageGenPayload) => {
 };
 
 export const promptGen = async (data: ChatGptPayload) => {
-  const { chatId, prompt, conversation } = data;
+  const { conversation, model } = data;
   try {
     console.log(data);
-    const resp = await chatCompilation(prompt, conversation!, false);
-    bot.api.sendMessage(chatId, resp!);
+    const resp = await chatCompilation(conversation!, model, false);
+    return resp
   } catch (e) {
     console.log("/genEn Error", e);
-    bot.api.sendMessage(
-      chatId,
-      "There was an error while generating the image"
-    );
-    return false;
+    return "There was an error while generating the image"
   }
 };
