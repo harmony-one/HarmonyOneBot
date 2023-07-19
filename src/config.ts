@@ -40,6 +40,6 @@ export default {
   },
   payment: {
     secret: process.env.BOT_PAYMENT_SECRET || "",
-    serviceAddress: process.env.BOT_PAYMENT_SERVICE_ADDRESS || "",
+    holderAddress: process.env.BOT_ONE_HOLDER_ADDRESS || "",
   }
 };
