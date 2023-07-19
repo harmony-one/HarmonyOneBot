@@ -3,7 +3,7 @@ import { Menu } from "@grammyjs/menu";
 import { appText } from "../utils/text";
 import { BotContext } from "../../types";
 import { isAdmin } from "../utils/context";
-import { MenuIds } from "../../../constants";
+import { MenuIds, ChatGPTModels } from "../../../constants";
 
 export const chatMainMenu = new Menu<BotContext>(MenuIds.CHAT_GPT_MAIN)
   .text("help", (ctx) => {
@@ -65,24 +65,28 @@ export const chatMainMenu = new Menu<BotContext>(MenuIds.CHAT_GPT_MAIN)
   .row()
   .back("Back to the Main Menu");
 
+
 const chatGPTimageDefaultOptions = new Menu<BotContext>(MenuIds.CHAT_GPT_MODEL)
   // gpt-4, gpt-4-0613, gpt-4-32k, gpt-4-32k-0613, gpt-3.5-turbo, gpt-3.5-turbo-0613, gpt-3.5-turbo-16k, gpt-3.5-turbo-16k-0613
-  .text("gpt-4", (ctx) => setModel("gpt-4", ctx))
-  .text("gpt-4-32k", (ctx) => setModel("gpt-4-32k", ctx))
+  .text((ctx) => `${getLabel(ChatGPTModels.GPT_4, ctx)}`, (ctx) => setModel(ChatGPTModels.GPT_4, ctx))
+  .text((ctx) => `${getLabel(ChatGPTModels.GPT_4_32K, ctx)}`, (ctx) => setModel(ChatGPTModels.GPT_4_32K, ctx))
   .row()
-  .text("gpt-3.5-turbo", (ctx) => setModel("gpt-3.5-turbo", ctx))
-  .text("gpt-3.5-turbo-16k", (ctx) => setModel("gpt-3.5-turbo-16k", ctx))
+  .text((ctx) => `${getLabel(ChatGPTModels.GPT_35_TURBO, ctx)}`, (ctx) => setModel(ChatGPTModels.GPT_35_TURBO, ctx))
+  .text((ctx) => `${getLabel(ChatGPTModels.GPT_35_TURBO_16K, ctx)}`, (ctx) => setModel(ChatGPTModels.GPT_35_TURBO_16K, ctx))
   .row()
   .back("Back");
 
+function getLabel(m: string, ctx: any) {
+  let label = m
+  console.log(ctx.session.openAi.chatGpt.model, m, ctx.session.openAi.chatGpt.model === m)
+  if (ctx.session.openAi.chatGpt.model === m) {
+    label += ' ✅'
+  }
+  return label
+}
+
 function setModel(m: string, ctx: any) {
   ctx.session.openAi.chatGpt.model = m;
-  ctx
-    .editMessageText("Chat GPT model updated", {
-      parse_mode: "Markdown",
-      disable_web_page_preview: true,
-    })
-    .catch((ex: any) => console.log("### ex", ex));
   ctx.menu.back();
 }
 

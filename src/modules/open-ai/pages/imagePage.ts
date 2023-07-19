@@ -73,36 +73,78 @@ const imageDefaultOptions = new Menu<BotContext>(MenuIds.IMAGE_GEN_OPTIONS)
   .back("Back");
 
 const imageGenNumberOptions = new Menu<BotContext>(MenuIds.IMAGE_GEN_NUMBER)
-  .text("1", (ctx) => setImageNumber(1, ctx))
-  .text("2", (ctx) => setImageNumber(2, ctx))
-  .text("3", (ctx) => setImageNumber(3, ctx))
+  .text(
+    (ctx) => `${getLabel("1", "numImages", ctx)}`,
+    (ctx) => setImageNumber(1, ctx)
+  )
+  .text(
+    (ctx) => `${getLabel("2", "numImages", ctx)}`,
+    (ctx) => setImageNumber(2, ctx)
+  )
+  .text(
+    (ctx) => `${getLabel("3", "numImages", ctx)}`,
+    (ctx) => setImageNumber(3, ctx)
+  )
   .row()
-  .text("4", (ctx) => setImageNumber(4, ctx))
-  .text("5", (ctx) => setImageNumber(5, ctx))
-  .text("6", (ctx) => setImageNumber(6, ctx))
+  .text(
+    (ctx) => `${getLabel("4", "numImages", ctx)}`,
+    (ctx) => setImageNumber(4, ctx)
+  )
+  .text(
+    (ctx) => `${getLabel("5", "numImages", ctx)}`,
+    (ctx) => setImageNumber(5, ctx)
+  )
+  .text(
+    (ctx) => `${getLabel("6", "numImages", ctx)}`,
+    (ctx) => setImageNumber(6, ctx)
+  )
   .row()
-  .text("7", (ctx) => setImageNumber(7, ctx))
-  .text("8", (ctx) => setImageNumber(8, ctx))
-  .text("9", (ctx) => setImageNumber(9, ctx))
+  .text(
+    (ctx) => `${getLabel("7", "numImages", ctx)}`,
+    (ctx) => setImageNumber(7, ctx)
+  )
+  .text(
+    (ctx) => `${getLabel("8", "numImages", ctx)}`,
+    (ctx) => setImageNumber(8, ctx)
+  )
+  .text(
+    (ctx) => `${getLabel("9", "numImages", ctx)}`,
+    (ctx) => setImageNumber(9, ctx)
+  )
   .row()
   .back("Back");
 
+function getLabel(m: string, attribute: string, ctx: any) {
+  let label = m;
+  if (ctx.session.openAi.imageGen[attribute] + "" === m) {
+    label += " ✅";
+  }
+  return label;
+}
+
 const imageGenSizeOptions = new Menu<BotContext>(MenuIds.IMAGE_GEN_SIZE)
-  .text("256x256", (ctx) => setImageSize("256x256", ctx))
-  .text("512x512", (ctx) => setImageSize("512x512", ctx))
-  .text("1024x1024", (ctx) => setImageSize("1024x1024", ctx))
+  .text(
+    (ctx) => `${getLabel("256x256", "imgSize", ctx)}`,
+    (ctx) => setImageSize("256x256", ctx)
+  )
+  .text(
+    (ctx) => `${getLabel("512x512", "imgSize", ctx)}`,
+    (ctx) => setImageSize("512x512", ctx)
+  )
+  .text(
+    (ctx) => `${getLabel("1024x1024", "imgSize", ctx)}`,
+    (ctx) => setImageSize("1024x1024", ctx)
+  )
   .row()
   .back("Back");
 
 function setImageNumber(n: number, ctx: any) {
-  ctx.session.imageGen.numImages = n;
-  ctx.reply("Images generated per prompt updated");
+  ctx.session.openAi.imageGen.numImages = n;
   ctx.menu.back();
 }
 
 function setImageSize(s: string, ctx: any) {
-  ctx.session.imageGen.imgSize = s;
-  ctx.reply("Images size per prompt updated");
+  ctx.session.openAi.imageGen.imgSize = s;
   ctx.menu.back();
 }
 
