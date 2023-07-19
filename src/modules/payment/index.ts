@@ -1,5 +1,6 @@
 import pino, {Logger} from "pino";
-import Web3, {Web3BaseWalletAccount} from 'web3'
+import Web3 from 'web3'
+import { Account } from 'web3-core'
 import axios from 'axios'
 import bn, {BigNumber} from 'bignumber.js'
 import config from "../../config";
@@ -12,12 +13,14 @@ interface CoinGeckoResponse {
 }
 
 export class BotPayments {
+  private holderAddress: string
   private logger: Logger;
   private web3: Web3;
   private ONERate: number = 0
   private rpcURL = 'https://api.harmony.one'
 
-  constructor() {
+  constructor(holderAddress: string) {
+    this.holderAddress = holderAddress
     this.web3 = new Web3(this.rpcURL)
 
     this.logger = pino({
@@ -29,6 +32,10 @@ export class BotPayments {
         }
       }
     })
+
+    if(!holderAddress) {
+      throw new Error('Holder address is empty. Set [BOT_ONE_HOLDER_ADDRESS] env variable.')
+    }
 
     this.pollRates()
   }
@@ -86,19 +93,21 @@ export class BotPayments {
     return bn(gasPrice.toString()).multipliedBy(21000)
   }
 
-  private async withdraw(account: Web3BaseWalletAccount, amountOne: BigNumber) {
-    const { holderAddress } = config.payment
-
+  private async withdraw(account: Account, amountOne: BigNumber) {
     const web3 = new Web3(this.rpcURL)
     web3.eth.accounts.wallet.add(account)
 
     const gasPrice = await web3.eth.getGasPrice()
-    const tx = await web3.eth.sendTransaction({
+    const txBody = {
       from: account.address,
-      to: holderAddress,
-      value: amountOne.toString(),
+      to: this.holderAddress,
+      value: web3.utils.toHex(amountOne.toString()),
+    }
+    const gasLimit = await web3.eth.estimateGas(txBody)
+    const tx = await web3.eth.sendTransaction({
+      ...txBody,
       gasPrice,
-      gas: web3.utils.toHex(21000),
+      gas: web3.utils.toHex(gasLimit),
     })
     return tx
   }
@@ -131,8 +140,8 @@ export class BotPayments {
         this.logger.info(`[${userId} @${username}] withdraw successful, txHash: ${tx.transactionHash}, from: ${tx.from}, to: ${tx.to}`)
         return true
       } catch (e) {
-        this.logger.error(`[${userId} @${username}] withdraw error: "${JSON.stringify((e as Error).message)}"`)
-        ctx.reply(`Payment error (${userId} @${username})`, {
+        this.logger.error(`[${userId}] withdraw error: "${JSON.stringify((e as Error).message)}"`)
+        ctx.reply(`Payment error (userId ${userId})`, {
           reply_to_message_id: message_id,
         })
       }

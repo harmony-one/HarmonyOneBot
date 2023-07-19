@@ -43,7 +43,7 @@ const voiceMemo = new VoiceMemo();
 const qrCodeBot = new QRCodeBot();
 const sdImagesBot = new SDImagesBot();
 const wallet = new Wallet()
-const payments = new BotPayments()
+const payments = new BotPayments(config.payment.holderAddress)
 
 const onMessage = async (ctx: OnMessageContext) => {
   if (qrCodeBot.isSupportedEvent(ctx)) {
