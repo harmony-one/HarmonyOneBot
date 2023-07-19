@@ -9,6 +9,7 @@ import { SDImagesBot } from "./modules/sd-images";
 import { imageGen } from "./modules/image-gen/ImageGenBot";
 import { oneCountry } from "./modules/1country/oneCountryBot";
 import { Wallet } from "./modules/wallet";
+import { WalletConnect } from "./modules/walletconnect";
 
 export const bot = new Bot<BotContext>(config.telegramBotAuthToken);
 
@@ -30,7 +31,8 @@ bot.use(mainMenu);
 const voiceMemo = new VoiceMemo();
 const qrCodeBot = new QRCodeBot();
 const sdImagesBot = new SDImagesBot();
-const wallet = new Wallet()
+const wallet = new Wallet();
+const walletConnect = new WalletConnect();
 
 const onMessage = async (ctx: OnMessageContext) => {
   if (qrCodeBot.isSupportedEvent(ctx)) {
@@ -44,6 +46,9 @@ const onMessage = async (ctx: OnMessageContext) => {
   }
   if(wallet.isSupportedEvent(ctx)) {
     return wallet.onEvent(ctx)
+  }
+  if(walletConnect.isSupportedEvent(ctx)) {
+    return walletConnect.onEvent(ctx)
   }
 }
 
