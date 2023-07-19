@@ -1,29 +1,25 @@
-import {ComfyClient} from "./ComfyClient";
-import crypto from 'crypto'
-import {createQRCode} from "../utils";
-import {sha256} from "telegram/Helpers";
-import * as fs from "fs";
-import config from "../../../config";
 
-function isDirectoryExists(path: string) {
-  try {
-    const stats = fs.statSync(path);
-    return stats.isDirectory();
-  } catch (error) {
-    // @ts-expect-error
-    if (error.code === 'ENOENT') {
-      return false;
-    }
-    throw error;
-  }
+interface Params {
+  qrFilename: string;
+  clientId: string;
+  prompt: string;
+  negativePrompt: string;
 }
 
-function buildQrPrompt(d: { qrFilename: string, clientId: string }) {
+function randomIntFromInterval(min: number, max: number) { // min and max included
+  return Math.floor(Math.random() * (max - min + 1) + min)
+}
+
+export default function buildQRWorkflow(params: Params) {
+
+  const seed = randomIntFromInterval(100000000000000, 1000000000000000);
+
+
   return {
-    "client_id": d.clientId, "prompt": {
+    "client_id": params.clientId, "prompt": {
       "3": {
         "inputs": {
-          "seed": 105025667599296,
+          "seed": seed,
           "steps": 40,
           "cfg": 7,
           "sampler_name": "dpmpp_2m_sde",
@@ -35,21 +31,21 @@ function buildQrPrompt(d: { qrFilename: string, clientId: string }) {
           "latent_image": ["16", 0]
         }, "class_type": "KSampler"
       },
-      "6": {"inputs": {"text": " rocket ship shooting up, 111", "clip": ["14", 1]}, "class_type": "CLIPTextEncode"},
+      "6": {"inputs": {"text": params.prompt, "clip": ["14", 1]}, "class_type": "CLIPTextEncode"},
       "7": {
         "inputs": {
-          "text": "(hands), text, error, cropped, (worst quality:1.2), (low quality:1.2), normal quality, (jpeg artifacts:1.3), signature, watermark, username, blurry, artist name, monochrome, sketch, censorship, censor, (copyright:1.2), extra legs, (forehead mark) (depth of field) (emotionless) (penis)",
+          "text": params.negativePrompt,
           "clip": ["14", 1]
         }, "class_type": "CLIPTextEncode"
       },
       "8": {"inputs": {"samples": ["3", 0], "vae": ["14", 2]}, "class_type": "VAEDecode"},
-      "9": {"inputs": {"filename_prefix": "ComfyUI", "images": ["8", 0]}, "class_type": "SaveImage"},
+      "9": {"inputs": {"filename_prefix": "QRCode", "images": ["8", 0]}, "class_type": "SaveImage"},
       "10": {
         "inputs": {"strength": 0.425, "conditioning": ["6", 0], "control_net": ["12", 0], "image": ["11", 0]},
         "class_type": "ControlNetApply"
       },
       "11": {
-        "inputs": {"image": d.qrFilename, "choose file to upload": "image"},
+        "inputs": {"image": params.qrFilename, "choose file to upload": "image"},
         "class_type": "LoadImage"
       },
       "12": {"inputs": {"control_net_name": "control_v11f1e_sd15_tile.pth"}, "class_type": "ControlNetLoader"},
@@ -72,7 +68,7 @@ function buildQrPrompt(d: { qrFilename: string, clientId: string }) {
             "inputs": [{"name": "clip", "type": "CLIP", "link": 21}],
             "outputs": [{"name": "CONDITIONING", "type": "CONDITIONING", "links": [10], "slot_index": 0}],
             "properties": {"Node name for S&R": "CLIPTextEncode"},
-            "widgets_values": [" rocket ship shooting up, 111"]
+            "widgets_values": [params.prompt]
           }, {
             "id": 12,
             "type": "ControlNetLoader",
@@ -114,7 +110,7 @@ function buildQrPrompt(d: { qrFilename: string, clientId: string }) {
             }],
             "outputs": [{"name": "LATENT", "type": "LATENT", "links": [7], "slot_index": 0}],
             "properties": {"Node name for S&R": "KSampler"},
-            "widgets_values": [105025667599296, "fixed", 40, 7, "dpmpp_2m_sde", "karras", 1]
+            "widgets_values": [seed, "randomize", 40, 7, "dpmpp_2m_sde", "karras", 1]
           }, {
             "id": 7,
             "type": "CLIPTextEncode",
@@ -126,7 +122,7 @@ function buildQrPrompt(d: { qrFilename: string, clientId: string }) {
             "inputs": [{"name": "clip", "type": "CLIP", "link": 20}],
             "outputs": [{"name": "CONDITIONING", "type": "CONDITIONING", "links": [16], "slot_index": 0}],
             "properties": {"Node name for S&R": "CLIPTextEncode"},
-            "widgets_values": ["(hands), text, error, cropped, (worst quality:1.2), (low quality:1.2), normal quality, (jpeg artifacts:1.3), signature, watermark, username, blurry, artist name, monochrome, sketch, censorship, censor, (copyright:1.2), extra legs, (forehead mark) (depth of field) (emotionless) (penis)"]
+            "widgets_values": [params.negativePrompt]
           }, {
             "id": 10,
             "type": "ControlNetApply",
@@ -142,7 +138,7 @@ function buildQrPrompt(d: { qrFilename: string, clientId: string }) {
             }, {"name": "image", "type": "IMAGE", "link": 12}],
             "outputs": [{"name": "CONDITIONING", "type": "CONDITIONING", "links": [18], "slot_index": 0}],
             "properties": {"Node name for S&R": "ControlNetApply"},
-            "widgets_values": [0.425]
+            "widgets_values": [0.555]
           }, {
             "id": 16,
             "type": "VAEEncode",
@@ -206,7 +202,7 @@ function buildQrPrompt(d: { qrFilename: string, clientId: string }) {
               "links": null
             }],
             "properties": {"Node name for S&R": "LoadImage"},
-            "widgets_values": [d.qrFilename, "image"]
+            "widgets_values": [params.qrFilename, "image"]
           }],
           "links": [[7, 3, 0, 8, 0, "LATENT"], [9, 8, 0, 9, 0, "IMAGE"], [10, 6, 0, 10, 0, "CONDITIONING"], [12, 11, 0, 10, 2, "IMAGE"], [13, 12, 0, 10, 1, "CONTROL_NET"], [16, 7, 0, 3, 2, "CONDITIONING"], [18, 10, 0, 3, 1, "CONDITIONING"], [19, 14, 0, 3, 0, "MODEL"], [20, 14, 1, 7, 0, "CLIP"], [21, 14, 1, 6, 0, "CLIP"], [22, 14, 2, 8, 1, "VAE"], [24, 16, 0, 3, 3, "LATENT"], [25, 14, 2, 16, 1, "VAE"], [28, 11, 0, 16, 0, "IMAGE"]],
           "groups": [],
@@ -218,52 +214,3 @@ function buildQrPrompt(d: { qrFilename: string, clientId: string }) {
     }
   }
 }
-
-async function main() {
-
-  const url = 'https://h.country';
-  const qrImgBuffer = await createQRCode({url, margin: 3});
-
-  console.log('### qrImgBuffer', qrImgBuffer);
-
-  const comfyClient = new ComfyClient({host: config.comfyHost, wsHost: config.comfyWsHost});
-  const filenameHash = crypto.createHash('sha256').update(url, 'utf8');
-  const fileName = filenameHash.digest('hex') + '.png';
-  console.log('### fileName', fileName);
-
-  const uploadResult = await comfyClient.uploadImage(fileName, qrImgBuffer);
-  console.log('### uploadResult', uploadResult);
-
-  const prompt = buildQrPrompt({qrFilename: uploadResult.name, clientId: comfyClient.clientId});
-
-  try {
-    const r = await comfyClient.queuePrompt(prompt);
-    console.log('### r.promptId', r.prompt_id);
-
-    const promptResult = await comfyClient.waitingPromptExecution(r.prompt_id);
-
-    console.log('### promptResult', promptResult);
-
-    const history = await comfyClient.history(r.prompt_id);
-    
-    console.log('### promptResult.data.output.images[0].filename', promptResult.data.output.images[0].filename);
-
-    const result = await comfyClient.downloadResult(promptResult.data.output.images[0].filename);
-
-    const filePath = 'images/' + promptResult.data.output.images[0].filename;
-
-    if (!isDirectoryExists('images')) {
-      fs.mkdirSync('images')
-      console.log('### create dir images');
-    }
-    fs.writeFileSync(filePath, result);
-
-    console.log('### history', history);
-  } catch (ex) {
-    console.log('### ex', ex);
-  }
-
-}
-
-
-main();
