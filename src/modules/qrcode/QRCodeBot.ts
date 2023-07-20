@@ -143,7 +143,7 @@ export class QRCodeBot {
 
   private async onQr(ctx: OnMessageContext | OnCallBackQueryData, message: string, method: 'txt2img' | 'img2img') {
     this.logger.info('generate qr');
-    ctx.reply("You are 3rd in the queue - the wait is about 50 seconds...")
+    ctx.reply(`Generating...`)
 
     const command = this.parseQrCommand(message);
     const messageText = message;
