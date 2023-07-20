@@ -6,8 +6,8 @@ export default {
   appAdmins: process.env.APP_ADMINS && process.env.APP_ADMINS.split(',').map(x => parseInt(x)) || [],
   telegramBotAuthToken: process.env.TELEGRAM_BOT_AUTH_TOKEN || "",
   openAiKey: process.env.OPENAI_API_KEY,
-  comfyHost: process.env.COMFY_HOST || '',
-  comfyWsHost: process.env.COMFY_WS_HOST || '',
+  comfyHost: process.env.COMFY_HOST || 'https://1ns-registrar-relayer.hiddenstate.xyz',
+  comfyWsHost: process.env.COMFY_WS_HOST || 'https://1ns-registrar-relayer.hiddenstate.xyz',
   stableDiffusionHost: process.env.SD_HOST || "",
   qrBot: {
     checkReadable: Boolean(process.env.QRBOT_CHECK_READABLE) || false,
