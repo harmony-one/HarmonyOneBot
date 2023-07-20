@@ -12,7 +12,7 @@ export const imageGenMainMenu = new Menu<BotContext>(MenuIds.IMAGE_GEN_MAIN)
         parse_mode: "Markdown",
         disable_web_page_preview: true,
       })
-      .catch((ex) => {
+      .catch((ex: any) => {
         console.log("### ex", ex);
       });
   })
@@ -35,7 +35,7 @@ export const imageGenMainMenu = new Menu<BotContext>(MenuIds.IMAGE_GEN_MAIN)
             parse_mode: "Markdown",
             disable_web_page_preview: true,
           })
-          .catch((ex) => console.log("### ex", ex));
+          .catch((ex: any) => console.log("### ex", ex));
       }
     }
   )
@@ -47,7 +47,7 @@ export const imageGenMainMenu = new Menu<BotContext>(MenuIds.IMAGE_GEN_MAIN)
           parse_mode: "Markdown",
           reply_markup: imageDefaultOptions,
         })
-        .catch((ex) => {
+        .catch((ex: any) => {
           console.log("### ex", ex);
         });
     } else {
@@ -59,7 +59,7 @@ export const imageGenMainMenu = new Menu<BotContext>(MenuIds.IMAGE_GEN_MAIN)
             disable_web_page_preview: true,
           }
         )
-        .catch((ex) => console.log("### ex", ex));
+        .catch((ex: any) => console.log("### ex", ex));
     }
   })
   .row()

@@ -24,7 +24,7 @@ export const qrCodeBotMenu = new Menu<BotContext>(MenuIds.QR_BOT_MAIN) //<MyCont
     ctx.editMessageText(helpText, {
       parse_mode: 'Markdown',
       disable_web_page_preview: true
-    }).catch((ex) => {
+    }).catch((ex: any) => {
       console.log('### ex', ex);
     })
   })

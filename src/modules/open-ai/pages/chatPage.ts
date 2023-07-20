@@ -12,7 +12,7 @@ export const chatMainMenu = new Menu<BotContext>(MenuIds.CHAT_GPT_MAIN)
         parse_mode: "Markdown",
         disable_web_page_preview: true,
       })
-      .catch((ex) => {
+      .catch((ex: any) => {
         console.log("### ex", ex);
       });
   })
@@ -35,7 +35,7 @@ export const chatMainMenu = new Menu<BotContext>(MenuIds.CHAT_GPT_MAIN)
             parse_mode: "Markdown",
             disable_web_page_preview: true,
           })
-          .catch((ex) => console.log("### ex", ex));
+          .catch((ex: any) => console.log("### ex", ex));
       }
     }
   )
@@ -47,7 +47,7 @@ export const chatMainMenu = new Menu<BotContext>(MenuIds.CHAT_GPT_MAIN)
           parse_mode: "HTML",
           reply_markup: chatGPTimageDefaultOptions,
         })
-        .catch((ex) => {
+        .catch((ex: any) => {
           console.log("### ex", ex);
         });
     } else {
@@ -59,7 +59,7 @@ export const chatMainMenu = new Menu<BotContext>(MenuIds.CHAT_GPT_MAIN)
             disable_web_page_preview: true,
           }
         )
-        .catch((ex) => console.log("### ex", ex));
+        .catch((ex: any) => console.log("### ex", ex));
     }
   })
   .row()

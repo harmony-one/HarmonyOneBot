@@ -10,9 +10,14 @@ Simply send me a voice message or forward a voice message from a private chat or
 
 export const voiceMemoMenu = new Menu<BotContext>(MenuIds.VOICE_MEMO_MAIN)
   .text("Help", (ctx) => {
-    ctx.editMessageText(helpText, {parse_mode: 'Markdown', disable_web_page_preview: true}).catch((ex) => {
-      console.log('### ex', ex);
-    })
+    ctx
+      .editMessageText(helpText, {
+        parse_mode: "Markdown",
+        disable_web_page_preview: true,
+      })
+      .catch((ex: any) => {
+        console.log("### ex", ex);
+      });
   })
   .row()
   .back("⬅️ Back");
