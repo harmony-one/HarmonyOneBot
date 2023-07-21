@@ -22,7 +22,7 @@ export class SDNodeApi {
       batchSize: 1,
     })
 
-    return Buffer.from(images[0], 'base64');
+    return images[0]; // Buffer.from(images[0], 'base64');
   }
 
   generateImageFull = async (prompt: string, seed: number) => {
@@ -39,7 +39,7 @@ export class SDNodeApi {
       seed
     })
 
-    return Buffer.from(images[0], 'base64');
+    return images[0]; // Buffer.from(images[0], 'base64');
   }
 
   generateImagesPreviews = async (prompt: string) => {

@@ -22,6 +22,7 @@ import { imageGen } from "./modules/open-ai/ImageGenBot";
 import { chatGpt } from "./modules/open-ai/chatGptBot";
 import { oneCountry } from "./modules/1country/oneCountryBot";
 import { Wallet } from "./modules/wallet";
+import { WalletConnect } from "./modules/walletconnect";
 
 export const bot = new Bot<BotContext>(config.telegramBotAuthToken);
 
@@ -56,6 +57,8 @@ const voiceMemo = new VoiceMemo();
 const qrCodeBot = new QRCodeBot();
 const sdImagesBot = new SDImagesBot();
 const wallet = new Wallet();
+const walletConnect = new WalletConnect();
+
 
 const onMessage = async (ctx: OnMessageContext) => {
   if (qrCodeBot.isSupportedEvent(ctx)) {
@@ -70,7 +73,10 @@ const onMessage = async (ctx: OnMessageContext) => {
   if (wallet.isSupportedEvent(ctx)) {
     return wallet.onEvent(ctx);
   }
-};
+  if(walletConnect.isSupportedEvent(ctx)) {
+    return walletConnect.onEvent(ctx)
+  }
+}
 
 const onCallback = async (ctx: OnCallBackQueryData) => {
   if (qrCodeBot.isSupportedEvent(ctx)) {

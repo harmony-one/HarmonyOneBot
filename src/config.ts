@@ -9,6 +9,8 @@ export default {
     [],
   telegramBotAuthToken: process.env.TELEGRAM_BOT_AUTH_TOKEN || "",
   openAiKey: process.env.OPENAI_API_KEY,
+  comfyHost: process.env.COMFY_HOST || '',
+  comfyWsHost: process.env.COMFY_WS_HOST || '',
   stableDiffusionHost: process.env.SD_HOST || "",
   qrBot: {
     checkReadable: Boolean(process.env.QRBOT_CHECK_READABLE) || false,
@@ -52,7 +54,9 @@ export default {
   },
   wallet: {
     secret: process.env.TELEGRAM_WALLET_SECRET || "",
-    webAppUrl:
-      process.env.WALLET_WEB_APP_URL || "https://wallet-web-app.netlify.app",
+    webAppUrl: process.env.WALLET_WEB_APP_URL || "https://wallet-web-app.netlify.app",
   },
+  walletc: {
+    webAppUrl: process.env.WALLET_CONNECT_WEB_APP_URL || "https://chimerical-unicorn-78e8d9.netlify.app/",
+  }
 };

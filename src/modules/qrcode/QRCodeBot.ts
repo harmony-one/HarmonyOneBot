@@ -1,10 +1,14 @@
-import {StableDiffusionClient} from "./StableDiffusionClient";
+import {Automatic1111Client} from "./Automatic1111Client";
 import {createQRCode, isQRCodeReadable, retryAsync} from "./utils";
 import config from "../../config";
 import {InlineKeyboard, InputFile} from "grammy";
 import {OnCallBackQueryData, OnMessageContext} from "../types";
-import {SDConfig} from "./stableDiffusionConfigs";
-import {sdDefaultConfig} from "./sdDefaultConfig";
+import {Automatic1111Config} from "./Automatic1111Configs";
+import {automatic1111DefaultConfig} from "./Automatic1111DefaultConfig";
+import {ComfyClient} from "./comfy/ComfyClient";
+import crypto from "crypto";
+import buildQRWorkflow from "./comfy/buildQRWorkflow";
+import pino, {Logger} from "pino";
 
 enum SupportedCommands {
   QR = 'qr',
@@ -17,13 +21,31 @@ enum Callbacks {
 }
 
 export class QRCodeBot {
-  constructor() {}
+
+  private logger: Logger
+  constructor() {
+
+    this.logger = pino({
+      name: 'QRBot',
+      transport: {
+        target: 'pino-pretty',
+        options: {
+          colorize: true
+        }
+      }
+    })
+
+  }
 
   // public init() {
   //   this.bot.command('qr', (ctx) => this.onQr(ctx, 'img2img'));
   //   this.bot.command('qr2', (ctx) => this.onQr(ctx, 'txt2img'));
   //   this.bot.command('qrMargin', (ctx) => this.onQrMargin(ctx))
   // }
+
+  public getEstimatedPrice(ctx: any) {
+    return 100;
+  }
 
   public isSupportedEvent(ctx: OnMessageContext | OnCallBackQueryData): boolean {
     return ctx.hasCommand(Object.values(SupportedCommands)) || ctx.hasCallbackQuery(Object.values(Callbacks));
@@ -84,6 +106,7 @@ export class QRCodeBot {
     }
 
     ctx.reply('Unsupported command');
+    this.logger.info('Unsupported command');
   }
 
   public parseQrCommand(message: string) {
@@ -119,14 +142,14 @@ export class QRCodeBot {
   }
 
   private async onQr(ctx: OnMessageContext | OnCallBackQueryData, message: string, method: 'txt2img' | 'img2img') {
-    ctx.reply("You are 3rd in the queue - the wait is about 50 seconds...")
+    this.logger.info('generate qr');
+    ctx.reply(`Generating...`)
 
     const command = this.parseQrCommand(message);
     const messageText = message;
 
     const operation = async (retryAttempts: number) => {
-
-      console.log(`### generate: ${retryAttempts} ${messageText}`);
+      this.logger.info(`### generate: ${retryAttempts} ${messageText}`);
 
       const props = {
         qrUrl: command.url,
@@ -135,7 +158,7 @@ export class QRCodeBot {
         prompt: command.prompt,
       };
 
-      const qrImgBuffer = await this.genQRCode(props);
+      const qrImgBuffer = await this.genQRCode2(props);
 
       if (!qrImgBuffer) {
         throw new Error('internal error');
@@ -155,7 +178,7 @@ export class QRCodeBot {
       qrImgBuffer = await retryAsync(operation, 5, 100);
 
     } catch (ex) {
-      console.log('### ex', ex);
+      this.logger.error('ex', ex);
       ctx.reply("Internal error")
       return;
     }
@@ -164,32 +187,50 @@ export class QRCodeBot {
       .text("Regenerate", Callbacks.Regenerate)
 
 
-    await ctx.replyWithPhoto(new InputFile(qrImgBuffer, `qr_code_${Date.now()}.png`))
-    console.log('### qr sent');
-
-    await ctx.reply(messageText, {
+    await ctx.replyWithPhoto(new InputFile(qrImgBuffer, `qr_code_${Date.now()}.png`), {
+      caption: messageText,
       reply_markup: regenButton,
-      disable_web_page_preview: true,
-    });
+    })
+    this.logger.info('sent qr code');
   }
 
   private async genQRCode({qrUrl, qrMargin, prompt, method}: {qrUrl: string, qrMargin: number, prompt: string, method: 'img2img' | 'txt2img'}) {
     const qrImgBuffer = await createQRCode({url: qrUrl, margin: qrMargin });
-    const sdClient = new StableDiffusionClient();
+    const sdClient = new Automatic1111Client();
 
-    const extendedPrompt = prompt + ', ' + sdDefaultConfig.additionalPrompt;
-    const negativePrompt = sdDefaultConfig.defaultNegativePrompt;
+    const extendedPrompt = prompt + ', ' + automatic1111DefaultConfig.additionalPrompt;
+    const negativePrompt = automatic1111DefaultConfig.defaultNegativePrompt;
 
-    const sdConfig: SDConfig = {
+    const sdConfig: Automatic1111Config = {
       imgBase64: qrImgBuffer.toString('base64'),
       prompt: extendedPrompt,
       negativePrompt,
     };
 
     if (method === 'txt2img') {
-      return  sdClient.text2img({...sdDefaultConfig.text2img, ...sdConfig});
+      return  sdClient.text2img({...automatic1111DefaultConfig.text2img, ...sdConfig});
     }
 
-    return  sdClient.img2img({...sdDefaultConfig.img2img, ...sdConfig});
+    return  sdClient.img2img({...automatic1111DefaultConfig.img2img, ...sdConfig});
+  }
+
+  private async genQRCode2({qrUrl, qrMargin, prompt, method}: {qrUrl: string, qrMargin: number, prompt: string, method: 'img2img' | 'txt2img'}) {
+    const qrImgBuffer = await createQRCode({url: qrUrl, margin: qrMargin });
+    const extendedPrompt = prompt + ', ' + automatic1111DefaultConfig.additionalPrompt;
+    const negativePrompt = automatic1111DefaultConfig.defaultNegativePrompt;
+
+    const comfyClient = new ComfyClient({host: config.comfyHost, wsHost: config.comfyWsHost});
+
+    const filenameHash = crypto.createHash('sha256').update(qrUrl, 'utf8');
+    const fileName = filenameHash.digest('hex') + '.png';
+
+    const uploadResult = await comfyClient.uploadImage(fileName, qrImgBuffer);
+
+    const workflow = buildQRWorkflow({qrFilename: uploadResult.name, clientId: comfyClient.clientId, negativePrompt, prompt: extendedPrompt})
+
+    const response = await comfyClient.queuePrompt(workflow);
+    const promptResult = await comfyClient.waitingPromptExecution(response.prompt_id);
+
+    return comfyClient.downloadResult(promptResult.data.output.images[0].filename);
   }
 }
