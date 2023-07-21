@@ -19,7 +19,7 @@ export const oneCountryMainMenu = new Menu<BotContext>(MenuIds.ONE_COUNTRY_MAIN)
         parse_mode: "Markdown",
         disable_web_page_preview: true,
       })
-      .catch((ex) => console.log("### ex", ex))
+      .catch((ex: any) => console.log("### ex", ex))
   )
   .row()
   .url("Go to 1.country", "https://1.country")
