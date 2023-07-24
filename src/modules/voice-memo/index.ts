@@ -173,7 +173,10 @@ export class VoiceMemo {
 
   public isSupportedEvent(ctx: OnMessageContext) {
     const { voice } = ctx.update.message
-    return voice && (voice.mime_type && voice.mime_type.includes('audio'))
+
+    return config.voiceMemo.isEnabled
+      && voice
+      && (voice.mime_type && voice.mime_type.includes('audio'))
   }
 
   public async onEvent(ctx: OnMessageContext) {

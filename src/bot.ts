@@ -63,11 +63,7 @@ const payments = new BotPayments()
 
 const onMessage = async (ctx: OnMessageContext) => {
   if (qrCodeBot.isSupportedEvent(ctx)) {
-    const price = qrCodeBot.getEstimatedPrice(ctx)
-    const isSuccessfulPayment = await payments.pay(ctx, price)
-    if(isSuccessfulPayment) {
-      return qrCodeBot.onEvent(ctx);
-    }
+    return qrCodeBot.onEvent(ctx);
   }
   if (sdImagesBot.isSupportedEvent(ctx)) {
     return sdImagesBot.onEvent(ctx);
@@ -84,6 +80,9 @@ const onMessage = async (ctx: OnMessageContext) => {
   }
   if(walletConnect.isSupportedEvent(ctx)) {
     return walletConnect.onEvent(ctx)
+  }
+  if(payments.isSupportedEvent(ctx)) {
+    return payments.onEvent(ctx)
   }
 }
 

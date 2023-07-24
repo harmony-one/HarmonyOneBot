@@ -165,11 +165,31 @@ export class BotPayments {
         })
       }
     } else {
-      ctx.reply(`Insufficient balance\nSend *${this.toONE(balanceDelta.abs())} ONE* to *${userAccount.address}* (Harmony Mainnet)`, {
+      ctx.reply(`Insufficient balance\nSend *${this.toONE(balanceDelta.abs())} ONE* to \`${userAccount.address}\` (Harmony Mainnet)`, {
         reply_to_message_id: message_id,
         parse_mode: "Markdown",
       })
     }
     return false
+  }
+
+  public isSupportedEvent(ctx: OnMessageContext) {
+    const { text = '' } = ctx.update.message
+    return text?.toLowerCase() === '/balance'
+  }
+
+  public async onEvent(ctx: OnMessageContext) {
+    const { id } = ctx.update.message.from
+    const { message_id, text = '' } = ctx.update.message
+
+    const account = this.getUserAccount(id)
+    if(account && text.toLowerCase() === '/balance') {
+      const balance = await this.getAddressBalance(account.address)
+      const balanceOne = this.toONE(balance, false)
+      ctx.reply(`Balance: *${balanceOne.toFixed(2)} ONE*. Deposit address: \`${account.address}\` (Harmony Mainnet)`, {
+        reply_to_message_id: message_id,
+        parse_mode: "Markdown",
+      });
+    }
   }
 }

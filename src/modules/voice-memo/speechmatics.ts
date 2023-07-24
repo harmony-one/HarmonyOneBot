@@ -102,6 +102,6 @@ export class Speechmatics {
   }
 
   public estimatePrice (duration: number) {
-    return this.pricePerHour * duration / 60 / 60
+    return Math.ceil(this.pricePerHour * duration / 60 / 60 * 100)
   }
 }
