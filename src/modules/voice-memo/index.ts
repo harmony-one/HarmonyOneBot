@@ -65,10 +65,7 @@ export class VoiceMemo {
     const { media, chatId, senderId } = event.message;
     if(chatId && media instanceof Api.MessageMediaDocument && media && media.document) {
       // @ts-ignore
-      const { mimeType = '', size } = media.document
-      const checkKey = `${senderId}_${size.toString()}`
-      this.logger.info(`onTelegramClientEvent: ${checkKey}`)
-      // const queueDocument = this.audioQueue.get(checkKey)
+      const { mimeType = '' } = media.document
       if(mimeType.includes('audio')) {
         const buffer = await this.telegramClient?.downloadMedia(media);
         if(buffer) {
@@ -106,15 +103,17 @@ export class VoiceMemo {
       // @ts-ignore
       const { mimeType = '', size } = media.document
       const queueKey = `${senderId}_${size.toString()}`
-      this.logger.info(`onTelegramClientEvent ${senderId}: ${queueKey}`)
+      this.logger.info(`Request from ${senderId}: queue key ${queueKey}`)
 
-      for(let i=0; i < 100; i++) {
+      for(let i= 0; i < 100; i++) {
         const isInQueue = this.audioQueue.get(queueKey)
         if(isInQueue) {
+          this.logger.info(`Request ${queueKey} found in queue, continue`)
           return this.processTelegramClientEvent(event)
         }
         await this.sleep(100)
       }
+      this.logger.info(`Event ${queueKey} not found in queue, skip`)
     }
   }
 
