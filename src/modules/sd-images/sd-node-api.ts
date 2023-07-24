@@ -7,7 +7,7 @@ export class SDNodeApi {
   client: Client;
 
   constructor({ apiUrl }: { apiUrl: string }) {
-    this.client = new Client({ apiUrl })
+    this.client = new Client()
   }
 
   generateImage = async (prompt: string) => {

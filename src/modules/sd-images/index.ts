@@ -102,14 +102,16 @@ export class SDImagesBot {
 
             let idx = this.queue.findIndex(v => v === uuid);
 
+            if(idx !== 0) {
+                ctx.reply(`${author} you are the ${idx + 1}/${this.queue.length}. Please wait about ${idx * 10} sec`);
+            }
+
             // waiting queue
-            // while (idx !== 0) {
-            //     ctx.reply(`${author} you are the ${idx + 1}/${this.queue.length}. Please wait about ${idx * 3} sec`);
+            while (idx !== 0) {
+                await sleep(3000 * this.queue.findIndex(v => v === uuid));
 
-            //     await sleep(3000 * this.queue.findIndex(v => v === uuid));
-
-            //     idx = this.queue.findIndex(v => v === uuid);
-            // }
+                idx = this.queue.findIndex(v => v === uuid);
+            }
 
             ctx.reply(`${author} starting to generate your image`);
 
@@ -144,14 +146,16 @@ export class SDImagesBot {
 
             let idx = this.queue.findIndex(v => v === uuid);
 
+            if(idx !== 0) {
+                ctx.reply(`${author} you are the ${idx + 1}/${this.queue.length}. Please wait about ${idx * 10} sec`);
+            }
+
             // waiting queue
-            // while (idx !== 0) {
-            //     ctx.reply(`${author} you are the ${idx + 1}/${this.queue.length}. Please wait about ${idx * 3} sec`);
+            while (idx !== 0) {
+                await sleep(3000 * this.queue.findIndex(v => v === uuid));
 
-            //     await sleep(3000 * this.queue.findIndex(v => v === uuid));
-
-            //     idx = this.queue.findIndex(v => v === uuid);
-            // }
+                idx = this.queue.findIndex(v => v === uuid);
+            }
 
             ctx.reply(`${author} starting to generate your images`);
 
