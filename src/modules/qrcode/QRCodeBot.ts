@@ -230,6 +230,7 @@ export class QRCodeBot {
 
     const response = await comfyClient.queuePrompt(workflow);
     const promptResult = await comfyClient.waitingPromptExecution(response.prompt_id);
+    comfyClient.abortWebsocket();
 
     return comfyClient.downloadResult(promptResult.data.output.images[0].filename);
   }
