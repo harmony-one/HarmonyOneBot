@@ -147,12 +147,14 @@ export class ComfyClient {
     return response.data[promptId];
   }
 
-  async uploadImage(filename: string, file: Buffer) {
+  async uploadImage(params: {filename: string, fileBuffer: Buffer, override: boolean}) {
     const formData = new FormData();
-    formData.append('image', file, {
-      filename,
+    formData.append('image', params.fileBuffer, {
+      filename: params.filename,
       contentType: 'image/png'
     });
+
+    formData.append('overwrite', params.override);
 
     const response = await this.httpClient.postForm<UploadImageResponse>('/upload/image', formData);
     return response.data;
