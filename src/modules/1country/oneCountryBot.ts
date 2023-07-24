@@ -1,22 +1,60 @@
-import { Composer } from "grammy";
+import { Composer, InlineKeyboard } from "grammy";
+import { conversations, createConversation } from "@grammyjs/conversations";
+
 import config from "../../config";
 import { BotContext } from "../types";
 import { relayApi } from "./api/relayApi";
 import { AxiosError } from "axios";
+import { getUrl } from './utils'
+import { conversationDomainName } from './conversations'
 
 export const oneCountry = new Composer<BotContext>();
 
-const getUrl = (url: string, fullUrl = true) => {
-  if (url.endsWith("/")) {
-    url = url.slice(0, url.length - 1);
+oneCountry.use(conversations());
+oneCountry.use(createConversation(conversationDomainName));
+
+oneCountry.command("visit", async (ctx) => {
+  if (!ctx.match) {
+    ctx.reply("Error: Missing 1.country domain");
+    return;
   }
-  if (url.startsWith("https://")) {
-    url = url.slice("https://".length);
+  const url = getUrl(ctx.match);
+  let keyboard = new InlineKeyboard().webApp("Go", `https://${url}/`);
+
+  ctx.reply(`Visit ${url}`, {
+    reply_markup: keyboard,
+  });
+});
+
+oneCountry.command('rent', async (ctx) => {
+  const prompt = ctx.match;
+  if (!prompt) {
+    ctx.reply("Error: Missing domain name");
+    return;
   }
-  return !url.includes(".country") && fullUrl
-    ? url.concat(config.country.tld)
-    : url;
-};
+  ctx.reply('_Domain names can use a mix of letters and numbers, with no spaces_', {
+    parse_mode: 'Markdown'
+  })
+  ctx.reply("Checking name...");
+  await ctx.conversation.enter("conversationDomainName");
+})
+
+const text = 'You can renew your domain'
+oneCountry.command("renew", async (ctx) => {
+  if (!ctx.match) {
+    ctx.reply("Error: Missing 1.country domain");
+    return;
+  }
+  const url = getUrl(ctx.match);
+  let keyboard = new InlineKeyboard()
+    .webApp("Renew in 1.country", `https://${url}/?renew`)
+    .row()
+    .webApp("Renew ussing your local wallet", `https://${url}/`);
+
+  ctx.reply(`Renew ${url}`, {
+    reply_markup: keyboard,
+  });
+});
 
 oneCountry.command("cert", async (ctx) => {
   if (!ctx.match) {
