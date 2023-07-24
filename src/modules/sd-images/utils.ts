@@ -10,7 +10,7 @@ export const sleep = (ms: number) => new Promise(res => setTimeout(res, ms));
 
 export const waitingExecute = (fn: () => Promise<any>, ms: number) => new Promise((resolve, reject) => {
   const timeoutId = setTimeout(() => { 
-    console.error('Error: waitingExecute time is up');
+    console.error('SD images Error: waitingExecute time is up');
     reject('Error: waitingExecute time is up');
   }, ms);
   
