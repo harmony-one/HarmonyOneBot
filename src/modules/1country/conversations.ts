@@ -22,7 +22,9 @@ export async function conversationDomainName(
   try {
     let domain = cleanInput(ctx.match as string);
     while (true) {
-      const response = await checkDomain(domain);
+      const response = await conversation.external(() => {
+        return checkDomain(domain);
+      });
       ctx.reply(`The name *${domain}* is ${response.isAvailable ? 'available. Write *rent* to purchase it, or keep writing new options' : 'unavailable. Keep writing options.'}`, {
         parse_mode: "Markdown",
       });
