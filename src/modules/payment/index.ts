@@ -111,9 +111,8 @@ export class BotPayments {
     return tx
   }
 
-  public isUserInWhitelist(ctx: OnMessageContext) {
-    const { id } = ctx.update.message.from
-    return config.payment.whitelist.includes(id.toString())
+  public isUserInWhitelist(userId: number | string) {
+    return config.payment.whitelist.includes(userId.toString())
   }
 
   public async pay(ctx: OnMessageContext, amountUSD: number) {
@@ -121,11 +120,17 @@ export class BotPayments {
     const {  id: userId, username } = from
 
     if(this.isUserInWhitelist(userId)) {
-      this.logger.info(`User @${username} (${userId}) in whitelist, skip payment`)
+      this.logger.info(`@${username} (${userId}) is in the whitelist, skip payment`)
+      return true
+    }
+
+    if(this.ONERate === 0) {
+      this.logger.warn(`ONE token rate is 0, skip payment`)
       return true
     }
 
     if(amountUSD === 0) {
+      this.logger.warn(`Amount USD is 0, skip payment`)
       return true
     }
 

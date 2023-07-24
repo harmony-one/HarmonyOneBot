@@ -53,13 +53,15 @@ export class VoiceMemo {
     }
   }
 
+  private sleep = (timeout: number) => new Promise(resolve => setTimeout(resolve, timeout))
+
   private async initTgClient () {
     this.telegramClient = await initTelegramClient()
     this.telegramClient.addEventHandler(this.onTelegramClientEvent.bind(this), new NewMessage({}));
     this.logger.info('VoiceMemo bot started')
   }
 
-  private async onTelegramClientEvent(event: NewMessageEvent) {
+  private async processTelegramClientEvent(event: NewMessageEvent) {
     const { media, chatId, senderId } = event.message;
     if(chatId && media instanceof Api.MessageMediaDocument && media && media.document) {
       // @ts-ignore
@@ -94,6 +96,24 @@ export class VoiceMemo {
             this.deleteTempFile(fileName)
           }
         }
+      }
+    }
+  }
+
+  private async onTelegramClientEvent(event: NewMessageEvent) {
+    const { media, chatId, senderId } = event.message;
+    if(chatId && media instanceof Api.MessageMediaDocument && media && media.document) {
+      // @ts-ignore
+      const { mimeType = '', size } = media.document
+      const queueKey = `${senderId}_${size.toString()}`
+      this.logger.info(`onTelegramClientEvent ${senderId}: ${queueKey}`)
+
+      for(let i=0; i < 100; i++) {
+        const isInQueue = this.audioQueue.get(queueKey)
+        if(isInQueue) {
+          return this.processTelegramClientEvent(event)
+        }
+        await this.sleep(100)
       }
     }
   }
@@ -158,9 +178,9 @@ export class VoiceMemo {
 
   public async onEvent(ctx: OnMessageContext) {
     const { voice, from } = ctx.update.message
-    // const key = `${from.id}_${voice?.file_size}`
-    // this.audioQueue.set(key, Date.now())
-    // this.logger.info(`onEvent: ${key}`)
+    const key = `${from.id}_${voice?.file_size}`
+    this.audioQueue.set(key, Date.now())
+    this.logger.info(`onEvent message @${from.username} (${from.id}): ${key}`)
   }
 
   public getEstimatedPrice(ctx: OnMessageContext) {
