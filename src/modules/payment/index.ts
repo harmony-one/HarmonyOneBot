@@ -111,15 +111,17 @@ export class BotPayments {
     return tx
   }
 
-  public isUserInWhitelist(userId: number | string) {
-    return config.payment.whitelist.includes(userId.toString())
+  public isUserInWhitelist(userId: number | string, username = '') {
+    const { whitelist } = config.payment
+    return whitelist.includes(userId.toString())
+      || (username && whitelist.includes(username.toString().toLowerCase()))
   }
 
   public async pay(ctx: OnMessageContext, amountUSD: number) {
     const { from, message_id } = ctx.update.message
-    const {  id: userId, username } = from
+    const {  id: userId, username = '' } = from
 
-    if(this.isUserInWhitelist(userId)) {
+    if(this.isUserInWhitelist(userId, username)) {
       this.logger.info(`@${username} (${userId}) is in the whitelist, skip payment`)
       return true
     }
