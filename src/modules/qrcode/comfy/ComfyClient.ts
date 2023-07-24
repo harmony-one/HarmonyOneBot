@@ -100,6 +100,12 @@ export class ComfyClient {
     this.wsClient.connect(this.wsHost + `/ws?clientId=${this.clientId}`);
   }
 
+  abortWebsocket() {
+    if(this.wsConnection) {
+      this.wsClient.abort();
+    }
+  }
+
   async waitingPromptExecution(prompt_id: string): Promise<PromptResult> {
     return new Promise((resolve, reject) => {
       if (!this.wsConnection) {

@@ -1,6 +1,6 @@
 import { ComfyClient } from '../qrcode/comfy/ComfyClient';
 import config from "../../config";
-import { sleep } from './utils';
+import { sleep, waitingExecute } from './utils';
 
 export type Txt2ImgOptions = {
     hires?: {
@@ -68,51 +68,51 @@ function buildQrPrompt(options: Txt2ImgOptions & { clientId: string }) {
 }
 
 export class Client {
-    comfyClient: ComfyClient;
+    constructor() { }
 
-    constructor({ apiUrl }: { apiUrl: string }) {
-        this.comfyClient = new ComfyClient({
+    txt2img = async (options: Txt2ImgOptions): Promise<Txt2ImgResponse> => {
+        const comfyClient = new ComfyClient({
             host: config.comfyHost,
             wsHost: config.comfyWsHost
         });
-    }
 
-    txt2img = async (options: Txt2ImgOptions): Promise<Txt2ImgResponse> => {
-        let attempts = 3;
+        try {
+            let attempts = 3;
 
-        while (attempts > 0 && !this.comfyClient.wsConnection) {
-            this.comfyClient.initWebsocket();
-            await sleep(1000);
-            attempts--;
+            while (attempts > 0 && !comfyClient.wsConnection) {
+                await sleep(1000);
+                attempts--;
+            }
+
+            const seed = options.seed || getRandomSeed();
+
+            const prompt = buildQrPrompt({
+                ...options,
+                seed,
+                clientId: comfyClient.clientId
+            });
+
+            const r = await comfyClient.queuePrompt(prompt);
+
+            const promptResult = await waitingExecute(() => comfyClient.waitingPromptExecution(r.prompt_id), 1000 * 120);
+
+            const history = await comfyClient.history(r.prompt_id);
+
+            const images = await Promise.all(
+                history.outputs['9'].images.map(async img => await comfyClient.downloadResult(img.filename))
+            );
+
+            comfyClient.abortWebsocket();
+
+            return {
+                images,
+                parameters: {},
+                all_seeds: history.outputs['9'].images.map((i, idx) => String(seed + idx)),
+                info: ''
+            } as Txt2ImgResponse;
+        } catch (e) {
+            comfyClient.abortWebsocket();
+            throw e;
         }
-
-        if (!this.comfyClient.wsConnection) {
-            throw new Error('SD server is not available');
-        }
-
-        const seed = options.seed || getRandomSeed();
-
-        const prompt = buildQrPrompt({
-            ...options,
-            seed,
-            clientId: this.comfyClient.clientId
-        });
-
-        const r = await this.comfyClient.queuePrompt(prompt);
-
-        const promptResult = await this.comfyClient.waitingPromptExecution(r.prompt_id);
-
-        const history = await this.comfyClient.history(r.prompt_id);
-
-        const images = await Promise.all(
-            history.outputs['9'].images.map(async img => await this.comfyClient.downloadResult(img.filename))
-        );
-
-        return {
-            images,
-            parameters: {},
-            all_seeds: history.outputs['9'].images.map((i, idx) => String(seed + idx)),
-            info: ''
-        } as Txt2ImgResponse;
     }
 }

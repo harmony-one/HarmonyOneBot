@@ -1,4 +1,5 @@
-import { Context, Middleware, SessionFlavor } from "grammy";
+
+import { Context, SessionFlavor } from "grammy";
 import { Filter, FilterQuery } from "grammy/out/filter";
 import { MenuFlavor } from "@grammyjs/menu/out/menu";
 import {
@@ -12,9 +13,27 @@ export interface ImageGenSessionData {
   isEnabled: boolean;
 }
 
+export interface ChatCompletion {
+  completion: string
+  usage: number
+}
+export interface ChatConversation {
+  role: string;
+  content: string;
+}
+export interface ChatGptSessionData {
+  model: string;
+  isEnabled: boolean;
+  chatConversation: ChatConversation[];
+}
+export interface OpenAiSessionData {
+  imageGen: ImageGenSessionData;
+  chatGpt: ChatGptSessionData;
+}
+
 export interface BotSessionData {
   qrMargin: number;
-  imageGen: ImageGenSessionData;
+  openAi: OpenAiSessionData;
 }
 
 export type BotContext = Context &
