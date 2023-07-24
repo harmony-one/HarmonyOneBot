@@ -23,6 +23,7 @@ import { chatGpt } from "./modules/open-ai/chatGptBot";
 import { oneCountry } from "./modules/1country/oneCountryBot";
 import { Wallet } from "./modules/wallet";
 import { WalletConnect } from "./modules/walletconnect";
+import {BotPayments} from "./modules/payment";
 
 export const bot = new Bot<BotContext>(config.telegramBotAuthToken);
 
@@ -58,17 +59,25 @@ const qrCodeBot = new QRCodeBot();
 const sdImagesBot = new SDImagesBot();
 const wallet = new Wallet();
 const walletConnect = new WalletConnect();
-
+const payments = new BotPayments()
 
 const onMessage = async (ctx: OnMessageContext) => {
   if (qrCodeBot.isSupportedEvent(ctx)) {
-    return qrCodeBot.onEvent(ctx);
+    const price = qrCodeBot.getEstimatedPrice(ctx)
+    const isSuccessfulPayment = await payments.pay(ctx, price)
+    if(isSuccessfulPayment) {
+      return qrCodeBot.onEvent(ctx);
+    }
   }
   if (sdImagesBot.isSupportedEvent(ctx)) {
     return sdImagesBot.onEvent(ctx);
   }
   if (voiceMemo.isSupportedEvent(ctx)) {
-    return voiceMemo.onEvent(ctx);
+    const price = voiceMemo.getEstimatedPrice(ctx)
+    const isSuccessfulPayment = await payments.pay(ctx, price)
+    if(isSuccessfulPayment) {
+      return voiceMemo.onEvent(ctx);
+    }
   }
   if (wallet.isSupportedEvent(ctx)) {
     return wallet.onEvent(ctx);
