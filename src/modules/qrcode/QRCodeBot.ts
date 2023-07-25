@@ -158,7 +158,7 @@ export class QRCodeBot {
         prompt: command.prompt,
       };
 
-      const qrImgBuffer = await this.genQRCode2(props);
+      const qrImgBuffer = await this.genQRCode(props);
 
       if (!qrImgBuffer) {
         throw new Error('internal error');
