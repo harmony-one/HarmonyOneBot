@@ -1,6 +1,18 @@
+import { pino } from "pino";
+
 import { promptGen } from "./controller";
 import { BotContext, BotConversation, ChatConversation } from "../types";
 import { appText } from "./utils/text";
+
+const logger = pino({
+  name: "chatGptBot-conversation",
+  transport: {
+    target: "pino-pretty",
+    options: {
+      colorize: true,
+    },
+  },
+});
 
 export async function conversationGpt(
   conversation: BotConversation,
@@ -63,6 +75,6 @@ export async function conversationGpt(
     return;
   } catch (e) {
     ctx.reply("The bot has encountered an error. Please try again later. ");
-    console.log("##conversationGpt Error:", e);
+    logger.error("##conversationGpt Error:", e);
   }
 }

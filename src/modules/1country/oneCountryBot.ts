@@ -1,17 +1,23 @@
 import { Composer, InlineKeyboard } from "grammy";
-import { conversations, createConversation } from "@grammyjs/conversations";
+import pino from "pino";
 
 import config from "../../config";
 import { BotContext } from "../types";
 import { relayApi } from "./api/relayApi";
 import { AxiosError } from "axios";
-import { getUrl } from './utils'
-import { conversationDomainName } from './conversationCountry'
+import { getUrl } from './utils/url'
+
+const logger = pino({
+  name: "OneCountryBot",
+  transport: {
+    target: "pino-pretty",
+    options: {
+      colorize: true,
+    },
+  },
+});
 
 export const oneCountry = new Composer<BotContext>();
-
-// oneCountry.use(conversations());
-// oneCountry.use(createConversation(conversationDomainName));
 
 oneCountry.command("visit", async (ctx) => {
   if (!ctx.match) {
@@ -26,20 +32,6 @@ oneCountry.command("visit", async (ctx) => {
   });
 });
 
-// oneCountry.command('rent', async (ctx) => {
-//   const prompt = ctx.match;
-//   if (!prompt) {
-//     ctx.reply("Error: Missing domain name");
-//     return;
-//   }
-//   ctx.reply('_Domain names can use a mix of letters and numbers, with no spaces_', {
-//     parse_mode: 'Markdown'
-//   })
-//   ctx.reply("Checking name...");
-//   await ctx.conversation.enter("botConversation");
-// })
-
-const text = 'You can renew your domain'
 oneCountry.command("renew", async (ctx) => {
   if (!ctx.match) {
     ctx.reply("Error: Missing 1.country domain");
@@ -70,6 +62,9 @@ oneCountry.command("cert", async (ctx) => {
       ctx.reply(`${response.error}`);
     }
   } catch (e) {
+    logger.error(e instanceof AxiosError
+      ? e.response?.data.error
+      : "There was an error processing your request")
     ctx.reply(
       e instanceof AxiosError
         ? e.response?.data.error
@@ -89,7 +84,9 @@ oneCountry.command("nft", async (ctx) => {
     console.log(response);
     ctx.reply("NFT metadata generated");
   } catch (e) {
-    console.log(e);
+    logger.error(e instanceof AxiosError
+      ? e.response?.data.error
+      : "There was an error processing your request")
     ctx.reply(
       e instanceof AxiosError
         ? e.response?.data.error
@@ -116,6 +113,9 @@ oneCountry.command("check", async (ctx) => {
       ctx.reply(`${response.error}`);
     }
   } catch (e) {
+    logger.error(e instanceof AxiosError
+      ? e.response?.data.error
+      : "There was an error processing your request")
     ctx.reply(
       e instanceof AxiosError
         ? e.response?.data.error

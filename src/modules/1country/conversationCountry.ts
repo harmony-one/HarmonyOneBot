@@ -1,16 +1,20 @@
-import { BotContext, BotConversation } from "../types";
-import { getUrl } from "./utils";
-import { relayApi } from "./api/relayApi";
 import { InlineKeyboard } from "grammy";
+import { pino } from "pino";
+
+import { BotContext, BotConversation } from "../types";
+import { isDomainAvailable, validateDomainName } from "./utils/domain";
 import config from "../../config";
 import { appText } from "../open-ai/utils/text";
 
-const checkDomain = async (domain: string) => {
-  const url = getUrl(domain, false);
-  const response = await relayApi().checkDomain({ sld: url });
-  console.log(response);
-  return response;
-};
+const logger = pino({
+  name: "OneCountryBot-conversation",
+  transport: {
+    target: "pino-pretty",
+    options: {
+      colorize: true,
+    },
+  },
+});
 
 const cleanInput = (input: string) => {
   return input.replace(/[^a-z0-9-]/g, "").toLowerCase();
@@ -25,20 +29,31 @@ export async function conversationDomainName(
     let isAvailable = false;
     while (true) {
       if (!helpCommand) {
-        const response = await conversation.external(() => {
-          return checkDomain(domain);
-        });
-        isAvailable = response.isAvailable;
-        ctx.reply(
-          `The name *${domain}* is ${
-            isAvailable
-              ? "available ✅.\nWrite *rent* to purchase it, or keep writing new options"
-              : "unavailable ❌. Keep writing name options."
-          }`,
-          {
+        const validate = validateDomainName(domain);
+        if (!validate.valid) {
+          ctx.reply(validate.error, {
             parse_mode: "Markdown",
+          });
+        } else {
+          const response = await conversation.external(() => {
+            return isDomainAvailable(domain);
+            // return checkDomain(domain);
+          });
+          const { isAvailable, isInGracePeriod } = response;
+          let msg = `The name *${domain}* `;
+          if (!isAvailable && isInGracePeriod) {
+            msg += `is in grace period ❌. Only the owner is able to renew the domain`;
+          } else if (!isAvailable) {
+            msg += `is unavailable ❌. Keep writing name options.`;
+          } else {
+            msg +=
+              "is available ✅.\nWrite *rent* to purchase it, or keep writing new options";
           }
-        );
+          console.log(isAvailable, isInGracePeriod);
+          ctx.reply(msg, {
+            parse_mode: "Markdown",
+          });
+        }
       }
       const userInput = await conversation.waitFor(":text");
       // {
@@ -84,6 +99,6 @@ export async function conversationDomainName(
     return;
   } catch (e) {
     ctx.reply("The bot has encountered an error. Please try again later. ");
-    console.log("##conversationGpt Error:", e);
+    logger.error("##conversationGountry Error:", e);
   }
 }

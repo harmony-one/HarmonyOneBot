@@ -1,14 +1,25 @@
 import { Composer, Context } from "grammy";
+import { pino } from "pino";
+
 import config from "../../config";
 import { imgGen, imgGenEnhanced, alterImg } from "./controller";
 import { BotContext } from "../types";
-import { isAdmin } from "./utils/context";
-
 interface Image {
   url: string;
 }
 
+const logger = pino({
+  name: "ImagenGenBot",
+  transport: {
+    target: "pino-pretty",
+    options: {
+      colorize: true,
+    },
+  },
+});
+
 export const imageGen = new Composer<BotContext>();
+!config.openAi.imageGen.isEnabled && logger.warn(`Dall-e2 Bot disabled in config`)
 
 imageGen.command("genImg", async (ctx) => {
   if (ctx.session.openAi.imageGen.isEnabled) {
@@ -73,7 +84,7 @@ imageGen.on("message", async (ctx, next) => {
     }
     next();
   } catch (e: any) {
-    console.log(e);
+    logger.error(e);
     ctx.reply("An error occurred while generating the AI edit");
   }
 });

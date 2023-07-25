@@ -43,7 +43,12 @@ export default {
   country: {
     hostname: 'https://1.country',
     relayApiUrl: 'https://1ns-registrar-relayer.hiddenstate.xyz',
-    tld: '.country'
+    tld: '.country',
+    contract: process.env.DC_CONTRACT || '',
+    defaultRPC: 'https://api.harmony.one',
+    restrictedPhrases: process.env.RESTRICTED_PHRASES
+      ? process.env.RESTRICTED_PHRASES.split(', ')
+      : ['metamask', 'walletconnect'],
   },
   voiceMemo: {
     isEnabled: Boolean(parseInt(process.env.VOICE_MEMO_ENABLED || "1")),

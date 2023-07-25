@@ -1,4 +1,4 @@
-import config from "../../config";
+import config from "../../../config";
 
 export const getUrl = (url: string, fullUrl = true) => {
   if (url.endsWith("/")) {
