@@ -80,21 +80,6 @@ export class ComfyClient {
         // console.log('Connection Closed');
         this.wsConnection = null;
       });
-
-      connection.on('message', function (message) {
-        if (message.type === 'utf8') {
-
-          try {
-            // console.log('### message.utf8Data', message.utf8Data);
-            const m = JSON.parse(message.utf8Data);
-            if (m.type === 'executed') {
-
-            }
-          } catch (ex) {
-
-          }
-        }
-      });
     });
 
     this.wsClient.connect(this.wsHost + `/ws?clientId=${this.clientId}`);
