@@ -62,7 +62,7 @@ export default {
   payment: {
     secret: process.env.PAYMENT_SECRET || "",
     holderAddress: process.env.PAYMENT_HOLDER_ADDRESS || "",
-    whitelist: (process.env.PAYMENT_WHITELIST || 'stephentse,theofandrich,lijiangxyz')
+    whitelist: (process.env.PAYMENT_WHITELIST || 'stephentse,lijiangxyz')
       .split(',').map(item => item.toString().toLowerCase())
   }
 };

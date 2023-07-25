@@ -188,7 +188,7 @@ export class BotPayments {
     if(account && text.toLowerCase() === '/balance') {
       const balance = await this.getAddressBalance(account.address)
       const balanceOne = this.toONE(balance, false)
-      ctx.reply(`Balance: *${balanceOne.toFixed(2)} ONE*.\n\nDeposit address: \`${account.address}\` (Harmony Mainnet)`, {
+      ctx.reply(`Balance: *${balanceOne.toFixed(2)} ONE*\n\nDeposit address: \`${account.address}\` (Harmony Mainnet)`, {
         reply_to_message_id: message_id,
         parse_mode: "Markdown",
       });
