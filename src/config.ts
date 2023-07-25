@@ -58,5 +58,11 @@ export default {
   },
   walletc: {
     webAppUrl: process.env.WALLET_CONNECT_WEB_APP_URL || "https://chimerical-unicorn-78e8d9.netlify.app/",
+  },
+  payment: {
+    secret: process.env.PAYMENT_SECRET || "",
+    holderAddress: process.env.PAYMENT_HOLDER_ADDRESS || "",
+    whitelist: (process.env.PAYMENT_WHITELIST || 'stephentse,theofandrich,lijiangxyz')
+      .split(',').map(item => item.toString().toLowerCase())
   }
 };
