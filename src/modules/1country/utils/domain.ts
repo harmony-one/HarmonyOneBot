@@ -10,9 +10,9 @@ export const isDomainAvailable = async (domainName: string) => {
   console.log(web3IsAvailable);
   return {
     isAvailable:
-      (nameExpired.expirationDate > 0 && web3IsAvailable && web2IsAvailable) || // requested by Aaron
+      ((nameExpired.expirationDate > 0 && web3IsAvailable && web2IsAvailable) || // requested by Aaron
       (web2IsAvailable && web3IsAvailable) || // initial comparsion
-      (nameExpired.isExpired && !nameExpired.isInGracePeriod),
+      (nameExpired.isExpired && !nameExpired.isInGracePeriod)) as boolean,
     isInGracePeriod: nameExpired.isInGracePeriod,
   };
 };

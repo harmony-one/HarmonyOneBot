@@ -26,7 +26,7 @@ export async function conversationDomainName(
   try {
     let domain = cleanInput(ctx.match as string);
     let helpCommand = false;
-    let isAvailable = false;
+    let domainAvailable = false;
     while (true) {
       if (!helpCommand) {
         const validate = validateDomainName(domain);
@@ -39,17 +39,17 @@ export async function conversationDomainName(
             return isDomainAvailable(domain);
             // return checkDomain(domain);
           });
-          const { isAvailable, isInGracePeriod } = response;
+          domainAvailable = response.isAvailable;
           let msg = `The name *${domain}* `;
-          if (!isAvailable && isInGracePeriod) {
+          if (!domainAvailable && response.isInGracePeriod) {
             msg += `is in grace period ❌. Only the owner is able to renew the domain`;
-          } else if (!isAvailable) {
+          } else if (!domainAvailable) {
             msg += `is unavailable ❌. Keep writing name options.`;
           } else {
             msg +=
               "is available ✅.\nWrite *rent* to purchase it, or keep writing new options";
           }
-          console.log(isAvailable, isInGracePeriod);
+          console.log(domainAvailable, response.isInGracePeriod);
           ctx.reply(msg, {
             parse_mode: "Markdown",
           });
@@ -60,7 +60,7 @@ export async function conversationDomainName(
       //   maxMilliseconds: 60000
       // });
       const userPrompt = cleanInput(userInput.msg.text);
-      if (userPrompt.toLocaleLowerCase().includes("rent") && isAvailable) {
+      if (userPrompt.toLocaleLowerCase().includes("rent") && domainAvailable) {
         let keyboard = new InlineKeyboard()
           .webApp(
             "Rent in 1.country",
@@ -68,7 +68,7 @@ export async function conversationDomainName(
           )
           .row()
           .webApp(
-            "Rent using your local wallet",
+            "Rent using your local wallet (under construction)",
             `${config.country.hostname}?domain=${domain}`
           );
         ctx.reply(`Rent ${userPrompt}`, {

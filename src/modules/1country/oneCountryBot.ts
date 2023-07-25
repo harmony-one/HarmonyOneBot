@@ -5,7 +5,7 @@ import config from "../../config";
 import { BotContext } from "../types";
 import { relayApi } from "./api/relayApi";
 import { AxiosError } from "axios";
-import { getUrl } from './utils/url'
+import { getUrl } from "./utils/url";
 
 const logger = pino({
   name: "OneCountryBot",
@@ -41,7 +41,10 @@ oneCountry.command("renew", async (ctx) => {
   let keyboard = new InlineKeyboard()
     .webApp("Renew in 1.country", `https://${url}/?renew`)
     .row()
-    .webApp("Renew ussing your local wallet", `https://${url}/`);
+    .webApp(
+      "Rent using your local wallet (under construction)",
+      `https://${url}/?renew`
+    );
 
   ctx.reply(`Renew ${url}`, {
     reply_markup: keyboard,
@@ -62,9 +65,11 @@ oneCountry.command("cert", async (ctx) => {
       ctx.reply(`${response.error}`);
     }
   } catch (e) {
-    logger.error(e instanceof AxiosError
-      ? e.response?.data.error
-      : "There was an error processing your request")
+    logger.error(
+      e instanceof AxiosError
+        ? e.response?.data.error
+        : "There was an error processing your request"
+    );
     ctx.reply(
       e instanceof AxiosError
         ? e.response?.data.error
@@ -84,9 +89,11 @@ oneCountry.command("nft", async (ctx) => {
     console.log(response);
     ctx.reply("NFT metadata generated");
   } catch (e) {
-    logger.error(e instanceof AxiosError
-      ? e.response?.data.error
-      : "There was an error processing your request")
+    logger.error(
+      e instanceof AxiosError
+        ? e.response?.data.error
+        : "There was an error processing your request"
+    );
     ctx.reply(
       e instanceof AxiosError
         ? e.response?.data.error
@@ -113,9 +120,11 @@ oneCountry.command("check", async (ctx) => {
       ctx.reply(`${response.error}`);
     }
   } catch (e) {
-    logger.error(e instanceof AxiosError
-      ? e.response?.data.error
-      : "There was an error processing your request")
+    logger.error(
+      e instanceof AxiosError
+        ? e.response?.data.error
+        : "There was an error processing your request"
+    );
     ctx.reply(
       e instanceof AxiosError
         ? e.response?.data.error
