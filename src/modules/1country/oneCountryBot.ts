@@ -6,12 +6,12 @@ import { BotContext } from "../types";
 import { relayApi } from "./api/relayApi";
 import { AxiosError } from "axios";
 import { getUrl } from './utils'
-import { conversationDomainName } from './conversations'
+import { conversationDomainName } from './conversationCountry'
 
 export const oneCountry = new Composer<BotContext>();
 
-oneCountry.use(conversations());
-oneCountry.use(createConversation(conversationDomainName));
+// oneCountry.use(conversations());
+// oneCountry.use(createConversation(conversationDomainName));
 
 oneCountry.command("visit", async (ctx) => {
   if (!ctx.match) {
@@ -26,18 +26,18 @@ oneCountry.command("visit", async (ctx) => {
   });
 });
 
-oneCountry.command('rent', async (ctx) => {
-  const prompt = ctx.match;
-  if (!prompt) {
-    ctx.reply("Error: Missing domain name");
-    return;
-  }
-  ctx.reply('_Domain names can use a mix of letters and numbers, with no spaces_', {
-    parse_mode: 'Markdown'
-  })
-  ctx.reply("Checking name...");
-  await ctx.conversation.enter("conversationDomainName");
-})
+// oneCountry.command('rent', async (ctx) => {
+//   const prompt = ctx.match;
+//   if (!prompt) {
+//     ctx.reply("Error: Missing domain name");
+//     return;
+//   }
+//   ctx.reply('_Domain names can use a mix of letters and numbers, with no spaces_', {
+//     parse_mode: 'Markdown'
+//   })
+//   ctx.reply("Checking name...");
+//   await ctx.conversation.enter("botConversation");
+// })
 
 const text = 'You can renew your domain'
 oneCountry.command("renew", async (ctx) => {

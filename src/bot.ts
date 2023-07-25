@@ -1,13 +1,12 @@
 import express from "express";
 import {
   Bot,
-  BotError,
   GrammyError,
   HttpError,
   MemorySessionStorage,
   session,
 } from "grammy";
-import config from "./config";
+
 import {
   BotContext,
   BotSessionData,
@@ -19,10 +18,12 @@ import { VoiceMemo } from "./modules/voice-memo";
 import { QRCodeBot } from "./modules/qrcode/QRCodeBot";
 import { SDImagesBot } from "./modules/sd-images";
 import { imageGen } from "./modules/open-ai/ImageGenBot";
-import { chatGpt } from "./modules/open-ai/chatGptBot";
 import { oneCountry } from "./modules/1country/oneCountryBot";
 import { Wallet } from "./modules/wallet";
 import { WalletConnect } from "./modules/walletconnect";
+import { conversationHandler } from './modules/conversation-handler/conversationHandler'
+
+import config from "./config";
 
 export const bot = new Bot<BotContext>(config.telegramBotAuthToken);
 
@@ -51,6 +52,7 @@ bot.use(
   })
 );
 
+
 bot.use(mainMenu);
 
 const voiceMemo = new VoiceMemo();
@@ -58,7 +60,6 @@ const qrCodeBot = new QRCodeBot();
 const sdImagesBot = new SDImagesBot();
 const wallet = new Wallet();
 const walletConnect = new WalletConnect();
-
 
 const onMessage = async (ctx: OnMessageContext) => {
   if (qrCodeBot.isSupportedEvent(ctx)) {
@@ -100,9 +101,9 @@ bot.command("help", async (ctx) => {
   });
 });
 
+bot.use(conversationHandler)  
 bot.use(oneCountry);
 bot.use(imageGen);
-bot.use(chatGpt);
 
 bot.on("message", onMessage);
 bot.on("callback_query:data", onCallback);

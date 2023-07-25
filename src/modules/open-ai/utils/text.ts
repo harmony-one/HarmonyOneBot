@@ -24,7 +24,9 @@ Hello! I can generate AI completions using OpenAI technology.\n
 /chat [text] - Generates a completion from a given prompt.`,
   chatGptChangeModel: `*🖌️ Chat Gpt 4 Help*\nYou can choose one of the following models`,
   generatingText: `Generating response...`,
-  helpText: `Write *end* to finish this conversation.\nWrite *help* to repeat this message.`,
+  gptHelpText: `Write *end* to finish this conversation.\nWrite *help* to repeat this message.`,
+  gptChatEnd: 'Chat finished. Total tokens used:',
+  endChat: 'Thanks for using 1.country services'
 };
 
 // <b>Edit an Image</b>
