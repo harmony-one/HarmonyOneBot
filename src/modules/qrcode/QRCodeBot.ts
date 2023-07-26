@@ -158,7 +158,7 @@ export class QRCodeBot {
         prompt: command.prompt,
       };
 
-      const qrImgBuffer = await this.genQRCode(props);
+      const qrImgBuffer = await this.genQRCode2(props);
 
       if (!qrImgBuffer) {
         throw new Error('internal error');
@@ -178,7 +178,7 @@ export class QRCodeBot {
       qrImgBuffer = await retryAsync(operation, 5, 100);
 
     } catch (ex) {
-      this.logger.error('ex', ex);
+      this.logger.error(`ex ${ex}`);
       ctx.reply("Internal error")
       return;
     }
@@ -219,7 +219,7 @@ export class QRCodeBot {
     const extendedPrompt = prompt + ', ' + automatic1111DefaultConfig.additionalPrompt;
     const negativePrompt = automatic1111DefaultConfig.defaultNegativePrompt;
 
-    const comfyClient = new ComfyClient({host: config.comfyHost, wsHost: config.comfyWsHost});
+    const comfyClient = new ComfyClient({host: config.comfyHost2, wsHost: config.comfyWsHost2});
 
     const filenameHash = crypto.createHash('sha256').update(qrUrl, 'utf8');
     const filename = filenameHash.digest('hex') + '.png';
