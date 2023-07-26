@@ -139,7 +139,7 @@ export class ComfyClient {
       contentType: 'image/png'
     });
 
-    formData.append('overwrite', params.override);
+    formData.append('overwrite', String(params.override));
 
     const response = await this.httpClient.postForm<UploadImageResponse>('/upload/image', formData);
     return response.data;
