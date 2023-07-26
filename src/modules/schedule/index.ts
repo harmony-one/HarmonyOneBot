@@ -4,6 +4,7 @@ import axios from 'axios'
 import cron from 'node-cron'
 import config from '../../config'
 import {BotContext} from "../types";
+import {getTotalBridgetAssets} from "./bridgeAPI";
 
 export enum MetricsDailyType {
   walletsCount = 'wallets_count',
@@ -48,8 +49,10 @@ export class BotSchedule {
     const { chatId } = config.schedule
 
     try {
-      const totalFeeMetrics = await this.getExplorerMetrics(MetricsDailyType.totalFee)
-      console.log('totalFeeMetrics', totalFeeMetrics)
+      // const totalFeeMetrics = await this.getExplorerMetrics(MetricsDailyType.totalFee)
+      // console.log('totalFeeMetrics', totalFeeMetrics)
+      const bridgedAssets = await getTotalBridgetAssets()
+      console.log('bridgedAssets: ', bridgedAssets)
     } catch (e) {
       this.logger.error(`Cannot get metrics data: ${(e as Error).message}`)
     }
