@@ -19,11 +19,11 @@ const logger = pino({
 });
 
 export const imageGen = new Composer<BotContext>();
-!config.openAi.imageGen.isEnabled && logger.warn(`Dall-e2 Bot disabled in config`)
+!config.openAi.imageGen.isEnabled &&
+  logger.warn(`Dall-e2 Bot disabled in config`);
 
 imageGen.command("genImg", async (ctx) => {
   if (ctx.session.openAi.imageGen.isEnabled) {
-    console.log("gen command");
     const prompt = ctx.match;
     if (!prompt) {
       ctx.reply("Error: Missing prompt");
@@ -43,7 +43,6 @@ imageGen.command("genImg", async (ctx) => {
 
 imageGen.command("genImgEn", async (ctx) => {
   if (ctx.session.openAi.imageGen.isEnabled) {
-    console.log("genEn command");
     const prompt = ctx.match;
     if (!prompt) {
       ctx.reply("Error: Missing prompt");
@@ -66,7 +65,6 @@ imageGen.on("message", async (ctx, next) => {
   try {
     const photo = ctx.message.photo || ctx.message.reply_to_message?.photo;
     if (photo && ctx.session.openAi.imageGen.isEnabled) {
-      console.log("Alter img command");
       const prompt = ctx.message.caption || ctx.message.text;
       if (prompt && !isNaN(+prompt)) {
         const file_id = photo.pop()?.file_id; // with pop() get full image quality

@@ -143,7 +143,6 @@ class DcClient {
 
   async checkAvailable({ name }: { name: string }) {
     const isAvailable = await this.contractReadOnly.available(name);
-    console.log("checkNameExpires - available", name, isAvailable);
     return isAvailable?.toString()?.toLowerCase() === "true";
   }
 }

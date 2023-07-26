@@ -46,10 +46,14 @@ export async function conversationDomainName(
           } else if (!domainAvailable) {
             msg += `is unavailable ❌. Keep writing name options.`;
           } else {
-            msg +=
-              "is available ✅.\nWrite *rent* to purchase it, or keep writing new options";
+            msg += "is available ✅.\n";
+            if (!response.priceUSD.error) {
+              msg += `${response.priceOne} ONE = ${response.priceUSD.price} USD for 30 days\n`;
+            } else {
+              msg += `${response.priceOne} for 30 days\n`;
+            }
+            msg += `Write *rent* to purchase it, or keep writing new options`;
           }
-          console.log(domainAvailable, response.isInGracePeriod);
           ctx.reply(msg, {
             parse_mode: "Markdown",
           });

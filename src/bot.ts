@@ -6,6 +6,7 @@ import {
   MemorySessionStorage,
   session,
 } from "grammy";
+import { pino } from "pino";
 
 import {
   BotContext,
@@ -24,6 +25,18 @@ import { WalletConnect } from "./modules/walletconnect";
 import { conversationHandler } from './modules/conversation-handler/conversationHandler'
 
 import config from "./config";
+
+
+const logger = pino({
+  name: "bot",
+  transport: {
+    target: "pino-pretty",
+    options: {
+      colorize: true,
+    },
+  },
+});
+
 
 export const bot = new Bot<BotContext>(config.telegramBotAuthToken);
 
@@ -94,7 +107,6 @@ const onCallback = async (ctx: OnCallBackQueryData) => {
 bot.command("start", (ctx) => ctx.reply("Welcome! Up and running."));
 
 bot.command("help", async (ctx) => {
-  console.log("help command", ctx.session);
   await ctx.reply("Menu", {
     parse_mode: "HTML",
     reply_markup: mainMenu,
@@ -122,7 +134,7 @@ bot.catch((err) => {
 });
 
 bot.errorBoundary((error) => {
-  console.log("### error", error);
+  logger.error("### error", error);
 });
 
 const app = express();
@@ -131,7 +143,7 @@ app.use(express.json());
 app.use(express.static("./public")); // Public directory, used in voice-memo bot
 
 app.listen(config.port, () => {
-  console.log(`Bot listening on port ${config.port}`);
+  logger.info(`Bot listening on port ${config.port}`);
   bot.start();
   // bot.start({
   //   allowed_updates: ["callback_query"], // Needs to be set for menu middleware, but bot doesn't work with current configuration.

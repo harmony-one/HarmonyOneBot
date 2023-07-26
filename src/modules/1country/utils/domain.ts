@@ -1,19 +1,28 @@
 import config from '../../../config';
-import { dcClient } from '../api/d1dc'
+import { DomainPrice, dcClient } from '../api/d1dc'
 import { relayApi } from '../api/relayApi'
+import { getUSDPrice } from '../api/coingecko'
+import { formatONEAmount } from '.';
 
 export const isDomainAvailable = async (domainName: string) => {
   const nameExpired = await dcClient.checkNameExpired({ name: domainName });
   const web3IsAvailable = await dcClient.checkAvailable({ name: domainName });
   const web2IsAvailable = await relayApi().checkDomain({ sld: domainName });
-  console.log(nameExpired);
-  console.log(web3IsAvailable);
+  const isAvailable = ((nameExpired.expirationDate > 0 && web3IsAvailable && web2IsAvailable) || // requested by Aaron
+  (web2IsAvailable && web3IsAvailable) || // initial comparsion
+  (nameExpired.isExpired && !nameExpired.isInGracePeriod)) as boolean
+  let domainPrice = ''
+  if (isAvailable) {
+    domainPrice = (await dcClient.getPrice({ name: domainName })).formatted
+  }
   return {
     isAvailable:
       ((nameExpired.expirationDate > 0 && web3IsAvailable && web2IsAvailable) || // requested by Aaron
       (web2IsAvailable && web3IsAvailable) || // initial comparsion
       (nameExpired.isExpired && !nameExpired.isInGracePeriod)) as boolean,
     isInGracePeriod: nameExpired.isInGracePeriod,
+    priceOne: domainPrice && formatONEAmount(domainPrice),
+    priceUSD: domainPrice ? await getUSDPrice(domainPrice) : { price: 0, error: null} 
   };
 };
 

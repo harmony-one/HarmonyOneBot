@@ -5,7 +5,7 @@ import config from "../../config";
 import { BotContext } from "../types";
 import { relayApi } from "./api/relayApi";
 import { AxiosError } from "axios";
-import { getUrl } from "./utils/url";
+import { getUrl } from "./utils/";
 
 const logger = pino({
   name: "OneCountryBot",
@@ -86,7 +86,6 @@ oneCountry.command("nft", async (ctx) => {
   const url = getUrl(ctx.match);
   try {
     const response = await relayApi().genNFT({ domain: url });
-    console.log(response);
     ctx.reply("NFT metadata generated");
   } catch (e) {
     logger.error(
@@ -103,7 +102,6 @@ oneCountry.command("nft", async (ctx) => {
 });
 
 oneCountry.command("check", async (ctx) => {
-  console.log("gen check");
   if (!ctx.match) {
     ctx.reply("Error: Missing 1.country domain");
     return;
