@@ -24,6 +24,7 @@ import { oneCountry } from "./modules/1country/oneCountryBot";
 import { Wallet } from "./modules/wallet";
 import { WalletConnect } from "./modules/walletconnect";
 import {BotPayments} from "./modules/payment";
+import {BotSchedule} from "./modules/schedule";
 
 export const bot = new Bot<BotContext>(config.telegramBotAuthToken);
 
@@ -60,6 +61,7 @@ const sdImagesBot = new SDImagesBot();
 const wallet = new Wallet();
 const walletConnect = new WalletConnect();
 const payments = new BotPayments()
+const schedule = new BotSchedule(bot)
 
 const onMessage = async (ctx: OnMessageContext) => {
   if (qrCodeBot.isSupportedEvent(ctx)) {

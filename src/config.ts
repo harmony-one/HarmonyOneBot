@@ -64,5 +64,10 @@ export default {
     holderAddress: process.env.PAYMENT_HOLDER_ADDRESS || "",
     whitelist: (process.env.PAYMENT_WHITELIST || 'stephentse,lijiangxyz')
       .split(',').map(item => item.toString().toLowerCase())
+  },
+  schedule: {
+    chatId: process.env.SCHEDULE_POST_CHAT_ID || "",
+    explorerRestApiUrl: process.env.EXPLORER_REST_API_URL || "",
+    explorerRestApiKey: process.env.EXPLORER_REST_API_KEY || "",
   }
 };
