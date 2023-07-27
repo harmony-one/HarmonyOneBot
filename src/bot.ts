@@ -64,6 +64,7 @@ const payments = new BotPayments()
 const schedule = new BotSchedule(bot)
 
 const onMessage = async (ctx: OnMessageContext) => {
+  console.log('Received message in chat: ', ctx.update.message.chat)
   if (qrCodeBot.isSupportedEvent(ctx)) {
     return qrCodeBot.onEvent(ctx);
   }

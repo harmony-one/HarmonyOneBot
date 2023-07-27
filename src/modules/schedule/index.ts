@@ -1,23 +1,10 @@
 import pino from "pino";
 import { Bot } from 'grammy'
-import axios from 'axios'
 import cron from 'node-cron'
 import config from '../../config'
 import {BotContext} from "../types";
-import {getTotalBridgetAssets} from "./bridgeAPI";
-
-export enum MetricsDailyType {
-  walletsCount = 'wallets_count',
-  transactionsCount = 'transactions_count',
-  averageFee = 'average_fee',
-  blockSize = 'block_size',
-  totalFee = 'total_fee',
-}
-
-interface MetricsDaily {
-  date: string
-  value: string
-}
+import {getFeeStats} from "./explorerApi";
+import {getBotFeeStats} from "./harmonyApi";
 
 export class BotSchedule {
   private bot: Bot<BotContext>
@@ -36,29 +23,26 @@ export class BotSchedule {
     this.runCronJob()
   }
 
-  private async getExplorerMetrics(type: MetricsDailyType, limit = 7) {
-    const { explorerRestApiUrl: apiUrl, explorerRestApiKey: apiKey } = config.schedule
-
-    const requestUrl = `${apiUrl}/v0/metrics?type=${type}&limit=${limit}`
-    this.logger.info('requestUrl '+requestUrl)
-    const { data } = await axios.get<MetricsDaily[]>(requestUrl)
-    return data
-  }
-
   private async postMetricsUpdate() {
-    const { chatId } = config.schedule
-
+    const scheduleChatId = config.schedule.chatId
+    if(!scheduleChatId) {
+      this.logger.error(`No schedule chatId defined. Set [SCHEDULE_CHAT_ID] variable.`)
+      return
+    }
     try {
-      // const totalFeeMetrics = await this.getExplorerMetrics(MetricsDailyType.totalFee)
-      // console.log('totalFeeMetrics', totalFeeMetrics)
-      const bridgedAssets = await getTotalBridgetAssets()
-      console.log('bridgedAssets: ', bridgedAssets)
+      const networkFeeStats = await getFeeStats()
+      const networkFeesReport = `*${networkFeeStats.value}* ONE (${networkFeeStats.change}%)`
+      const botFees = await getBotFeeStats(config.payment.holderAddress)
+      const botFeesReport = `*${botFees.value}* ONE (${botFees.change}%)`
+
+      const reportText = `24-hour network fees: ${networkFeesReport}\n24-hour @HarmonyOneAIBot fees: ${botFeesReport}`
+
+      await this.bot.api.sendMessage(scheduleChatId, reportText, {
+        parse_mode: "Markdown",
+      })
     } catch (e) {
       this.logger.error(`Cannot get metrics data: ${(e as Error).message}`)
     }
-    // await this.bot.api.sendMessage(chatId, '', {
-    //   parse_mode: "Markdown",
-    // })
   }
 
   public runCronJob() {

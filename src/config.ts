@@ -66,7 +66,7 @@ export default {
       .split(',').map(item => item.toString().toLowerCase())
   },
   schedule: {
-    chatId: process.env.SCHEDULE_POST_CHAT_ID || "",
+    chatId: process.env.SCHEDULE_CHAT_ID || "",
     explorerRestApiUrl: process.env.EXPLORER_REST_API_URL || "",
     explorerRestApiKey: process.env.EXPLORER_REST_API_KEY || "",
   }
