@@ -25,6 +25,7 @@ import { Wallet } from "./modules/wallet";
 import { WalletConnect } from "./modules/walletconnect";
 import {BotPayments} from "./modules/payment";
 import {BotSchedule} from "./modules/schedule";
+import {Api} from "telegram";
 
 export const bot = new Bot<BotContext>(config.telegramBotAuthToken);
 
@@ -64,7 +65,6 @@ const payments = new BotPayments()
 const schedule = new BotSchedule(bot)
 
 const onMessage = async (ctx: OnMessageContext) => {
-  console.log('Received message in chat: ', ctx.update.message.chat)
   if (qrCodeBot.isSupportedEvent(ctx)) {
     return qrCodeBot.onEvent(ctx);
   }
@@ -86,6 +86,9 @@ const onMessage = async (ctx: OnMessageContext) => {
   }
   if(payments.isSupportedEvent(ctx)) {
     return payments.onEvent(ctx)
+  }
+  if(ctx.update.message.chat) {
+    console.log(`Received message in chat id: ${ctx.update.message.chat.id}`)
   }
 }
 

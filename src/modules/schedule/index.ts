@@ -46,13 +46,13 @@ export class BotSchedule {
   }
 
   public runCronJob() {
-    cron.schedule('33 20 * * *', () => {
+    cron.schedule('00 02 * * *', () => {
       this.logger.info('Start collecting daily metrics...')
       this.postMetricsUpdate()
     }, {
       scheduled: true,
       timezone: "Europe/Lisbon"
     });
-    this.postMetricsUpdate()
+    // this.postMetricsUpdate()
   }
 }
