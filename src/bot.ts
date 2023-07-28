@@ -66,15 +66,23 @@ const schedule = new BotSchedule(bot)
 
 const onMessage = async (ctx: OnMessageContext) => {
   if (qrCodeBot.isSupportedEvent(ctx)) {
-    return qrCodeBot.onEvent(ctx);
+    const price = qrCodeBot.getEstimatedPrice(ctx)
+    const isPaid = await payments.pay(ctx, price)
+    if(isPaid) {
+      return qrCodeBot.onEvent(ctx);
+    }
   }
   if (sdImagesBot.isSupportedEvent(ctx)) {
-    return sdImagesBot.onEvent(ctx);
+    const price = sdImagesBot.getEstimatedPrice(ctx)
+    const isPaid = await payments.pay(ctx, price)
+    if(isPaid) {
+      return sdImagesBot.onEvent(ctx);
+    }
   }
   if (voiceMemo.isSupportedEvent(ctx)) {
     const price = voiceMemo.getEstimatedPrice(ctx)
-    const isSuccessfulPayment = await payments.pay(ctx, price)
-    if(isSuccessfulPayment) {
+    const isPaid = await payments.pay(ctx, price)
+    if(isPaid) {
       return voiceMemo.onEvent(ctx);
     }
   }
