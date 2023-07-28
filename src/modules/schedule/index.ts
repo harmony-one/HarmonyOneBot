@@ -103,7 +103,7 @@ export class BotSchedule {
 
   public isSupportedEvent(ctx: OnMessageContext) {
     const { text = '' } = ctx.update.message
-    return text?.toLowerCase() === '/botstats'
+    return config.schedule.isEnabled && text?.toLowerCase() === '/botstats'
   }
 
   public async onEvent(ctx: OnMessageContext) {
