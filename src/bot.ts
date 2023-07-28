@@ -87,6 +87,9 @@ const onMessage = async (ctx: OnMessageContext) => {
   if(payments.isSupportedEvent(ctx)) {
     return payments.onEvent(ctx)
   }
+  if(schedule.isSupportedEvent(ctx)) {
+    return schedule.onEvent(ctx)
+  }
   if(ctx.update.message.chat) {
     console.log(`Received message in chat id: ${ctx.update.message.chat.id}`)
   }
