@@ -24,11 +24,16 @@ export class BotSchedule {
   constructor(bot: Bot<BotContext>) {
     this.bot = bot
 
-    if(config.schedule.chatId) {
-      this.runCronJob()
+    if(config.schedule.isEnabled) {
+      if(config.schedule.chatId) {
+        this.runCronJob()
+      } else {
+        this.logger.error(`No chatId defined. Set [SCHEDULE_CHAT_ID] variable.`)
+      }
     } else {
-      this.logger.error(`No chatId defined. Set [SCHEDULE_CHAT_ID] variable.`)
+      this.logger.error(`Scheduled metrics is disabled. Set [SCHEDULE_IS_ENABLED=1].`)
     }
+
   }
 
   private async prepareMetricsUpdate() {

@@ -68,6 +68,7 @@ export default {
       .split(',').map(item => item.toString().toLowerCase())
   },
   schedule: {
+    isEnabled: Boolean(parseInt(process.env.SCHEDULE_IS_ENABLED || "1")),
     chatId: process.env.SCHEDULE_CHAT_ID || "",
     explorerRestApiUrl: process.env.EXPLORER_REST_API_URL || "",
     explorerRestApiKey: process.env.EXPLORER_REST_API_KEY || "",
