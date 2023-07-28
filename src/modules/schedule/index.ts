@@ -83,7 +83,7 @@ export class BotSchedule {
       timezone: "Europe/Lisbon"
     });
 
-    await this.prepareMetricsUpdate()
-    await this.postMetricsUpdate()
+    // await this.prepareMetricsUpdate()
+    // await this.postMetricsUpdate()
   }
 }
