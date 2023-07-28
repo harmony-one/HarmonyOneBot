@@ -3,7 +3,8 @@
   "compilerOptions": {
     "module": "CommonJS",
     "outDir": "dist",
-    "types": ["node"]
+    "types": ["node"],
+    "lib": ["es2022"]
   },
   "include": ["src/bot.ts", "environment.d.ts"],
   "exclude": ["node_modules"]
