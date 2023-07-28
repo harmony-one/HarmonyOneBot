@@ -177,7 +177,7 @@ export class BotPayments {
 
   public isSupportedEvent(ctx: OnMessageContext) {
     const { text = '' } = ctx.update.message
-    return text?.toLowerCase() === '/balance'
+    return text?.toLowerCase() === '/balance' || text?.toLowerCase() === '/botfees'
   }
 
   public async onEvent(ctx: OnMessageContext) {
@@ -189,6 +189,14 @@ export class BotPayments {
       const balance = await this.getAddressBalance(account.address)
       const balanceOne = this.toONE(balance, false)
       ctx.reply(`Balance: *${balanceOne.toFixed(2)} ONE*\n\nDeposit address (Harmony Mainnet): \`${account.address}\``, {
+        reply_to_message_id: message_id,
+        parse_mode: "Markdown",
+      });
+    } else if(text.toLowerCase() === '/botfees') {
+      const { holderAddress } = config.payment
+      const balance = await this.getAddressBalance(holderAddress)
+      const balanceOne = this.toONE(balance, false)
+      ctx.reply(`Bot fees: *${balanceOne.toFixed(2)} ONE*\n\nBot address: \`${holderAddress}\``, {
         reply_to_message_id: message_id,
         parse_mode: "Markdown",
       });

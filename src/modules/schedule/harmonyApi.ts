@@ -33,11 +33,11 @@ export const getAddressHistory = async (address: string): Promise<RpcTransaction
 export const getBotFeeStats = async (address: string) => {
   let history = await getAddressHistory(address)
 
-  const startTimestamp = moment().subtract(7,'days').unix()
   const daysCount = 7
+  const startTimestamp = moment().subtract(daysCount,'days').startOf('day').unix()
   const weekTimestamps = Array(daysCount)
     .fill(0)
-    .map((_, index) => moment().subtract((daysCount - index),'days').unix())
+    .map((_, index) => moment().subtract((daysCount - index),'days').startOf('day').unix())
   const weekValues = Array(daysCount).fill(0)
   let valueTotal = 0
 

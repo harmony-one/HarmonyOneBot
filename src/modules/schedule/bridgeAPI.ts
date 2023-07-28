@@ -79,7 +79,6 @@ export const getBridgeStats = async () => {
         return type.includes('to_one')
           && status === 'success'
           && timestamp >= weekTimestamp
-          && timestamp <= yesterdayTimestamp
           && amount > 0
       })
       .forEach((item) => {
@@ -107,9 +106,9 @@ export const getBridgeStats = async () => {
         }
       })
 
-    // if(i > 0 && i % 10 === 0) {
-    // console.log(`Page ${i}, total value: ${valueTotal.toString()} USD`)
-    //}
+    if(i > 0 && i % 10 === 0) {
+      console.log(`Page ${i}, total value: ${valueTotal.toString()} USD`)
+    }
 
     const lastElement = items[items.length - 1]
     if(lastElement && lastElement.timestamp < weekTimestamp) {

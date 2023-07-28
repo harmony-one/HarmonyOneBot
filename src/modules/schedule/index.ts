@@ -36,7 +36,7 @@ export class BotSchedule {
       this.logger.info(`Start collecting stats...`)
 
       const bridgeStats = await getBridgeStats()
-      const bridgeStatsReport = `*${bridgeStats.value}* USD (${bridgeStats.change}%)`
+      const bridgeStatsReport =  `*${bridgeStats.value}* USD (${bridgeStats.change}%)`
 
       const networkFeeStats = await getFeeStats()
       const networkFeesReport = `*${networkFeeStats.value}* ONE (${networkFeeStats.change}%)`
@@ -46,7 +46,7 @@ export class BotSchedule {
 
       const reportMessage = `24-hour report:\n\nNetwork fees: ${networkFeesReport}\nBridged assets: ${bridgeStatsReport}\n@HarmonyOneAIBot fees: ${botFeesReport}`
 
-      this.logger.info(`Prepared message: "${reportMessage}}"`)
+      this.logger.info(`Prepared message: "${reportMessage}"`)
       this.reportMessage = reportMessage
     } catch (e) {
       this.logger.error(`Cannot get stats: ${(e as Error).message}`)
@@ -83,7 +83,7 @@ export class BotSchedule {
       timezone: "Europe/Lisbon"
     });
 
-    // await this.prepareMetricsUpdate()
-    // await this.postMetricsUpdate()
+    await this.prepareMetricsUpdate()
+    await this.postMetricsUpdate()
   }
 }
