@@ -20,7 +20,7 @@ export class BotSchedule {
     }
   })
 
-  private cache = new LRUCache({ max: 100, ttl: 1000 * 60 * 60 })
+  private cache = new LRUCache({ max: 100, ttl: 1000 * 60 * 60 * 8 })
   private reportMessage = ''
 
   constructor(bot: Bot<BotContext>) {
