@@ -34,10 +34,10 @@ export const getBotFeeStats = async (address: string) => {
   let history = await getAddressHistory(address)
 
   const daysCount = 7
-  const startTimestamp = moment().subtract(daysCount,'days').startOf('day').unix()
+  const startTimestamp = moment().subtract(daysCount,'days').unix()
   const weekTimestamps = Array(daysCount)
     .fill(0)
-    .map((_, index) => moment().subtract((daysCount - index),'days').startOf('day').unix())
+    .map((_, index) => moment().subtract((daysCount - index),'days').unix())
   const weekValues = Array(daysCount).fill(0)
   let valueTotal = 0
 
@@ -59,6 +59,8 @@ export const getBotFeeStats = async (address: string) => {
   if(+change > 0) {
     change = `+${change}`
   }
+
+  // console.log(`Bot fees: value ${value}, valueTotal ${valueTotal}, average ${average}`);
 
   return {
     value: Math.round(value / Math.pow(10, 18)),

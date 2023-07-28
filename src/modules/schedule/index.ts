@@ -64,6 +64,7 @@ export class BotSchedule {
       await this.bot.api.sendMessage(scheduleChatId, this.reportMessage, {
         parse_mode: "Markdown",
       })
+      this.logger.info(`Daily metrics posted in chat ${scheduleChatId}: ${this.reportMessage}`)
     }
   }
 
