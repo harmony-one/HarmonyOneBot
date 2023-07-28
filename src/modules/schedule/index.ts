@@ -107,14 +107,16 @@ export class BotSchedule {
   }
 
   public async onEvent(ctx: OnMessageContext) {
-    const { message_id} = ctx.update.message
+    const { message_id, text = ''} = ctx.update.message
 
-    const report = await this.prepareMetricsUpdate()
-    if(report) {
-      ctx.reply(report, {
-        reply_to_message_id: message_id,
-        parse_mode: "Markdown",
-      });
+    if(text.toLowerCase() === '/botstats') {
+      const report = await this.prepareMetricsUpdate()
+      if(report) {
+        ctx.reply(report, {
+          reply_to_message_id: message_id,
+          parse_mode: "Markdown",
+        });
+      }
     }
   }
 }
