@@ -67,9 +67,8 @@ export const getBridgeStats = async () => {
   const weekTimestamp = moment().subtract(daysCount,'days').unix()
   const yesterdayTimestamp = moment().subtract(1,'days').unix()
 
-  let value = 0
-  let valueTotal = 0
   const tokens = await getTokensList()
+  const daysAmountMap: Record<string, number> = {}
 
   for(let i = 0; i < 100; i++) {
     const items = await getOperations(i)
@@ -97,18 +96,13 @@ export const getBridgeStats = async () => {
         const { usdPrice } = token
         const amountUsd = Math.round(amount * usdPrice)
 
-        if(timestamp >= weekTimestamp) {
-          valueTotal += amountUsd
-
-          if(timestamp >= yesterdayTimestamp) {
-            value += amountUsd
-          }
+        const date = moment(timestamp * 1000).format('YYYYMMDD')
+        if(daysAmountMap[date]) {
+          daysAmountMap[date] += amountUsd
+        } else {
+          daysAmountMap[date] = amountUsd
         }
       })
-
-    if(i > 0 && i % 10 === 0) {
-      console.log(`Page ${i}, total value: ${valueTotal.toString()} USD`)
-    }
 
     const lastElement = items[items.length - 1]
     if(lastElement && lastElement.timestamp < weekTimestamp) {
@@ -116,8 +110,12 @@ export const getBridgeStats = async () => {
     }
   }
 
-  console.log('value', value)
-  console.log('valueTotal', valueTotal)
+  const daysAmountList = Object.entries(daysAmountMap)
+    .sort(([a], [b]) => +b - +a)
+    .map(([_, value]) => value)
+
+  const value = daysAmountList[0] // Latest day
+  const valueTotal = daysAmountList.reduce((sum, item) => sum += item, 0)
 
   const average = valueTotal / daysCount
   let change = ((value / average - 1) * 100).toFixed(2)
