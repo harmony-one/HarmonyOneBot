@@ -44,7 +44,7 @@ export class SDImagesBot {
     }
 
     public getEstimatedPrice(ctx: any) {
-        return 15;
+        return 1.5;
     }
 
     public isSupportedCallbackQuery(ctx: OnMessageContext | OnCallBackQueryData): boolean {
