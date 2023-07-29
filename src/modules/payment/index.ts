@@ -121,6 +121,10 @@ export class BotPayments {
     const { from, message_id } = ctx.update.message
     const {  id: userId, username = '' } = from
 
+    if(amountUSD === 0) {
+      return true
+    }
+
     if(this.isUserInWhitelist(userId, username)) {
       this.logger.info(`@${username} (${userId}) is in the whitelist, skip payment`)
       return true
@@ -128,11 +132,6 @@ export class BotPayments {
 
     if(this.ONERate === 0) {
       this.logger.warn(`ONE token rate is 0, skip payment`)
-      return true
-    }
-
-    if(amountUSD === 0) {
-      this.logger.warn(`Amount USD is 0, skip payment`)
       return true
     }
 

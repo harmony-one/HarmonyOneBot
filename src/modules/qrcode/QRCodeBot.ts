@@ -44,7 +44,7 @@ export class QRCodeBot {
   // }
 
   public getEstimatedPrice(ctx: any) {
-    return 100;
+    return 1.5;
   }
 
   public isSupportedEvent(ctx: OnMessageContext | OnCallBackQueryData): boolean {
