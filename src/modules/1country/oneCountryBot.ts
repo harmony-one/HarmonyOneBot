@@ -25,7 +25,7 @@ oneCountry.command("visit", async (ctx) => {
     return;
   }
   const url = getUrl(ctx.match);
-  let keyboard = new InlineKeyboard().webApp("Go", `https://${url}/`);
+  let keyboard = new InlineKeyboard().webApp("Go", `${config.country.hostname}`) // `https://${url}/`);
 
   ctx.reply(`Visit ${url}`, {
     reply_markup: keyboard,

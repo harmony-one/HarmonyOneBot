@@ -9,8 +9,8 @@ export default {
     [],
   telegramBotAuthToken: process.env.TELEGRAM_BOT_AUTH_TOKEN || "",
   openAiKey: process.env.OPENAI_API_KEY,
-  comfyHost: process.env.COMFY_HOST || '',
-  comfyWsHost: process.env.COMFY_WS_HOST || '',
+  comfyHost: process.env.COMFY_HOST || "",
+  comfyWsHost: process.env.COMFY_WS_HOST || "",
   stableDiffusionHost: process.env.SD_HOST || "",
   qrBot: {
     checkReadable: Boolean(process.env.QRBOT_CHECK_READABLE) || false,
@@ -41,14 +41,14 @@ export default {
     },
   },
   country: {
-    hostname: 'https://1.country',
-    relayApiUrl: 'https://1ns-registrar-relayer.hiddenstate.xyz',
-    tld: '.country',
-    contract: process.env.DC_CONTRACT || '',
-    defaultRPC: 'https://api.harmony.one',
+    hostname: 'https://1.country', // 'https://testcountry.netlify.app/',
+    relayApiUrl: "https://1ns-registrar-relayer.hiddenstate.xyz",
+    tld: ".country",
+    contract: process.env.DC_CONTRACT || "",
+    defaultRPC: "https://api.harmony.one",
     restrictedPhrases: process.env.RESTRICTED_PHRASES
-      ? process.env.RESTRICTED_PHRASES.split(', ')
-      : ['metamask', 'walletconnect'],
+      ? process.env.RESTRICTED_PHRASES.split(", ")
+      : ["metamask", "walletconnect"],
   },
   voiceMemo: {
     isEnabled: Boolean(parseInt(process.env.VOICE_MEMO_ENABLED || "1")),
@@ -60,9 +60,12 @@ export default {
   },
   wallet: {
     secret: process.env.TELEGRAM_WALLET_SECRET || "",
-    webAppUrl: process.env.WALLET_WEB_APP_URL || "https://wallet-web-app.netlify.app",
+    webAppUrl:
+      process.env.WALLET_WEB_APP_URL || "https://wallet-web-app.netlify.app",
   },
   walletc: {
-    webAppUrl: process.env.WALLET_CONNECT_WEB_APP_URL || "https://chimerical-unicorn-78e8d9.netlify.app/",
-  }
+    webAppUrl:
+      process.env.WALLET_CONNECT_WEB_APP_URL ||
+      "https://chimerical-unicorn-78e8d9.netlify.app/",
+  },
 };
