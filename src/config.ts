@@ -64,7 +64,7 @@ export default {
   payment: {
     isEnabled: Boolean(parseInt(process.env.PAYMENT_IS_ENABLED || "1")),
     secret: process.env.PAYMENT_SECRET || "",
-    holderAddress: process.env.PAYMENT_HOLDER_ADDRESS || "",
+    hotWalletPrivateKey: process.env.PAYMENT_WALLET_PRIVATE_KEY || "",
     whitelist: (process.env.PAYMENT_WHITELIST || 'stephentse,lijiangxyz')
       .split(',').map(item => item.toString().toLowerCase())
   },

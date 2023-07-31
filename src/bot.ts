@@ -83,7 +83,7 @@ const onMessage = async (ctx: OnMessageContext) => {
     const price = voiceMemo.getEstimatedPrice(ctx)
     const isPaid = await payments.pay(ctx, price)
     if(isPaid) {
-      return voiceMemo.onEvent(ctx);
+      return voiceMemo.onEvent(ctx).catch((e) => payments.refundPayment(e, ctx, price));
     }
   }
   if (wallet.isSupportedEvent(ctx)) {
