@@ -35,15 +35,15 @@ export const getEstimatedPrice = (ctx: BotContext) => {
     const baseTokens = getTokenNumber(prompts as string);
     const modelName = ctx.session.openAi.chatGpt.model;
     const model = getChatModel(modelName);
-    const price = getChatModelPrice(model, baseTokens) * 100; //cents
+    const price = getChatModelPrice(model,true, baseTokens); //cents
     return ctx.chat.type !== "private" ? price * 4 : price;
   }
   if (ctx.hasCommand("genImg")) {
     const imageNumber = ctx.session.openAi.imageGen.numImages;
     const imageSize = ctx.session.openAi.imageGen.imgSize;
     const model = getDalleModel(imageSize);
-    const price = getDalleModelPrice(model, imageNumber);
-    return price * 100; //cents
+    const price = getDalleModelPrice(model,true,imageNumber); //cents
+    return price; 
   }
   if (ctx.hasCommand("genImgEn")) {
     const imageNumber = ctx.session.openAi.imageGen.numImages;
@@ -51,8 +51,8 @@ export const getEstimatedPrice = (ctx: BotContext) => {
     const chatModelName = ctx.session.openAi.chatGpt.model;
     const chatModel = getChatModel(chatModelName);
     const model = getDalleModel(imageSize);
-    const price = getDalleModelPrice(model, imageNumber, true, chatModel);
-    return price * 100; //cents
+    const price = getDalleModelPrice(model, true, imageNumber, true, chatModel);  //cents
+    return price;
   }
 };
 

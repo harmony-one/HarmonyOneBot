@@ -31,6 +31,7 @@ export async function conversationGpt(
     const initialPrompt = ctx.match as string;
     chat.push({ content: initialPrompt, role: "user" });
     let usage = 0;
+    let price = 0;
     let helpCommand = false;
     while (true) {
       if (!helpCommand) {
@@ -44,6 +45,7 @@ export async function conversationGpt(
         if (response) {
           chat.push({ content: response.completion, role: "system" });
           usage += response.usage;
+          price += response.price
           ctx.reply(response.completion!);
         }
       }
@@ -54,7 +56,7 @@ export async function conversationGpt(
       const userPrompt = userInput?.msg?.text;
       if (userPrompt.toLocaleLowerCase().includes("end")) {
         chat = [];
-        ctx.reply(`${appText.gptChatEnd} ${usage}`);
+        ctx.reply(`${appText.gptChatEnd} ${usage} (${price.toFixed(2)}¢)`);
         break;
       }
       if (userPrompt.toLocaleLowerCase().includes("help")) {
