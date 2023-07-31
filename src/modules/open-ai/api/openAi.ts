@@ -4,12 +4,14 @@ import {
   CreateImageRequest,
   CreateChatCompletionRequest,
 } from "openai";
+import { encode } from "gpt-tokenizer";
 
 import config from "../../../config";
 import { deleteFile, getImage } from "../utils/file";
 import { bot } from "../../../bot";
 import { ChatCompletion, ChatConversation } from "../../types";
 import { pino } from "pino";
+import { ChatGPTModel, ChatGPTModels, ChatGPTModelsEnum, DalleGPTModel, DalleGPTModels } from '../types'
 
 const configuration = new Configuration({
   apiKey: config.openAiKey,
@@ -141,3 +143,38 @@ export async function improvePrompt(promptText: string, model: string) {
     );
   }
 }
+
+export const getTokenNumber = (prompt: string) => {
+  return encode(prompt).length;
+}
+
+export const getChatModel = (modelName: string) => {
+  return ChatGPTModels[modelName];
+}
+
+export const getChatModelPrice = (model: ChatGPTModel, inputTokens: number, outPutTokens?: number) => {
+  let price = model.inputPrice * inputTokens
+  price += outPutTokens ? outPutTokens * model.outputPrice : model.maxContextTokens * model.outputPrice
+  return price / 1000
+}
+
+export const getDalleModel = (modelName: string) => {
+  return DalleGPTModels[modelName];
+}
+
+export const getDalleModelPrice = (model: DalleGPTModel, numImages = 1, hasEnhacedPrompt = false, chatModel?: ChatGPTModel) => {
+  let price = model.price * numImages
+  let promptPrice = 0
+  if (hasEnhacedPrompt && chatModel) {
+    const averageToken = 250 // for 100 words
+    price += getChatModelPrice(chatModel,averageToken,averageToken)
+  }
+  return price
+}
+
+// 1024×1024	$0.020 / image
+// 512×512	$0.018 / image
+// 256×256	$0.016 / image
+
+
+

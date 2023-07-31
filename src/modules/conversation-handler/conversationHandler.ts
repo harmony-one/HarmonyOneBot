@@ -1,7 +1,9 @@
 import { Composer } from "grammy";
 import { promptGen } from "../open-ai/controller";
-import { BotContext, BotConversation } from "../types";
 import { conversations, createConversation } from "@grammyjs/conversations";
+import { encode } from 'gpt-tokenizer'
+
+import { BotContext, BotConversation } from "../types";
 import { conversationGpt } from "../open-ai/conversationGpt";
 import { conversationDomainName } from "../1country/conversationCountry";
 
@@ -27,6 +29,7 @@ conversationHandler.command("chat", async (ctx) => {
     ctx.reply("Error: Missing prompt");
     return;
   }
+  const tokens = encode(prompt)
   if (ctx.session.openAi.chatGpt.isEnabled) {
     if (ctx.chat.type !== "private") {
       ctx.reply("Generating response...");

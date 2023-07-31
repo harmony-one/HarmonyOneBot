@@ -6,7 +6,6 @@ import {
   type Conversation,
   type ConversationFlavor,
 } from "@grammyjs/conversations";
-
 export interface ImageGenSessionData {
   numImages: number;
   imgSize: string;

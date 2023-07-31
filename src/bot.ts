@@ -18,7 +18,7 @@ import { mainMenu } from "./pages";
 import { VoiceMemo } from "./modules/voice-memo";
 import { QRCodeBot } from "./modules/qrcode/QRCodeBot";
 import { SDImagesBot } from "./modules/sd-images";
-import { imageGen } from "./modules/open-ai/ImageGenBot";
+import { openAi } from "./modules/open-ai/openAiBot";
 import { oneCountry } from "./modules/1country/oneCountryBot";
 import { Wallet } from "./modules/wallet";
 import { WalletConnect } from "./modules/walletconnect";
@@ -28,6 +28,7 @@ import {Api} from "telegram";
 import { conversationHandler } from './modules/conversation-handler/conversationHandler'
 
 import config from "./config";
+import { ChatGPTModelsEnum } from "./modules/open-ai/types";
 
 
 const logger = pino({
@@ -140,7 +141,7 @@ bot.command("menu", async (ctx) => {
 
 bot.use(conversationHandler)
 bot.use(oneCountry);
-bot.use(imageGen);
+bot.use(openAi);
 
 bot.on("message", onMessage);
 bot.on("callback_query:data", onCallback);
