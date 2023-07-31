@@ -121,6 +121,10 @@ export class BotPayments {
     const { from, message_id } = ctx.update.message
     const {  id: userId, username = '' } = from
 
+    if(!config.payment.isEnabled) {
+      return true
+    }
+
     if(amountUSD === 0) {
       return true
     }
