@@ -15,6 +15,7 @@ export interface ImageGenSessionData {
 export interface ChatCompletion {
   completion: string
   usage: number
+  price: number
 }
 export interface ChatConversation {
   role: string;

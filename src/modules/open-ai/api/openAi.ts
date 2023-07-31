@@ -116,9 +116,12 @@ export async function chatCompilation(
       payload as CreateChatCompletionRequest
     );
     console.log(response.data);
+    const chatModel = getChatModel(model)
+    const price = getChatModelPrice(chatModel,true,response.data.usage?.prompt_tokens!,response.data.usage?.completion_tokens)
     return {
       completion: response.data.choices[0].message?.content!,
-      usage: response.data.usage?.total_tokens!
+      usage: response.data.usage?.total_tokens!,
+      price: price
     }
   } catch (e: any) {
     console.log(e.response);
@@ -152,9 +155,12 @@ export const getChatModel = (modelName: string) => {
   return ChatGPTModels[modelName];
 }
 
-export const getChatModelPrice = (model: ChatGPTModel, inputTokens: number, outPutTokens?: number) => {
+export const getChatModelPrice = (model: ChatGPTModel, inCents = true, inputTokens: number, outPutTokens?: number) => {
   let price = model.inputPrice * inputTokens
+  console.log('input', model.inputPrice, inputTokens, price)
   price += outPutTokens ? outPutTokens * model.outputPrice : model.maxContextTokens * model.outputPrice
+  console.log('output', model.outputPrice, outPutTokens, outPutTokens ? outPutTokens * model.outputPrice : model.maxContextTokens * model.outputPrice)
+  price = inCents ? price * 100 : price
   return price / 1000
 }
 
@@ -162,12 +168,11 @@ export const getDalleModel = (modelName: string) => {
   return DalleGPTModels[modelName];
 }
 
-export const getDalleModelPrice = (model: DalleGPTModel, numImages = 1, hasEnhacedPrompt = false, chatModel?: ChatGPTModel) => {
+export const getDalleModelPrice = (model: DalleGPTModel, inCents = true, numImages = 1, hasEnhacedPrompt = false, chatModel?: ChatGPTModel) => {
   let price = model.price * numImages
-  let promptPrice = 0
   if (hasEnhacedPrompt && chatModel) {
     const averageToken = 250 // for 100 words
-    price += getChatModelPrice(chatModel,averageToken,averageToken)
+    price += getChatModelPrice(chatModel,inCents,averageToken,averageToken)
   }
   return price
 }
