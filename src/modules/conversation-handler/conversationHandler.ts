@@ -57,5 +57,6 @@ conversationHandler.command("rent", async (ctx) => {
     }
   );
   ctx.reply("Checking name...");
-  await ctx.conversation.enter("botConversation");
+  await ctx.conversation.enter("botConversation",);
+  console.log("AFUERA")
 });

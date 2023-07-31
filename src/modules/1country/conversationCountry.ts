@@ -29,6 +29,7 @@ export async function conversationDomainName(
     let domain = cleanInput(ctx.match as string);
     let helpCommand = false;
     let domainAvailable = false;
+    const timeoutMilliseconds = 10000; 
     while (true) {
       if (!helpCommand) {
         const validate = validateDomainName(domain);
@@ -80,20 +81,39 @@ export async function conversationDomainName(
       //       return "end";
       //     }
       //   );
-      
-      const userInput = await conversation
-        .waitFor(":text", {
-          maxMilliseconds: 60000,
-        }) 
-        .then(
-          (value) => {
-            return value.msg.text;
-          },
-          (reason) => {
-            console.log("REASON", reason);
-            return "end"; // end will break the while loop
-          }
-        );
+      let userInput = ''
+      try {
+        if (ctx.chat?.type === 'private') {
+          const value = await conversation.waitFor(":text", {
+            maxMilliseconds: timeoutMilliseconds,
+          });
+          userInput = value.msg.text;
+        } else {
+          const value = await conversation.waitForCommand("chat", {
+            maxMilliseconds: timeoutMilliseconds,
+          });
+          console.log(value, value.match)
+          userInput = value.match
+        }
+
+      } catch (reason) {
+        console.log("REASON", reason);
+        userInput = "end"; // end will break the while loop
+      }
+
+      // const userInput = await conversation
+      //   .waitFor(":text", {
+      //     maxMilliseconds: 60000,
+      //   }) 
+      //   .then(
+      //     (value) => {
+      //       return value.msg.text;
+      //     },
+      //     (reason) => {
+      //       console.log("REASON", reason);
+      //       return "end"; // end will break the while loop
+      //     }
+      //   );
       const userPrompt = userInput //.msg.text; //. .msg ? cleanInput(userInput.msg.text!) : 'end'
       console.log(userInput);
       if (userPrompt.toLocaleLowerCase().includes("rent") && domainAvailable) {
@@ -132,6 +152,7 @@ export async function conversationDomainName(
         ctx.reply("Checking name...");
       }
     }
+    console.log('here')
     return;
   } catch (e) {
     ctx.reply("The bot has encountered an error. Please try again later. ");
