@@ -10,6 +10,14 @@ import {Buffer} from "buffer";
 import fs from "fs";
 import moment from 'moment'
 import {Kagi} from "./kagi";
+import MessageMediaDocument = Api.MessageMediaDocument;
+import {InputFile} from "grammy";
+import {bot} from "../../bot";
+
+interface TranslationJob {
+  filePath: string
+  publicFileUrl: string
+}
 
 export class VoiceMemo {
   private logger: Logger
@@ -17,7 +25,8 @@ export class VoiceMemo {
   private telegramClient?: TelegramClient
   private speechmatics = new Speechmatics(config.voiceMemo.speechmaticsApiKey)
   private kagi = new Kagi(config.voiceMemo.kagiApiKey)
-  private audioQueue = new LRUCache({ max: 100, ttl: 1000 * 60 * 5 })
+  private requestsQueue = new LRUCache({ max: 100, ttl: 1000 * 60 * 5 })
+  private jobsQueue = new LRUCache<string, TranslationJob>({ max: 100, ttl: 1000 * 60 * 5 })
 
   constructor() {
     this.logger = pino({
@@ -46,8 +55,7 @@ export class VoiceMemo {
     return filePath
   }
 
-  private deleteTempFile (filename: string) {
-    const filePath = this.getTempFilePath(filename)
+  private deleteTempFile (filePath: string) {
     if(fs.existsSync(filePath)) {
       fs.unlinkSync(filePath)
     }
@@ -61,38 +69,15 @@ export class VoiceMemo {
     this.logger.info('VoiceMemo bot started')
   }
 
-  private async processTelegramClientEvent(event: NewMessageEvent) {
-    const { media, chatId, senderId } = event.message;
-    if(chatId && media instanceof Api.MessageMediaDocument && media && media.document) {
-      // @ts-ignore
-      const { mimeType = '' } = media.document
-      if(mimeType.includes('audio')) {
-        const buffer = await this.telegramClient?.downloadMedia(media);
-        if(buffer) {
-          const fileName = `${media.document.id.toString()}.ogg`
-          const filePath = this.writeTempFile(buffer, fileName)
-          const publicFileUrl = `${config.voiceMemo.servicePublicUrl}/${fileName}`
-          this.logger.info(`Public file url: ${publicFileUrl}`)
-          try {
-            const [translation, kagiSummarization] = await Promise.allSettled([
-              this.speechmatics.getTranslation(filePath),
-              this.kagi.getSummarization(publicFileUrl)
-            ])
-            this.logger.info(`Kagi summarization: ${JSON.stringify(kagiSummarization)}`)
-            if(translation && translation.status === 'fulfilled' && translation.value) {
-              const summarization = kagiSummarization.status === 'fulfilled'
-                ? kagiSummarization.value
-                : ''
-              this.onTranslationReady(event, translation.value, summarization)
-            } else {
-              this.logger.error(`Speechmatics translation failed: ${JSON.stringify(translation)}}`)
-            }
-          } catch (e) {
-            this.logger.error(`Translation error: ${(e as Error).message}`)
-          } finally {
-            this.deleteTempFile(fileName)
-          }
-        }
+  private async downloadAudioFile(media: MessageMediaDocument) {
+    const buffer = await this.telegramClient?.downloadMedia(media);
+    if(buffer && media.document) {
+      const fileName = `${media.document.id.toString()}.ogg`
+      const filePath = this.writeTempFile(buffer, fileName)
+      const publicFileUrl = `${config.voiceMemo.servicePublicUrl}/${fileName}`
+      return {
+        filePath,
+        publicFileUrl
       }
     }
   }
@@ -101,19 +86,23 @@ export class VoiceMemo {
     const { media, chatId, senderId } = event.message;
     if(chatId && media instanceof Api.MessageMediaDocument && media && media.document) {
       // @ts-ignore
-      const { mimeType = '', size } = media.document
-      const queueKey = `${senderId}_${size.toString()}`
-      this.logger.info(`Request from ${senderId}: queue key ${queueKey}`)
+      const { size } = media.document
+      const requestKey = `${senderId}_${size.toString()}`
+      this.logger.info(`Request from ${senderId}: request key: ${requestKey}`)
 
       for(let i= 0; i < 100; i++) {
-        const isInQueue = this.audioQueue.get(queueKey)
-        if(isInQueue) {
-          this.logger.info(`Request ${queueKey} found in queue, continue`)
-          return this.processTelegramClientEvent(event)
+        if(this.requestsQueue.get(requestKey)) {
+          this.logger.info(`Request ${requestKey} found in queue, start downloading audio file...`)
+          const result = await this.downloadAudioFile(media)
+          if(result) {
+            this.logger.info(`Request ${requestKey} file downloaded`)
+            this.jobsQueue.set(requestKey, result)
+          }
+          break;
         }
         await this.sleep(100)
       }
-      this.logger.info(`Event ${queueKey} not found in queue, skip`)
+      this.logger.info(`Event ${requestKey} not found in queue, skip`)
     }
   }
 
@@ -136,53 +125,12 @@ export class VoiceMemo {
     return resultText
   }
 
-  private async onTranslationReady(event: NewMessageEvent, result: SpeechmaticsResult, kagiSummarization: string) {
-    const { chatId, sender } = event.message;
-    const { translation } = result
-
-    let summarization = kagiSummarization || result.summarization || ''
-    if(summarization) {
-      summarization = this.enrichSummarization(summarization)
-    }
-
-    if(!kagiSummarization && result.summarization) {
-      summarization = `${summarization}\n\n[Speechmatics]`
-    }
-
-    const senderUsername = sender instanceof Api.User && sender.username ? sender.username : ''
-    this.logger.info(`Translation for ${senderUsername} ready, length: ${translation.length}`)
-    if(translation.length < 512) {
-      await this.telegramClient?.sendMessage(chatId as any, {
-        message: translation,
-        replyTo: event.message
-      })
-    } else {
-      const file = new Buffer(translation)
-      const messageDate = moment(event.message.date * 1000).utcOffset(-7).format('MM-DD h:mm a')
-      // hack from gramjs type docs
-      // @ts-ignore
-      file.name = `${senderUsername ? 'From  @'+senderUsername : ''} ${messageDate}.txt`
-      await this.telegramClient?.sendFile(chatId as any, {
-        file,
-        replyTo: event.message,
-        caption: summarization.slice(0, 1024) || translation.slice(0, 512)
-      })
-    }
-  }
-
   public isSupportedEvent(ctx: OnMessageContext) {
     const { voice } = ctx.update.message
 
     return config.voiceMemo.isEnabled
       && voice
       && (voice.mime_type && voice.mime_type.includes('audio'))
-  }
-
-  public async onEvent(ctx: OnMessageContext) {
-    const { voice, from } = ctx.update.message
-    const key = `${from.id}_${voice?.file_size}`
-    this.audioQueue.set(key, Date.now())
-    this.logger.info(`onEvent message @${from.username} (${from.id}): ${key}`)
   }
 
   public getEstimatedPrice(ctx: OnMessageContext) {
@@ -192,5 +140,59 @@ export class VoiceMemo {
       return this.speechmatics.estimatePrice(voice.duration)
     }
     return 0
+  }
+
+  public async onEvent(ctx: OnMessageContext) {
+    const { message_id, voice, from } = ctx.update.message
+    const requestKey = `${from.id}_${voice?.file_size}`
+
+    this.requestsQueue.set(requestKey, Date.now())
+
+    this.logger.info(`onEvent message @${from.username} (${from.id}): ${requestKey}`)
+
+    let translationJob
+
+    for(let i= 0; i < 100; i++) {
+      translationJob = this.jobsQueue.get(requestKey)
+      if(translationJob) {
+        break;
+      }
+      await this.sleep(100)
+    }
+
+    if(translationJob) {
+      const { filePath, publicFileUrl } = translationJob
+      this.logger.info(`Public file url: ${publicFileUrl}`)
+      try {
+        const [translation, kagiResult] = await Promise.allSettled([
+          this.speechmatics.getTranslation(filePath),
+          this.kagi.getSummarization(publicFileUrl)
+        ])
+
+        this.logger.info(`Kagi summarization: ${JSON.stringify(kagiResult)}`)
+
+        if(translation && translation.status === 'fulfilled' && translation.value) {
+          let summary = kagiResult.status === 'fulfilled'
+            ? kagiResult.value
+            : translation.value.summarization
+          if(summary) {
+            summary = this.enrichSummarization(summary)
+          }
+          if(kagiResult.status !== 'fulfilled' && summary) {
+            summary = `${summary}\n\n[Speechmatics]`
+          }
+
+          const translationFile = new InputFile(new TextEncoder().encode(translation.value.translation), `From @${from.username}.txt`)
+          await bot.api.sendDocument(ctx.chat.id, translationFile, {
+            reply_to_message_id: ctx.message.message_id,
+            caption: summary.slice(0, 1024)
+          })
+        }
+      } catch (e) {
+        this.logger.error(`Translation error: ${(e as Error).message}`)
+      } finally {
+        this.deleteTempFile(filePath)
+      }
+    }
   }
 }
