@@ -68,6 +68,7 @@ openAi.command("genImg", async (ctx) => {
       return;
     }
     const price = getEstimatedPrice(ctx);
+    ctx.reply(`Here is the price ${price!.toFixed(2)}¢`)
     const isPaid = true; // await payments.pay(ctx, price)
     if (isPaid) {
       const payload = {
@@ -91,6 +92,7 @@ openAi.command("genImgEn", async (ctx) => {
       return;
     }
     const price = getEstimatedPrice(ctx);
+    ctx.reply(`Here is the price ${price!.toFixed(2)}¢`)
     const isPaid = true; // await payments.pay(ctx, price)
     if (isPaid) {
       const payload = {
