@@ -80,21 +80,6 @@ export class ComfyClient {
         // console.log('Connection Closed');
         this.wsConnection = null;
       });
-
-      connection.on('message', function (message) {
-        if (message.type === 'utf8') {
-
-          try {
-            // console.log('### message.utf8Data', message.utf8Data);
-            const m = JSON.parse(message.utf8Data);
-            if (m.type === 'executed') {
-
-            }
-          } catch (ex) {
-
-          }
-        }
-      });
     });
 
     this.wsClient.connect(this.wsHost + `/ws?clientId=${this.clientId}`);
@@ -147,12 +132,14 @@ export class ComfyClient {
     return response.data[promptId];
   }
 
-  async uploadImage(filename: string, file: Buffer) {
+  async uploadImage(params: {filename: string, fileBuffer: Buffer, override: boolean}) {
     const formData = new FormData();
-    formData.append('image', file, {
-      filename,
+    formData.append('image', params.fileBuffer, {
+      filename: params.filename,
       contentType: 'image/png'
     });
+
+    formData.append('overwrite', String(params.override));
 
     const response = await this.httpClient.postForm<UploadImageResponse>('/upload/image', formData);
     return response.data;

@@ -1,7 +1,7 @@
 // import sdwebui, { Client, SamplingMethod } from 'node-sd-webui'
 import { Client, SamplingMethod } from './sd-node-client'
 
-const NEGATIVE_PROMPT = 'ng_deepnegative_v1_75t, (badhandv4:1.2), (worst quality:2), (low quality:2), (normal quality:2), lowres, bad anatomy, bad hands, ((monochrome)), ((grayscale)) watermark, moles';
+const NEGATIVE_PROMPT = 'ugly, deformed, watermark';
 
 export class SDNodeApi {
   client: Client;
@@ -16,8 +16,8 @@ export class SDNodeApi {
       // negativePrompt: '(deformed, distorted, disfigured:1.3), poorly drawn, bad anatomy, wrong anatomy, extra limb, missing limb, floating limbs, (mutated hands and fingers:1.4), disconnected limbs, mutation, mutated, ugly, disgusting, blurry, amputation',
       negativePrompt: NEGATIVE_PROMPT,
       samplingMethod: SamplingMethod.DPMPlusPlus_2M_Karras,
-      width: 512,
-      height: 512,
+      width: 1024,
+      height: 1024,
       steps: 30,
       batchSize: 1,
     })
@@ -31,8 +31,8 @@ export class SDNodeApi {
       // negativePrompt: '(deformed, distorted, disfigured:1.3), poorly drawn, bad anatomy, wrong anatomy, extra limb, missing limb, floating limbs, (mutated hands and fingers:1.4), disconnected limbs, mutation, mutated, ugly, disgusting, blurry, amputation',
       negativePrompt: NEGATIVE_PROMPT,
       samplingMethod: SamplingMethod.DPMPlusPlus_2M_Karras,
-      width: 512,
-      height: 512,
+      width: 1024,
+      height: 1024,
       steps: 30,
       batchSize: 1,
       cfgScale: 7,
@@ -48,8 +48,8 @@ export class SDNodeApi {
       // negativePrompt: '(deformed, distorted, disfigured:1.3), poorly drawn, bad anatomy, wrong anatomy, extra limb, missing limb, floating limbs, (mutated hands and fingers:1.4), disconnected limbs, mutation, mutated, ugly, disgusting, blurry, amputation',
       negativePrompt: NEGATIVE_PROMPT,
       samplingMethod: SamplingMethod.DPMPlusPlus_2M_Karras,
-      width: 512,
-      height: 512,
+      width: 1024,
+      height: 1024,
       steps: 15,
       batchSize: 4,
       cfgScale: 10,

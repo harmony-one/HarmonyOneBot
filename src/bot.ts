@@ -22,8 +22,10 @@ import { openAi } from "./modules/open-ai/openAiBot";
 import { oneCountry } from "./modules/1country/oneCountryBot";
 import { Wallet } from "./modules/wallet";
 import { WalletConnect } from "./modules/walletconnect";
+import {BotPayments} from "./modules/payment";
+import {BotSchedule} from "./modules/schedule";
+import {Api} from "telegram";
 import { conversationHandler } from './modules/conversation-handler/conversationHandler'
-
 import config from "./config";
 import { ChatGPTModelsEnum } from "./modules/open-ai/types";
 
@@ -37,7 +39,6 @@ const logger = pino({
     },
   },
 });
-
 
 export const bot = new Bot<BotContext>(config.telegramBotAuthToken);
 
@@ -74,22 +75,45 @@ const qrCodeBot = new QRCodeBot();
 const sdImagesBot = new SDImagesBot();
 const wallet = new Wallet();
 const walletConnect = new WalletConnect();
+const payments = new BotPayments()
+const schedule = new BotSchedule(bot)
 
 const onMessage = async (ctx: OnMessageContext) => {
   if (qrCodeBot.isSupportedEvent(ctx)) {
-    return qrCodeBot.onEvent(ctx);
+    const price = qrCodeBot.getEstimatedPrice(ctx)
+    const isPaid = await payments.pay(ctx, price)
+    if(isPaid) {
+      return qrCodeBot.onEvent(ctx);
+    }
   }
   if (sdImagesBot.isSupportedEvent(ctx)) {
-    return sdImagesBot.onEvent(ctx);
+    const price = sdImagesBot.getEstimatedPrice(ctx)
+    const isPaid = await payments.pay(ctx, price)
+    if(isPaid) {
+      return sdImagesBot.onEvent(ctx);
+    }
   }
   if (voiceMemo.isSupportedEvent(ctx)) {
-    return voiceMemo.onEvent(ctx);
+    const price = voiceMemo.getEstimatedPrice(ctx)
+    const isPaid = await payments.pay(ctx, price)
+    if(isPaid) {
+      return voiceMemo.onEvent(ctx);
+    }
   }
   if (wallet.isSupportedEvent(ctx)) {
     return wallet.onEvent(ctx);
   }
   if(walletConnect.isSupportedEvent(ctx)) {
     return walletConnect.onEvent(ctx)
+  }
+  if(payments.isSupportedEvent(ctx)) {
+    return payments.onEvent(ctx)
+  }
+  if(schedule.isSupportedEvent(ctx)) {
+    return schedule.onEvent(ctx)
+  }
+  if(ctx.update.message.chat) {
+    console.log(`Received message in chat id: ${ctx.update.message.chat.id}`)
   }
 }
 

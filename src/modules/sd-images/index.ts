@@ -43,6 +43,10 @@ export class SDImagesBot {
         return hasCallbackQuery || hasCommand;
     }
 
+    public getEstimatedPrice(ctx: any) {
+        return 1.5;
+    }
+
     public isSupportedCallbackQuery(ctx: OnMessageContext | OnCallBackQueryData): boolean {
         if (!ctx.callbackQuery?.data) {
             return false;
@@ -103,7 +107,7 @@ export class SDImagesBot {
             let idx = this.queue.findIndex(v => v === uuid);
 
             if(idx !== 0) {
-                ctx.reply(`${author} you are the ${idx + 1}/${this.queue.length}. Please wait about ${idx * 10} sec`);
+                ctx.reply(`${author} you are the ${idx + 1}/${this.queue.length}. Please wait about ${idx * 30} sec`);
             }
 
             // waiting queue
@@ -147,7 +151,7 @@ export class SDImagesBot {
             let idx = this.queue.findIndex(v => v === uuid);
 
             if(idx !== 0) {
-                ctx.reply(`${author} you are the ${idx + 1}/${this.queue.length}. Please wait about ${idx * 10} sec`);
+                ctx.reply(`${author} you are the ${idx + 1}/${this.queue.length}. Please wait about ${idx * 30} sec`);
             }
 
             // waiting queue

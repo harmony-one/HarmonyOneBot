@@ -25,12 +25,8 @@ export class WalletConnect {
   }
 
   public isSupportedEvent(ctx: OnMessageContext) {
-    const { text, chat } = ctx.update.message;
-    return (
-      chat.type === "private" &&
-      text &&
-      text.toLowerCase().startsWith("/walletc")
-    );
+    const { text, chat } = ctx.update.message
+    return chat.type === 'private' && text && text.toLowerCase().startsWith('/walletconnect')
   }
 
   public async onEvent(ctx: OnMessageContext) {

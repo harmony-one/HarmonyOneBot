@@ -44,7 +44,7 @@ export class QRCodeBot {
   // }
 
   public getEstimatedPrice(ctx: any) {
-    return 100;
+    return 1.5;
   }
 
   public isSupportedEvent(ctx: OnMessageContext | OnCallBackQueryData): boolean {
@@ -178,7 +178,7 @@ export class QRCodeBot {
       qrImgBuffer = await retryAsync(operation, 5, 100);
 
     } catch (ex) {
-      this.logger.error('ex', ex);
+      this.logger.error(`ex ${ex}`);
       ctx.reply("Internal error")
       return;
     }
@@ -219,17 +219,18 @@ export class QRCodeBot {
     const extendedPrompt = prompt + ', ' + automatic1111DefaultConfig.additionalPrompt;
     const negativePrompt = automatic1111DefaultConfig.defaultNegativePrompt;
 
-    const comfyClient = new ComfyClient({host: config.comfyHost, wsHost: config.comfyWsHost});
+    const comfyClient = new ComfyClient({host: config.comfyHost2, wsHost: config.comfyWsHost2});
 
     const filenameHash = crypto.createHash('sha256').update(qrUrl, 'utf8');
-    const fileName = filenameHash.digest('hex') + '.png';
+    const filename = filenameHash.digest('hex') + '.png';
 
-    const uploadResult = await comfyClient.uploadImage(fileName, qrImgBuffer);
+    const uploadResult = await comfyClient.uploadImage({filename, fileBuffer: qrImgBuffer, override: true});
 
     const workflow = buildQRWorkflow({qrFilename: uploadResult.name, clientId: comfyClient.clientId, negativePrompt, prompt: extendedPrompt})
 
     const response = await comfyClient.queuePrompt(workflow);
     const promptResult = await comfyClient.waitingPromptExecution(response.prompt_id);
+    comfyClient.abortWebsocket();
 
     return comfyClient.downloadResult(promptResult.data.output.images[0].filename);
   }
