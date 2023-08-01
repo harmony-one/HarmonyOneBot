@@ -1,4 +1,5 @@
 import pino from "pino";
+import Web3 from 'web3'
 import { Bot } from 'grammy'
 import cron from 'node-cron'
 import { LRUCache } from 'lru-cache'
@@ -7,8 +8,11 @@ import {BotContext, OnMessageContext} from "../types";
 import {getFeeStats} from "./explorerApi";
 import {getBotFeeStats} from "./harmonyApi";
 import {getBridgeStats} from "./bridgeAPI";
+import {Account} from "web3-core";
 
 export class BotSchedule {
+  private web3: Web3
+  private paymentsAccount: Account
   private bot: Bot<BotContext>
   private logger = pino({
     name: 'Schedule',
@@ -25,6 +29,9 @@ export class BotSchedule {
 
   constructor(bot: Bot<BotContext>) {
     this.bot = bot
+
+    this.web3 = new Web3('https://api.harmony.one')
+    this.paymentsAccount = this.web3.eth.accounts.privateKeyToAccount(config.payment.hotWalletPrivateKey)
 
     if(config.schedule.isEnabled) {
       if(config.schedule.chatId) {
@@ -53,7 +60,7 @@ export class BotSchedule {
       const networkFeeStats = await getFeeStats()
       const networkFeesReport = `*${networkFeeStats.value}* ONE (${networkFeeStats.change}%)`
 
-      const botFees = await getBotFeeStats(config.payment.holderAddress)
+      const botFees = await getBotFeeStats(this.paymentsAccount.address)
       const botFeesReport = `*${botFees.value}* ONE (${botFees.change}%)`
 
       const reportMessage = `24-hour report:\n\nNetwork fees: ${networkFeesReport}\nBridged assets: ${bridgeStatsReport}\n@HarmonyOneAIBot fees: ${botFeesReport}`
