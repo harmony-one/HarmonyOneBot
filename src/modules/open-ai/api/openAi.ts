@@ -165,11 +165,12 @@ export const getChatModelPrice = (model: ChatGPTModel, inCents = true, inputToke
 }
 
 export const getDalleModel = (modelName: string) => {
+  console.log(modelName)
   return DalleGPTModels[modelName];
 }
 
 export const getDalleModelPrice = (model: DalleGPTModel, inCents = true, numImages = 1, hasEnhacedPrompt = false, chatModel?: ChatGPTModel) => {
-  let price = model.price * numImages
+  let price = model.price * numImages || 0
   if (hasEnhacedPrompt && chatModel) {
     const averageToken = 250 // for 100 words
     price += getChatModelPrice(chatModel,inCents,averageToken,averageToken)
