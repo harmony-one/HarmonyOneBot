@@ -11,6 +11,8 @@ export default {
   openAiKey: process.env.OPENAI_API_KEY,
   comfyHost: process.env.COMFY_HOST || '',
   comfyWsHost: process.env.COMFY_WS_HOST || '',
+  comfyHost2: process.env.COMFY_HOST2 || '',
+  comfyWsHost2: process.env.COMFY_WS_HOST2 || '',
   stableDiffusionHost: process.env.SD_HOST || "",
   qrBot: {
     checkReadable: Boolean(process.env.QRBOT_CHECK_READABLE) || false,
@@ -64,5 +66,18 @@ export default {
   },
   walletc: {
     webAppUrl: process.env.WALLET_CONNECT_WEB_APP_URL || "https://chimerical-unicorn-78e8d9.netlify.app/",
+  },
+  payment: {
+    isEnabled: Boolean(parseInt(process.env.PAYMENT_IS_ENABLED || "1")),
+    secret: process.env.PAYMENT_SECRET || "",
+    holderAddress: process.env.PAYMENT_HOLDER_ADDRESS || "",
+    whitelist: (process.env.PAYMENT_WHITELIST || 'stephentse,lijiangxyz')
+      .split(',').map(item => item.toString().toLowerCase())
+  },
+  schedule: {
+    isEnabled: Boolean(parseInt(process.env.SCHEDULE_IS_ENABLED || "0")),
+    chatId: process.env.SCHEDULE_CHAT_ID || "",
+    explorerRestApiUrl: process.env.EXPLORER_REST_API_URL || "",
+    explorerRestApiKey: process.env.EXPLORER_REST_API_KEY || "",
   }
 };

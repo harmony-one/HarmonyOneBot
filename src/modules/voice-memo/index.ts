@@ -53,20 +53,19 @@ export class VoiceMemo {
     }
   }
 
+  private sleep = (timeout: number) => new Promise(resolve => setTimeout(resolve, timeout))
+
   private async initTgClient () {
     this.telegramClient = await initTelegramClient()
     this.telegramClient.addEventHandler(this.onTelegramClientEvent.bind(this), new NewMessage({}));
     this.logger.info('VoiceMemo bot started')
   }
 
-  private async onTelegramClientEvent(event: NewMessageEvent) {
+  private async processTelegramClientEvent(event: NewMessageEvent) {
     const { media, chatId, senderId } = event.message;
     if(chatId && media instanceof Api.MessageMediaDocument && media && media.document) {
       // @ts-ignore
-      const { mimeType = '', size } = media.document
-      const checkKey = `${senderId}_${size.toString()}`
-      this.logger.info(`onTelegramClientEvent: ${checkKey}`)
-      // const queueDocument = this.audioQueue.get(checkKey)
+      const { mimeType = '' } = media.document
       if(mimeType.includes('audio')) {
         const buffer = await this.telegramClient?.downloadMedia(media);
         if(buffer) {
@@ -95,6 +94,26 @@ export class VoiceMemo {
           }
         }
       }
+    }
+  }
+
+  private async onTelegramClientEvent(event: NewMessageEvent) {
+    const { media, chatId, senderId } = event.message;
+    if(chatId && media instanceof Api.MessageMediaDocument && media && media.document) {
+      // @ts-ignore
+      const { mimeType = '', size } = media.document
+      const queueKey = `${senderId}_${size.toString()}`
+      this.logger.info(`Request from ${senderId}: queue key ${queueKey}`)
+
+      for(let i= 0; i < 100; i++) {
+        const isInQueue = this.audioQueue.get(queueKey)
+        if(isInQueue) {
+          this.logger.info(`Request ${queueKey} found in queue, continue`)
+          return this.processTelegramClientEvent(event)
+        }
+        await this.sleep(100)
+      }
+      this.logger.info(`Event ${queueKey} not found in queue, skip`)
     }
   }
 
@@ -153,13 +172,25 @@ export class VoiceMemo {
 
   public isSupportedEvent(ctx: OnMessageContext) {
     const { voice } = ctx.update.message
-    return voice && (voice.mime_type && voice.mime_type.includes('audio'))
+
+    return config.voiceMemo.isEnabled
+      && voice
+      && (voice.mime_type && voice.mime_type.includes('audio'))
   }
 
   public async onEvent(ctx: OnMessageContext) {
     const { voice, from } = ctx.update.message
-    // const key = `${from.id}_${voice?.file_size}`
-    // this.audioQueue.set(key, Date.now())
-    // this.logger.info(`onEvent: ${key}`)
+    const key = `${from.id}_${voice?.file_size}`
+    this.audioQueue.set(key, Date.now())
+    this.logger.info(`onEvent message @${from.username} (${from.id}): ${key}`)
+  }
+
+  public getEstimatedPrice(ctx: OnMessageContext) {
+    const { update: { message: { voice } } } = ctx
+
+    if(voice) {
+      return this.speechmatics.estimatePrice(voice.duration)
+    }
+    return 0
   }
 }
