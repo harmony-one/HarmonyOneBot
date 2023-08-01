@@ -44,8 +44,8 @@ export async function conversationGpt(
         });
         if (response) {
           chat.push({ content: response.completion, role: "system" });
-          usage += response.usage;
-          price += response.price
+          usage = response.usage;
+          price = response.price
           ctx.reply(response.completion!);
         }
       }

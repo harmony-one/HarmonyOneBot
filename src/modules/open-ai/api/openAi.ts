@@ -157,9 +157,9 @@ export const getChatModel = (modelName: string) => {
 
 export const getChatModelPrice = (model: ChatGPTModel, inCents = true, inputTokens: number, outPutTokens?: number) => {
   let price = model.inputPrice * inputTokens
-  console.log('input', model.inputPrice, inputTokens, price)
+  // console.log('input', model.inputPrice, inputTokens, price)
   price += outPutTokens ? outPutTokens * model.outputPrice : model.maxContextTokens * model.outputPrice
-  console.log('output', model.outputPrice, outPutTokens, outPutTokens ? outPutTokens * model.outputPrice : model.maxContextTokens * model.outputPrice)
+  // console.log('output', model.outputPrice, outPutTokens, outPutTokens ? outPutTokens * model.outputPrice : model.maxContextTokens * model.outputPrice)
   price = inCents ? price * 100 : price
   return price / 1000
 }
