@@ -150,9 +150,10 @@ export class BotPayments {
   public async refundPayment(e: Error, ctx: OnMessageContext, amountUSD: number) {
     const {  id: userId, username = '' } = ctx.update.message.from
 
-    this.logger.error(`[${userId} @${username}] refund: $${amountUSD}, error: "${(e as Error).message}"`)
+    this.logger.error(`[${userId} @${username}] refund payment: $${amountUSD}, error: "${(e as Error).message}"`)
 
     if(this.skipPayment(ctx, amountUSD)) {
+      this.logger.info(`[${userId} @${username}] skip refund`)
       return true
     }
 

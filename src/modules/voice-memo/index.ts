@@ -143,7 +143,7 @@ export class VoiceMemo {
   }
 
   public async onEvent(ctx: OnMessageContext) {
-    const { message_id, voice, from } = ctx.update.message
+    const { voice, from } = ctx.update.message
     const requestKey = `${from.id}_${voice?.file_size}`
 
     this.requestsQueue.set(requestKey, Date.now())
