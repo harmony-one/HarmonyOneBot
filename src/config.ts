@@ -46,7 +46,7 @@ export default {
     hostname: 'https://1.country',
     relayApiUrl: 'https://1ns-registrar-relayer.hiddenstate.xyz',
     tld: '.country',
-    contract: process.env.DC_CONTRACT || '',
+    contract: process.env.DC_CONTRACT || '0x547942748Cc8840FEc23daFdD01E6457379B446D',
     defaultRPC: 'https://api.harmony.one',
     restrictedPhrases: process.env.RESTRICTED_PHRASES
       ? process.env.RESTRICTED_PHRASES.split(', ')
