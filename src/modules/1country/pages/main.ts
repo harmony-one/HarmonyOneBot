@@ -10,6 +10,8 @@ const help = `🌐 *1.country Help*
 /check [domain] - Check a 1.country domain status
 /cert [domain] - Check domain's cert status
 /nft [domain] - Check domain's nft metadata status
+/rent [domain] - Rent a domain name for 30 days
+/renew [domain] - Renew a domain for 30 days
 `;
 
 export const oneCountryMainMenu = new Menu<BotContext>(MenuIds.ONE_COUNTRY_MAIN) //<MyContext>

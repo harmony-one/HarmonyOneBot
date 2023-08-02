@@ -1,6 +1,18 @@
 import { TelegramClient } from "telegram";
 import { StringSession } from "telegram/sessions";
+import { pino } from "pino";
+
 import config from "./config";
+
+const logger = pino({
+  name: "bot",
+  transport: {
+    target: "pino-pretty",
+    options: {
+      colorize: true,
+    },
+  },
+});
 
 const {
   telegramBotAuthToken,
@@ -20,8 +32,8 @@ export const initTelegramClient = async () => {
   );
   await client.start({
     botAuthToken: telegramBotAuthToken,
-    onError: (err) => console.log(err),
+    onError: (err) => logger.error(err),
   });
-  console.log("Telegram session:", client.session.save());
+  logger.info("Telegram session:", client.session.save());
   return client;
 };

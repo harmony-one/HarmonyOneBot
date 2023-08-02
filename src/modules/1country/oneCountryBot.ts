@@ -1,22 +1,55 @@
-import { Composer } from "grammy";
+import { Composer, InlineKeyboard } from "grammy";
+import pino from "pino";
+
 import config from "../../config";
 import { BotContext } from "../types";
 import { relayApi } from "./api/relayApi";
 import { AxiosError } from "axios";
+import { getUrl } from "./utils/";
+
+const logger = pino({
+  name: "OneCountryBot",
+  transport: {
+    target: "pino-pretty",
+    options: {
+      colorize: true,
+    },
+  },
+});
 
 export const oneCountry = new Composer<BotContext>();
 
-const getUrl = (url: string, fullUrl = true) => {
-  if (url.endsWith("/")) {
-    url = url.slice(0, url.length - 1);
+oneCountry.command("visit", async (ctx) => {
+  if (!ctx.match) {
+    ctx.reply("Error: Missing 1.country domain");
+    return;
   }
-  if (url.startsWith("https://")) {
-    url = url.slice("https://".length);
+  const url = getUrl(ctx.match);
+  let keyboard = new InlineKeyboard().webApp("Go", `https://${url}/`);
+
+  ctx.reply(`Visit ${url}`, {
+    reply_markup: keyboard,
+  });
+});
+
+oneCountry.command("renew", async (ctx) => {
+  if (!ctx.match) {
+    ctx.reply("Error: Missing 1.country domain");
+    return;
   }
-  return !url.includes(".country") && fullUrl
-    ? url.concat(config.country.tld)
-    : url;
-};
+  const url = getUrl(ctx.match);
+  let keyboard = new InlineKeyboard()
+    .webApp("Renew in 1.country", `https://${url}/?renew`)
+    .row()
+    .webApp(
+      "Rent using your local wallet (under construction)",
+      `https://${url}/?renew`
+    );
+
+  ctx.reply(`Renew ${url}`, {
+    reply_markup: keyboard,
+  });
+});
 
 oneCountry.command("cert", async (ctx) => {
   if (!ctx.match) {
@@ -32,6 +65,11 @@ oneCountry.command("cert", async (ctx) => {
       ctx.reply(`${response.error}`);
     }
   } catch (e) {
+    logger.error(
+      e instanceof AxiosError
+        ? e.response?.data.error
+        : "There was an error processing your request"
+    );
     ctx.reply(
       e instanceof AxiosError
         ? e.response?.data.error
@@ -48,10 +86,13 @@ oneCountry.command("nft", async (ctx) => {
   const url = getUrl(ctx.match);
   try {
     const response = await relayApi().genNFT({ domain: url });
-    console.log(response);
     ctx.reply("NFT metadata generated");
   } catch (e) {
-    console.log(e);
+    logger.error(
+      e instanceof AxiosError
+        ? e.response?.data.error
+        : "There was an error processing your request"
+    );
     ctx.reply(
       e instanceof AxiosError
         ? e.response?.data.error
@@ -61,7 +102,6 @@ oneCountry.command("nft", async (ctx) => {
 });
 
 oneCountry.command("check", async (ctx) => {
-  console.log("gen check");
   if (!ctx.match) {
     ctx.reply("Error: Missing 1.country domain");
     return;
@@ -78,6 +118,11 @@ oneCountry.command("check", async (ctx) => {
       ctx.reply(`${response.error}`);
     }
   } catch (e) {
+    logger.error(
+      e instanceof AxiosError
+        ? e.response?.data.error
+        : "There was an error processing your request"
+    );
     ctx.reply(
       e instanceof AxiosError
         ? e.response?.data.error

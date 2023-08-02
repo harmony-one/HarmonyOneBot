@@ -95,7 +95,7 @@ export const alterImg = async (data: ImageGenPayload) => {
 export const promptGen = async (data: ChatGptPayload): Promise<ChatCompletion> => {
   const { conversation, model } = data;
   try {
-    console.log(data);
+    // console.log(data);
     const resp = await chatCompilation(conversation!, model, false);
     return resp
   } catch (e) {

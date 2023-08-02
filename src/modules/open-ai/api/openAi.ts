@@ -2,21 +2,30 @@ import {
   Configuration,
   OpenAIApi,
   CreateImageRequest,
-  CreateCompletionRequest,
   CreateChatCompletionRequest,
 } from "openai";
 
 import config from "../../../config";
 import { deleteFile, getImage } from "../utils/file";
 import { bot } from "../../../bot";
-import { AxiosError } from "axios";
 import { ChatCompletion, ChatConversation } from "../../types";
+import { pino } from "pino";
 
 const configuration = new Configuration({
   apiKey: config.openAiKey,
 });
 
 const openai = new OpenAIApi(configuration);
+
+const logger = pino({
+  name: "ImagenGenBot",
+  transport: {
+    target: "pino-pretty",
+    options: {
+      colorize: true,
+    },
+  },
+});
 
 export async function postGenerateImg(
   prompt: string,
