@@ -7,6 +7,7 @@ import {BotContext, OnMessageContext} from "../types";
 import {getFeeStats} from "./explorerApi";
 import {getBotFeeStats} from "./harmonyApi";
 import {getBridgeStats} from "./bridgeAPI";
+import {getSwapFees} from "./subgraphAPI";
 
 export class BotSchedule {
   private bot: Bot<BotContext>
@@ -50,13 +51,16 @@ export class BotSchedule {
         this.cache.set('bridge_report', bridgeStatsReport)
       }
 
+      const swapFees = await getSwapFees()
+      const swapFeesReport = `*${swapFees.value}* USD (${swapFees.change}%)`
+
       const networkFeeStats = await getFeeStats()
       const networkFeesReport = `*${networkFeeStats.value}* ONE (${networkFeeStats.change}%)`
 
       const botFees = await getBotFeeStats(config.payment.holderAddress)
       const botFeesReport = `*${botFees.value}* ONE (${botFees.change}%)`
 
-      const reportMessage = `24-hour report:\n\nNetwork fees: ${networkFeesReport}\nBridged assets: ${bridgeStatsReport}\n@HarmonyOneAIBot fees: ${botFeesReport}`
+      const reportMessage = `24-hour report:\n\nSwap fees: ${swapFeesReport}\nNetwork fees: ${networkFeesReport}\nBridged assets: ${bridgeStatsReport}\n@HarmonyOneAIBot fees: ${botFeesReport}`
 
       this.logger.info(`Prepared message: "${reportMessage}"`)
       this.reportMessage = reportMessage
