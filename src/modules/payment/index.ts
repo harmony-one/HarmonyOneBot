@@ -33,7 +33,7 @@ export class BotPayments {
     })
 
     if(!this.holderAddress) {
-      this.logger.error('Holder address is empty. Set [BOT_ONE_HOLDER_ADDRESS] env variable.')
+      this.logger.error('Holder address is empty. Set [PAYMENT_HOLDER_ADDRESS] env variable.')
     }
 
     this.pollRates()
