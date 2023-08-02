@@ -19,7 +19,7 @@ export interface RpcTransaction {
 }
 
 export const getAddressHistory = async (address: string): Promise<RpcTransaction[]> => {
-  const { transactions } = await rpcRequest('hmyv2_getTransactionsHistory', [{
+  const data = await rpcRequest('hmyv2_getTransactionsHistory', [{
     address,
     pageIndex: 0,
     pageSize: 1000,
@@ -27,7 +27,7 @@ export const getAddressHistory = async (address: string): Promise<RpcTransaction
     txType: 'RECEIVED',
     order: "ASC"
   }])
-  return transactions
+  return data ? data.transactions : []
 }
 
 export const getBotFeeStats = async (address: string) => {
