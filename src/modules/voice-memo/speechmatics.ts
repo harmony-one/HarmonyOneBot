@@ -74,7 +74,7 @@ export class Speechmatics {
         'Authorization': `Bearer ${this.apiKey}`
       }
     })
-    return data.summary.content || ''
+    return data && data.summary && data.summary.content ? data.summary.content:  ''
   }
 
   private async pollJobResult (jobId: string): Promise<SpeechmaticsResult | null> {

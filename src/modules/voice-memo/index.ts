@@ -98,7 +98,7 @@ export class VoiceMemo {
             this.logger.info(`Request ${requestKey} file downloaded`)
             this.jobsQueue.set(requestKey, result)
           }
-          break;
+          return
         }
         await this.sleep(100)
       }
@@ -143,7 +143,7 @@ export class VoiceMemo {
   }
 
   public async onEvent(ctx: OnMessageContext) {
-    const { voice, from } = ctx.update.message
+    const { message_id, voice, from } = ctx.update.message
     const requestKey = `${from.id}_${voice?.file_size}`
 
     this.requestsQueue.set(requestKey, Date.now())
@@ -169,7 +169,8 @@ export class VoiceMemo {
           this.kagi.getSummarization(publicFileUrl)
         ])
 
-        this.logger.info(`Kagi summarization: ${JSON.stringify(kagiResult)}`)
+        // this.logger.info(`Kagi summarization: ${JSON.stringify(kagiResult)}`)
+        this.logger.info(`Translation ready: ${JSON.stringify(translation)}`)
 
         if(translation && translation.status === 'fulfilled' && translation.value) {
           let summary = kagiResult.status === 'fulfilled'
@@ -181,12 +182,16 @@ export class VoiceMemo {
           if(kagiResult.status !== 'fulfilled' && summary) {
             summary = `${summary}\n\n[Speechmatics]`
           }
-
-          const translationFile = new InputFile(new TextEncoder().encode(translation.value.translation), `From @${from.username}.txt`)
-          await bot.api.sendDocument(ctx.chat.id, translationFile, {
-            reply_to_message_id: ctx.message.message_id,
-            caption: summary.slice(0, 1024)
-          })
+          const text = translation.value.translation
+          if(text.length > 512) {
+            const translationFile = new InputFile(new TextEncoder().encode(text), `From @${from.username}.txt`)
+            await bot.api.sendDocument(ctx.chat.id, translationFile, {
+              reply_to_message_id: ctx.message.message_id,
+              caption: summary.slice(0, 1024)
+            })
+          } else {
+            await ctx.reply(text)
+          }
         }
       } catch (e) {
         this.logger.error(`Translation error: ${(e as Error).message}`)
