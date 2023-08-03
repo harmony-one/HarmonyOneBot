@@ -1,8 +1,14 @@
 import { pino } from "pino";
 
 import { promptGen } from "./controller";
-import { BotContext, BotConversation, ChatConversation } from "../types";
+import {
+  BotContext,
+  BotConversation,
+  ChatConversation,
+  OnMessageContext,
+} from "../types";
 import { appText } from "./utils/text";
+import { BotPayments } from "../payment";
 
 const logger = pino({
   name: "chatGptBot-conversation",
@@ -13,6 +19,8 @@ const logger = pino({
     },
   },
 });
+
+const payments = new BotPayments();
 
 export async function conversationGpt(
   conversation: BotConversation,
@@ -29,7 +37,9 @@ export async function conversationGpt(
       ...conversation.session.openAi.chatGpt.chatConversation,
     ];
     const initialPrompt = ctx.match as string;
-    chat.push({ content: initialPrompt, role: "user" });
+    if (initialPrompt) {
+      chat.push({ content: initialPrompt, role: "user" });
+    }
     let usage = 0;
     let price = 0;
     let helpCommand = false;
@@ -45,8 +55,22 @@ export async function conversationGpt(
         if (response) {
           chat.push({ content: response.completion, role: "system" });
           usage = response.usage;
-          price = response.price
-          ctx.reply(response.completion!);
+          price = response.price;
+          console.log(usage, price);
+          await ctx.reply(response.completion!);
+          conversation.session.openAi.chatGpt.chatConversation = [...chat];
+          console.log(response.completion, usage, price);
+          const isPay = await conversation.external(() => {
+            return payments.pay(ctx as OnMessageContext, price);
+          });
+          console.log("here", isPay);
+          if (!isPay) {
+            ctx.reply(
+              `Once the withdrawal instructions are completed, you can return to the current conversation by writing /chat with your prompt.`
+            );
+            break;
+          }
+          console.log("after break");
         }
       }
       const userInput = await conversation.waitFor(":text");
@@ -55,12 +79,14 @@ export async function conversationGpt(
       // });
       const userPrompt = userInput?.msg?.text;
       if (userPrompt.toLocaleLowerCase().includes("end")) {
-        chat = [];
-        ctx.reply(`${appText.gptChatEnd} ${usage} (${price.toFixed(2)}¢)`);
+        conversation.session.openAi.chatGpt.chatConversation = [];
+        await ctx.reply(
+          `${appText.gptChatEnd} ${usage} (${price.toFixed(2)}¢)`
+        );
         break;
       }
       if (userPrompt.toLocaleLowerCase().includes("help")) {
-        ctx.reply(`${appText.gptHelpText}`, {
+        await ctx.reply(`${appText.gptHelpText}`, {
           parse_mode: "Markdown",
         });
         helpCommand = true;
@@ -70,10 +96,10 @@ export async function conversationGpt(
           content: userPrompt!,
           role: "user",
         });
-        ctx.reply(appText.generatingText);
+        await ctx.reply(appText.generatingText);
       }
     }
-    conversation.session.openAi.chatGpt.chatConversation = [...chat];
+    console.log("outside");
     return;
   } catch (e) {
     ctx.reply("The bot has encountered an error. Please try again later. ");
