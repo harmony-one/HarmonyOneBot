@@ -54,7 +54,7 @@ export class QRCodeBot {
   public async onEvent(ctx: OnMessageContext | OnCallBackQueryData) {
     if (!this.isSupportedEvent(ctx)) {
       ctx.reply(`Unsupported command: ${ctx.message?.text}`);
-      return {error: true, errorMessage: 'Unsupported command', result: false};
+      throw new Error('Unsupported command')
     }
 
     if (ctx.hasCallbackQuery(Callbacks.Regenerate)) {
@@ -68,14 +68,14 @@ export class QRCodeBot {
 
       if (!msg) {
         ctx.reply('Error: message is too old');
-        return {error: true, errorMessage: 'Error: message is too old', result: false};
+        throw new Error('Error: message is too old')
       }
 
       const cmd = this.parseQrCommand(msg);
 
       if (cmd.error || !cmd.command || !cmd.url || !cmd.prompt) {
         ctx.reply('Message haven\'t contain command: ' + msg);
-        return {error: true, errorMessage: 'Message haven\'t contain command: ' + msg, result: false};
+        throw new Error('Message haven\'t contain command: ' + msg);
       }
 
       if (cmd.command === SupportedCommands.QR) {
@@ -101,7 +101,7 @@ export class QRCodeBot {
 
     ctx.reply('Unsupported command');
     this.logger.info('Unsupported command');
-    return {error: true, errorMessage: 'Unsupported command', result: false};
+    return new Error('Unsupported command')
   }
 
   public parseQrCommand(message: string) {
@@ -134,7 +134,7 @@ export class QRCodeBot {
       ctx.session.qrMargin = margin;
     }
     await ctx.reply('qrMargin: ' + ctx.session.qrMargin);
-    return {error: false, errorMessage: '', result: true};
+    return true;
   }
 
   private async onQr(ctx: OnMessageContext | OnCallBackQueryData, message: string, method: 'txt2img' | 'img2img') {
@@ -176,7 +176,7 @@ export class QRCodeBot {
     } catch (ex) {
       this.logger.error(`ex ${ex}`);
       ctx.reply("Internal error")
-      return {error: true, errorMessage: 'Internal error', result: false};
+      throw new Error('Internal error');
     }
 
     const regenButton = new InlineKeyboard()
@@ -188,7 +188,7 @@ export class QRCodeBot {
       reply_markup: regenButton,
     })
     this.logger.info('sent qr code');
-    return {error: false, errorMessage: '', result: true};
+    return true;
   }
 
   private async genQRCode({qrUrl, qrMargin, prompt, method}: {qrUrl: string, qrMargin: number, prompt: string, method: 'img2img' | 'txt2img'}) {
