@@ -54,13 +54,12 @@ export class QRCodeBot {
   public async onEvent(ctx: OnMessageContext | OnCallBackQueryData) {
     if (!this.isSupportedEvent(ctx)) {
       ctx.reply(`Unsupported command: ${ctx.message?.text}`);
-      return false;
+      return {error: true, errorMessage: 'Unsupported command', result: false};
     }
 
     if (ctx.hasCallbackQuery(Callbacks.Regenerate)) {
       try {
         await ctx.answerCallbackQuery();
-
       } catch (ex) {
         console.log('### ex', ex);
       }
@@ -69,44 +68,40 @@ export class QRCodeBot {
 
       if (!msg) {
         ctx.reply('Error: message is too old');
-        return;
+        return {error: true, errorMessage: 'Error: message is too old', result: false};
       }
 
       const cmd = this.parseQrCommand(msg);
 
       if (cmd.error || !cmd.command || !cmd.url || !cmd.prompt) {
         ctx.reply('Message haven\'t contain command: ' + msg);
-        return;
+        return {error: true, errorMessage: 'Message haven\'t contain command: ' + msg, result: false};
       }
 
       if (cmd.command === SupportedCommands.QR) {
-        this.onQr(ctx, msg, 'img2img');
-        return;
+        return this.onQr(ctx, msg, 'img2img');
       }
 
       if (cmd.command === SupportedCommands.QR2) {
-        this.onQr(ctx, msg, 'txt2img');
-        return;
+        return this.onQr(ctx, msg, 'txt2img');
       }
     }
 
     if (ctx.hasCommand(SupportedCommands.QR)) {
-      this.onQr(ctx, ctx.message.text, 'img2img');
-      return;
+      return this.onQr(ctx, ctx.message.text, 'img2img');
     }
 
     if (ctx.hasCommand(SupportedCommands.QR2)) {
-      this.onQr(ctx, ctx.message.text, 'txt2img');
-      return;
+      return this.onQr(ctx, ctx.message.text, 'txt2img');
     }
 
     if (ctx.hasCommand(SupportedCommands.QR_MARGIN)){
-      this.onQrMargin(ctx);
-      return;
+      return this.onQrMargin(ctx);
     }
 
     ctx.reply('Unsupported command');
     this.logger.info('Unsupported command');
+    return {error: true, errorMessage: 'Unsupported command', result: false};
   }
 
   public parseQrCommand(message: string) {
@@ -138,7 +133,8 @@ export class QRCodeBot {
     if (!isNaN(margin)) {
       ctx.session.qrMargin = margin;
     }
-    return ctx.reply('qrMargin: ' + ctx.session.qrMargin)
+    await ctx.reply('qrMargin: ' + ctx.session.qrMargin);
+    return {error: false, errorMessage: '', result: true};
   }
 
   private async onQr(ctx: OnMessageContext | OnCallBackQueryData, message: string, method: 'txt2img' | 'img2img') {
@@ -180,7 +176,7 @@ export class QRCodeBot {
     } catch (ex) {
       this.logger.error(`ex ${ex}`);
       ctx.reply("Internal error")
-      return;
+      return {error: true, errorMessage: 'Internal error', result: false};
     }
 
     const regenButton = new InlineKeyboard()
@@ -192,6 +188,7 @@ export class QRCodeBot {
       reply_markup: regenButton,
     })
     this.logger.info('sent qr code');
+    return {error: false, errorMessage: '', result: true};
   }
 
   private async genQRCode({qrUrl, qrMargin, prompt, method}: {qrUrl: string, qrMargin: number, prompt: string, method: 'img2img' | 'txt2img'}) {
