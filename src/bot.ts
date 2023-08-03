@@ -18,17 +18,15 @@ import { mainMenu } from "./pages";
 import { VoiceMemo } from "./modules/voice-memo";
 import { QRCodeBot } from "./modules/qrcode/QRCodeBot";
 import { SDImagesBot } from "./modules/sd-images";
-import { openAi } from "./modules/open-ai/openAiBot";
-import { OpenAIBot } from './modules/open-ai'
+import { OpenAIBot } from "./modules/open-ai";
 import { oneCountry } from "./modules/1country/oneCountryBot";
 import { Wallet } from "./modules/wallet";
 import { WalletConnect } from "./modules/walletconnect";
-import {BotPayments} from "./modules/payment";
-import {BotSchedule} from "./modules/schedule";
-import {Api} from "telegram";
-import { conversationHandler } from './modules/conversation-handler/conversationHandler'
+import { BotPayments } from "./modules/payment";
+import { BotSchedule } from "./modules/schedule";
+import { Api } from "telegram";
+import { ConversationHandler } from "./modules/conversation-handler/";
 import config from "./config";
-
 
 const logger = pino({
   name: "bot",
@@ -67,7 +65,6 @@ bot.use(
   })
 );
 
-
 bot.use(mainMenu);
 
 const voiceMemo = new VoiceMemo();
@@ -75,56 +72,65 @@ const qrCodeBot = new QRCodeBot();
 const sdImagesBot = new SDImagesBot();
 const wallet = new Wallet();
 const walletConnect = new WalletConnect();
-const payments = new BotPayments()
-const schedule = new BotSchedule(bot)
-const openAiBot = new OpenAIBot()
+const payments = new BotPayments();
+const schedule = new BotSchedule(bot);
+const openAiBot = new OpenAIBot();
+const conversationHandler = new ConversationHandler(bot);    
 
 const onMessage = async (ctx: OnMessageContext) => {
   if (qrCodeBot.isSupportedEvent(ctx)) {
-    const price = qrCodeBot.getEstimatedPrice(ctx)
-    const isPaid = await payments.pay(ctx, price)
-    if(isPaid) {
+    const price = qrCodeBot.getEstimatedPrice(ctx);
+    const isPaid = await payments.pay(ctx, price);
+    if (isPaid) {
       return qrCodeBot.onEvent(ctx);
     }
   }
   if (sdImagesBot.isSupportedEvent(ctx)) {
-    const price = sdImagesBot.getEstimatedPrice(ctx)
-    const isPaid = await payments.pay(ctx, price)
-    if(isPaid) {
+    const price = sdImagesBot.getEstimatedPrice(ctx);
+    const isPaid = await payments.pay(ctx, price);
+    if (isPaid) {
       return sdImagesBot.onEvent(ctx);
     }
   }
   if (voiceMemo.isSupportedEvent(ctx)) {
-    const price = voiceMemo.getEstimatedPrice(ctx)
-    const isPaid = await payments.pay(ctx, price)
-    if(isPaid) {
+    const price = voiceMemo.getEstimatedPrice(ctx);
+    const isPaid = await payments.pay(ctx, price);
+    if (isPaid) {
       return voiceMemo.onEvent(ctx);
     }
   }
   if (openAiBot.isSupportedEvent(ctx)) {
-    const price = openAiBot.getEstimatedPrice(ctx)
-    await ctx.reply(`Processing withdraw for ${price}¢...`)
-    const isPaid = await payments.pay(ctx, price)
-    if(isPaid) {
+    const price = openAiBot.getEstimatedPrice(ctx);
+    await ctx.reply(`Processing withdraw for ${price}¢...`);
+    const isPaid = await payments.pay(ctx, price);
+    if (isPaid) {
       return openAiBot.onEvent(ctx);
+    }
+  }
+  if (conversationHandler.isSupportedEvent(ctx)) {
+    const price = conversationHandler.getEstimatedPrice(ctx);
+    await ctx.reply(`Processing withdraw for ${price}¢...`);
+    const isPaid = true // await payments.pay(ctx, price);
+    if (isPaid) {
+      return conversationHandler.onEvent(ctx);
     }
   }
   if (wallet.isSupportedEvent(ctx)) {
     return wallet.onEvent(ctx);
   }
-  if(walletConnect.isSupportedEvent(ctx)) {
-    return walletConnect.onEvent(ctx)
+  if (walletConnect.isSupportedEvent(ctx)) {
+    return walletConnect.onEvent(ctx);
   }
-  if(payments.isSupportedEvent(ctx)) {
-    return payments.onEvent(ctx)
+  if (payments.isSupportedEvent(ctx)) {
+    return payments.onEvent(ctx);
   }
-  if(schedule.isSupportedEvent(ctx)) {
-    return schedule.onEvent(ctx)
+  if (schedule.isSupportedEvent(ctx)) {
+    return schedule.onEvent(ctx);
   }
-  if(ctx.update.message.chat) {
-    console.log(`Received message in chat id: ${ctx.update.message.chat.id}`)
+  if (ctx.update.message.chat) {
+    console.log(`Received message in chat id: ${ctx.update.message.chat.id}`);
   }
-}
+};
 
 const onCallback = async (ctx: OnCallBackQueryData) => {
   if (qrCodeBot.isSupportedEvent(ctx)) {
@@ -147,9 +153,7 @@ bot.command("help", async (ctx) => {
   });
 });
 
-bot.use(conversationHandler)  
 bot.use(oneCountry);
-// bot.use(openAi);
 
 bot.on("message", onMessage);
 bot.on("callback_query:data", onCallback);
