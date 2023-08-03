@@ -8,7 +8,7 @@ import { showcasePrompts } from './showcase';
 enum SupportedCommands {
     IMAGE = 'image',
     IMAGES = 'images',
-    SHOWCASE = 'image_example',
+    // SHOWCASE = 'image_example',
 }
 
 enum SESSION_STEP {
@@ -74,10 +74,10 @@ export class SDImagesBot {
         }
 
 
-        if (ctx.hasCommand(SupportedCommands.SHOWCASE)) {
-            this.onShowcaseCmd(ctx);
-            return;
-        }
+        // if (ctx.hasCommand(SupportedCommands.SHOWCASE)) {
+        //     this.onShowcaseCmd(ctx);
+        //     return;
+        // }
 
         if (this.isSupportedCallbackQuery(ctx)) {
             this.onImgSelected(ctx);
@@ -126,7 +126,11 @@ export class SDImagesBot {
             await ctx.reply(`/image ${prompt}`);
         } catch (e: any) {
             console.log(e);
+            this.queue = this.queue.filter(v => v !== uuid);
+            
             ctx.reply(`Error: something went wrong...`);
+            
+            throw new Error(e?.message);
         }
 
         this.queue = this.queue.filter(v => v !== uuid);
@@ -196,7 +200,11 @@ export class SDImagesBot {
             });
         } catch (e: any) {
             console.log(e);
+            this.queue = this.queue.filter(v => v !== uuid);
+
             ctx.reply(`Error: something went wrong...`);
+
+            throw new Error(e?.message);
         }
 
         this.queue = this.queue.filter(v => v !== uuid);
@@ -234,6 +242,8 @@ export class SDImagesBot {
         } catch (e: any) {
             console.log(e);
             ctx.reply(`Error: something went wrong...`);
+
+            throw new Error(e?.message);
         }
     }
 
@@ -255,6 +265,8 @@ export class SDImagesBot {
         } catch (e: any) {
             console.log(e);
             await ctx.reply(`Error: something went wrong...`);
+
+            throw new Error(e?.message);
         }
     }
 }
