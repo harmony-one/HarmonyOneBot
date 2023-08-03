@@ -114,7 +114,6 @@ export const getBridgeStats = async () => {
   const daysAmountList = Object.entries(daysAmountMap)
     .sort(([a], [b]) => +b - +a)
     .map(([_, value]) => value)
-  console.log('daysAmountMap', daysAmountMap)
 
   const value = daysAmountList[0] // Latest day
   const valueTotal = daysAmountList.reduce((sum, item) => sum += item, 0)
