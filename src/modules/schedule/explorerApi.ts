@@ -1,5 +1,6 @@
 import axios from 'axios'
 import config from "../../config";
+import {getPercentDiff} from "./utils";
 
 export enum MetricsDailyType {
   walletsCount = 'wallets_count',
@@ -34,7 +35,7 @@ export const getFeeStats = async () => {
 
   const value = +metrics[0].value
   const average = feeTotal / daysCount
-  let change = ((value / average - 1) * 100).toFixed(2)
+  let change = getPercentDiff(value, average).toFixed(2)
   if(+change > 0) {
     change = `+${change}`
   }

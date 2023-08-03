@@ -60,7 +60,12 @@ export class BotSchedule {
       const botFees = await getBotFeeStats(config.payment.holderAddress)
       const botFeesReport = `*${botFees.value}* ONE (${botFees.change}%)`
 
-      const reportMessage = `24-hour report:\n\nSwap fees: ${swapFeesReport}\nNetwork fees: ${networkFeesReport}\nBridged assets: ${bridgeStatsReport}\n@HarmonyOneAIBot fees: ${botFeesReport}`
+      const reportMessage =
+        `24-hour report:` +
+        `\n\nSwap fees: ${swapFeesReport}` +
+        `\nNetwork fees: ${networkFeesReport}` +
+        `\nNet bridged assets: ${bridgeStatsReport}` +
+        `\n@HarmonyOneAIBot fees: ${botFeesReport}`
 
       this.logger.info(`Prepared message: "${reportMessage}"`)
       this.reportMessage = reportMessage
@@ -101,7 +106,7 @@ export class BotSchedule {
       timezone: "Europe/Lisbon"
     });
 
-    // await this.prepareMetricsUpdate()
+    await this.prepareMetricsUpdate()
     // await this.postMetricsUpdate()
   }
 
