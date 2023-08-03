@@ -3,7 +3,7 @@ import { pino } from "pino";
 
 import config from "../../config";
 import { imgGen, imgGenEnhanced, alterImg } from "./controller";
-import { BotContext } from "../types";
+import { BotContext, OnMessageContext } from "../types";
 import {
   getChatModel,
   getChatModelPrice,
@@ -11,6 +11,7 @@ import {
   getDalleModelPrice,
   getTokenNumber,
 } from "./api/openAi";
+import { BotPayments } from "../payment";
 interface Image {
   url: string;
 }
@@ -24,6 +25,8 @@ const logger = pino({
     },
   },
 });
+
+const payments = new BotPayments()
 
 // amount returned in cents
 export const getEstimatedPrice = (ctx: BotContext) => {
@@ -54,6 +57,7 @@ export const getEstimatedPrice = (ctx: BotContext) => {
     const price = getDalleModelPrice(model, true, imageNumber, true, chatModel);  //cents
     return price;
   }
+  return 0
 };
 
 export const openAi = new Composer<BotContext>();
@@ -68,8 +72,8 @@ openAi.command("genImg", async (ctx) => {
       return;
     }
     const price = getEstimatedPrice(ctx);
-    ctx.reply(`Here is the price ${price!.toFixed(2)}¢`)
-    const isPaid = true; // await payments.pay(ctx, price)
+    // ctx.reply(`Here is the price ${price!.toFixed(2)}¢`)
+    const isPaid = await payments.pay(ctx as OnMessageContext, price)
     if (isPaid) {
       const payload = {
         chatId: ctx.chat.id,
@@ -93,7 +97,7 @@ openAi.command("genImgEn", async (ctx) => {
     }
     const price = getEstimatedPrice(ctx);
     ctx.reply(`Here is the price ${price!.toFixed(2)}¢`)
-    const isPaid = true; // await payments.pay(ctx, price)
+    const isPaid = await payments.pay(ctx as OnMessageContext, price)
     if (isPaid) {
       const payload = {
         chatId: ctx.chat.id,

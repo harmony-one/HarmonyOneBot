@@ -19,6 +19,7 @@ import { VoiceMemo } from "./modules/voice-memo";
 import { QRCodeBot } from "./modules/qrcode/QRCodeBot";
 import { SDImagesBot } from "./modules/sd-images";
 import { openAi } from "./modules/open-ai/openAiBot";
+import { OpenAIBot } from './modules/open-ai'
 import { oneCountry } from "./modules/1country/oneCountryBot";
 import { Wallet } from "./modules/wallet";
 import { WalletConnect } from "./modules/walletconnect";
@@ -28,7 +29,6 @@ import {Api} from "telegram";
 import { conversationHandler } from './modules/conversation-handler/conversationHandler'
 
 import config from "./config";
-import { ChatGPTModelsEnum } from "./modules/open-ai/types";
 
 
 const logger = pino({
@@ -78,6 +78,7 @@ const wallet = new Wallet();
 const walletConnect = new WalletConnect();
 const payments = new BotPayments()
 const schedule = new BotSchedule(bot)
+const openAiBot = new OpenAIBot()
 
 const onMessage = async (ctx: OnMessageContext) => {
   if (qrCodeBot.isSupportedEvent(ctx)) {
@@ -99,6 +100,14 @@ const onMessage = async (ctx: OnMessageContext) => {
     const isPaid = await payments.pay(ctx, price)
     if(isPaid) {
       return voiceMemo.onEvent(ctx).catch((e) => payments.refundPayment(e, ctx, price));
+    }
+  }
+  if (openAiBot.isSupportedEvent(ctx)) {
+    const price = openAiBot.getEstimatedPrice(ctx)
+    await ctx.reply(`Processing withdraw for ${price}¢...`)
+    const isPaid = await payments.pay(ctx, price)
+    if(isPaid) {
+      return openAiBot.onEvent(ctx);
     }
   }
   if (wallet.isSupportedEvent(ctx)) {
@@ -141,7 +150,7 @@ bot.command("menu", async (ctx) => {
 
 bot.use(conversationHandler)
 bot.use(oneCountry);
-bot.use(openAi);
+// bot.use(openAi);
 
 bot.on("message", onMessage);
 bot.on("callback_query:data", onCallback);
