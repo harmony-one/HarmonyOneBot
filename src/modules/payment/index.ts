@@ -124,10 +124,14 @@ export class BotPayments {
       || (username && whitelist.includes(username.toString().toLowerCase()))
   }
 
+  public isPaymentsEnabled() {
+    return Boolean(config.payment.isEnabled && config.payment.secret && config.payment.holderAddress)
+  }
+
   private skipPayment(ctx: OnMessageContext, amountUSD: number) {
     const {  id: userId, username = '' } = ctx.update.message.from
 
-    if(!config.payment.isEnabled) {
+    if(!this.isPaymentsEnabled()) {
       return true
     }
 
