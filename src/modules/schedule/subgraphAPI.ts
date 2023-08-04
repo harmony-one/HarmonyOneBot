@@ -1,6 +1,7 @@
 import axios from 'axios'
 import config from '../../config'
 import moment from "moment/moment";
+import {getPercentDiff} from "./utils";
 
 interface SwapToken {
   feesUSD: string
@@ -83,7 +84,7 @@ export const getSwapFees = async() =>  {
   const value = daysAmountList[0] // Latest day
   const valueTotal = daysAmountList.reduce((sum, item) => sum += item, 0)
   const average = valueTotal / realDaysCount
-  let change = ((value / average - 1) * 100).toFixed(2)
+  let change = getPercentDiff(value, average).toFixed(2)
   if(+change > 0) {
     change = `+${change}`
   }
