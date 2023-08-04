@@ -96,7 +96,7 @@ export class BotPayments {
 
   private async getTransactionFee () {
     const gasPrice = await this.web3.eth.getGasPrice();
-    return bn(gasPrice.toString()).multipliedBy(21000)
+    return bn(gasPrice.toString()).multipliedBy(35000)
   }
 
   private async transferFunds(accountFrom: Account, addressTo: string, amount: BigNumber) {
@@ -243,6 +243,7 @@ export class BotPayments {
   private async withdrawHotWalletFunds() {
     const hotWalletBalance = await this.getAddressBalance(this.hotWallet.address)
     const fee = await this.getTransactionFee()
+    console.log('fee', fee.toString())
     if(hotWalletBalance.gt(fee)) {
       await this.transferFunds(this.hotWallet, this.holderAddress, hotWalletBalance.minus(fee))
       this.logger.info(`Hot wallet funds transferred from hot wallet ${this.hotWallet.address} to holder address: ${this.holderAddress}, amount: ${hotWalletBalance.toString()}`)
