@@ -65,7 +65,7 @@ export default {
     webAppUrl: process.env.WALLET_WEB_APP_URL || "https://wallet-web-app.netlify.app",
   },
   walletc: {
-    webAppUrl: process.env.WALLET_CONNECT_WEB_APP_URL || "https://chimerical-unicorn-78e8d9.netlify.app/",
+    webAppUrl: process.env.WALLET_CONNECT_WEB_APP_URL || "https://chimerical-unicorn-78e8d9.netlify.app",
   },
   payment: {
     isEnabled: Boolean(parseInt(process.env.PAYMENT_IS_ENABLED || "1")),
