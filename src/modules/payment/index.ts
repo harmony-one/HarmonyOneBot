@@ -13,12 +13,12 @@ interface CoinGeckoResponse {
 }
 
 export class BotPayments {
+  private readonly hotWallet: Account
   private readonly holderAddress = config.payment.holderAddress
   private logger: Logger;
   private web3: Web3;
   private ONERate: number = 0
   private rpcURL: string = 'https://api.harmony.one'
-  private readonly hotWallet: Account
 
   constructor() {
     this.web3 = new Web3(this.rpcURL)
@@ -39,6 +39,9 @@ export class BotPayments {
       this.logger.info(`Payments holder address: ${this.holderAddress}`)
     }
 
+    this.hotWallet = this.getUserAccount('hot_wallet') as Account
+    this.logger.info(`Hot wallet address: ${this.hotWallet.address}`)
+
     this.pollRates()
   }
 
@@ -56,7 +59,7 @@ export class BotPayments {
     }
   }
 
-  private getUserAccount(userId: number) {
+  private getUserAccount(userId: number | string) {
     const privateKey = this.web3.utils.sha3(`${config.payment.secret}_${userId}`);
     if(privateKey) {
       return this.web3.eth.accounts.privateKeyToAccount(privateKey);
@@ -137,11 +140,6 @@ export class BotPayments {
 
     if(this.ONERate === 0) {
       this.logger.warn(`ONE token rate is 0, skip payment`)
-      return true
-    }
-
-    if(!config.payment.hotWalletPrivateKey) {
-      this.logger.warn(`Holder address is empty, payments unavailable`)
       return true
     }
 
