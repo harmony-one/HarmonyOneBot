@@ -13,6 +13,7 @@ interface CoinGeckoResponse {
 }
 
 export class BotPayments {
+  private readonly holderAddress = config.payment.holderAddress
   private logger: Logger;
   private web3: Web3;
   private ONERate: number = 0
@@ -32,11 +33,11 @@ export class BotPayments {
       }
     })
 
-    if(!config.payment.hotWalletPrivateKey) {
-      this.logger.error('Hot wallet PK is empty. Set [PAYMENT_WALLET_PRIVATE_KEY].')
+    if(!this.holderAddress) {
+      this.logger.error('Holder address is empty. Set [BOT_ONE_HOLDER_ADDRESS] env variable.')
+    } else {
+      this.logger.info(`Payments holder address: ${this.holderAddress}`)
     }
-
-    this.hotWallet = this.web3.eth.accounts.privateKeyToAccount(config.payment.hotWalletPrivateKey)
 
     this.pollRates()
   }

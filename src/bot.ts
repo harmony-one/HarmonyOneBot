@@ -1,13 +1,13 @@
 import express from "express";
 import {
   Bot,
-  BotError,
   GrammyError,
   HttpError,
   MemorySessionStorage,
   session,
 } from "grammy";
-import config from "./config";
+import { pino } from "pino";
+
 import {
   BotContext,
   BotSessionData,
@@ -19,13 +19,26 @@ import { VoiceMemo } from "./modules/voice-memo";
 import { QRCodeBot } from "./modules/qrcode/QRCodeBot";
 import { SDImagesBot } from "./modules/sd-images";
 import { imageGen } from "./modules/open-ai/ImageGenBot";
-import { chatGpt } from "./modules/open-ai/chatGptBot";
 import { oneCountry } from "./modules/1country/oneCountryBot";
 import { Wallet } from "./modules/wallet";
 import { WalletConnect } from "./modules/walletconnect";
 import {BotPayments} from "./modules/payment";
 import {BotSchedule} from "./modules/schedule";
 import {Api} from "telegram";
+import { conversationHandler } from './modules/conversation-handler/conversationHandler'
+
+import config from "./config";
+
+
+const logger = pino({
+  name: "bot",
+  transport: {
+    target: "pino-pretty",
+    options: {
+      colorize: true,
+    },
+  },
+});
 
 export const bot = new Bot<BotContext>(config.telegramBotAuthToken);
 
@@ -53,6 +66,7 @@ bot.use(
     storage: new MemorySessionStorage<BotSessionData>(),
   })
 );
+
 
 bot.use(mainMenu);
 
@@ -118,16 +132,15 @@ const onCallback = async (ctx: OnCallBackQueryData) => {
 bot.command("start", (ctx) => ctx.reply("Welcome! Up and running."));
 
 bot.command("help", async (ctx) => {
-  console.log("help command", ctx.session);
   await ctx.reply("Menu", {
     parse_mode: "HTML",
     reply_markup: mainMenu,
   });
 });
 
+bot.use(conversationHandler)  
 bot.use(oneCountry);
 bot.use(imageGen);
-bot.use(chatGpt);
 
 bot.on("message", onMessage);
 bot.on("callback_query:data", onCallback);
@@ -146,7 +159,7 @@ bot.catch((err) => {
 });
 
 bot.errorBoundary((error) => {
-  console.log("### error", error);
+  logger.error("### error", error);
 });
 
 const app = express();
@@ -155,7 +168,7 @@ app.use(express.json());
 app.use(express.static("./public")); // Public directory, used in voice-memo bot
 
 app.listen(config.port, () => {
-  console.log(`Bot listening on port ${config.port}`);
+  logger.info(`Bot listening on port ${config.port}`);
   bot.start();
   // bot.start({
   //   allowed_updates: ["callback_query"], // Needs to be set for menu middleware, but bot doesn't work with current configuration.

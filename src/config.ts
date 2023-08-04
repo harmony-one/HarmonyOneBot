@@ -43,8 +43,14 @@ export default {
     },
   },
   country: {
-    relayApiUrl: "https://1ns-registrar-relayer.hiddenstate.xyz",
-    tld: ".country",
+    hostname: 'https://1.country',
+    relayApiUrl: 'https://1ns-registrar-relayer.hiddenstate.xyz',
+    tld: '.country',
+    contract: process.env.DC_CONTRACT || '0x547942748Cc8840FEc23daFdD01E6457379B446D',
+    defaultRPC: 'https://api.harmony.one',
+    restrictedPhrases: process.env.RESTRICTED_PHRASES
+      ? process.env.RESTRICTED_PHRASES.split(', ')
+      : ['metamask', 'walletconnect'],
   },
   voiceMemo: {
     isEnabled: Boolean(parseInt(process.env.VOICE_MEMO_ENABLED || "1")),
@@ -64,7 +70,7 @@ export default {
   payment: {
     isEnabled: Boolean(parseInt(process.env.PAYMENT_IS_ENABLED || "1")),
     secret: process.env.PAYMENT_SECRET || "",
-    hotWalletPrivateKey: process.env.PAYMENT_HOLDER_PRIVATE_KEY || "",
+    holderAddress: process.env.PAYMENT_HOLDER_ADDRESS || "0x9EE59D58606997AAFd2F6Ba46EC64402829f9b6C",
     whitelist: (process.env.PAYMENT_WHITELIST || 'stephentse,lijiangxyz')
       .split(',').map(item => item.toString().toLowerCase())
   },
@@ -73,5 +79,6 @@ export default {
     chatId: process.env.SCHEDULE_CHAT_ID || "",
     explorerRestApiUrl: process.env.EXPLORER_REST_API_URL || "",
     explorerRestApiKey: process.env.EXPLORER_REST_API_KEY || "",
+    swapSubgraphApiUrl: process.env.SWAP_SUBGRAPH_API_URL || "https://api.thegraph.com/subgraphs/name/nick8319/uniswap-v3-harmony",
   }
 };

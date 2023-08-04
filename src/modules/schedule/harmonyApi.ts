@@ -1,5 +1,6 @@
 import axios from 'axios'
 import moment from "moment/moment";
+import {getPercentDiff} from "./utils";
 
 const rpcUrl = 'https://rpc.s0.t.hmny.io'
 
@@ -19,7 +20,7 @@ export interface RpcTransaction {
 }
 
 export const getAddressHistory = async (address: string): Promise<RpcTransaction[]> => {
-  const { transactions } = await rpcRequest('hmyv2_getTransactionsHistory', [{
+  const data = await rpcRequest('hmyv2_getTransactionsHistory', [{
     address,
     pageIndex: 0,
     pageSize: 1000,
@@ -27,7 +28,7 @@ export const getAddressHistory = async (address: string): Promise<RpcTransaction
     txType: 'RECEIVED',
     order: "ASC"
   }])
-  return transactions
+  return data ? data.transactions : []
 }
 
 export const getBotFeeStats = async (address: string) => {
@@ -55,12 +56,10 @@ export const getBotFeeStats = async (address: string) => {
 
   const value = weekValues[weekValues.length - 1]
   const average = valueTotal / daysCount
-  let change = ((value / average - 1) * 100).toFixed(2)
+  let change = getPercentDiff(value, average).toFixed(2)
   if(+change > 0) {
     change = `+${change}`
   }
-
-  // console.log(`Bot fees: value ${value}, valueTotal ${valueTotal}, average ${average}`);
 
   return {
     value: Math.round(value / Math.pow(10, 18)),

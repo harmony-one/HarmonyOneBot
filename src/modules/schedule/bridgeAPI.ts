@@ -1,5 +1,6 @@
 import axios from 'axios'
 import moment from 'moment'
+import {getPercentDiff} from "./utils";
 
 const bridgeUrl = 'https://hmy-lz-api-token.fly.dev'
 
@@ -50,7 +51,7 @@ interface BridgeTokensResponse {
   page: number
 }
 
-export const getOperations = async (page = 0, size = 1000): Promise<BridgeOperation[]> => {
+export const getOperations = async (page = 0, size = 10000): Promise<BridgeOperation[]> => {
   const { data } = await axios.get<BridgeOperationsResponse>(
     `${bridgeUrl}/operations-full?size=${size}&page=${page}`
   )
@@ -64,7 +65,7 @@ export const getTokensList = async (): Promise<BridgeToken[]> => {
 
 export const getBridgeStats = async () => {
   const daysCount = 7
-  const weekTimestamp = moment().subtract(daysCount,'days').unix()
+  const weekTimestamp = moment().subtract(daysCount - 1,'days').unix()
   const yesterdayTimestamp = moment().subtract(1,'days').unix()
 
   const tokens = await getTokensList()
@@ -75,14 +76,14 @@ export const getBridgeStats = async () => {
 
     items.filter((item) => {
         const { type, timestamp, amount, status } = item
-        return type.includes('to_one')
-          && status === 'success'
+        return status === 'success'
           && timestamp >= weekTimestamp
           && amount > 0
       })
       .forEach((item) => {
-        const { timestamp, amount, erc20Address, hrc20Address } = item
+        const { type, timestamp, amount, erc20Address, hrc20Address } = item
 
+        const isIncome = type.includes('to_one')
         const token = tokens.find(item =>
           erc20Address.toLowerCase() === erc20Address.toLowerCase()
           || hrc20Address.toLowerCase() === hrc20Address.toLowerCase()
@@ -94,7 +95,7 @@ export const getBridgeStats = async () => {
         }
 
         const { usdPrice } = token
-        const amountUsd = Math.round(amount * usdPrice)
+        const amountUsd = (isIncome ? 1 : -1) * Math.round(amount * usdPrice)
 
         const date = moment(timestamp * 1000).format('YYYYMMDD')
         if(daysAmountMap[date]) {
@@ -118,7 +119,7 @@ export const getBridgeStats = async () => {
   const valueTotal = daysAmountList.reduce((sum, item) => sum += item, 0)
 
   const average = valueTotal / daysCount
-  let change = ((value / average - 1) * 100).toFixed(2)
+  let change = getPercentDiff(value, average).toFixed(2)
   if(+change > 0) {
     change = `+${change}`
   }

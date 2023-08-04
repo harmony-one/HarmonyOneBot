@@ -24,7 +24,7 @@ export class BotSchedule {
     }
   })
 
-  private cache = new LRUCache({ max: 100, ttl: 1000 * 60 * 60 * 32 })
+  private cache = new LRUCache({ max: 100, ttl: 1000 * 60 * 60 * 2 })
   private reportMessage = ''
 
   constructor(bot: Bot<BotContext>) {
@@ -63,7 +63,11 @@ export class BotSchedule {
       const botFees = await getBotFeeStats(this.paymentsAccount.address)
       const botFeesReport = `*${botFees.value}* ONE (${botFees.change}%)`
 
-      const reportMessage = `24-hour report:\n\nNetwork fees: ${networkFeesReport}\nBridged assets: ${bridgeStatsReport}\n@HarmonyOneAIBot fees: ${botFeesReport}`
+      const reportMessage =
+        `24-hour report:` +
+        `\nNetwork fees: ${networkFeesReport}` +
+        `\nNet bridged assets: ${bridgeStatsReport}` +
+        `\n@HarmonyOneAIBot fees: ${botFeesReport}`
 
       this.logger.info(`Prepared message: "${reportMessage}"`)
       this.reportMessage = reportMessage
@@ -104,7 +108,7 @@ export class BotSchedule {
       timezone: "Europe/Lisbon"
     });
 
-    // await this.prepareMetricsUpdate()
+    await this.prepareMetricsUpdate()
     // await this.postMetricsUpdate()
   }
 
