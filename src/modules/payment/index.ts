@@ -34,6 +34,8 @@ export class BotPayments {
 
     if(!this.holderAddress) {
       this.logger.error('Holder address is empty. Set [BOT_ONE_HOLDER_ADDRESS] env variable.')
+    } else {
+      this.logger.info(`Payments holder address: ${this.holderAddress}`)
     }
 
     this.pollRates()
