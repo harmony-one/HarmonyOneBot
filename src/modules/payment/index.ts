@@ -165,8 +165,9 @@ export class BotPayments {
     const userAccount = this.getUserAccount(userId)
     if(userAccount) {
       const amountONE = this.getPriceInONE(amountUSD)
+      const fee = await this.getTransactionFee()
       try {
-        const tx = await this.transferFunds(this.hotWallet, userAccount.address, amountONE)
+        const tx = await this.transferFunds(this.hotWallet, userAccount.address, amountONE.minus(fee))
         this.logger.info(`[${userId} @${username}] refund successful, from: ${tx.from}, to: ${tx.to}, amount ONE: ${amountONE.toString()}, txHash: ${tx.transactionHash}`)
         return true
       } catch (e) {
