@@ -155,7 +155,7 @@ export class BotPayments {
   public async refundPayment(e: Error, ctx: OnMessageContext, amountUSD: number) {
     const {  id: userId, username = '' } = ctx.update.message.from
 
-    this.logger.error(`[${userId} @${username}] refund payment: $${amountUSD}, error: "${(e as Error).message}"`)
+    this.logger.error(`[${userId} @${username}] refund payment: $${amountUSD}, error from bot module: "${(e as Error).message}"`)
 
     if(this.skipPayment(ctx, amountUSD)) {
       this.logger.info(`[${userId} @${username}] skip refund`)
@@ -167,7 +167,7 @@ export class BotPayments {
       const amountONE = this.getPriceInONE(amountUSD)
       try {
         const tx = await this.transferFunds(this.hotWallet, userAccount.address, amountONE)
-        this.logger.info(`[${userId} @${username}] refund successful, txHash: ${tx.transactionHash}, from: ${tx.from}, to: ${tx.to}, amount ONE: ${amountONE.toString()}`)
+        this.logger.info(`[${userId} @${username}] refund successful, from: ${tx.from}, to: ${tx.to}, amount ONE: ${amountONE.toString()}, txHash: ${tx.transactionHash}`)
         return true
       } catch (e) {
         this.logger.error(`[${userId} @${username}] amountONE: ${amountONE.toString()} refund error : ${(e as Error).message}`)
