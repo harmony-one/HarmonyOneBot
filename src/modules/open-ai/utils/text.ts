@@ -18,12 +18,14 @@ With the following menu, you can choose how many images can be generated on each
 Hello! I can generate AI completions using OpenAI technology.\n
 *Commands*
 /help - This menu
-/chat [text] - Generates a completion from a given prompt.`,
+/chat [prompt] - Generates a completion from a given prompt. You can return to your active conversation by writing the /chat command`,
   chatGptChangeModel: `*🖌️ Chat Gpt 4 Help*\nYou can choose one of the following models`,
   generatingText: `Generating response...`,
   gptHelpText: `Write *end* to finish this conversation.\nWrite *help* to repeat this message.`,
   gptChatEnd: "Chat finished. Total tokens used:",
   endChat: "Thanks for using 1.country services",
+  gptChatPaymentIssue: `Once the withdrawal instructions are completed, you can return to the current conversation by writing the */chat* command.\n
+If you want to start a new conversation write */chat and your prompt*`
 };
 
 // <b>Edit an Image</b>

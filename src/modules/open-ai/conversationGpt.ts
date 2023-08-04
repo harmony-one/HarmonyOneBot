@@ -33,15 +33,16 @@ export async function conversationGpt(
         parse_mode: "Markdown",
       }
     );
-    let chat: ChatConversation[] = [
-      ...conversation.session.openAi.chatGpt.chatConversation,
-    ];
+    let chat: ChatConversation[] = [];
     const initialPrompt = ctx.match as string;
     if (initialPrompt) {
       chat.push({ content: initialPrompt, role: "user" });
+    } else {
+      chat = [...conversation.session.openAi.chatGpt.chatConversation]
     }
     let usage = 0;
     let price = 0;
+    let totalPrice = 0
     let helpCommand = false;
     while (true) {
       if (!helpCommand) {
@@ -54,9 +55,10 @@ export async function conversationGpt(
         });
         if (response) {
           chat.push({ content: response.completion, role: "system" });
-          usage = response.usage;
+          usage += response.usage;
           price = response.price;
-          console.log(usage, price);
+          totalPrice += price
+          console.log(usage, totalPrice);
           await ctx.reply(response.completion!);
           conversation.session.openAi.chatGpt.chatConversation = [...chat];
           console.log(response.completion, usage, price);
@@ -65,9 +67,9 @@ export async function conversationGpt(
           });
           console.log("here", isPay);
           if (!isPay) {
-            ctx.reply(
-              `Once the withdrawal instructions are completed, you can return to the current conversation by writing /chat with your prompt.`
-            );
+            ctx.reply(appText.gptChatPaymentIssue, {
+              parse_mode: "Markdown",
+            })
             break;
           }
           console.log("after break");
@@ -81,7 +83,7 @@ export async function conversationGpt(
       if (userPrompt.toLocaleLowerCase().includes("end")) {
         conversation.session.openAi.chatGpt.chatConversation = [];
         await ctx.reply(
-          `${appText.gptChatEnd} ${usage} (${price.toFixed(2)}¢)`
+          `${appText.gptChatEnd} ${usage} (${totalPrice.toFixed(2)}¢)`
         );
         break;
       }

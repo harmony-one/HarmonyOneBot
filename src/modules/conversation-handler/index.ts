@@ -16,6 +16,7 @@ import { Logger, pino } from "pino";
 import { Bot } from "grammy";
 import { conversations, createConversation } from "@grammyjs/conversations";
 import { conversationGpt } from "../open-ai/conversationGpt";
+import { conversationDomainName } from '../1country/conversationCountry'
 
 enum SupportedCommands {
   CHAT = "chat",
@@ -48,8 +49,8 @@ export class ConversationHandler {
     if (ctx.hasCommand("chat")) {
       await conversationGpt(conversation, ctx);
     } else if (ctx.hasCommand("rent")) {
-      console.log("comming soon");
-      // await conversationDomainName(conversation, ctx);
+      ctx.reply("Checking name...");
+      await conversationDomainName(conversation, ctx);
     }
   }
 
@@ -78,7 +79,7 @@ export class ConversationHandler {
       const modelName = ctx.session.openAi.chatGpt.model;
       const model = getChatModel(modelName);
       const price = getChatModelPrice(model, true, baseTokens); //cents
-      return ctx.chat.type !== "private" ? price * 4 : price;
+      return ctx.chat.type !== "private" ? price * 2 : price;
     }
     return 0;
   }
@@ -90,7 +91,6 @@ export class ConversationHandler {
     }
 
     if (ctx.hasCommand(SupportedCommands.CHAT)) {
-      console.log("HELLO");
       await ctx.conversation.enter("botConversation");
       return;
     }

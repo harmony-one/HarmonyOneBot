@@ -44,7 +44,7 @@ export async function conversationDomainName(
           if (!domainAvailable && response.isInGracePeriod) {
             msg += `is in grace period ❌. Only the owner is able to renew the domain`;
           } else if (!domainAvailable) {
-            msg += `is unavailable ❌. Keep writing name options.`;
+            msg += `is unavailable ❌.\nKeep writing name options.`;
           } else {
             msg += "is available ✅.\n";
             if (!response.priceUSD.error) {
