@@ -7,7 +7,6 @@ import {BotContext, OnMessageContext} from "../types";
 import {getFeeStats} from "./explorerApi";
 import {getBotFeeStats} from "./harmonyApi";
 import {getBridgeStats} from "./bridgeAPI";
-import {getSwapFees} from "./subgraphAPI";
 
 export class BotSchedule {
   private bot: Bot<BotContext>
@@ -51,9 +50,6 @@ export class BotSchedule {
         this.cache.set('bridge_report', bridgeStatsReport)
       }
 
-      const swapFees = await getSwapFees()
-      const swapFeesReport = `*${swapFees.value}* USD (${swapFees.change}%)`
-
       const networkFeeStats = await getFeeStats()
       const networkFeesReport = `*${networkFeeStats.value}* ONE (${networkFeeStats.change}%)`
 
@@ -62,7 +58,6 @@ export class BotSchedule {
 
       const reportMessage =
         `24-hour report:` +
-        `\n\nSwap fees: ${swapFeesReport}` +
         `\nNetwork fees: ${networkFeesReport}` +
         `\nNet bridged assets: ${bridgeStatsReport}` +
         `\n@HarmonyOneAIBot fees: ${botFeesReport}`
