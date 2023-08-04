@@ -138,7 +138,7 @@ bot.command("help", async (ctx) => {
   });
 });
 
-bot.use(conversationHandler)  
+bot.use(conversationHandler)
 bot.use(oneCountry);
 bot.use(imageGen);
 

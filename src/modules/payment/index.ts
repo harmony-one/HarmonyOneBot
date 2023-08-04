@@ -19,6 +19,7 @@ export class BotPayments {
   private web3: Web3;
   private ONERate: number = 0
   private rpcURL: string = 'https://api.harmony.one'
+  private lastPaymentTimestamp = 0
 
   constructor() {
     this.web3 = new Web3(this.rpcURL)
@@ -34,7 +35,7 @@ export class BotPayments {
     })
 
     if(!this.holderAddress) {
-      this.logger.error('Holder address is empty. Set [BOT_ONE_HOLDER_ADDRESS] env variable.')
+      this.logger.error('Holder address is empty. Set [PAYMENT_HOLDER_ADDRESS] env variable.')
     } else {
       this.logger.info(`Payments holder address: ${this.holderAddress}`)
     }
@@ -43,6 +44,7 @@ export class BotPayments {
     this.logger.info(`Hot wallet address: ${this.hotWallet.address}`)
 
     this.pollRates()
+    this.runIntervalCheck()
   }
 
   private async pollRates() {
@@ -54,7 +56,7 @@ export class BotPayments {
     } catch (e) {
       this.logger.error(`Cannot get ONE price: ${JSON.stringify(e)}`)
     } finally {
-      await new Promise(resolve => setTimeout(resolve,  1000 * 60))
+      await this.sleep(1000 * 60)
       this.pollRates()
     }
   }
@@ -194,6 +196,7 @@ export class BotPayments {
     if(balanceDelta.gte(0)) {
       try {
         const tx = await this.transferFunds(userAccount, this.hotWallet.address, amountONE)
+        this.lastPaymentTimestamp = Date.now()
         this.logger.info(`[${userId} @${username}] withdraw successful, txHash: ${tx.transactionHash}, from: ${tx.from}, to: ${tx.to}, amount ONE: ${amountONE.toString()}`)
         return true
       } catch (e) {
@@ -227,6 +230,31 @@ export class BotPayments {
         reply_to_message_id: message_id,
         parse_mode: "Markdown",
       });
+    }
+  }
+
+  private sleep = (timeout: number) => new Promise(resolve => setTimeout(resolve,  timeout))
+
+  private async withdrawHotWalletFunds() {
+    const hotWalletBalance = await this.getAddressBalance(this.hotWallet.address)
+    const fee = await this.getTransactionFee()
+    if(hotWalletBalance.gt(fee)) {
+      await this.transferFunds(this.hotWallet, this.holderAddress, hotWalletBalance.minus(fee))
+      this.logger.info(`Hot wallet funds transferred from hot wallet ${this.hotWallet.address} to holder address: ${this.holderAddress}, amount: ${hotWalletBalance.toString()}`)
+    }
+  }
+
+  private async runIntervalCheck() {
+    try {
+      if(Date.now() - this.lastPaymentTimestamp > 10 * 60 * 1000) {
+        await this.withdrawHotWalletFunds()
+      }
+    } catch (e) {
+      this.logger.error(`Cannot withdraw funds from hot wallet ${this.hotWallet.address} to holder address ${this.holderAddress} :"${(e as Error).message}"`)
+      await this.sleep(1000 * 60 * 10)
+    } finally {
+      await this.sleep(1000 * 60)
+      this.runIntervalCheck()
     }
   }
 }
