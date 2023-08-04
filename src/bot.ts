@@ -19,7 +19,7 @@ import { VoiceMemo } from "./modules/voice-memo";
 import { QRCodeBot } from "./modules/qrcode/QRCodeBot";
 import { SDImagesBot } from "./modules/sd-images";
 import { OpenAIBot } from "./modules/open-ai";
-import { oneCountry } from "./modules/1country/oneCountryBot";
+import { OneCountryBot } from "./modules/1country";
 import { Wallet } from "./modules/wallet";
 import { WalletConnect } from "./modules/walletconnect";
 import { BotPayments } from "./modules/payment";
@@ -75,6 +75,7 @@ const walletConnect = new WalletConnect();
 const payments = new BotPayments();
 const schedule = new BotSchedule(bot);
 const openAiBot = new OpenAIBot();
+const oneCountryBot = new OneCountryBot();
 const conversationHandler = new ConversationHandler(bot);    
 
 const onMessage = async (ctx: OnMessageContext) => {
@@ -101,7 +102,9 @@ const onMessage = async (ctx: OnMessageContext) => {
   }
   if (openAiBot.isSupportedEvent(ctx)) {
     const price = openAiBot.getEstimatedPrice(ctx);
-    await ctx.reply(`Processing withdraw for ${price}¢...`);
+    if (price > 0) {
+      await ctx.reply(`Processing withdraw for ${price.toFixed(2)}¢...`);
+    }
     const isPaid = await payments.pay(ctx, price);
     if (isPaid) {
       return openAiBot.onEvent(ctx);
@@ -109,12 +112,25 @@ const onMessage = async (ctx: OnMessageContext) => {
   }
   if (conversationHandler.isSupportedEvent(ctx)) {
     const price = conversationHandler.getEstimatedPrice(ctx);
-    await ctx.reply(`Processing withdraw for ${price}¢...`);
-    const isPaid = true // await payments.pay(ctx, price);
+    if (price > 0) {
+      await ctx.reply(`Processing withdraw for ${price.toFixed(2)}¢...`);
+    }
+    const isPaid = await payments.pay(ctx, price);
     if (isPaid) {
       return conversationHandler.onEvent(ctx);
     }
   }
+  if (oneCountryBot.isSupportedEvent(ctx)) {
+    const price = oneCountryBot.getEstimatedPrice(ctx);
+    if (price > 0) {
+      await ctx.reply(`Processing withdraw for ${price.toFixed(2)}¢...`);
+    }
+    const isPaid = true // await payments.pay(ctx, price);
+    if (isPaid) {
+      return oneCountryBot.onEvent(ctx);
+    }
+  }
+
   if (wallet.isSupportedEvent(ctx)) {
     return wallet.onEvent(ctx);
   }
@@ -152,8 +168,6 @@ bot.command("menu", async (ctx) => {
     reply_markup: mainMenu,
   });
 });
-
-bot.use(oneCountry);
 
 bot.on("message", onMessage);
 bot.on("callback_query:data", onCallback);
