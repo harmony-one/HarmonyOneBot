@@ -35,7 +35,7 @@ export class BotPayments {
     })
 
     if(!this.holderAddress) {
-      this.logger.error('Holder address is empty. Set [PAYMENT_HOLDER_ADDRESS] env variable.')
+      this.logger.warn('Holder address is empty. Set [PAYMENT_HOLDER_ADDRESS] env variable.')
     } else {
       this.logger.info(`Payments holder address: ${this.holderAddress}`)
     }
@@ -245,6 +245,8 @@ export class BotPayments {
     if(hotWalletBalance.gt(fee)) {
       await this.transferFunds(this.hotWallet, this.holderAddress, hotWalletBalance.minus(fee))
       this.logger.info(`Hot wallet funds transferred from hot wallet ${this.hotWallet.address} to holder address: ${this.holderAddress}, amount: ${hotWalletBalance.toString()}`)
+    } else {
+      this.logger.info(`Hot wallet ${this.hotWallet.address} balance is zero, skip withdrawal`)
     }
   }
 
