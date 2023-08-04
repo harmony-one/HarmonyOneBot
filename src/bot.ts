@@ -83,21 +83,21 @@ const onMessage = async (ctx: OnMessageContext) => {
     const price = qrCodeBot.getEstimatedPrice(ctx)
     const isPaid = await payments.pay(ctx, price)
     if(isPaid) {
-      return qrCodeBot.onEvent(ctx);
+      return qrCodeBot.onEvent(ctx).catch((e) => payments.refundPayment(e, ctx, price));
     }
   }
   if (sdImagesBot.isSupportedEvent(ctx)) {
     const price = sdImagesBot.getEstimatedPrice(ctx)
     const isPaid = await payments.pay(ctx, price)
     if(isPaid) {
-      return sdImagesBot.onEvent(ctx);
+      return sdImagesBot.onEvent(ctx).catch((e) => payments.refundPayment(e, ctx, price));
     }
   }
   if (voiceMemo.isSupportedEvent(ctx)) {
     const price = voiceMemo.getEstimatedPrice(ctx)
     const isPaid = await payments.pay(ctx, price)
     if(isPaid) {
-      return voiceMemo.onEvent(ctx);
+      return voiceMemo.onEvent(ctx).catch((e) => payments.refundPayment(e, ctx, price));
     }
   }
   if (wallet.isSupportedEvent(ctx)) {
@@ -138,7 +138,7 @@ bot.command("help", async (ctx) => {
   });
 });
 
-bot.use(conversationHandler)  
+bot.use(conversationHandler)
 bot.use(oneCountry);
 bot.use(imageGen);
 

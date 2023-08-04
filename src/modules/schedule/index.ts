@@ -9,6 +9,7 @@ import {getBotFeeStats} from "./harmonyApi";
 import {getBridgeStats} from "./bridgeAPI";
 
 export class BotSchedule {
+  private readonly holderAddress = config.payment.holderAddress
   private bot: Bot<BotContext>
   private logger = pino({
     name: 'Schedule',
@@ -53,7 +54,7 @@ export class BotSchedule {
       const networkFeeStats = await getFeeStats()
       const networkFeesReport = `*${networkFeeStats.value}* ONE (${networkFeeStats.change}%)`
 
-      const botFees = await getBotFeeStats(config.payment.holderAddress)
+      const botFees = await getBotFeeStats(this.holderAddress)
       const botFeesReport = `*${botFees.value}* ONE (${botFees.change}%)`
 
       const reportMessage =
