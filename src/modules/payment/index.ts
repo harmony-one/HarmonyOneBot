@@ -247,7 +247,7 @@ export class BotPayments {
       await this.transferFunds(this.hotWallet, this.holderAddress, hotWalletBalance.minus(fee))
       this.logger.info(`Hot wallet funds transferred from hot wallet ${this.hotWallet.address} to holder address: ${this.holderAddress}, amount: ${hotWalletBalance.toString()}`)
     } else {
-      this.logger.info(`Hot wallet ${this.hotWallet.address} balance is zero, skip withdrawal`)
+      // this.logger.info(`Hot wallet ${this.hotWallet.address} balance is zero, skip withdrawal`)
     }
   }
 
