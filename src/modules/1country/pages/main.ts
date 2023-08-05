@@ -6,16 +6,13 @@ import { MenuIds } from "../../../constants";
 const help = `🌐 *1.country Help*
 
 *1. ASSESS A DOMAIN'S STATUS*
-
 • Use */check* <DOMAIN>
 Example: */check* abc
 
 *2. RENT A DOMAIN FOR 30 DAYS*
-
 • Use */rent* <DOMAIN>
 
 *3. RENEW A DOMAIN FOR 30 DAYS*
-
 • Use */renew* <DOMAIN>
 
 `;

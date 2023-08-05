@@ -5,7 +5,7 @@ import { MenuIds } from "../../constants";
 const helpText = `🏦 *One Wallet Help*
 
 *1. HOW TO BUY $ONE*
-
+• Find where to buy $ONE [here](https://harmony.one/buy)
 
 *2. CREATING A WALLET*
 • Use */wallet* to initiate wallet creation
