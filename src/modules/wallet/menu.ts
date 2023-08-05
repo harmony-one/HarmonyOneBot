@@ -4,18 +4,19 @@ import { MenuIds } from "../../constants";
 
 const helpText = `🏦 *One Wallet Help*
 
-*Creating a Wallet:*
+*1. HOW TO BUY $ONE*
 
-1. Enter */wallet*.
-2. Follow the instructions that appear.
 
-*Sending ONE to Another Address:*
+*2. CREATING A WALLET*
+• Use */wallet* to initiate wallet creation
+• Follow the instructions that appear
 
-1. Enter: */wallet* send <ADDRESS> <AMOUNT>
+*3. SENDING ONE TO ANOTHER ADDRESS*
+• Use */wallet* send <ADDRESS> <AMOUNT>
+Example: */wallet* send 0x199177Bcc7cdB22eC10E3A2DA888c7811275fc38 2.55
 
-Example:
-
-*/wallet* send 0x199177Bcc7cdB22eC10E3A2DA888c7811275fc38 2.55
+*4. WALLETCONNECT*
+• Use */walletconnect*
 `;
 
 export const walletMenu = new Menu<BotContext>(MenuIds.WALLET_MAIN)

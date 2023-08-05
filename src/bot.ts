@@ -129,10 +129,10 @@ const onCallback = async (ctx: OnCallBackQueryData) => {
   }
 };
 
-bot.command("start", (ctx) => ctx.reply("Welcome! Up and running."));
+bot.command("start", (ctx) => ctx.reply(`Welcome! Up and running. Use /menu for options.`));
 
-bot.command("help", async (ctx) => {
-  await ctx.reply("Menu", {
+bot.command("menu", async (ctx) => {
+  await ctx.reply("Main Menu", {
     parse_mode: "HTML",
     reply_markup: mainMenu,
   });

@@ -5,13 +5,19 @@ import { MenuIds } from "../../../constants";
 
 const help = `🌐 *1.country Help*
 
-*Commands*
+*1. ASSESS A DOMAIN'S STATUS*
 
-/check [domain] - Check a 1.country domain status
-/cert [domain] - Check domain's cert status
-/nft [domain] - Check domain's nft metadata status
-/rent [domain] - Rent a domain name for 30 days
-/renew [domain] - Renew a domain for 30 days
+• Use */check* <DOMAIN>
+Example: */check* abc
+
+*2. RENT A DOMAIN FOR 30 DAYS*
+
+• Use */rent* <DOMAIN>
+
+*3. RENEW A DOMAIN FOR 30 DAYS*
+
+• Use */renew* <DOMAIN>
+
 `;
 
 export const oneCountryMainMenu = new Menu<BotContext>(MenuIds.ONE_COUNTRY_MAIN) //<MyContext>

@@ -4,7 +4,10 @@ import {MenuIds} from "../../constants";
 
 const helpText = `📷 *QR Generation Help* 
 
-*Commands*
+*1. GENERATE A QR CODE*
+• Use */qr* <LINK> <PROMPTS>
+Example: \/qr https://h.country/ai astronaut, sky, colorful\
+
 
 Send a message with the "qr" command and your prompts:
 /qr *LINK* *PROMPTS*.
