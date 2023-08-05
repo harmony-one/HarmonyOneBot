@@ -1,13 +1,13 @@
 import { pino } from "pino";
 
-import { promptGen } from "./controller";
+import { promptGen } from "../open-ai/controller";
 import {
   BotContext,
   BotConversation,
   ChatConversation,
   OnMessageContext,
 } from "../types";
-import { appText } from "./utils/text";
+import { appText } from "../open-ai/utils/text";
 import { BotPayments } from "../payment";
 
 const logger = pino({

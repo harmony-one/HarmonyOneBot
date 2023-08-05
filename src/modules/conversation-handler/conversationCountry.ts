@@ -2,7 +2,7 @@ import { InlineKeyboard } from "grammy";
 import { pino } from "pino";
 
 import { BotContext, BotConversation } from "../types";
-import { isDomainAvailable, validateDomainName } from "./utils/domain";
+import { isDomainAvailable, validateDomainName } from "../1country/utils/domain";
 import config from "../../config";
 import { appText } from "../open-ai/utils/text";
 
