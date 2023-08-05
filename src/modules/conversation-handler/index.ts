@@ -15,8 +15,8 @@ import {
 import { Logger, pino } from "pino";
 import { Bot } from "grammy";
 import { conversations, createConversation } from "@grammyjs/conversations";
-import { conversationGpt } from "../open-ai/conversationGpt";
-import { conversationDomainName } from '../1country/conversationCountry'
+import { conversationGpt } from "./conversationGpt";
+import { conversationDomainName } from './conversationCountry'
 
 enum SupportedCommands {
   CHAT = "chat",

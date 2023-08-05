@@ -9,6 +9,16 @@ const base = axios.create({
 
 export const relayApi = () => {
   return {
+    enableSubdomains: async (domainName: string) => {
+      try {
+        const { data } = await base.post("/enable-subdomains", {
+          domain: `${domainName}${config.country.tld}`,
+        });
+        console.log("enableSubdomains", data);
+      } catch (e) {
+        throw(e)
+      }
+    },
     checkDomain: async ({ sld }: { sld: string }) => {
       try {
         const {

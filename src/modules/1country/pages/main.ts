@@ -5,17 +5,18 @@ import { MenuIds } from "../../../constants";
 
 const help = `🌐 *1.country Help*
 
-*1. ASSESS A DOMAIN'S STATUS*
-• Use */check* <DOMAIN>
-Example: */check* abc
-
-*2. RENT A DOMAIN FOR 30 DAYS*
-• Use */rent* <DOMAIN>
-
-*3. RENEW A DOMAIN FOR 30 DAYS*
-• Use */renew* <DOMAIN>
-
+*Commands*
+/rent [domain] - Rent a domain name for 30 days
+/renew [domain] - Renew a domain for 30 days
+/notion [domainName] [alias] [url] - Link a notion page to https://alias.domainName.country
+/check [domain] - Reserved
+/cert [domain] - Reserved
+/nft [domain] - Reserved
 `;
+
+// /check [domain] - Check a 1.country domain status
+// /cert [domain] - Check domain's cert status
+// /nft [domain] - Check domain's nft metadata status
 
 export const oneCountryMainMenu = new Menu<BotContext>(MenuIds.ONE_COUNTRY_MAIN) //<MyContext>
   .text("Help", (ctx) =>
