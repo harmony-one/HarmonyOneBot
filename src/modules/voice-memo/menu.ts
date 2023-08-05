@@ -4,9 +4,8 @@ import { MenuIds } from "../../constants";
 
 const helpText = `🎙 *Voice Memo Help*
 
-I can create a short summary from a voice message.
-
-Simply send me a voice message or forward a voice message from a private chat or group.`;
+*1. CREATE A SHORT SUMMARY FROM A VOICE MESSAGE*
+• Send or forward a voice message (.m4a) from a private chat or group.`;
 
 export const voiceMemoMenu = new Menu<BotContext>(MenuIds.VOICE_MEMO_MAIN)
   .text("Help", (ctx) => {

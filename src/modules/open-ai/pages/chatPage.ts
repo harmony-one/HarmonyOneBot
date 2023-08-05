@@ -6,7 +6,7 @@ import { isAdmin } from "../utils/context";
 import { MenuIds, ChatGPTModels } from "../../../constants";
 
 export const chatMainMenu = new Menu<BotContext>(MenuIds.CHAT_GPT_MAIN)
-  .text("help", (ctx) => {
+  .text("Help", (ctx) => {
     ctx
       .editMessageText(appText.chatGptMain, {
         parse_mode: "Markdown",
