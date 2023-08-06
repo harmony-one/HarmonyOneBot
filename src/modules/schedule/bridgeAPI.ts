@@ -119,7 +119,7 @@ export const getBridgeStats = async () => {
   const valueTotal = daysAmountList.reduce((sum, item) => sum += item, 0)
 
   const average = valueTotal / daysCount
-  let change = getPercentDiff(value, average).toFixed(2)
+  let change = getPercentDiff(average, value).toFixed(2)
   if(+change > 0) {
     change = `+${change}`
   }
