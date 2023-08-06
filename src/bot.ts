@@ -107,7 +107,7 @@ const onMessage = async (ctx: OnMessageContext) => {
     }
     const isPaid = await payments.pay(ctx, price);
     if (isPaid) {
-      return openAiBot.onEvent(ctx);
+      return openAiBot.onEvent(ctx).catch((e) => payments.refundPayment(e, ctx, price));
     }
   }
   if (conversationHandler.isSupportedEvent(ctx)) {
@@ -117,7 +117,7 @@ const onMessage = async (ctx: OnMessageContext) => {
     }
     const isPaid = await payments.pay(ctx, price);
     if (isPaid) {
-      return conversationHandler.onEvent(ctx);
+      return conversationHandler.onEvent(ctx).catch((e) => payments.refundPayment(e, ctx, price));
     }
   }
   if (oneCountryBot.isSupportedEvent(ctx)) {
@@ -127,10 +127,9 @@ const onMessage = async (ctx: OnMessageContext) => {
     }
     const isPaid = true // await payments.pay(ctx, price);
     if (isPaid) {
-      return oneCountryBot.onEvent(ctx);
+      return oneCountryBot.onEvent(ctx).catch((e) => payments.refundPayment(e, ctx, price));
     }
   }
-
   if (wallet.isSupportedEvent(ctx)) {
     return wallet.onEvent(ctx);
   }
