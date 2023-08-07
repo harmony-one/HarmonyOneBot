@@ -5,13 +5,20 @@ import { MenuIds } from "../../../constants";
 
 const help = `🌐 *1.country Help*
 
-*Commands*
-/rent [domain] - Rent a domain name for 30 days
-/renew [domain] - Renew a domain for 30 days
-/notion [domainName] [alias] [url] - Link a notion page to https://alias.domainName.country
-/check [domain] - Reserved
-/cert [domain] - Reserved
-/nft [domain] - Reserved
+*1. ASSESS A DOMAIN'S STATUS*
+• Use */check* <DOMAIN>
+
+\`/check abcwebsite\`
+
+*2. RENT A DOMAIN FOR 30 DAYS*
+• Use */rent* <DOMAIN>
+
+\`/rent abcwebsite\`
+
+*3. RENEW A DOMAIN FOR 30 DAYS*
+• Use */renew* <DOMAIN>
+
+\`/renew abcwebsite\`
 `;
 
 // /check [domain] - Check a 1.country domain status

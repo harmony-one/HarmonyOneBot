@@ -6,21 +6,9 @@ const helpText = `📷 *QR Generation Help*
 
 *1. GENERATE A QR CODE*
 • Use */qr* <LINK> <PROMPTS>
-Example: \/qr https://h.country/ai astronaut, sky, colorful\
 
-
-Send a message with the "qr" command and your prompts:
-/qr *LINK* *PROMPTS*.
-
-*Example:*
-\`/qr https://h.country/ai astronaut, sky, colorful\`
-
-*Change options*
-
-You can change following options.
-
-- *QR Code Margin* - Define how much wide the quiet zone should be.
-`;
+\`/qr h.country/ai astronaut, sky, colorful\`
+`
 
 export const qrCodeBotMenu = new Menu<BotContext>(MenuIds.QR_BOT_MAIN) //<MyContext>
   .text("Help", (ctx) => {
