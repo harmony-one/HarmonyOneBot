@@ -47,7 +47,7 @@ export class Wallet {
       }
     }
 
-    ctx.reply('Telegram wallet', {
+    ctx.reply('Harmony ONE Wallet', {
       reply_markup: keyboard
     });
   }

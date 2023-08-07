@@ -55,7 +55,7 @@ export class WalletConnect {
       }
     }
 
-    ctx.reply("Telegram wallet", {
+    ctx.reply("WalletConnect", {
       reply_markup: keyboard,
     });
   }
