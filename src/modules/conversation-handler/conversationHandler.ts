@@ -47,9 +47,7 @@ conversationHandler.command("chat", async (ctx) => {
 conversationHandler.command("rent", async (ctx) => {
   const prompt = ctx.match;
   if (!prompt) {
-    ctx.reply(`Please add domain name
-    \`/rent mywebsitename\`
-    `, {
+    ctx.reply(`Please add domain name`, {
       parse_mode: "Markdown",
       disable_web_page_preview: true,
     });

@@ -2,7 +2,10 @@ import { InlineKeyboard } from "grammy";
 import { pino } from "pino";
 
 import { BotContext, BotConversation } from "../types";
-import { isDomainAvailable, validateDomainName } from "./utils/domain";
+import {
+  isDomainAvailable,
+  validateDomainName,
+} from "../1country/utils/domain";
 import config from "../../config";
 import { appText } from "../open-ai/utils/text";
 
@@ -27,6 +30,8 @@ export async function conversationDomainName(
     let domain = cleanInput(ctx.match as string);
     let helpCommand = false;
     let domainAvailable = false;
+    let msgId = 0;
+    msgId = (await ctx.reply("Checking name...")).message_id;
     while (true) {
       if (!helpCommand) {
         const validate = validateDomainName(domain);
@@ -44,7 +49,7 @@ export async function conversationDomainName(
           if (!domainAvailable && response.isInGracePeriod) {
             msg += `is in grace period ❌. Only the owner is able to renew the domain`;
           } else if (!domainAvailable) {
-            msg += `is unavailable ❌. Keep writing name options.`;
+            msg += `is unavailable ❌.\nKeep writing name options.`;
           } else {
             msg += "is available ✅.\n";
             if (!response.priceUSD.error) {
@@ -54,7 +59,7 @@ export async function conversationDomainName(
             }
             msg += `Write *rent* to purchase it, or keep writing new options`;
           }
-          ctx.reply(msg, {
+          ctx.api.editMessageText(ctx.chat?.id!, msgId, msg, {
             parse_mode: "Markdown",
           });
         }
@@ -97,7 +102,7 @@ export async function conversationDomainName(
       } else {
         helpCommand = false;
         domain = userPrompt;
-        ctx.reply("Checking name...");
+        msgId = (await ctx.reply("Checking name...")).message_id;
       }
     }
     return;
@@ -106,3 +111,4 @@ export async function conversationDomainName(
     logger.error("##conversationGountry Error:", e);
   }
 }
+

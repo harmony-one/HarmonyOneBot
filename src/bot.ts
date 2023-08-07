@@ -18,17 +18,15 @@ import { mainMenu } from "./pages";
 import { VoiceMemo } from "./modules/voice-memo";
 import { QRCodeBot } from "./modules/qrcode/QRCodeBot";
 import { SDImagesBot } from "./modules/sd-images";
-import { imageGen } from "./modules/open-ai/ImageGenBot";
-import { oneCountry } from "./modules/1country/oneCountryBot";
+import { OpenAIBot } from "./modules/open-ai";
+import { OneCountryBot } from "./modules/1country";
 import { Wallet } from "./modules/wallet";
 import { WalletConnect } from "./modules/walletconnect";
-import {BotPayments} from "./modules/payment";
-import {BotSchedule} from "./modules/schedule";
-import {Api} from "telegram";
-import { conversationHandler } from './modules/conversation-handler/conversationHandler'
-
+import { BotPayments } from "./modules/payment";
+import { BotSchedule } from "./modules/schedule";
+import { Api } from "telegram";
+import { ConversationHandler } from "./modules/conversation-handler/";
 import config from "./config";
-
 
 const logger = pino({
   name: "bot",
@@ -67,7 +65,6 @@ bot.use(
   })
 );
 
-
 bot.use(mainMenu);
 
 const voiceMemo = new VoiceMemo();
@@ -75,8 +72,11 @@ const qrCodeBot = new QRCodeBot();
 const sdImagesBot = new SDImagesBot();
 const wallet = new Wallet();
 const walletConnect = new WalletConnect();
-const payments = new BotPayments()
-const schedule = new BotSchedule(bot)
+const payments = new BotPayments();
+const schedule = new BotSchedule(bot);
+const openAiBot = new OpenAIBot();
+const oneCountryBot = new OneCountryBot();
+const conversationHandler = new ConversationHandler(bot);    
 
 const onMessage = async (ctx: OnMessageContext) => {
   if (qrCodeBot.isSupportedEvent(ctx)) {
@@ -100,22 +100,52 @@ const onMessage = async (ctx: OnMessageContext) => {
       return voiceMemo.onEvent(ctx).catch((e) => payments.refundPayment(e, ctx, price));
     }
   }
+  if (openAiBot.isSupportedEvent(ctx)) {
+    const price = openAiBot.getEstimatedPrice(ctx);
+    if (price > 0) {
+      await ctx.reply(`Processing withdraw for ${price.toFixed(2)}¢...`);
+    }
+    const isPaid = await payments.pay(ctx, price);
+    if (isPaid) {
+      return openAiBot.onEvent(ctx).catch((e) => payments.refundPayment(e, ctx, price));
+    }
+  }
+  if (conversationHandler.isSupportedEvent(ctx)) {
+    const price = conversationHandler.getEstimatedPrice(ctx);
+    if (price > 0) {
+      await ctx.reply(`Processing withdraw for ${price.toFixed(2)}¢...`);
+    }
+    const isPaid = await payments.pay(ctx, price);
+    if (isPaid) {
+      return conversationHandler.onEvent(ctx).catch((e) => payments.refundPayment(e, ctx, price));
+    }
+  }
+  if (oneCountryBot.isSupportedEvent(ctx)) {
+    const price = oneCountryBot.getEstimatedPrice(ctx);
+    if (price > 0) {
+      await ctx.reply(`Processing withdraw for ${price.toFixed(2)}¢...`);
+    }
+    const isPaid = await payments.pay(ctx, price);
+    if (isPaid) {
+      return oneCountryBot.onEvent(ctx).catch((e) => payments.refundPayment(e, ctx, price));
+    }
+  }
   if (wallet.isSupportedEvent(ctx)) {
     return wallet.onEvent(ctx);
   }
-  if(walletConnect.isSupportedEvent(ctx)) {
-    return walletConnect.onEvent(ctx)
+  if (walletConnect.isSupportedEvent(ctx)) {
+    return walletConnect.onEvent(ctx);
   }
-  if(payments.isSupportedEvent(ctx)) {
-    return payments.onEvent(ctx)
+  if (payments.isSupportedEvent(ctx)) {
+    return payments.onEvent(ctx);
   }
-  if(schedule.isSupportedEvent(ctx)) {
-    return schedule.onEvent(ctx)
+  if (schedule.isSupportedEvent(ctx)) {
+    return schedule.onEvent(ctx);
   }
-  if(ctx.update.message.chat) {
-    console.log(`Received message in chat id: ${ctx.update.message.chat.id}`)
+  if (ctx.update.message.chat) {
+    console.log(`Received message in chat id: ${ctx.update.message.chat.id}`);
   }
-}
+};
 
 const onCallback = async (ctx: OnCallBackQueryData) => {
   if (qrCodeBot.isSupportedEvent(ctx)) {
@@ -137,10 +167,6 @@ bot.command("menu", async (ctx) => {
     reply_markup: mainMenu,
   });
 });
-
-bot.use(conversationHandler)
-bot.use(oneCountry);
-bot.use(imageGen);
 
 bot.on("message", onMessage);
 bot.on("callback_query:data", onCallback);
