@@ -22,7 +22,7 @@ export const imageGen = new Composer<BotContext>();
 !config.openAi.imageGen.isEnabled &&
   logger.warn(`Dall-e2 Bot disabled in config`);
 
-imageGen.command("genImg", async (ctx) => {
+imageGen.command("gen-img", async (ctx) => {
   if (ctx.session.openAi.imageGen.isEnabled) {
     const prompt = ctx.match;
     if (!prompt) {
@@ -41,25 +41,25 @@ imageGen.command("genImg", async (ctx) => {
   }
 });
 
-imageGen.command("genImgEn", async (ctx) => {
-  if (ctx.session.openAi.imageGen.isEnabled) {
-    const prompt = ctx.match;
-    if (!prompt) {
-      ctx.reply("Error: Missing prompt");
-      return;
-    }
-    const payload = {
-      chatId: ctx.chat.id,
-      prompt: ctx.match,
-      numImages: await ctx.session.openAi.imageGen.numImages,
-      imgSize: await ctx.session.openAi.imageGen.imgSize,
-    };
-    ctx.reply("generating improved prompt...");
-    await imgGenEnhanced(payload);
-  } else {
-    ctx.reply("Bot disabled");
-  }
-});
+// imageGen.command("genImgEn", async (ctx) => {
+//   if (ctx.session.openAi.imageGen.isEnabled) {
+//     const prompt = ctx.match;
+//     if (!prompt) {
+//       ctx.reply("Error: Missing prompt");
+//       return;
+//     }
+//     const payload = {
+//       chatId: ctx.chat.id,
+//       prompt: ctx.match,
+//       numImages: await ctx.session.openAi.imageGen.numImages,
+//       imgSize: await ctx.session.openAi.imageGen.imgSize,
+//     };
+//     ctx.reply("generating improved prompt...");
+//     await imgGenEnhanced(payload);
+//   } else {
+//     ctx.reply("Bot disabled");
+//   }
+// });
 
 imageGen.on("message", async (ctx, next) => {
   try {
