@@ -21,6 +21,10 @@ const help = `🌐 *1.country Help*
 \`/renew abcwebsite\`
 `;
 
+// /check [domain] - Check a 1.country domain status
+// /cert [domain] - Check domain's cert status
+// /nft [domain] - Check domain's nft metadata status
+
 export const oneCountryMainMenu = new Menu<BotContext>(MenuIds.ONE_COUNTRY_MAIN) //<MyContext>
   .text("Help", (ctx) =>
     ctx
