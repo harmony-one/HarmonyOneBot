@@ -6,7 +6,7 @@ const helpText = `📷 *QR Generation Help*
 
 *1. GENERATE A QR CODE*
 • Use */qr* <LINK> <PROMPTS>
-*Example:*
+
 \`/qr h.country/ai astronaut, sky, colorful\`
 `
 

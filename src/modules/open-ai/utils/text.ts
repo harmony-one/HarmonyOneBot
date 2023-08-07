@@ -26,6 +26,7 @@ Example:
 imageGenChangeDefault: `*🎨 Image Generation DALL·E 2 Help*\n\n*Change image output sizes and numbers*
 Adjust image size or how many images are generated`,
   chatGptMain: `*🖌️ ChatGPT Help*
+  
 *1. CHAT WITH AI*
 • Use */chat* <TEXT>`,
   chatGptChangeModel: `*🖌️ ChatGPT Help*\nChoose one of the following models`,
