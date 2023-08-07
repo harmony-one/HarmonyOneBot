@@ -63,7 +63,7 @@ export const chatMainMenu = new Menu<BotContext>(MenuIds.CHAT_GPT_MAIN)
     }
   })
   .row()
-  .back("Back to the Main Menu");
+  .back("⬅️ Back");
 
 
 const chatGPTimageDefaultOptions = new Menu<BotContext>(MenuIds.CHAT_GPT_MODEL)

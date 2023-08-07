@@ -63,7 +63,7 @@ export const imageGenMainMenu = new Menu<BotContext>(MenuIds.IMAGE_GEN_MAIN)
     }
   })
   .row()
-  .back("Back to the Main Menu");
+  .back("⬅️ Back");
 
 const imageDefaultOptions = new Menu<BotContext>(MenuIds.IMAGE_GEN_OPTIONS)
   .submenu("Change the image number", MenuIds.IMAGE_GEN_NUMBER)

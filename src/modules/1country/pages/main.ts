@@ -33,4 +33,4 @@ export const oneCountryMainMenu = new Menu<BotContext>(MenuIds.ONE_COUNTRY_MAIN)
   .row()
   .url("Go to 1.country", "https://1.country")
   .row()
-  .back("Back to the Main Menu");
+  .back("⬅️ Back");
