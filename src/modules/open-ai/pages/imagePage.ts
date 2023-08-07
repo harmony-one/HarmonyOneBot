@@ -6,7 +6,7 @@ import { isAdmin } from "../utils/context";
 import { MenuIds } from "../../../constants";
 
 export const imageGenMainMenu = new Menu<BotContext>(MenuIds.IMAGE_GEN_MAIN)
-  .text("help", (ctx) => {
+  .text("Help", (ctx) => {
     ctx
       .editMessageText(appText.imageGenMain, {
         parse_mode: "Markdown",

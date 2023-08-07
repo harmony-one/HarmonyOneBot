@@ -7,13 +7,18 @@ const help = `🌐 *1.country Help*
 
 *1. ASSESS A DOMAIN'S STATUS*
 • Use */check* <DOMAIN>
-Example: */check* abc
+*Example:*
+\`/check abc\`
 
 *2. RENT A DOMAIN FOR 30 DAYS*
 • Use */rent* <DOMAIN>
+*Example:*
+\`/rent abc\`
 
 *3. RENEW A DOMAIN FOR 30 DAYS*
 • Use */renew* <DOMAIN>
+*Example:*
+\`/renew abc\`
 
 `;
 
