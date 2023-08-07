@@ -125,7 +125,7 @@ const onMessage = async (ctx: OnMessageContext) => {
     if (price > 0) {
       await ctx.reply(`Processing withdraw for ${price.toFixed(2)}¢...`);
     }
-    const isPaid = true // await payments.pay(ctx, price);
+    const isPaid = await payments.pay(ctx, price);
     if (isPaid) {
       return oneCountryBot.onEvent(ctx).catch((e) => payments.refundPayment(e, ctx, price));
     }

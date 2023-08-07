@@ -28,7 +28,7 @@ export async function conversationGpt(
 ) {
   try {
     await ctx.reply(
-      `_Usign model ${conversation.session.openAi.chatGpt.model}_.\n${appText.gptHelpText}\n\n${appText.generatingText}`,
+      `_Usign model ${conversation.session.openAi.chatGpt.model}_.\n${appText.gptHelpText}\n`,
       {
         parse_mode: "Markdown",
       }
@@ -44,6 +44,10 @@ export async function conversationGpt(
     let price = 0;
     let totalPrice = 0
     let helpCommand = false;
+    let msgId = 0;
+    msgId = (await ctx.reply(appText.generatingText,{
+      parse_mode: "Markdown",
+    })).message_id;
     while (true) {
       if (!helpCommand) {
         const response = await conversation.external(() => {
@@ -58,21 +62,21 @@ export async function conversationGpt(
           usage += response.usage;
           price = response.price;
           totalPrice += price
-          console.log(usage, totalPrice);
-          await ctx.reply(response.completion!);
+          ctx.api.editMessageText(ctx.chat?.id!, msgId, response.completion!, {
+            parse_mode: "Markdown",
+          });
+          
+          // await ctx.reply();
           conversation.session.openAi.chatGpt.chatConversation = [...chat];
-          console.log(response.completion, usage, price);
           const isPay = await conversation.external(() => {
             return payments.pay(ctx as OnMessageContext, price);
           });
-          console.log("here", isPay);
           if (!isPay) {
             ctx.reply(appText.gptChatPaymentIssue, {
               parse_mode: "Markdown",
             })
             break;
           }
-          console.log("after break");
         }
       }
       const userInput = await conversation.waitFor(":text");
@@ -98,10 +102,11 @@ export async function conversationGpt(
           content: userPrompt!,
           role: "user",
         });
-        await ctx.reply(appText.generatingText);
+        msgId = (await ctx.reply(appText.generatingText,{
+          parse_mode: "Markdown",
+        })).message_id;
       }
     }
-    console.log("outside");
     return;
   } catch (e) {
     ctx.reply("The bot has encountered an error. Please try again later. ");

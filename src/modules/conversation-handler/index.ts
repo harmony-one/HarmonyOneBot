@@ -49,7 +49,6 @@ export class ConversationHandler {
     if (ctx.hasCommand("chat")) {
       await conversationGpt(conversation, ctx);
     } else if (ctx.hasCommand("rent")) {
-      ctx.reply("Checking name...");
       await conversationDomainName(conversation, ctx);
     }
   }
