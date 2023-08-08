@@ -92,9 +92,8 @@ const onMessage = async (ctx: OnMessageContext) => {
     const isPaid = await payments.pay(ctx, price);
     if (isPaid) {
       return sdImagesBot
-        .onEvent(ctx, (e) => { 
-          console.log('REFUND Payment'); 
-          payments.refundPayment(e, ctx, price);
+        .onEvent(ctx, (reason?: string) => { 
+          payments.refundPayment(new Error(reason || 'Unknown error'), ctx, price);
         })
     }
   }

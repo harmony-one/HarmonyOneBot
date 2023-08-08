@@ -57,11 +57,11 @@ export class SDImagesBot {
         return !!this.sessions.find(s => s.id === sessionId);
     }
 
-    public async onEvent(ctx: OnMessageContext | OnCallBackQueryData, refundCallback: (e: Error) => void) {
+    public async onEvent(ctx: OnMessageContext | OnCallBackQueryData, refundCallback: (reason?: string) => void) {
         if (!this.isSupportedEvent(ctx)) {
             console.log(`### unsupported command ${ctx.message?.text}`);
             ctx.reply('### unsupported command');
-            return refundCallback(new Error('Unsupported command'));
+            return refundCallback('Unsupported command');
         }
 
         if (ctx.hasCommand(SupportedCommands.IMAGE)) {
@@ -89,7 +89,7 @@ export class SDImagesBot {
         ctx.reply('### unsupported command');
     }
 
-    onImageCmd = async (ctx: OnMessageContext | OnCallBackQueryData, refundCallback: (e: Error) => void) => {
+    onImageCmd = async (ctx: OnMessageContext | OnCallBackQueryData, refundCallback: (reason?: string) => void) => {
         const uuid = uuidv4()
 
         try {
@@ -100,7 +100,7 @@ export class SDImagesBot {
 
             if (!prompt) {
                 ctx.reply(`${author} please add prompt to your message`);
-                refundCallback(new Error('Wrong prompts'));
+                refundCallback('Wrong prompts');
                 return;
             }
 
@@ -138,7 +138,7 @@ export class SDImagesBot {
         this.queue = this.queue.filter(v => v !== uuid);
     }
 
-    onImagesCmd = async (ctx: OnMessageContext | OnCallBackQueryData, refundCallback: (e: Error) => void) => {
+    onImagesCmd = async (ctx: OnMessageContext | OnCallBackQueryData, refundCallback: (reason?: string) => void) => {
         const uuid = uuidv4();
 
         try {
@@ -150,7 +150,7 @@ export class SDImagesBot {
             if (!prompt) {
                 ctx.reply(`${author} please add prompt to your message`);
 
-                refundCallback(new Error('Wrong prompts'));
+                refundCallback('Wrong prompts');
                 return;
             }
 
@@ -208,34 +208,34 @@ export class SDImagesBot {
 
             ctx.reply(`Error: something went wrong...`);
 
-            refundCallback(e);
+            refundCallback(e.message);
         }
 
         this.queue = this.queue.filter(v => v !== uuid);
     }
 
-    async onImgSelected(ctx: OnMessageContext | OnCallBackQueryData, refundCallback: (e: Error) => void): Promise<any> {
+    async onImgSelected(ctx: OnMessageContext | OnCallBackQueryData, refundCallback: (reason?: string) => void): Promise<any> {
         try {
             const authorObj = await ctx.getAuthor();
             const author = `@${authorObj.user.username}`;
 
             if (!ctx.callbackQuery?.data) {
                 console.log('wrong callbackQuery')
-                refundCallback(new Error('Wrong callbackQuery'));
+                refundCallback('Wrong callbackQuery');
                 return;
             }
 
             const [sessionId, imageNumber] = ctx.callbackQuery.data.split('_');
 
             if (!sessionId || !imageNumber) {
-                refundCallback(Error('Wrong params'));
+                refundCallback('Wrong params');
                 return;
             }
 
             const session = this.sessions.find(s => s.id === sessionId);
 
             if (!session || session.author !== author) {
-                refundCallback(Error('Wrong author'));
+                refundCallback('Wrong author');
                 return;
             }
 
@@ -250,7 +250,7 @@ export class SDImagesBot {
             console.log(e);
             ctx.reply(`Error: something went wrong...`);
 
-            refundCallback(e);
+            refundCallback(e.message);
         }
     }
 
