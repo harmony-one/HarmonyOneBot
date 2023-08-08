@@ -1,12 +1,6 @@
 import config from "../../config";
 import { OnMessageContext, OnCallBackQueryData } from "../types";
-import {
-  getChatModel,
-  getChatModelPrice,
-  getDalleModel,
-  getDalleModelPrice,
-  getTokenNumber,
-} from "./api/openAi";
+import { getChatModel, getDalleModel, getDalleModelPrice } from "./api/openAi";
 import { alterImg, imgGen, imgGenEnhanced } from "./controller";
 import { Logger, pino } from "pino";
 
@@ -58,13 +52,6 @@ export class OpenAIBot {
     if (!prompts) {
       return 0;
     }
-    // if (ctx.hasCommand("chat")) {
-    //   const baseTokens = getTokenNumber(prompts as string);
-    //   const modelName = ctx.session.openAi.chatGpt.model;
-    //   const model = getChatModel(modelName);
-    //   const price = getChatModelPrice(model, true, baseTokens); //cents
-    //   return ctx.chat.type !== "private" ? price * 4 : price;
-    // }
     if (ctx.hasCommand("genImg")) {
       const imageNumber = ctx.session.openAi.imageGen.numImages;
       const imageSize = ctx.session.openAi.imageGen.imgSize;
@@ -103,7 +90,7 @@ export class OpenAIBot {
 
   public async onEvent(ctx: OnMessageContext | OnCallBackQueryData) {
     if (!this.isSupportedEvent(ctx)) {
-      console.log(`### unsupported command ${ctx.message?.text}`);
+      this.logger.warn(`### unsupported command ${ctx.message?.text}`);
       return false;
     }
 
@@ -122,7 +109,7 @@ export class OpenAIBot {
       return;
     }
 
-    console.log(`### unsupported command`);
+    this.logger.warn(`### unsupported command`);
     ctx.reply("### unsupported command");
   }
 

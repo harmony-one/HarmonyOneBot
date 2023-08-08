@@ -15,3 +15,9 @@ export enum MenuIds {
   CHAT_GPT_MODEL = "chat-gpt-model",
 }
 
+export const menuText = {
+  mainMenu: {
+    backButton: 'Back to Main Menu',
+    menuName: 'Main Menu',
+  },
+}

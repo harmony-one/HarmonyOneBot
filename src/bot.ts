@@ -24,7 +24,6 @@ import { Wallet } from "./modules/wallet";
 import { WalletConnect } from "./modules/walletconnect";
 import { BotPayments } from "./modules/payment";
 import { BotSchedule } from "./modules/schedule";
-import { Api } from "telegram";
 import { ConversationHandler } from "./modules/conversation-handler/";
 import config from "./config";
 
@@ -76,28 +75,34 @@ const payments = new BotPayments();
 const schedule = new BotSchedule(bot);
 const openAiBot = new OpenAIBot();
 const oneCountryBot = new OneCountryBot();
-const conversationHandler = new ConversationHandler(bot);    
+const conversationHandler = new ConversationHandler(bot);
 
 const onMessage = async (ctx: OnMessageContext) => {
   if (qrCodeBot.isSupportedEvent(ctx)) {
-    const price = qrCodeBot.getEstimatedPrice(ctx)
-    const isPaid = await payments.pay(ctx, price)
-    if(isPaid) {
-      return qrCodeBot.onEvent(ctx).catch((e) => payments.refundPayment(e, ctx, price));
+    const price = qrCodeBot.getEstimatedPrice(ctx);
+    const isPaid = await payments.pay(ctx, price);
+    if (isPaid) {
+      return qrCodeBot
+        .onEvent(ctx)
+        .catch((e) => payments.refundPayment(e, ctx, price));
     }
   }
   if (sdImagesBot.isSupportedEvent(ctx)) {
-    const price = sdImagesBot.getEstimatedPrice(ctx)
-    const isPaid = await payments.pay(ctx, price)
-    if(isPaid) {
-      return sdImagesBot.onEvent(ctx).catch((e) => payments.refundPayment(e, ctx, price));
+    const price = sdImagesBot.getEstimatedPrice(ctx);
+    const isPaid = await payments.pay(ctx, price);
+    if (isPaid) {
+      return sdImagesBot
+        .onEvent(ctx)
+        .catch((e) => payments.refundPayment(e, ctx, price));
     }
   }
   if (voiceMemo.isSupportedEvent(ctx)) {
-    const price = voiceMemo.getEstimatedPrice(ctx)
-    const isPaid = await payments.pay(ctx, price)
-    if(isPaid) {
-      return voiceMemo.onEvent(ctx).catch((e) => payments.refundPayment(e, ctx, price));
+    const price = voiceMemo.getEstimatedPrice(ctx);
+    const isPaid = await payments.pay(ctx, price);
+    if (isPaid) {
+      return voiceMemo
+        .onEvent(ctx)
+        .catch((e) => payments.refundPayment(e, ctx, price));
     }
   }
   if (openAiBot.isSupportedEvent(ctx)) {
@@ -107,7 +112,9 @@ const onMessage = async (ctx: OnMessageContext) => {
     }
     const isPaid = await payments.pay(ctx, price);
     if (isPaid) {
-      return openAiBot.onEvent(ctx).catch((e) => payments.refundPayment(e, ctx, price));
+      return openAiBot
+        .onEvent(ctx)
+        .catch((e) => payments.refundPayment(e, ctx, price));
     }
   }
   if (conversationHandler.isSupportedEvent(ctx)) {
@@ -117,7 +124,9 @@ const onMessage = async (ctx: OnMessageContext) => {
     }
     const isPaid = await payments.pay(ctx, price);
     if (isPaid) {
-      return conversationHandler.onEvent(ctx).catch((e) => payments.refundPayment(e, ctx, price));
+      return conversationHandler
+        .onEvent(ctx)
+        .catch((e) => payments.refundPayment(e, ctx, price));
     }
   }
   if (oneCountryBot.isSupportedEvent(ctx)) {
@@ -127,7 +136,9 @@ const onMessage = async (ctx: OnMessageContext) => {
     }
     const isPaid = await payments.pay(ctx, price);
     if (isPaid) {
-      return oneCountryBot.onEvent(ctx).catch((e) => payments.refundPayment(e, ctx, price));
+      return oneCountryBot
+        .onEvent(ctx)
+        .catch((e) => payments.refundPayment(e, ctx, price));
     }
   }
   if (wallet.isSupportedEvent(ctx)) {
@@ -143,7 +154,13 @@ const onMessage = async (ctx: OnMessageContext) => {
     return schedule.onEvent(ctx);
   }
   if (ctx.update.message.chat) {
-    console.log(`Received message in chat id: ${ctx.update.message.chat.id}`);
+    ctx.reply(
+      "Command not supported.\nWrite */menu* to learn available commands",
+      {
+        parse_mode: "Markdown",
+      }
+    );
+    logger.info(`Received message in chat id: ${ctx.update.message.chat.id}`);
   }
 };
 
@@ -159,11 +176,25 @@ const onCallback = async (ctx: OnCallBackQueryData) => {
   }
 };
 
-bot.command("start", (ctx) => ctx.reply(`Welcome! Up and running. Use /menu for options.`));
+bot.command("start", (ctx) =>
+  ctx.reply(`
+🌟 Welcome to the Harmony One Bot! 🤖
+
+📋 Explore all services with /menu! 📋
+
+💲 Send money to your /balance to start! 🚀`)
+);
 
 bot.command("menu", async (ctx) => {
-  await ctx.reply("Main Menu", {
-    parse_mode: "HTML",
+  await ctx.reply(`
+  
+*Main Menu*
+  
+🌟 Welcome to the Harmony One Bot! 🤖
+  
+💲 Send money to your /balance to start! 🚀
+  `, {
+    parse_mode: "Markdown",
     reply_markup: mainMenu,
   });
 });
@@ -173,14 +204,14 @@ bot.on("callback_query:data", onCallback);
 
 bot.catch((err) => {
   const ctx = err.ctx;
-  console.error(`Error while handling update ${ctx.update.update_id}:`);
+  logger.error(`Error while handling update ${ctx.update.update_id}:`);
   const e = err.error;
   if (e instanceof GrammyError) {
-    console.error("Error in request:", e.description);
+    logger.error("Error in request:", e.description);
   } else if (e instanceof HttpError) {
-    console.error("Could not contact Telegram:", e);
+    logger.error("Could not contact Telegram:", e);
   } else {
-    console.error("Unknown error:", e);
+    logger.error("Unknown error:", e);
   }
 });
 

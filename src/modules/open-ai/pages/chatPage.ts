@@ -4,20 +4,16 @@ import { appText } from "../utils/text";
 import { BotContext } from "../../types";
 import { isAdmin } from "../utils/context";
 import { MenuIds } from "../../../constants";
-import { ChatGPTModelsEnum } from '../types'
+import { ChatGPTModelsEnum } from "../types";
+
+export const chatGptMenuText = {
+  helpText: `*🖌️ ChatGPT Help*
+  
+  *1. CHAT WITH AI*
+  • Use */chat* <TEXT>`,
+};
 
 export const chatMainMenu = new Menu<BotContext>(MenuIds.CHAT_GPT_MAIN)
-  .text("Help", (ctx) => {
-    ctx
-      .editMessageText(appText.chatGptMain, {
-        parse_mode: "Markdown",
-        disable_web_page_preview: true,
-      })
-      .catch((ex: any) => {
-        console.log("### ex", ex);
-      });
-  })
-  .row()
   .text(
     (ctx) =>
       `${
@@ -66,24 +62,39 @@ export const chatMainMenu = new Menu<BotContext>(MenuIds.CHAT_GPT_MAIN)
   .row()
   .back("⬅️ Back");
 
-
 const chatGPTimageDefaultOptions = new Menu<BotContext>(MenuIds.CHAT_GPT_MODEL)
   // gpt-4, gpt-4-0613, gpt-4-32k, gpt-4-32k-0613, gpt-3.5-turbo, gpt-3.5-turbo-0613, gpt-3.5-turbo-16k, gpt-3.5-turbo-16k-0613
-  .text((ctx) => `${getLabel(ChatGPTModelsEnum.GPT_4, ctx)}`, (ctx) => setModel(ChatGPTModelsEnum.GPT_4, ctx))
-  .text((ctx) => `${getLabel(ChatGPTModelsEnum.GPT_4_32K, ctx)}`, (ctx) => setModel(ChatGPTModelsEnum.GPT_4_32K, ctx))
+  .text(
+    (ctx) => `${getLabel(ChatGPTModelsEnum.GPT_4, ctx)}`,
+    (ctx) => setModel(ChatGPTModelsEnum.GPT_4, ctx)
+  )
+  .text(
+    (ctx) => `${getLabel(ChatGPTModelsEnum.GPT_4_32K, ctx)}`,
+    (ctx) => setModel(ChatGPTModelsEnum.GPT_4_32K, ctx)
+  )
   .row()
-  .text((ctx) => `${getLabel(ChatGPTModelsEnum.GPT_35_TURBO, ctx)}`, (ctx) => setModel(ChatGPTModelsEnum.GPT_35_TURBO, ctx))
-  .text((ctx) => `${getLabel(ChatGPTModelsEnum.GPT_35_TURBO_16K, ctx)}`, (ctx) => setModel(ChatGPTModelsEnum.GPT_35_TURBO_16K, ctx))
+  .text(
+    (ctx) => `${getLabel(ChatGPTModelsEnum.GPT_35_TURBO, ctx)}`,
+    (ctx) => setModel(ChatGPTModelsEnum.GPT_35_TURBO, ctx)
+  )
+  .text(
+    (ctx) => `${getLabel(ChatGPTModelsEnum.GPT_35_TURBO_16K, ctx)}`,
+    (ctx) => setModel(ChatGPTModelsEnum.GPT_35_TURBO_16K, ctx)
+  )
   .row()
   .back("Back");
 
 function getLabel(m: string, ctx: any) {
-  let label = m
-  console.log(ctx.session.openAi.chatGpt.model, m, ctx.session.openAi.chatGpt.model === m)
+  let label = m;
+  console.log(
+    ctx.session.openAi.chatGpt.model,
+    m,
+    ctx.session.openAi.chatGpt.model === m
+  );
   if (ctx.session.openAi.chatGpt.model === m) {
-    label += ' ✅'
+    label += " ✅";
   }
-  return label
+  return label;
 }
 
 function setModel(m: string, ctx: any) {

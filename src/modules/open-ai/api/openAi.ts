@@ -25,7 +25,7 @@ const configuration = new Configuration({
 const openai = new OpenAIApi(configuration);
 
 const logger = pino({
-  name: "ImagenGenBot",
+  name: "openAIBot",
   transport: {
     target: "pino-pretty",
     options: {
@@ -118,7 +118,6 @@ export async function chatCompilation(
     const response = await openai.createChatCompletion(
       payload as CreateChatCompletionRequest
     );
-    console.log(response.data);
     const chatModel = getChatModel(model);
     const price = getChatModelPrice(
       chatModel,
@@ -132,7 +131,7 @@ export async function chatCompilation(
       price: price,
     };
   } catch (e: any) {
-    console.log(e.response);
+    logger.error(e.response);
     throw (
       e.response?.data.error.message ||
       "There was an error processing your request"
@@ -147,7 +146,7 @@ export async function improvePrompt(promptText: string, model: string) {
     const response = await chatCompilation(conversation, model);
     return response.completion;
   } catch (e: any) {
-    console.log(e.response);
+    logger.error(e.response);
     throw (
       e.response?.data.error.message ||
       "There was an error processing your request"
@@ -178,7 +177,7 @@ export const getChatModelPrice = (
 };
 
 export const getDalleModel = (modelName: string) => {
-  console.log(modelName);
+  logger.info(modelName);
   return DalleGPTModels[modelName];
 };
 

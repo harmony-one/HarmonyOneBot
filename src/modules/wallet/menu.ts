@@ -1,8 +1,9 @@
 import { Menu } from "@grammyjs/menu";
 import { BotContext } from "../types";
-import { MenuIds } from "../../constants";
+import { MenuIds, menuText } from "../../constants";
 
-const helpText = `🏦 *One Wallet Help*
+export const walletMenuText = {
+  helpText: `🏦 *One Wallet Help*
 
 *1. HOW TO BUY $ONE*
 • Buy [here](https://harmony.one/buy)
@@ -18,19 +19,12 @@ const helpText = `🏦 *One Wallet Help*
 
 *4. WALLETCONNECT*
 • Use */walletconnect*
+  `,
+};
 
-`;
-
-export const walletMenu = new Menu<BotContext>(MenuIds.WALLET_MAIN)
-  .text("Help", (ctx) => {
-    ctx
-      .editMessageText(helpText, {
-        parse_mode: "Markdown",
-        disable_web_page_preview: true,
-      })
-      .catch((ex: any) => {
-        console.log("### ex", ex);
-      });
-  })
-  .row()
-  .back("⬅️ Back");
+export const walletMenu = new Menu<BotContext>(MenuIds.WALLET_MAIN).back(
+  menuText.mainMenu.backButton,
+  (ctx) => {
+    ctx.editMessageText(menuText.mainMenu.menuName);
+  }
+);
