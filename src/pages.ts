@@ -76,7 +76,6 @@ export const mainMenu = new Menu<BotContext>(MenuIds.MAIN_MENU)
       ctx
         .editMessageText(sdImagesMenuText.helpText, {
           parse_mode: "Markdown",
-          disable_web_page_preview: true,
         })
         .catch((ex: any) => {
           console.log("### ex", ex);
