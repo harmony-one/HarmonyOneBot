@@ -60,7 +60,7 @@ export class SDImagesBot {
     public async onEvent(ctx: OnMessageContext | OnCallBackQueryData) {
         if (!this.isSupportedEvent(ctx)) {
             console.log(`### unsupported command ${ctx.message?.text}`);
-            throw new Error('Unsupported command')
+            // throw new Error('Unsupported command')
         }
 
         if (ctx.hasCommand(SupportedCommands.IMAGE)) {
@@ -99,7 +99,7 @@ export class SDImagesBot {
 
             if (!prompt) {
                 ctx.reply(`${author} please add prompt to your message`);
-                throw new Error('Wrong prompts');
+                // throw new Error('Wrong prompts');
                 return;
             }
 
@@ -131,7 +131,7 @@ export class SDImagesBot {
             
             ctx.reply(`Error: something went wrong...`);
             
-            throw new Error(e?.message);
+            // throw new Error(e?.message);
         }
 
         this.queue = this.queue.filter(v => v !== uuid);
@@ -149,7 +149,7 @@ export class SDImagesBot {
             if (!prompt) {
                 ctx.reply(`${author} please add prompt to your message`);
 
-                throw new Error('Wrong prompts');
+                // throw new Error('Wrong prompts');
                 return;
             }
 
@@ -207,7 +207,7 @@ export class SDImagesBot {
 
             ctx.reply(`Error: something went wrong...`);
 
-            throw new Error(e?.message);
+            // throw new Error(e?.message);
         }
 
         this.queue = this.queue.filter(v => v !== uuid);
@@ -220,21 +220,21 @@ export class SDImagesBot {
 
             if (!ctx.callbackQuery?.data) {
                 console.log('wrong callbackQuery')
-                throw new Error('Wrong callbackQuery');
+                // throw new Error('Wrong callbackQuery');
                 return;
             }
 
             const [sessionId, imageNumber] = ctx.callbackQuery.data.split('_');
 
             if (!sessionId || !imageNumber) {
-                throw new Error('Wrong params');
+                // throw new Error('Wrong params');
                 return;
             }
 
             const session = this.sessions.find(s => s.id === sessionId);
 
             if (!session || session.author !== author) {
-                throw new Error('Wrong author');
+                // throw new Error('Wrong author');
                 return;
             }
 
@@ -249,7 +249,7 @@ export class SDImagesBot {
             console.log(e);
             ctx.reply(`Error: something went wrong...`);
 
-            throw new Error(e?.message);
+            // throw new Error(e?.message);
         }
     }
 
@@ -272,7 +272,7 @@ export class SDImagesBot {
             console.log(e);
             await ctx.reply(`Error: something went wrong...`);
 
-            throw new Error(e?.message);
+            // throw new Error(e?.message);
         }
     }
 }
