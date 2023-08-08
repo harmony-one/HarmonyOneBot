@@ -16,7 +16,8 @@ import { Logger, pino } from "pino";
 import { Bot } from "grammy";
 import { conversations, createConversation } from "@grammyjs/conversations";
 import { conversationGpt } from "./conversationGpt";
-import { conversationDomainName } from './conversationCountry'
+import { conversationDomainName } from "./conversationCountry";
+import { promptGen } from "../open-ai/controller";
 
 enum SupportedCommands {
   CHAT = "chat",
@@ -90,7 +91,7 @@ export class ConversationHandler {
     }
 
     if (ctx.hasCommand(SupportedCommands.CHAT)) {
-      await ctx.conversation.enter("botConversation");
+      await this.onChat(ctx);
       return;
     }
 
@@ -101,5 +102,32 @@ export class ConversationHandler {
 
     this.logger.warn(`### unsupported command`);
     ctx.reply("### unsupported command");
+  }
+
+  async onChat(ctx: OnMessageContext | OnCallBackQueryData) {
+    const prompt = ctx.match;
+    if (!prompt) {
+      ctx.reply("Error: Missing prompt");
+      return;
+    }
+    if (ctx.session.openAi.chatGpt.isEnabled) {
+      if (ctx.chat?.type !== "private") {
+        const msgId = (
+          await ctx.reply(
+            `Generating response using model ${ctx.session.openAi.chatGpt.model}...`
+          )
+        ).message_id;
+        const payload = {
+          conversation: [{ role: "user", content: prompt as string }],
+          model: ctx.session.openAi.chatGpt.model,
+        };
+        const response = await promptGen(payload);
+        ctx.api.editMessageText(ctx.chat?.id!, msgId, response.completion);
+      } else {
+        await ctx.conversation.enter("botConversation");
+      }
+    } else {
+      ctx.reply("Bot disabled");
+    }
   }
 }

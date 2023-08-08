@@ -2,8 +2,8 @@ import { Composer } from "grammy";
 import { promptGen } from "../open-ai/controller";
 import { BotContext, BotConversation } from "../types";
 import { conversations, createConversation } from "@grammyjs/conversations";
-import { conversationGpt } from "../open-ai/conversationGpt";
-import { conversationDomainName } from "../1country/conversationCountry";
+import { conversationGpt } from "./conversationGpt";
+import { conversationDomainName } from "./conversationCountry";
 
 export const conversationHandler = new Composer<BotContext>();
 
