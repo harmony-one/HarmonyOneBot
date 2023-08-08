@@ -119,7 +119,7 @@ const onMessage = async (ctx: OnMessageContext) => {
       }
     } else {
       ctx.reply("Bot disabled");
-      return
+      return;
     }
   }
   if (conversationHandler.isSupportedEvent(ctx)) {
@@ -136,7 +136,7 @@ const onMessage = async (ctx: OnMessageContext) => {
       }
     } else {
       ctx.reply("Bot disabled");
-      return
+      return;
     }
   }
   // if (oneCountryBot.isSupportedEvent(ctx)) {
@@ -163,13 +163,17 @@ const onMessage = async (ctx: OnMessageContext) => {
   if (schedule.isSupportedEvent(ctx)) {
     return schedule.onEvent(ctx);
   }
-  if (ctx.update.message.chat) {
+  if (ctx.update.message.text && ctx.update.message.text.startsWith("/", 0)) {
+    const command = ctx.update.message.text.split(' ')[0].slice(1)
     ctx.reply(
-      "Command not supported.\nWrite */menu* to learn available commands",
+      `Command *${command}* not supported.\nWrite */menu* to learn available commands`,
       {
         parse_mode: "Markdown",
       }
     );
+    return;
+  }
+  if (ctx.update.message.chat) {
     logger.info(`Received message in chat id: ${ctx.update.message.chat.id}`);
   }
 };
