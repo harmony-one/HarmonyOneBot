@@ -1,5 +1,6 @@
 export enum MenuIds {
   MAIN_MENU = "main-menu",
+  IMAGE_MENU = 'image-menu-main',
   QR_BOT_MAIN = "qrbot-menu-main",
   QR_BOT_CHANGE_OPTIONS = "qrbot-menu-change-options",
   QR_BOT_CHANGE_MARGIN = "qrbot-menu-change-margin",
@@ -20,4 +21,13 @@ export const menuText = {
     backButton: 'Back to Main Menu',
     menuName: 'Main Menu',
   },
+  imageMenu: {
+    menuName: '👨‍🎨 Image Generation',
+    backButton: 'Back to previous menu',
+    helpText: `👨‍🎨 Image Generation\n
+
+Help text for this menu
+  `,
+  
+  }
 }

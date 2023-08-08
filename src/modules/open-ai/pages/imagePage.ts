@@ -77,8 +77,10 @@ export const imageGenMainMenu = new Menu<BotContext>(MenuIds.IMAGE_GEN_MAIN)
     }
   })
   .row()
-  .back(menuText.mainMenu.backButton, (ctx) => {
-    ctx.editMessageText(menuText.mainMenu.menuName);
+  .back(menuText.imageMenu.backButton, (ctx) => {
+    ctx.editMessageText(menuText.imageMenu.helpText,{
+      parse_mode: "Markdown"
+    });
   });
 
 const imageDefaultOptions = new Menu<BotContext>(MenuIds.IMAGE_GEN_OPTIONS)
