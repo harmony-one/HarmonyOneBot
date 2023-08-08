@@ -188,7 +188,7 @@ bot.command("start", (ctx) =>
 bot.command("menu", async (ctx) => {
   await ctx.reply(`
   
-📱*Main Menu* 💸 🤖
+*Main Menu*
   
 🌟 Welcome to the Harmony One Bot! 🤖
   
