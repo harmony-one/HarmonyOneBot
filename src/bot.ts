@@ -24,7 +24,6 @@ import { Wallet } from "./modules/wallet";
 import { WalletConnect } from "./modules/walletconnect";
 import { BotPayments } from "./modules/payment";
 import { BotSchedule } from "./modules/schedule";
-import { Api } from "telegram";
 import { ConversationHandler } from "./modules/conversation-handler/";
 import config from "./config";
 
@@ -161,7 +160,7 @@ const onMessage = async (ctx: OnMessageContext) => {
         parse_mode: "Markdown",
       }
     );
-    console.log(`Received message in chat id: ${ctx.update.message.chat.id}`);
+    logger.info(`Received message in chat id: ${ctx.update.message.chat.id}`);
   }
 };
 
@@ -205,14 +204,14 @@ bot.on("callback_query:data", onCallback);
 
 bot.catch((err) => {
   const ctx = err.ctx;
-  console.error(`Error while handling update ${ctx.update.update_id}:`);
+  logger.error(`Error while handling update ${ctx.update.update_id}:`);
   const e = err.error;
   if (e instanceof GrammyError) {
-    console.error("Error in request:", e.description);
+    logger.error("Error in request:", e.description);
   } else if (e instanceof HttpError) {
-    console.error("Could not contact Telegram:", e);
+    logger.error("Could not contact Telegram:", e);
   } else {
-    console.error("Unknown error:", e);
+    logger.error("Unknown error:", e);
   }
 });
 

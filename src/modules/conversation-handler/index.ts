@@ -85,7 +85,7 @@ export class ConversationHandler {
 
   public async onEvent(ctx: OnMessageContext | OnCallBackQueryData) {
     if (!this.isSupportedEvent(ctx)) {
-      console.log(`### unsupported command ${ctx.message?.text}`);
+      this.logger.warn(`### unsupported command ${ctx.message?.text}`);
       return false;
     }
 
@@ -99,7 +99,7 @@ export class ConversationHandler {
       return;
     }
 
-    console.log(`### unsupported command`);
+    this.logger.warn(`### unsupported command`);
     ctx.reply("### unsupported command");
   }
 }
