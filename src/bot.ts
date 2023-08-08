@@ -163,7 +163,7 @@ const onMessage = async (ctx: OnMessageContext) => {
   if (schedule.isSupportedEvent(ctx)) {
     return schedule.onEvent(ctx);
   }
-  if (ctx.update.message.chat) {
+  if (ctx.update.message.chat && ctx.chat.type === 'private') {
     ctx.reply(
       "Command not supported.\nWrite */menu* to learn available commands",
       {
