@@ -92,8 +92,10 @@ const onMessage = async (ctx: OnMessageContext) => {
     const isPaid = await payments.pay(ctx, price);
     if (isPaid) {
       return sdImagesBot
-        .onEvent(ctx)
-        .catch((e) => payments.refundPayment(e, ctx, price));
+        .onEvent(ctx, (e) => { 
+          console.log('REFUND Payment'); 
+          payments.refundPayment(e, ctx, price);
+        })
     }
   }
   if (voiceMemo.isSupportedEvent(ctx)) {
@@ -182,7 +184,7 @@ const onCallback = async (ctx: OnCallBackQueryData) => {
   }
 
   if (sdImagesBot.isSupportedEvent(ctx)) {
-    sdImagesBot.onEvent(ctx);
+    sdImagesBot.onEvent(ctx, (e) => { console.log(e, '// TODO refund payment'); });
     return;
   }
 };
