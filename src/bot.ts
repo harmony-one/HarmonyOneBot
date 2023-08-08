@@ -178,12 +178,24 @@ const onCallback = async (ctx: OnCallBackQueryData) => {
 };
 
 bot.command("start", (ctx) =>
-  ctx.reply(`Welcome! Up and running. Use /menu for options.`)
+  ctx.reply(`
+🌟 Welcome to the Harmony One Bot! 🤖
+
+📋 Explore all services with /menu! 📋
+
+💲 Send money to your /balance to start! 🚀`)
 );
 
 bot.command("menu", async (ctx) => {
-  await ctx.reply("Main Menu", {
-    parse_mode: "HTML",
+  await ctx.reply(`
+  
+📱*Main Menu* 💸 🤖
+  
+🌟 Welcome to the Harmony One Bot! 🤖
+  
+💲 Send money to your /balance to start! 🚀
+  `, {
+    parse_mode: "Markdown",
     reply_markup: mainMenu,
   });
 });

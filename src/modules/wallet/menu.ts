@@ -19,7 +19,6 @@ export const walletMenuText = {
 
 *4. WALLETCONNECT*
 • Use */walletconnect*
-
   `,
 };
 
