@@ -36,27 +36,28 @@ export const getBotFeeStats = async (address: string) => {
 
   const daysCount = 7
   const startTimestamp = moment().subtract(daysCount,'days').unix()
-  const weekTimestamps = Array(daysCount)
-    .fill(0)
-    .map((_, index) => moment().subtract((daysCount - index),'days').unix())
-  const weekValues = Array(daysCount).fill(0)
-  let valueTotal = 0
+  const daysAmountMap: Record<string, number> = {}
 
   history.forEach((item) => {
-    if(item.timestamp >= startTimestamp) {
-      const amount = +item.value
-      const [closestTimestamp] = [...weekTimestamps]
-        .sort((a, b) =>
-          Math.abs(a - item.timestamp) - Math.abs(b - item.timestamp))
-      const closestIndex = weekTimestamps.indexOf(closestTimestamp)
-      weekValues[closestIndex] += amount
-      valueTotal += amount
+    const { timestamp, value } = item
+    if(timestamp >= startTimestamp) {
+      const date = moment(timestamp * 1000).format('YYYYMMDD')
+      if(daysAmountMap[date]) {
+        daysAmountMap[date] += value
+      } else {
+        daysAmountMap[date] = value
+      }
     }
   })
 
-  const value = weekValues[weekValues.length - 1]
+  const daysAmountList = Object.entries(daysAmountMap)
+    .sort(([a], [b]) => +b - +a)
+    .map(([_, value]) => value)
+
+  const value = daysAmountList[0]
+  const valueTotal = daysAmountList.reduce((sum, item) => sum += item, 0)
   const average = valueTotal / daysCount
-  let change = getPercentDiff(value, average).toFixed(2)
+  let change = getPercentDiff(average, value).toFixed(2)
   if(+change > 0) {
     change = `+${change}`
   }

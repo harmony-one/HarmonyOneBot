@@ -2,8 +2,8 @@ import { Composer } from "grammy";
 import { promptGen } from "../open-ai/controller";
 import { BotContext, BotConversation } from "../types";
 import { conversations, createConversation } from "@grammyjs/conversations";
-import { conversationGpt } from "../open-ai/conversationGpt";
-import { conversationDomainName } from "../1country/conversationCountry";
+import { conversationGpt } from "./conversationGpt";
+import { conversationDomainName } from "./conversationCountry";
 
 export const conversationHandler = new Composer<BotContext>();
 
@@ -47,7 +47,10 @@ conversationHandler.command("chat", async (ctx) => {
 conversationHandler.command("rent", async (ctx) => {
   const prompt = ctx.match;
   if (!prompt) {
-    ctx.reply("Error: Missing domain name");
+    ctx.reply(`Please add domain name`, {
+      parse_mode: "Markdown",
+      disable_web_page_preview: true,
+    });
     return;
   }
   ctx.reply(

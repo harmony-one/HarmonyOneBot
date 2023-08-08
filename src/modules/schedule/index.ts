@@ -58,7 +58,6 @@ export class BotSchedule {
       const botFeesReport = `*${botFees.value}* ONE (${botFees.change}%)`
 
       const reportMessage =
-        `24-hour report:` +
         `\nNetwork fees: ${networkFeesReport}` +
         `\nNet bridged assets: ${bridgeStatsReport}` +
         `\n@HarmonyOneAIBot fees: ${botFeesReport}`

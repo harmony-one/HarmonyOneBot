@@ -1,3 +1,4 @@
+import { pino } from "pino";
 import { bot } from "../../../bot";
 import { ChatCompletion, ChatConversation } from "../../types";
 import {
@@ -21,6 +22,16 @@ interface ChatGptPayload {
   model: string;
 }
 
+const logger = pino({
+  name: "openAI-controller",
+  transport: {
+    target: "pino-pretty",
+    options: {
+      colorize: true,
+    },
+  },
+});
+
 export const imgGen = async (data: ImageGenPayload) => {
   const { chatId, prompt, numImages, imgSize } = data;
   try {
@@ -31,7 +42,7 @@ export const imgGen = async (data: ImageGenPayload) => {
     });
     return true;
   } catch (e) {
-    console.log("/gen Error", e);
+    logger.error("/gen Error", e);
     bot.api.sendMessage(
       chatId,
       "There was an error while generating the image"
@@ -83,7 +94,7 @@ export const alterImg = async (data: ImageGenPayload) => {
       bot.api.sendPhoto(chatId, img.url);
     });
   } catch (e) {
-    console.log("/genEn Error", e);
+    logger.error("/genEn Error", e);
     bot.api.sendMessage(
       chatId,
       "There was an error while generating the image"
@@ -95,11 +106,10 @@ export const alterImg = async (data: ImageGenPayload) => {
 export const promptGen = async (data: ChatGptPayload): Promise<ChatCompletion> => {
   const { conversation, model } = data;
   try {
-    // console.log(data);
     const resp = await chatCompilation(conversation!, model, false);
     return resp
   } catch (e) {
-    console.log("/genEn Error", e);
+    logger.error("/genEn Error", e);
     throw "There was an error while generating the image"
   }
 };

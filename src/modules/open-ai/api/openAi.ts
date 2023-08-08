@@ -4,12 +4,19 @@ import {
   CreateImageRequest,
   CreateChatCompletionRequest,
 } from "openai";
+import { encode } from "gpt-tokenizer";
 
 import config from "../../../config";
 import { deleteFile, getImage } from "../utils/file";
 import { bot } from "../../../bot";
 import { ChatCompletion, ChatConversation } from "../../types";
 import { pino } from "pino";
+import {
+  ChatGPTModel,
+  ChatGPTModels,
+  DalleGPTModel,
+  DalleGPTModels,
+} from "../types";
 
 const configuration = new Configuration({
   apiKey: config.openAiKey,
@@ -18,7 +25,7 @@ const configuration = new Configuration({
 const openai = new OpenAIApi(configuration);
 
 const logger = pino({
-  name: "ImagenGenBot",
+  name: "openAIBot",
   transport: {
     target: "pino-pretty",
     options: {
@@ -64,9 +71,8 @@ export async function alterGeneratedImg(
         const n = numImages
           ? numImages
           : config.openAi.imageGen.sessionDefault.numImages;
-        //@ts-ignore
+
         response = await openai.createImageEdit(
-          //@ts-ignore
           imageData.file,
           prompt,
           undefined,
@@ -79,7 +85,6 @@ export async function alterGeneratedImg(
           : config.openAi.imageGen.sessionDefault.imgSize;
         const n = parseInt(prompt);
         response = await openai.createImageVariation(
-          //@ts-ignore
           imageData.file,
           n > 10 ? 1 : n,
           size
@@ -113,13 +118,20 @@ export async function chatCompilation(
     const response = await openai.createChatCompletion(
       payload as CreateChatCompletionRequest
     );
-    console.log(response.data);
+    const chatModel = getChatModel(model);
+    const price = getChatModelPrice(
+      chatModel,
+      true,
+      response.data.usage?.prompt_tokens!,
+      response.data.usage?.completion_tokens
+    );
     return {
       completion: response.data.choices[0].message?.content!,
-      usage: response.data.usage?.total_tokens!
-    }
+      usage: response.data.usage?.total_tokens!,
+      price: price,
+    };
   } catch (e: any) {
-    console.log(e.response);
+    logger.error(e.response);
     throw (
       e.response?.data.error.message ||
       "There was an error processing your request"
@@ -132,12 +144,54 @@ export async function improvePrompt(promptText: string, model: string) {
   try {
     const conversation = [{ role: "user", content: prompt }];
     const response = await chatCompilation(conversation, model);
-    return response.completion
+    return response.completion;
   } catch (e: any) {
-    console.log(e.response);
+    logger.error(e.response);
     throw (
       e.response?.data.error.message ||
       "There was an error processing your request"
     );
   }
 }
+
+export const getTokenNumber = (prompt: string) => {
+  return encode(prompt).length;
+};
+
+export const getChatModel = (modelName: string) => {
+  return ChatGPTModels[modelName];
+};
+
+export const getChatModelPrice = (
+  model: ChatGPTModel,
+  inCents = true,
+  inputTokens: number,
+  outPutTokens?: number
+) => {
+  let price = model.inputPrice * inputTokens;
+  price += outPutTokens
+    ? outPutTokens * model.outputPrice
+    : model.maxContextTokens * model.outputPrice;
+  price = inCents ? price * 100 : price;
+  return price / 1000;
+};
+
+export const getDalleModel = (modelName: string) => {
+  logger.info(modelName);
+  return DalleGPTModels[modelName];
+};
+
+export const getDalleModelPrice = (
+  model: DalleGPTModel,
+  inCents = true,
+  numImages = 1,
+  hasEnhacedPrompt = false,
+  chatModel?: ChatGPTModel
+) => {
+  let price = model.price * numImages || 0;
+  if (hasEnhacedPrompt && chatModel) {
+    const averageToken = 250; // for 100 words
+    price += getChatModelPrice(chatModel, inCents, averageToken, averageToken);
+  }
+  return price;
+};

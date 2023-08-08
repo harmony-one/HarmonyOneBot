@@ -1,42 +1,31 @@
 import { Menu } from "@grammyjs/menu";
-import {BotContext, MenuContext} from "../types";
-import {MenuIds} from "../../constants";
+import { BotContext, MenuContext } from "../types";
+import { MenuIds, menuText } from "../../constants";
 
-const helpText = `📷 *QR Generation Help* 
+export const qrCodeMenuText = {
+  helpText: `📷 *QR Generation Help* 
 
-*Commands*
+*1. GENERATE A QR CODE*
+• Use */qr* <LINK> <PROMPTS>
 
-Send a message with the "qr" command and your prompts:
-/qr *LINK* *PROMPTS*.
-
-*Example:*
-\`/qr https://h.country/ai astronaut, sky, colorful\`
-
-*Change options*
-
-You can change following options.
-
-- *QR Code Margin* - Define how much wide the quiet zone should be.
-`;
+\`/qr h.country/ai astronaut, sky, colorful\`
+`,
+};
 
 export const qrCodeBotMenu = new Menu<BotContext>(MenuIds.QR_BOT_MAIN) //<MyContext>
-  .text("Help", (ctx) => {
-    ctx.editMessageText(helpText, {
-      parse_mode: 'Markdown',
-      disable_web_page_preview: true
-    }).catch((ex: any) => {
-      console.log('### ex', ex);
-    })
-  })
-  .row()
   .text("Change options", async (ctx) => {
-    await ctx.menu.nav(MenuIds.QR_BOT_CHANGE_OPTIONS)
+    await ctx.menu.nav(MenuIds.QR_BOT_CHANGE_OPTIONS);
   })
   .row()
-  .back("⬅️ Back");
+  .back(menuText.mainMenu.backButton, (ctx) => {
+    ctx.editMessageText(menuText.mainMenu.menuName);
+  });
 
 const qrChooseOptionsMenu = new Menu<BotContext>(MenuIds.QR_BOT_CHANGE_OPTIONS)
-  .submenu((ctx) => `QR Code Margin: ${ctx.session.qrMargin}`, MenuIds.QR_BOT_CHANGE_MARGIN)
+  .submenu(
+    (ctx) => `QR Code Margin: ${ctx.session.qrMargin}`,
+    MenuIds.QR_BOT_CHANGE_MARGIN
+  )
   .row()
   .back("⬅️ Back");
 

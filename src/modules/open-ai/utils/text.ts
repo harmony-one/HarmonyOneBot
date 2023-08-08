@@ -1,32 +1,15 @@
 import config from "../../../config";
 
 export const appText = {
-  imageGenMain: `*🎨 Image Generation DALL·E 2 Help*
-
-Hello! I can generate AI Images using OpenAI technology.\n
-By default, I generate *${config.openAi.imageGen.sessionDefault.numImages} image(s)* per prompt, with *${config.openAi.imageGen.sessionDefault.imgSize} size*\n
-*Commands*
-/help - This menu
-/genImg [text] - Generates an Image from a given prompt
-/genImgEn [text] - Generates an Image from an enhanced prompt
-
-*Generate images variations*
-To generates variations of an image using OpenAi API, reply to a message in our chat 
-with a picture and write the number of variations (max 10). Also, you can upload a 
-photo and write the number of variations in the caption.
-`,
-  imageGenChangeDefault: `*🎨 Image Generation DALL·E 2 Help*\n\n*Change images output sizes and numbers*
-With the following menu, you can choose how many images can be generated on each prompt. Also, you can change the image size`,
-  chatGptMain: `*🖌️ Chat Gpt 4 Help*
-Hello! I can generate AI completions using OpenAI technology.\n
-*Commands*
-/help - This menu
-/chat [text] - Generates a completion from a given prompt.`,
-  chatGptChangeModel: `*🖌️ Chat Gpt 4 Help*\nYou can choose one of the following models`,
+  imageGenChangeDefault: `*🎨 Image Generation DALL·E 2 Help*\n\n*Change image output sizes and numbers*
+Adjust image size or how many images are generated`,
+  chatGptChangeModel: `*🖌️ ChatGPT Help*\nChoose one of the following models`,
   generatingText: `Generating response...`,
   gptHelpText: `Write *end* to finish this conversation.\nWrite *help* to repeat this message.`,
-  gptChatEnd: 'Chat finished. Total tokens used:',
-  endChat: 'Thanks for using 1.country services'
+  gptChatEnd: "Chat finished. Total tokens used:",
+  endChat: "Thanks for using 1.country services",
+  gptChatPaymentIssue: `Once the withdrawal instructions are completed, you can return to the current conversation by writing the */chat* command.\n
+If you want to start a new conversation write */chat and your prompt*`
 };
 
 // <b>Edit an Image</b>

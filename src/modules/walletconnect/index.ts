@@ -68,8 +68,8 @@ export class WalletConnect {
       }
     }
 
-    ctx.reply('Wallet connect', {
-      reply_markup: keyboard
+    ctx.reply("WalletConnect", {
+      reply_markup: keyboard,
     });
   }
 }

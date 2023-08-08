@@ -149,7 +149,7 @@ export class QRCodeBot {
 
       const props = {
         qrUrl: command.url,
-        qrMargin: ctx.session.qrMargin,
+        qrMargin: 1,
         method,
         prompt: command.prompt,
       };
@@ -212,7 +212,7 @@ export class QRCodeBot {
   }
 
   private async genQRCode2({qrUrl, qrMargin, prompt, method}: {qrUrl: string, qrMargin: number, prompt: string, method: 'img2img' | 'txt2img'}) {
-    const qrImgBuffer = await createQRCode({url: qrUrl, margin: qrMargin });
+    const qrImgBuffer = await createQRCode({url: qrUrl, width: 680, margin: qrMargin });
     const extendedPrompt = prompt + ', ' + automatic1111DefaultConfig.additionalPrompt;
     const negativePrompt = automatic1111DefaultConfig.defaultNegativePrompt;
 

@@ -3,20 +3,34 @@ import { Menu } from "@grammyjs/menu";
 import { appText } from "../utils/text";
 import { BotContext } from "../../types";
 import { isAdmin } from "../utils/context";
-import { MenuIds } from "../../../constants";
+import { MenuIds, menuText } from "../../../constants";
+import config from "../../../config";
+
+export const openAiMenuText = {
+  helpText: `*🎨 DALL·E 2 Help*
+
+  I generate *${config.openAi.imageGen.sessionDefault.numImages} ${config.openAi.imageGen.sessionDefault.imgSize}* image(s) per prompt\n
+  
+  *1. GENERATE A STANDARD PROMPT*
+  • Use */genImg* <TEXT>
+  Example: 
+  \`/genImg beautiful scenery, purple galaxy bottle\`
+  
+  *2. GENERATE AN ENHANCED IMAGE*
+  • Use */genImgEn* <TEXT>
+  Example: 
+  \`/genImgEn beautiful scenery, horse trotting\`
+  
+  `,
+};
+
+// `*3. GENERATE IMAGE VARIATIONS*
+// To generates variations of an image using OpenAi API, reply to a message in our chat
+// with a picture and write the number of variations (max 10). Also, you can upload a
+// photo and write the number of variations in the caption.
+//``,
 
 export const imageGenMainMenu = new Menu<BotContext>(MenuIds.IMAGE_GEN_MAIN)
-  .text("help", (ctx) => {
-    ctx
-      .editMessageText(appText.imageGenMain, {
-        parse_mode: "Markdown",
-        disable_web_page_preview: true,
-      })
-      .catch((ex: any) => {
-        console.log("### ex", ex);
-      });
-  })
-  .row()
   .text(
     (ctx) =>
       `${
@@ -63,7 +77,9 @@ export const imageGenMainMenu = new Menu<BotContext>(MenuIds.IMAGE_GEN_MAIN)
     }
   })
   .row()
-  .back("Back to the Main Menu");
+  .back(menuText.mainMenu.backButton, (ctx) => {
+    ctx.editMessageText(menuText.mainMenu.menuName);
+  });
 
 const imageDefaultOptions = new Menu<BotContext>(MenuIds.IMAGE_GEN_OPTIONS)
   .submenu("Change the image number", MenuIds.IMAGE_GEN_NUMBER)
@@ -136,7 +152,7 @@ const imageGenSizeOptions = new Menu<BotContext>(MenuIds.IMAGE_GEN_SIZE)
     (ctx) => setImageSize("1024x1024", ctx)
   )
   .row()
-  .back("Back");
+  .back("⬅️ Back");
 
 function setImageNumber(n: number, ctx: any) {
   ctx.session.openAi.imageGen.numImages = n;
