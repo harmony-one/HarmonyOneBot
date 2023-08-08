@@ -47,3 +47,5 @@ export type MenuContext = Filter<BotContext, "callback_query:data"> &
   MenuFlavor;
 
 export type BotConversation = Conversation<BotContext>;
+
+export type RefundCallback = (reason?: string) => void

@@ -4,7 +4,7 @@ import {Account} from 'web3-core'
 import axios from 'axios'
 import bn, {BigNumber} from 'bignumber.js'
 import config from "../../config";
-import {OnMessageContext} from "../types";
+import {OnCallBackQueryData, OnMessageContext} from "../types";
 
 interface CoinGeckoResponse {
   harmony: {

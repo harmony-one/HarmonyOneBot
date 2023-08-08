@@ -83,8 +83,9 @@ const onMessage = async (ctx: OnMessageContext) => {
     const isPaid = await payments.pay(ctx, price);
     if (isPaid) {
       return qrCodeBot
-        .onEvent(ctx)
-        .catch((e) => payments.refundPayment(e, ctx, price));
+        .onEvent(ctx, (reason?: string) => {
+          payments.refundPayment(new Error(reason || 'Unknown error'), ctx, price);
+        })
     }
   }
   if (sdImagesBot.isSupportedEvent(ctx)) {
@@ -178,7 +179,9 @@ const onMessage = async (ctx: OnMessageContext) => {
 
 const onCallback = async (ctx: OnCallBackQueryData) => {
   if (qrCodeBot.isSupportedEvent(ctx)) {
-    qrCodeBot.onEvent(ctx);
+    qrCodeBot.onEvent(ctx, (reason) => {
+      logger.error(`qr generate error: ${reason}`)
+    });
     return;
   }
 
