@@ -1,9 +1,10 @@
 import { Menu } from "@grammyjs/menu";
 
 import { BotContext } from "../../types";
-import { MenuIds } from "../../../constants";
+import { MenuIds, menuText } from "../../../constants";
 
-const help = `🌐 *1.country Help*
+export const onCountryMenuText = {
+  helpText: `🌐 *1.country Help*
 
 *1. ASSESS A DOMAIN'S STATUS*
 • Use */check* <DOMAIN>
@@ -19,22 +20,16 @@ const help = `🌐 *1.country Help*
 • Use */renew* <DOMAIN>
 
 \`/renew abcwebsite\`
-`;
+`,
+};
 
 // /check [domain] - Check a 1.country domain status
 // /cert [domain] - Check domain's cert status
 // /nft [domain] - Check domain's nft metadata status
 
 export const oneCountryMainMenu = new Menu<BotContext>(MenuIds.ONE_COUNTRY_MAIN) //<MyContext>
-  .text("Help", (ctx) =>
-    ctx
-      .editMessageText(help, {
-        parse_mode: "Markdown",
-        disable_web_page_preview: true,
-      })
-      .catch((ex: any) => console.log("### ex", ex))
-  )
-  .row()
   .url("Go to 1.country", "https://1.country")
   .row()
-  .back("Back to the Main Menu");
+  .back(menuText.mainMenu.backButton, (ctx) => {
+    ctx.editMessageText(menuText.mainMenu.menuName);
+  });
