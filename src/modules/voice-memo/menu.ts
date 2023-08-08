@@ -12,5 +12,7 @@ export const voiceMemoMenuText = {
 export const voiceMemoMenu = new Menu<BotContext>(MenuIds.VOICE_MEMO_MAIN)
   .row()
   .back(menuText.mainMenu.backButton, (ctx) => {
-    ctx.editMessageText(menuText.mainMenu.menuName);
+    ctx.editMessageText(menuText.mainMenu.menuName).catch((ex) => {
+      console.log('### ex', ex);
+    });
   });

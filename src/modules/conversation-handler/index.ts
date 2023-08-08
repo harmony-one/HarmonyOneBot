@@ -21,7 +21,7 @@ import { promptGen } from "../open-ai/controller";
 
 enum SupportedCommands {
   CHAT = "chat",
-  RENT = "rent",
+  // RENT = "rent",
 }
 
 export class ConversationHandler {
@@ -49,9 +49,10 @@ export class ConversationHandler {
   ) {
     if (ctx.hasCommand("chat")) {
       await conversationGpt(conversation, ctx);
-    } else if (ctx.hasCommand("rent")) {
-      await conversationDomainName(conversation, ctx);
     }
+    //  else if (ctx.hasCommand("rent")) {
+    //   await conversationDomainName(conversation, ctx);
+    // }
   }
 
   public isSupportedEvent(
@@ -95,10 +96,10 @@ export class ConversationHandler {
       return;
     }
 
-    if (ctx.hasCommand(SupportedCommands.RENT)) {
-      await ctx.conversation.enter("botConversation");
-      return;
-    }
+    // if (ctx.hasCommand(SupportedCommands.RENT)) {
+    //   await ctx.conversation.enter("botConversation");
+    //   return;
+    // }
 
     this.logger.warn(`### unsupported command`);
     ctx.reply("### unsupported command");

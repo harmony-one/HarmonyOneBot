@@ -80,6 +80,8 @@ export const imageGenMainMenu = new Menu<BotContext>(MenuIds.IMAGE_GEN_MAIN)
   .back(menuText.imageMenu.backButton, (ctx) => {
     ctx.editMessageText(menuText.imageMenu.helpText,{
       parse_mode: "Markdown"
+    }).catch((ex) => {
+      console.log('### ex', ex);
     });
   });
 

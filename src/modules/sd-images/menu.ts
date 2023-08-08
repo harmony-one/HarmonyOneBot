@@ -21,6 +21,8 @@ export const sdImagesMenuText = {
 export const sdImagesMenu = new Menu<BotContext>(MenuIds.SD_IMAGES_MAIN).back(
   menuText.imageMenu.backButton,
   (ctx) => {
-    ctx.editMessageText(menuText.imageMenu.helpText);
+    ctx.editMessageText(menuText.imageMenu.helpText).catch((ex) => {
+      console.log('### ex', ex);
+    });
   }
 );

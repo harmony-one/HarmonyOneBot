@@ -44,7 +44,9 @@ const imageMenu = new Menu<BotContext>(MenuIds.IMAGE_MENU)
   })
   .row()
   .back(menuText.mainMenu.backButton, (ctx) => {
-    ctx.editMessageText(menuText.mainMenu.menuName);
+    ctx.editMessageText(menuText.mainMenu.menuName).catch((ex) => {
+      console.log("### ex", ex);
+    });
   });
 
 export const mainMenu = new Menu<BotContext>(MenuIds.MAIN_MENU)
@@ -58,16 +60,16 @@ export const mainMenu = new Menu<BotContext>(MenuIds.MAIN_MENU)
       });
   })
   .row()
-  .submenu("🌐 1.country", MenuIds.ONE_COUNTRY_MAIN, (ctx) => {
-    ctx
-      .editMessageText(onCountryMenuText.helpText, {
-        parse_mode: "Markdown",
-      })
-      .catch((ex: any) => {
-        console.log("### ex", ex);
-      });
-  })
-  .row()
+  // .submenu("🌐 1.country", MenuIds.ONE_COUNTRY_MAIN, (ctx) => {
+  //   ctx
+  //     .editMessageText(onCountryMenuText.helpText, {
+  //       parse_mode: "Markdown",
+  //     })
+  //     .catch((ex: any) => {
+  //       console.log("### ex", ex);
+  //     });
+  // })
+  // .row()
   .submenu("🎙 Voice Memo", MenuIds.VOICE_MEMO_MAIN, (ctx) => {
     ctx
       .editMessageText(voiceMemoMenuText.helpText, {
@@ -88,7 +90,7 @@ export const mainMenu = new Menu<BotContext>(MenuIds.MAIN_MENU)
       });
   })
   .row()
-  .submenu("🖌️ Chat Gpt 4", MenuIds.CHAT_GPT_MAIN, (ctx) => {
+  .submenu("🖌️ ChatGPT", MenuIds.CHAT_GPT_MAIN, (ctx) => {
     ctx
       .editMessageText(chatGptMenuText.helpText, {
         parse_mode: "Markdown",
@@ -117,7 +119,7 @@ imageMenu.register(sdImagesMenu);
 imageMenu.register(imageGenMainMenu);
 
 mainMenu.register(imageMenu);
-mainMenu.register(oneCountryMainMenu);
+// mainMenu.register(oneCountryMainMenu);
 mainMenu.register(qrCodeBotMenu);
 // mainMenu.register(sdImagesMenu);
 // mainMenu.register(imageGenMainMenu);

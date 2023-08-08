@@ -31,5 +31,7 @@ export const oneCountryMainMenu = new Menu<BotContext>(MenuIds.ONE_COUNTRY_MAIN)
   .url("Go to 1.country", "https://1.country")
   .row()
   .back(menuText.mainMenu.backButton, (ctx) => {
-    ctx.editMessageText(menuText.mainMenu.menuName);
+    ctx.editMessageText(menuText.mainMenu.menuName).catch((ex) => {
+      console.log('### ex', ex);
+    });
   });

@@ -24,7 +24,7 @@ export const menuText = {
   imageMenu: {
     menuName: '👨‍🎨 Image Generation',
     backButton: 'Back to previous menu',
-    helpText: `👨‍🎨 Image Generation\n
+    helpText: `👨‍🎨 Image Generation
 
 Help text for this menu
   `,
