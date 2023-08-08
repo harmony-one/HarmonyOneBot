@@ -61,7 +61,7 @@ export default function buildQRWorkflow(params: Params) {
       },
       "10": {
         "inputs": {
-          "strength": 1.3499999999999999,
+          "strength": 1.3,
           "conditioning": [
             "6",
             0
@@ -495,7 +495,7 @@ export default function buildQRWorkflow(params: Params) {
                 "Node name for S&R": "ControlNetApply"
               },
               "widgets_values": [
-                1.3499999999999999
+                1.3
               ]
             },
             {
