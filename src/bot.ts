@@ -106,27 +106,37 @@ const onMessage = async (ctx: OnMessageContext) => {
     }
   }
   if (openAiBot.isSupportedEvent(ctx)) {
-    const price = openAiBot.getEstimatedPrice(ctx);
-    if (price > 0) {
-      await ctx.reply(`Processing withdraw for ${price.toFixed(2)}¢...`);
-    }
-    const isPaid = await payments.pay(ctx, price);
-    if (isPaid) {
-      return openAiBot
-        .onEvent(ctx)
-        .catch((e) => payments.refundPayment(e, ctx, price));
+    if (ctx.session.openAi.imageGen.isEnabled) {
+      const price = openAiBot.getEstimatedPrice(ctx);
+      if (price > 0) {
+        await ctx.reply(`Processing withdraw for ${price.toFixed(2)}¢...`);
+      }
+      const isPaid = await payments.pay(ctx, price);
+      if (isPaid) {
+        return openAiBot
+          .onEvent(ctx)
+          .catch((e) => payments.refundPayment(e, ctx, price));
+      }
+    } else {
+      ctx.reply("Bot disabled");
+      return
     }
   }
   if (conversationHandler.isSupportedEvent(ctx)) {
-    const price = conversationHandler.getEstimatedPrice(ctx);
-    if (price > 0) {
-      await ctx.reply(`Processing withdraw for ${price.toFixed(2)}¢...`);
-    }
-    const isPaid = await payments.pay(ctx, price);
-    if (isPaid) {
-      return conversationHandler
-        .onEvent(ctx)
-        .catch((e) => payments.refundPayment(e, ctx, price));
+    if (ctx.session.openAi.chatGpt.isEnabled) {
+      const price = conversationHandler.getEstimatedPrice(ctx);
+      if (price > 0) {
+        await ctx.reply(`Processing withdraw for ${price.toFixed(2)}¢...`);
+      }
+      const isPaid = await payments.pay(ctx, price);
+      if (isPaid) {
+        return conversationHandler
+          .onEvent(ctx)
+          .catch((e) => payments.refundPayment(e, ctx, price));
+      }
+    } else {
+      ctx.reply("Bot disabled");
+      return
     }
   }
   if (oneCountryBot.isSupportedEvent(ctx)) {
@@ -186,17 +196,20 @@ bot.command("start", (ctx) =>
 );
 
 bot.command("menu", async (ctx) => {
-  await ctx.reply(`
+  await ctx.reply(
+    `
   
 *Main Menu*
   
 🌟 Welcome to the Harmony One Bot! 🤖
   
 💲 Send money to your /balance to start! 🚀
-  `, {
-    parse_mode: "Markdown",
-    reply_markup: mainMenu,
-  });
+  `,
+    {
+      parse_mode: "Markdown",
+      reply_markup: mainMenu,
+    }
+  );
 });
 
 bot.on("message", onMessage);
