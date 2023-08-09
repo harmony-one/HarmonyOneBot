@@ -142,15 +142,6 @@ export default function buildQRWorkflow(params: Params) {
           "batch_size": 1
         },
         "class_type": "EmptyLatentImage"
-      },
-      "38": {
-        "inputs": {
-          "images": [
-            "33",
-            0
-          ]
-        },
-        "class_type": "PreviewImage"
       }
     },
     "extra_data": {
@@ -267,31 +258,6 @@ export default function buildQRWorkflow(params: Params) {
               ]
             },
             {
-              "id": 38,
-              "type": "PreviewImage",
-              "pos": [
-                383,
-                456
-              ],
-              "size": {
-                "0": 210,
-                "1": 246
-              },
-              "flags": {},
-              "order": 8,
-              "mode": 0,
-              "inputs": [
-                {
-                  "name": "images",
-                  "type": "IMAGE",
-                  "link": 58
-                }
-              ],
-              "properties": {
-                "Node name for S&R": "PreviewImage"
-              }
-            },
-            {
               "id": 33,
               "type": "ImageInvert",
               "pos": [
@@ -319,8 +285,7 @@ export default function buildQRWorkflow(params: Params) {
                   "name": "IMAGE",
                   "type": "IMAGE",
                   "links": [
-                    57,
-                    58
+                    57
                   ],
                   "shape": 3,
                   "slot_index": 0
@@ -451,54 +416,6 @@ export default function buildQRWorkflow(params: Params) {
               ]
             },
             {
-              "id": 10,
-              "type": "ControlNetApply",
-              "pos": [
-                491,
-                -57
-              ],
-              "size": {
-                "0": 317.4000244140625,
-                "1": 98
-              },
-              "flags": {},
-              "order": 7,
-              "mode": 0,
-              "inputs": [
-                {
-                  "name": "conditioning",
-                  "type": "CONDITIONING",
-                  "link": 47
-                },
-                {
-                  "name": "control_net",
-                  "type": "CONTROL_NET",
-                  "link": 13
-                },
-                {
-                  "name": "image",
-                  "type": "IMAGE",
-                  "link": 57
-                }
-              ],
-              "outputs": [
-                {
-                  "name": "CONDITIONING",
-                  "type": "CONDITIONING",
-                  "links": [
-                    31
-                  ],
-                  "slot_index": 0
-                }
-              ],
-              "properties": {
-                "Node name for S&R": "ControlNetApply"
-              },
-              "widgets_values": [
-                1.3
-              ]
-            },
-            {
               "id": 23,
               "type": "KSamplerAdvanced",
               "pos": [
@@ -510,7 +427,7 @@ export default function buildQRWorkflow(params: Params) {
                 "1": 334
               },
               "flags": {},
-              "order": 9,
+              "order": 8,
               "mode": 0,
               "inputs": [
                 {
@@ -573,7 +490,7 @@ export default function buildQRWorkflow(params: Params) {
                 "1": 449.1610107421875
               },
               "flags": {},
-              "order": 11,
+              "order": 10,
               "mode": 0,
               "inputs": [
                 {
@@ -599,7 +516,7 @@ export default function buildQRWorkflow(params: Params) {
                 "1": 46
               },
               "flags": {},
-              "order": 10,
+              "order": 9,
               "mode": 0,
               "inputs": [
                 {
@@ -626,6 +543,54 @@ export default function buildQRWorkflow(params: Params) {
               "properties": {
                 "Node name for S&R": "VAEDecode"
               }
+            },
+            {
+              "id": 10,
+              "type": "ControlNetApply",
+              "pos": [
+                491,
+                -57
+              ],
+              "size": {
+                "0": 317.4000244140625,
+                "1": 98
+              },
+              "flags": {},
+              "order": 7,
+              "mode": 0,
+              "inputs": [
+                {
+                  "name": "conditioning",
+                  "type": "CONDITIONING",
+                  "link": 47
+                },
+                {
+                  "name": "control_net",
+                  "type": "CONTROL_NET",
+                  "link": 13
+                },
+                {
+                  "name": "image",
+                  "type": "IMAGE",
+                  "link": 57
+                }
+              ],
+              "outputs": [
+                {
+                  "name": "CONDITIONING",
+                  "type": "CONDITIONING",
+                  "links": [
+                    31
+                  ],
+                  "slot_index": 0
+                }
+              ],
+              "properties": {
+                "Node name for S&R": "ControlNetApply"
+              },
+              "widgets_values": [
+                1.3
+              ]
             }
           ],
           "links": [
@@ -731,14 +696,6 @@ export default function buildQRWorkflow(params: Params) {
               0,
               10,
               2,
-              "IMAGE"
-            ],
-            [
-              58,
-              33,
-              0,
-              38,
-              0,
               "IMAGE"
             ]
           ],
