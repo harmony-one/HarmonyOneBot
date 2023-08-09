@@ -84,7 +84,7 @@ const onMessage = async (ctx: OnMessageContext) => {
     if (isPaid) {
       return qrCodeBot
         .onEvent(ctx, (reason?: string) => {
-          payments.refundPayment(new Error(reason || 'Unknown error'), ctx, price);
+          payments.refundPayment(reason, ctx, price);
         })
     }
   }
@@ -93,8 +93,8 @@ const onMessage = async (ctx: OnMessageContext) => {
     const isPaid = await payments.pay(ctx, price);
     if (isPaid) {
       return sdImagesBot
-        .onEvent(ctx, (reason?: string) => { 
-          payments.refundPayment(new Error(reason || 'Unknown error'), ctx, price);
+        .onEvent(ctx, (reason?: string) => {
+          payments.refundPayment(reason, ctx, price);
         })
     }
   }
@@ -104,7 +104,6 @@ const onMessage = async (ctx: OnMessageContext) => {
     if (isPaid) {
       return voiceMemo
         .onEvent(ctx)
-        .catch((e) => payments.refundPayment(e, ctx, price));
     }
   }
   if (openAiBot.isSupportedEvent(ctx)) {
@@ -115,9 +114,7 @@ const onMessage = async (ctx: OnMessageContext) => {
       }
       const isPaid = await payments.pay(ctx, price);
       if (isPaid) {
-        return openAiBot
-          .onEvent(ctx)
-          .catch((e) => payments.refundPayment(e, ctx, price));
+        return openAiBot.onEvent(ctx)
       }
     } else {
       ctx.reply("Bot disabled");
@@ -132,9 +129,7 @@ const onMessage = async (ctx: OnMessageContext) => {
       }
       const isPaid = await payments.pay(ctx, price);
       if (isPaid) {
-        return conversationHandler
-          .onEvent(ctx)
-          .catch((e) => payments.refundPayment(e, ctx, price));
+        return conversationHandler.onEvent(ctx)
       }
     } else {
       ctx.reply("Bot disabled");
@@ -150,7 +145,6 @@ const onMessage = async (ctx: OnMessageContext) => {
     if (isPaid) {
       return oneCountryBot
         .onEvent(ctx)
-        .catch((e) => payments.refundPayment(e, ctx, price));
     }
   }
   if (wallet.isSupportedEvent(ctx)) {
