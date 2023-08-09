@@ -31,9 +31,13 @@ export async function conversationDomainName(
     let helpCommand = false;
     let domainAvailable = false;
     let msgId = 0;
-    msgId = (await ctx.reply("Checking name...")).message_id;
+    msgId = (
+      await ctx.reply(
+        domain !== "" ? "Checking name..." : "Write a domain name"
+      )
+    ).message_id;
     while (true) {
-      if (!helpCommand) {
+      if (!helpCommand && domain !== "") {
         const validate = validateDomainName(domain);
         if (!validate.valid) {
           ctx.reply(validate.error, {
@@ -111,4 +115,3 @@ export async function conversationDomainName(
     logger.error("##conversationGountry Error:", e);
   }
 }
-

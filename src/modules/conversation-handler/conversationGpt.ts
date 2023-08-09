@@ -38,18 +38,23 @@ export async function conversationGpt(
     if (initialPrompt) {
       chat.push({ content: initialPrompt, role: "user" });
     } else {
-      chat = [...conversation.session.openAi.chatGpt.chatConversation]
+      chat = [...conversation.session.openAi.chatGpt.chatConversation];
     }
     let usage = 0;
     let price = 0;
-    let totalPrice = 0
+    let totalPrice = 0;
     let helpCommand = false;
     let msgId = 0;
-    msgId = (await ctx.reply(appText.generatingText,{
-      parse_mode: "Markdown",
-    })).message_id;
+    msgId = (
+      await ctx.reply(
+        chat.length > 0 ? appText.generatingText : appText.introText,
+        {
+          parse_mode: "Markdown",
+        }
+      )
+    ).message_id;
     while (true) {
-      if (!helpCommand) {
+      if (!helpCommand && chat.length > 0) {
         const response = await conversation.external(() => {
           const payload = {
             conversation: chat,
@@ -61,11 +66,11 @@ export async function conversationGpt(
           chat.push({ content: response.completion, role: "system" });
           usage += response.usage;
           price = response.price;
-          totalPrice += price
+          totalPrice += price;
           ctx.api.editMessageText(ctx.chat?.id!, msgId, response.completion!, {
             parse_mode: "Markdown",
           });
-          
+
           // await ctx.reply();
           conversation.session.openAi.chatGpt.chatConversation = [...chat];
           const isPay = await conversation.external(() => {
@@ -74,7 +79,7 @@ export async function conversationGpt(
           if (!isPay) {
             ctx.reply(appText.gptChatPaymentIssue, {
               parse_mode: "Markdown",
-            })
+            });
             break;
           }
         }
@@ -102,9 +107,11 @@ export async function conversationGpt(
           content: userPrompt!,
           role: "user",
         });
-        msgId = (await ctx.reply(appText.generatingText,{
-          parse_mode: "Markdown",
-        })).message_id;
+        msgId = (
+          await ctx.reply(appText.generatingText, {
+            parse_mode: "Markdown",
+          })
+        ).message_id;
       }
     }
     return;

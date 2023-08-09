@@ -5,11 +5,12 @@ export const appText = {
 Adjust image size or how many images are generated`,
   chatGptChangeModel: `*🖌️ ChatGPT Help*\nChoose one of the following models`,
   generatingText: `Generating response...`,
+  introText: `You can write your question/prompt for ChatGPT`,
   gptHelpText: `Write *end* to finish this conversation.\nWrite *help* to repeat this message.`,
   gptChatEnd: "Chat finished. Total tokens used:",
   endChat: "Thanks for using 1.country services",
   gptChatPaymentIssue: `Once the withdrawal instructions are completed, you can return to the current conversation by writing the */chat* command.\n
-If you want to start a new conversation write */chat and your prompt*`
+If you want to start a new conversation write */chat and your prompt*`,
 };
 
 // <b>Edit an Image</b>

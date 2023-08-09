@@ -18,12 +18,20 @@ import { conversations, createConversation } from "@grammyjs/conversations";
 import { conversationGpt } from "./conversationGpt";
 import { conversationDomainName } from "./conversationCountry";
 import { promptGen } from "../open-ai/controller";
+import { getCommandNamePrompt } from "../1country/utils";
 
-enum SupportedCommands {
-  CHAT = "chat",
-  // RENT = "rent",
-}
-
+const SupportedCommands = {
+  ask: {
+    name: "ask",
+    groupParams: ">1",
+    privateParams: ">0",
+  },
+  register: {
+    name: "register",
+    groupParams: ">1",
+    privateParams: ">0",
+  },
+};
 export class ConversationHandler {
   private logger: Logger;
   private bot: Bot<BotContext>;
@@ -47,27 +55,58 @@ export class ConversationHandler {
     conversation: BotConversation,
     ctx: BotContext
   ) {
-    if (ctx.hasCommand("chat")) {
+    if (ctx.hasCommand(SupportedCommands.ask.name)) {
       await conversationGpt(conversation, ctx);
+    } else if (ctx.hasCommand(SupportedCommands.register.name)) {
+      await conversationDomainName(conversation, ctx);
     }
-    //  else if (ctx.hasCommand("rent")) {
-    //   await conversationDomainName(conversation, ctx);
-    // }
   }
 
   public isSupportedEvent(
     ctx: OnMessageContext | OnCallBackQueryData
   ): boolean {
-    const hasCommand = ctx.hasCommand(Object.values(SupportedCommands));
-    if (
-      hasCommand &&
-      !ctx.match &&
-      ctx.session.openAi.chatGpt.chatConversation.length === 0
-    ) {
-      ctx.reply("Error: Missing prompt");
-      return false;
+    const hasCommand = ctx.hasCommand(
+      Object.values(SupportedCommands).map((command) => command.name)
+    );
+    if (ctx.chat?.type !== 'private') {
+      const { commandName } = getCommandNamePrompt(ctx);
+      if (commandName === SupportedCommands.register.name) {
+        return false
+      }
     }
     return hasCommand;
+  }
+
+  public isValidCommand(ctx: OnMessageContext | OnCallBackQueryData): boolean {
+    const { commandName, prompt } = getCommandNamePrompt(ctx);
+    const command = Object.values(SupportedCommands).filter(
+      (c) => c.name === commandName
+    )[0];
+    const promptNumber = prompt === "" ? 0 : prompt.split(" ").length;
+    const comparisonOperator =
+      ctx.chat?.type === "private"
+        ? command.privateParams[0]
+        : command.groupParams[0];
+    const comparisonValue = parseInt(
+      ctx.chat?.type === "private"
+        ? command.privateParams.slice(1)
+        : command.groupParams.slice(1)
+    );
+    switch (comparisonOperator) {
+      case ">":
+        if (promptNumber >= comparisonValue) {
+          return true;
+        }
+        break;
+      case "=":
+        if (promptNumber === comparisonValue) {
+          return true;
+        }
+        break;
+      default:
+        break;
+    }
+    return false;
   }
 
   public getEstimatedPrice(ctx: any) {
@@ -75,7 +114,8 @@ export class ConversationHandler {
     if (!prompts) {
       return 0;
     }
-    if (ctx.hasCommand("chat")) {
+    0;
+    if (ctx.hasCommand(SupportedCommands.ask.name)) {
       const baseTokens = getTokenNumber(prompts as string);
       const modelName = ctx.session.openAi.chatGpt.model;
       const model = getChatModel(modelName);
@@ -91,15 +131,15 @@ export class ConversationHandler {
       return false;
     }
 
-    if (ctx.hasCommand(SupportedCommands.CHAT)) {
+    if (ctx.hasCommand(SupportedCommands.ask.name)) {
       await this.onChat(ctx);
       return;
     }
 
-    // if (ctx.hasCommand(SupportedCommands.RENT)) {
-    //   await ctx.conversation.enter("botConversation");
-    //   return;
-    // }
+    if (ctx.hasCommand(SupportedCommands.register.name)) {
+      await ctx.conversation.enter("botConversation");
+      return;
+    }
 
     this.logger.warn(`### unsupported command`);
     ctx.reply("### unsupported command");
@@ -107,10 +147,6 @@ export class ConversationHandler {
 
   async onChat(ctx: OnMessageContext | OnCallBackQueryData) {
     const prompt = ctx.match;
-    if (!prompt) {
-      ctx.reply("Error: Missing prompt");
-      return;
-    }
     if (ctx.session.openAi.chatGpt.isEnabled) {
       if (ctx.chat?.type !== "private") {
         const msgId = (

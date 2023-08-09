@@ -124,15 +124,22 @@ const onMessage = async (ctx: OnMessageContext) => {
   }
   if (conversationHandler.isSupportedEvent(ctx)) {
     if (ctx.session.openAi.chatGpt.isEnabled) {
-      const price = conversationHandler.getEstimatedPrice(ctx);
-      if (price > 0) {
-        await ctx.reply(`Processing withdraw for ${price.toFixed(2)}¢...`);
-      }
-      const isPaid = await payments.pay(ctx, price);
-      if (isPaid) {
-        return conversationHandler
-          .onEvent(ctx)
-          .catch((e) => payments.refundPayment(e, ctx, price));
+      if (conversationHandler.isValidCommand(ctx)) {
+        const price = conversationHandler.getEstimatedPrice(ctx);
+        if (price > 0) {
+          await ctx.reply(`Processing withdraw for ${price.toFixed(2)}¢...`);
+        }
+        const isPaid = await payments.pay(ctx, price);
+        if (isPaid) {
+          console.log('here 2')
+          return conversationHandler
+            .onEvent(ctx)
+            .catch((e) => payments.refundPayment(e, ctx, price));
+        }
+        return;
+      } else {
+        ctx.reply("Error: Missing prompt");
+        return
       }
     } else {
       ctx.reply("Bot disabled");

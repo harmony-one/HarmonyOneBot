@@ -1,4 +1,5 @@
 import config from "../../../config";
+import { OnCallBackQueryData, OnMessageContext } from "../../types";
 
 export const formatONEAmount = (num: number | string) => {
   const twoDecimalsFormatter = new Intl.NumberFormat("en-US", {
@@ -29,4 +30,15 @@ export const getUrl = (url: string, fullUrl = true) => {
   return !url.includes(".country") && fullUrl
     ? url.concat(config.country.tld)
     : url;
+};
+
+export const getCommandNamePrompt = (
+  ctx: OnMessageContext | OnCallBackQueryData
+) => {
+  const commandName = ctx.message?.text?.split(" ")[0].slice(1) || "";
+  const prompt = ctx.match as string;
+  return {
+    commandName,
+    prompt,
+  };
 };
