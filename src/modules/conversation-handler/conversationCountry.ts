@@ -73,7 +73,11 @@ export async function conversationDomainName(
       //   maxMilliseconds: 60000
       // });
       const userPrompt = cleanInput(userInput.msg.text);
-      if (userPrompt.toLocaleLowerCase().includes("rent") && domainAvailable) {
+      if (
+        (userPrompt.toLocaleLowerCase().includes("rent") ||
+          userPrompt.toLocaleLowerCase().includes("/rent")) &&
+        domainAvailable
+      ) {
         let keyboard = new InlineKeyboard()
           .webApp(
             "Rent in 1.country",
@@ -88,17 +92,26 @@ export async function conversationDomainName(
           reply_markup: keyboard,
         });
         break;
-      } else if (userPrompt.toLocaleLowerCase().includes("rent")) {
+      } else if (
+        userPrompt.toLocaleLowerCase().includes("rent") ||
+        userPrompt.toLocaleLowerCase().includes("/rent")
+      ) {
         ctx.reply("Keep writing options", {
           parse_mode: "Markdown",
         });
         helpCommand = true;
-      } else if (userPrompt.toLocaleLowerCase().includes("end")) {
+      } else if (
+        userPrompt.toLocaleLowerCase().includes("end") ||
+        userPrompt.toLocaleLowerCase().includes("/end")
+      ) {
         ctx.reply(appText.endChat, {
           parse_mode: "Markdown",
         });
         break;
-      } else if (userPrompt.toLocaleLowerCase().includes("help")) {
+      } else if (
+        userPrompt.toLocaleLowerCase().includes("help") ||
+        userPrompt.toLocaleLowerCase().includes("/help")
+      ) {
         helpCommand = true;
         ctx.reply(`${appText.gptHelpText}`, {
           parse_mode: "Markdown",

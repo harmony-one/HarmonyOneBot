@@ -89,14 +89,20 @@ export async function conversationGpt(
       //   maxMilliseconds: 300000 // 5min
       // });
       const userPrompt = userInput?.msg?.text;
-      if (userPrompt.toLocaleLowerCase().includes("end")) {
+      if (
+        userPrompt.toLocaleLowerCase().includes("end") ||
+        userPrompt.toLocaleLowerCase().includes("/end")
+      ) {
         conversation.session.openAi.chatGpt.chatConversation = [];
         await ctx.reply(
           `${appText.gptChatEnd} ${usage} (${totalPrice.toFixed(2)}¢)`
         );
         break;
       }
-      if (userPrompt.toLocaleLowerCase().includes("help")) {
+      if (
+        userPrompt.toLocaleLowerCase().includes("help") ||
+        userPrompt.toLocaleLowerCase().includes("/help")
+      ) {
         await ctx.reply(`${appText.gptHelpText}`, {
           parse_mode: "Markdown",
         });
