@@ -39,7 +39,8 @@ export default {
     },
     chatGpt: {
       isEnabled: Boolean(parseInt(process.env.CHAT_GPT_ENABLED || "1")),
-      model: process.env.CHATGPT_MODEL || "gpt-3.5-turbo",
+      //hard coded gpt-4
+      model: "gpt-4",
     },
   },
   country: {
