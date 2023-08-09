@@ -26,6 +26,7 @@ import { BotPayments } from "./modules/payment";
 import { BotSchedule } from "./modules/schedule";
 import { ConversationHandler } from "./modules/conversation-handler/";
 import config from "./config";
+import { commandHelpText } from "./constants";
 
 const logger = pino({
   name: "bot",
@@ -36,6 +37,8 @@ const logger = pino({
     },
   },
 });
+
+
 
 export const bot = new Bot<BotContext>(config.telegramBotAuthToken);
 
@@ -197,12 +200,15 @@ const onCallback = async (ctx: OnCallBackQueryData) => {
 };
 
 bot.command("start", (ctx) =>
-  ctx.reply(`
-🌟 Welcome to the Harmony One Bot! 🤖
+  ctx.reply(commandHelpText,{
+    parse_mode: "Markdown",
+  })
+);
 
-📋 Explore all services with /menu! 📋
-
-💲 Send money to your /balance to start! 🚀`)
+bot.command("help", (ctx) =>
+  ctx.reply(commandHelpText,{
+    parse_mode: "Markdown",
+  })
 );
 
 bot.command("menu", async (ctx) => {

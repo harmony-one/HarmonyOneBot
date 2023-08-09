@@ -31,3 +31,14 @@ Help text for this menu
   
   }
 }
+
+export const commandHelpText = `*COMMANDS*
+/help - this help message
+/wallet - 🏦 Wallet 
+/ask - 🖋️ ChatGPT 4 
+/images - 🎨 Image Generation 
+/qr - 📷 QR Generation 
+/register - 🌐 1.country 
+
+*EVENTS*
+The bot will produce a summary audio transcript when uploading a voice message.`

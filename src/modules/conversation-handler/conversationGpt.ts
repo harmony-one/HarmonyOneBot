@@ -34,6 +34,8 @@ export async function conversationGpt(
       }
     );
     let chat: ChatConversation[] = [];
+    // console.log('prompt', ctx.match)
+    // console.log('CTX', ctx.chat)
     const initialPrompt = ctx.match as string;
     if (initialPrompt) {
       chat.push({ content: initialPrompt, role: "user" });
@@ -53,6 +55,7 @@ export async function conversationGpt(
         }
       )
     ).message_id;
+    // console.log('messageID', msgId)
     while (true) {
       if (!helpCommand && chat.length > 0) {
         const response = await conversation.external(() => {
