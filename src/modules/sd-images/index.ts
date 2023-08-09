@@ -57,19 +57,20 @@ export class SDImagesBot {
         return !!this.sessions.find(s => s.id === sessionId);
     }
 
-    public async onEvent(ctx: OnMessageContext | OnCallBackQueryData) {
+    public async onEvent(ctx: OnMessageContext | OnCallBackQueryData, refundCallback: (reason?: string) => void) {
         if (!this.isSupportedEvent(ctx)) {
             console.log(`### unsupported command ${ctx.message?.text}`);
-            // throw new Error('Unsupported command')
+            ctx.reply('### unsupported command');
+            return refundCallback('Unsupported command');
         }
 
         if (ctx.hasCommand(SupportedCommands.IMAGE)) {
-            this.onImageCmd(ctx);
+            this.onImageCmd(ctx, refundCallback);
             return;
         }
 
         if (ctx.hasCommand(SupportedCommands.IMAGES)) {
-            this.onImagesCmd(ctx);
+            this.onImagesCmd(ctx, refundCallback);
             return;
         }
 
@@ -80,7 +81,7 @@ export class SDImagesBot {
         // }
 
         if (this.isSupportedCallbackQuery(ctx)) {
-            this.onImgSelected(ctx);
+            this.onImgSelected(ctx, refundCallback);
             return;
         }
 
@@ -88,7 +89,7 @@ export class SDImagesBot {
         ctx.reply('### unsupported command');
     }
 
-    onImageCmd = async (ctx: OnMessageContext | OnCallBackQueryData) => {
+    onImageCmd = async (ctx: OnMessageContext | OnCallBackQueryData, refundCallback: (reason?: string) => void) => {
         const uuid = uuidv4()
 
         try {
@@ -99,7 +100,7 @@ export class SDImagesBot {
 
             if (!prompt) {
                 ctx.reply(`${author} please add prompt to your message`);
-                // throw new Error('Wrong prompts');
+                refundCallback('Wrong prompts');
                 return;
             }
 
@@ -107,7 +108,7 @@ export class SDImagesBot {
 
             let idx = this.queue.findIndex(v => v === uuid);
 
-            if(idx !== 0) {
+            if (idx !== 0) {
                 ctx.reply(`${author} you are the ${idx + 1}/${this.queue.length}. Please wait about ${idx * 30} sec`);
             }
 
@@ -128,16 +129,16 @@ export class SDImagesBot {
         } catch (e: any) {
             console.log(e);
             this.queue = this.queue.filter(v => v !== uuid);
-            
+
             ctx.reply(`Error: something went wrong...`);
-            
-            // throw new Error(e?.message);
+
+            refundCallback(e);
         }
 
         this.queue = this.queue.filter(v => v !== uuid);
     }
 
-    onImagesCmd = async (ctx: OnMessageContext | OnCallBackQueryData) => {
+    onImagesCmd = async (ctx: OnMessageContext | OnCallBackQueryData, refundCallback: (reason?: string) => void) => {
         const uuid = uuidv4();
 
         try {
@@ -149,7 +150,7 @@ export class SDImagesBot {
             if (!prompt) {
                 ctx.reply(`${author} please add prompt to your message`);
 
-                // throw new Error('Wrong prompts');
+                refundCallback('Wrong prompts');
                 return;
             }
 
@@ -157,7 +158,7 @@ export class SDImagesBot {
 
             let idx = this.queue.findIndex(v => v === uuid);
 
-            if(idx !== 0) {
+            if (idx !== 0) {
                 ctx.reply(`${author} you are the ${idx + 1}/${this.queue.length}. Please wait about ${idx * 30} sec`);
             }
 
@@ -207,34 +208,34 @@ export class SDImagesBot {
 
             ctx.reply(`Error: something went wrong...`);
 
-            // throw new Error(e?.message);
+            refundCallback(e.message);
         }
 
         this.queue = this.queue.filter(v => v !== uuid);
     }
 
-    async onImgSelected(ctx: OnMessageContext | OnCallBackQueryData): Promise<any> {
+    async onImgSelected(ctx: OnMessageContext | OnCallBackQueryData, refundCallback: (reason?: string) => void): Promise<any> {
         try {
             const authorObj = await ctx.getAuthor();
             const author = `@${authorObj.user.username}`;
 
             if (!ctx.callbackQuery?.data) {
                 console.log('wrong callbackQuery')
-                // throw new Error('Wrong callbackQuery');
+                refundCallback('Wrong callbackQuery');
                 return;
             }
 
             const [sessionId, imageNumber] = ctx.callbackQuery.data.split('_');
 
             if (!sessionId || !imageNumber) {
-                // throw new Error('Wrong params');
+                refundCallback('Wrong params');
                 return;
             }
 
             const session = this.sessions.find(s => s.id === sessionId);
 
             if (!session || session.author !== author) {
-                // throw new Error('Wrong author');
+                refundCallback('Wrong author');
                 return;
             }
 
@@ -249,7 +250,7 @@ export class SDImagesBot {
             console.log(e);
             ctx.reply(`Error: something went wrong...`);
 
-            // throw new Error(e?.message);
+            refundCallback(e.message);
         }
     }
 
@@ -257,7 +258,7 @@ export class SDImagesBot {
         const uuid = uuidv4()
 
         try {
-            if(this.showcaseCount >= showcasePrompts.length) {
+            if (this.showcaseCount >= showcasePrompts.length) {
                 this.showcaseCount = 0;
             }
 
@@ -276,6 +277,3 @@ export class SDImagesBot {
         }
     }
 }
-
-
-// ng_deepnegative_v1_75t, (badhandv4), (worst quality:2), (low quality:2), (normal quality:2), lowres, bad anatomy, bad hands, ((monochrome)), ((grayscale)) watermark, (moles:2)

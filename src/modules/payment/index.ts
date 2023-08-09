@@ -4,7 +4,7 @@ import {Account} from 'web3-core'
 import axios from 'axios'
 import bn, {BigNumber} from 'bignumber.js'
 import config from "../../config";
-import {OnMessageContext} from "../types";
+import {OnCallBackQueryData, OnMessageContext} from "../types";
 
 interface CoinGeckoResponse {
   harmony: {
@@ -152,10 +152,10 @@ export class BotPayments {
     return false
   }
 
-  public async refundPayment(e: Error, ctx: OnMessageContext, amountUSD: number) {
+  public async refundPayment(reason = '', ctx: OnMessageContext, amountUSD: number) {
     const {  id: userId, username = '' } = ctx.update.message.from
 
-    this.logger.error(`[${userId} @${username}] refund payment: $${amountUSD}, error from bot module: "${(e as Error).message}"`)
+    this.logger.error(`[${userId} @${username}] refund payment: $${amountUSD}, reason: "${reason}"`)
 
     if(this.skipPayment(ctx, amountUSD)) {
       this.logger.info(`[${userId} @${username}] skip refund`)

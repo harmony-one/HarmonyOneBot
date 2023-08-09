@@ -21,12 +21,13 @@ export class WalletConnect {
   }
 
   public getEstimatedPrice(ctx: any) {
-    return 100;
+    return 0;
   }
 
   public isSupportedEvent(ctx: OnMessageContext) {
-    const { text, chat } = ctx.update.message
-    return chat.type === 'private' && text && text.toLowerCase().startsWith('/walletconnect')
+    const { chat } = ctx.update.message;
+
+    return chat.type === 'private' && (ctx.hasCommand('walletconnect') || ctx.hasCommand('pools'));
   }
 
   public async onEvent(ctx: OnMessageContext) {
@@ -36,9 +37,21 @@ export class WalletConnect {
     } = ctx.update.message;
     this.logger.info(`Message from ${username} (${userId}): "${text}"`);
 
+    if (ctx.hasCommand('pools')) {
+      let keyboard = new InlineKeyboard().webApp(
+        "Open",
+        `${config.walletc.webAppUrl}/pools`,
+      );
+
+      ctx.reply('Swap Pools Info', {
+        reply_markup: keyboard,
+      });
+      return;
+    }
+
     let keyboard = new InlineKeyboard().webApp(
       "Open",
-      `${config.walletc.webAppUrl}/`
+      `${config.walletc.webAppUrl}`
     );
 
     // /wallet send 0x199177Bcc7cdB22eC10E3A2DA888c7811275fc38 0.01

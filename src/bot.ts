@@ -86,8 +86,9 @@ const onMessage = async (ctx: OnMessageContext) => {
     const isPaid = await payments.pay(ctx, price);
     if (isPaid) {
       return qrCodeBot
-        .onEvent(ctx)
-        .catch((e) => payments.refundPayment(e, ctx, price));
+        .onEvent(ctx, (reason?: string) => {
+          payments.refundPayment(reason, ctx, price);
+        })
     }
   }
   if (sdImagesBot.isSupportedEvent(ctx)) {
@@ -95,8 +96,9 @@ const onMessage = async (ctx: OnMessageContext) => {
     const isPaid = await payments.pay(ctx, price);
     if (isPaid) {
       return sdImagesBot
-        .onEvent(ctx)
-        .catch((e) => payments.refundPayment(e, ctx, price));
+        .onEvent(ctx, (reason?: string) => {
+          payments.refundPayment(reason, ctx, price);
+        })
     }
   }
   if (voiceMemo.isSupportedEvent(ctx)) {
@@ -105,7 +107,6 @@ const onMessage = async (ctx: OnMessageContext) => {
     if (isPaid) {
       return voiceMemo
         .onEvent(ctx)
-        .catch((e) => payments.refundPayment(e, ctx, price));
     }
   }
   if (openAiBot.isSupportedEvent(ctx)) {
@@ -116,9 +117,7 @@ const onMessage = async (ctx: OnMessageContext) => {
       }
       const isPaid = await payments.pay(ctx, price);
       if (isPaid) {
-        return openAiBot
-          .onEvent(ctx)
-          .catch((e) => payments.refundPayment(e, ctx, price));
+        return openAiBot.onEvent(ctx)
       }
     } else {
       ctx.reply("Bot disabled");
@@ -172,10 +171,12 @@ const onMessage = async (ctx: OnMessageContext) => {
   if (schedule.isSupportedEvent(ctx)) {
     return schedule.onEvent(ctx);
   }
-  if (ctx.update.message.text && ctx.update.message.text.startsWith("/", 0)) {
-    const command = ctx.update.message.text.split(' ')[0].slice(1)
+  // if (ctx.update.message.text && ctx.update.message.text.startsWith("/", 0)) {
+  //  const command = ctx.update.message.text.split(' ')[0].slice(1)
+  // onlfy for private chats
+  if (ctx.update.message.chat && ctx.chat.type === 'private') {
     ctx.reply(
-      `Command *${command}* not supported.\nWrite */menu* to learn available commands`,
+      `Command not supported.\nWrite */menu* to learn available commands`,
       {
         parse_mode: "Markdown",
       }
@@ -189,12 +190,14 @@ const onMessage = async (ctx: OnMessageContext) => {
 
 const onCallback = async (ctx: OnCallBackQueryData) => {
   if (qrCodeBot.isSupportedEvent(ctx)) {
-    qrCodeBot.onEvent(ctx);
+    qrCodeBot.onEvent(ctx, (reason) => {
+      logger.error(`qr generate error: ${reason}`)
+    });
     return;
   }
 
   if (sdImagesBot.isSupportedEvent(ctx)) {
-    sdImagesBot.onEvent(ctx);
+    sdImagesBot.onEvent(ctx, (e) => { console.log(e, '// TODO refund payment'); });
     return;
   }
 };
