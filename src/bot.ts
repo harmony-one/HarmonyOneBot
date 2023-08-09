@@ -131,7 +131,6 @@ const onMessage = async (ctx: OnMessageContext) => {
         }
         const isPaid = await payments.pay(ctx, price);
         if (isPaid) {
-          console.log('here 2')
           return conversationHandler
             .onEvent(ctx)
             .catch((e) => payments.refundPayment(e, ctx, price));
