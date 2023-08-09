@@ -2,7 +2,7 @@ import {Automatic1111Client} from "./Automatic1111Client";
 import {createQRCode, isQRCodeReadable, retryAsync} from "./utils";
 import config from "../../config";
 import {InlineKeyboard, InputFile} from "grammy";
-import {OnCallBackQueryData, OnMessageContext} from "../types";
+import {OnCallBackQueryData, OnMessageContext, RefundCallback} from "../types";
 import {Automatic1111Config} from "./Automatic1111Configs";
 import {automatic1111DefaultConfig} from "./Automatic1111DefaultConfig";
 import {ComfyClient} from "./comfy/ComfyClient";
@@ -51,57 +51,67 @@ export class QRCodeBot {
     return ctx.hasCommand(Object.values(SupportedCommands)) || ctx.hasCallbackQuery(Object.values(Callbacks));
   }
 
-  public async onEvent(ctx: OnMessageContext | OnCallBackQueryData) {
+  public async onEvent(ctx: OnMessageContext | OnCallBackQueryData, refundCallback: RefundCallback) {
     if (!this.isSupportedEvent(ctx)) {
       ctx.reply(`Unsupported command: ${ctx.message?.text}`);
-      throw new Error('Unsupported command')
+      return refundCallback('Unsupported command')
     }
 
-    if (ctx.hasCallbackQuery(Callbacks.Regenerate)) {
-      try {
-        await ctx.answerCallbackQuery();
-      } catch (ex) {
-        console.log('### ex', ex);
+    try {
+      if (ctx.hasCallbackQuery(Callbacks.Regenerate)) {
+        try {
+          await ctx.answerCallbackQuery();
+        } catch (ex) {
+          console.log('### ex', ex);
+        }
+
+        const msg = ctx.callbackQuery.message?.text || ctx.callbackQuery.message?.caption || '';
+
+        if (!msg) {
+          ctx.reply('Error: message is too old');
+          return refundCallback('Error: message is too old')
+        }
+
+        const cmd = this.parseQrCommand(msg);
+
+        if (cmd.error || !cmd.command || !cmd.url || !cmd.prompt) {
+          ctx.reply('Message haven\'t contain command: ' + msg);
+          return refundCallback('Message haven\'t contain command: ')
+        }
+
+        if (cmd.command === SupportedCommands.QR) {
+          return this.onQr(ctx, msg, 'img2img');
+        }
+
+        if (cmd.command === SupportedCommands.QR2) {
+          return this.onQr(ctx, msg, 'txt2img');
+        }
       }
 
-      const msg = ctx.callbackQuery.message?.text || ctx.callbackQuery.message?.caption || '';
-
-      if (!msg) {
-        ctx.reply('Error: message is too old');
-        throw new Error('Error: message is too old')
+      if (ctx.hasCommand(SupportedCommands.QR)) {
+        return this.onQr(ctx, ctx.message.text, 'img2img');
       }
 
-      const cmd = this.parseQrCommand(msg);
-
-      if (cmd.error || !cmd.command || !cmd.url || !cmd.prompt) {
-        ctx.reply('Message haven\'t contain command: ' + msg);
-        throw new Error('Message haven\'t contain command: ' + msg);
+      if (ctx.hasCommand(SupportedCommands.QR2)) {
+        return this.onQr(ctx, ctx.message.text, 'txt2img');
       }
 
-      if (cmd.command === SupportedCommands.QR) {
-        return this.onQr(ctx, msg, 'img2img');
+      if (ctx.hasCommand(SupportedCommands.QR_MARGIN)){
+        return this.onQrMargin(ctx);
+      }
+    } catch (ex) {
+      if (ex instanceof Error) {
+        this.logger.info('Error ' + ex.message);
+        return refundCallback(ex.message);
       }
 
-      if (cmd.command === SupportedCommands.QR2) {
-        return this.onQr(ctx, msg, 'txt2img');
-      }
-    }
-
-    if (ctx.hasCommand(SupportedCommands.QR)) {
-      return this.onQr(ctx, ctx.message.text, 'img2img');
-    }
-
-    if (ctx.hasCommand(SupportedCommands.QR2)) {
-      return this.onQr(ctx, ctx.message.text, 'txt2img');
-    }
-
-    if (ctx.hasCommand(SupportedCommands.QR_MARGIN)){
-      return this.onQrMargin(ctx);
+      this.logger.info('Error ' + ex);
+      return refundCallback('Unknown error');
     }
 
     ctx.reply('Unsupported command');
     this.logger.info('Unsupported command');
-    return new Error('Unsupported command')
+    return refundCallback('Unsupported command');
   }
 
   public parseQrCommand(message: string) {
