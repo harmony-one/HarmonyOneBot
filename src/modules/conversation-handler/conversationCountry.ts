@@ -31,9 +31,13 @@ export async function conversationDomainName(
     let helpCommand = false;
     let domainAvailable = false;
     let msgId = 0;
-    msgId = (await ctx.reply("Checking name...")).message_id;
+    msgId = (
+      await ctx.reply(
+        domain !== "" ? "Checking name..." : "Write a domain name"
+      )
+    ).message_id;
     while (true) {
-      if (!helpCommand) {
+      if (!helpCommand && domain !== "") {
         const validate = validateDomainName(domain);
         if (!validate.valid) {
           ctx.reply(validate.error, {
@@ -69,7 +73,11 @@ export async function conversationDomainName(
       //   maxMilliseconds: 60000
       // });
       const userPrompt = cleanInput(userInput.msg.text);
-      if (userPrompt.toLocaleLowerCase().includes("rent") && domainAvailable) {
+      if (
+        (userPrompt.toLocaleLowerCase().includes("rent") ||
+          userPrompt.toLocaleLowerCase().includes("/rent")) &&
+        domainAvailable
+      ) {
         let keyboard = new InlineKeyboard()
           .webApp(
             "Rent in 1.country",
@@ -84,17 +92,26 @@ export async function conversationDomainName(
           reply_markup: keyboard,
         });
         break;
-      } else if (userPrompt.toLocaleLowerCase().includes("rent")) {
+      } else if (
+        userPrompt.toLocaleLowerCase().includes("rent") ||
+        userPrompt.toLocaleLowerCase().includes("/rent")
+      ) {
         ctx.reply("Keep writing options", {
           parse_mode: "Markdown",
         });
         helpCommand = true;
-      } else if (userPrompt.toLocaleLowerCase().includes("end")) {
+      } else if (
+        userPrompt.toLocaleLowerCase().includes("end") ||
+        userPrompt.toLocaleLowerCase().includes("/end")
+      ) {
         ctx.reply(appText.endChat, {
           parse_mode: "Markdown",
         });
         break;
-      } else if (userPrompt.toLocaleLowerCase().includes("help")) {
+      } else if (
+        userPrompt.toLocaleLowerCase().includes("help") ||
+        userPrompt.toLocaleLowerCase().includes("/help")
+      ) {
         helpCommand = true;
         ctx.reply(`${appText.gptHelpText}`, {
           parse_mode: "Markdown",
@@ -111,4 +128,3 @@ export async function conversationDomainName(
     logger.error("##conversationGountry Error:", e);
   }
 }
-

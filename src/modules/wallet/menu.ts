@@ -25,6 +25,8 @@ export const walletMenuText = {
 export const walletMenu = new Menu<BotContext>(MenuIds.WALLET_MAIN).back(
   menuText.mainMenu.backButton,
   (ctx) => {
-    ctx.editMessageText(menuText.mainMenu.menuName);
+    ctx.editMessageText(menuText.mainMenu.menuName).catch((ex) => {
+      console.log('### ex', ex);
+    });
   }
 );

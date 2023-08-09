@@ -26,6 +26,7 @@ import { BotPayments } from "./modules/payment";
 import { BotSchedule } from "./modules/schedule";
 import { ConversationHandler } from "./modules/conversation-handler/";
 import config from "./config";
+import { commandHelpText } from "./constants";
 
 const logger = pino({
   name: "bot",
@@ -36,6 +37,8 @@ const logger = pino({
     },
   },
 });
+
+
 
 export const bot = new Bot<BotContext>(config.telegramBotAuthToken);
 
@@ -118,35 +121,44 @@ const onMessage = async (ctx: OnMessageContext) => {
       }
     } else {
       ctx.reply("Bot disabled");
-      return
+      return;
     }
   }
   if (conversationHandler.isSupportedEvent(ctx)) {
     if (ctx.session.openAi.chatGpt.isEnabled) {
-      const price = conversationHandler.getEstimatedPrice(ctx);
-      if (price > 0) {
-        await ctx.reply(`Processing withdraw for ${price.toFixed(2)}¢...`);
-      }
-      const isPaid = await payments.pay(ctx, price);
-      if (isPaid) {
-        return conversationHandler.onEvent(ctx)
+      if (conversationHandler.isValidCommand(ctx)) {
+        const price = conversationHandler.getEstimatedPrice(ctx);
+        if (price > 0) {
+          await ctx.reply(`Processing withdraw for ${price.toFixed(2)}¢...`);
+        }
+        const isPaid = await payments.pay(ctx, price);
+        if (isPaid) {
+          return conversationHandler
+            .onEvent(ctx)
+            .catch((e) => payments.refundPayment(e, ctx, price));
+        }
+        return;
+      } else {
+        ctx.reply("Error: Missing prompt");
+        return
       }
     } else {
       ctx.reply("Bot disabled");
-      return
+      return;
     }
   }
-  if (oneCountryBot.isSupportedEvent(ctx)) {
-    const price = oneCountryBot.getEstimatedPrice(ctx);
-    if (price > 0) {
-      await ctx.reply(`Processing withdraw for ${price.toFixed(2)}¢...`);
-    }
-    const isPaid = await payments.pay(ctx, price);
-    if (isPaid) {
-      return oneCountryBot
-        .onEvent(ctx)
-    }
-  }
+  // if (oneCountryBot.isSupportedEvent(ctx)) {
+  //   const price = oneCountryBot.getEstimatedPrice(ctx);
+  //   if (price > 0) {
+  //     await ctx.reply(`Processing withdraw for ${price.toFixed(2)}¢...`);
+  //   }
+  //   const isPaid = await payments.pay(ctx, price);
+  //   if (isPaid) {
+  //     return oneCountryBot
+  //       .onEvent(ctx)
+  //       .catch((e) => payments.refundPayment(e, ctx, price));
+  //   }
+  // }
   if (wallet.isSupportedEvent(ctx)) {
     return wallet.onEvent(ctx);
   }
@@ -159,14 +171,19 @@ const onMessage = async (ctx: OnMessageContext) => {
   if (schedule.isSupportedEvent(ctx)) {
     return schedule.onEvent(ctx);
   }
+  // if (ctx.update.message.text && ctx.update.message.text.startsWith("/", 0)) {
+  //  const command = ctx.update.message.text.split(' ')[0].slice(1)
   // onlfy for private chats
   if (ctx.update.message.chat && ctx.chat.type === 'private') {
     ctx.reply(
-      "Command not supported.\nWrite */menu* to learn available commands",
+      `Command not supported.\nWrite */menu* to learn available commands`,
       {
         parse_mode: "Markdown",
       }
     );
+    return;
+  }
+  if (ctx.update.message.chat) {
     logger.info(`Received message in chat id: ${ctx.update.message.chat.id}`);
   }
 };
@@ -186,12 +203,15 @@ const onCallback = async (ctx: OnCallBackQueryData) => {
 };
 
 bot.command("start", (ctx) =>
-  ctx.reply(`
-🌟 Welcome to the Harmony One Bot! 🤖
+  ctx.reply(commandHelpText,{
+    parse_mode: "Markdown",
+  })
+);
 
-📋 Explore all services with /menu! 📋
-
-💲 Send money to your /balance to start! 🚀`)
+bot.command("help", (ctx) =>
+  ctx.reply(commandHelpText,{
+    parse_mode: "Markdown",
+  })
 );
 
 bot.command("menu", async (ctx) => {
