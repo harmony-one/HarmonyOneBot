@@ -5,6 +5,7 @@ import { BotContext } from "../../types";
 import { isAdmin } from "../utils/context";
 import { MenuIds } from "../../../constants";
 import { ChatGPTModelsEnum } from "../types";
+import { menuText } from "../../../constants";
 
 export const chatGptMenuText = {
   helpText: `*🖌️ ChatGPT Help*
@@ -14,53 +15,57 @@ export const chatGptMenuText = {
 };
 
 export const chatMainMenu = new Menu<BotContext>(MenuIds.CHAT_GPT_MAIN)
-  .text(
-    (ctx) =>
-      `${
-        ctx.session.openAi.chatGpt.isEnabled
-          ? "🔴 Disable bot"
-          : "🟢 Enable bot"
-      }`,
-    async (ctx) => {
-      if (await isAdmin(ctx)) {
-        ctx.session.openAi.chatGpt.isEnabled =
-          !ctx.session.openAi.chatGpt.isEnabled;
-        ctx.menu.update();
-      } else {
-        ctx
-          .editMessageText("Only the group owner can enable/disable this bot", {
-            parse_mode: "Markdown",
-            disable_web_page_preview: true,
-          })
-          .catch((ex: any) => console.log("### ex", ex));
-      }
-    }
-  )
-  .row()
-  .text("Change default model", async (ctx) => {
-    if (await isAdmin(ctx)) {
-      ctx
-        .editMessageText(appText.chatGptChangeModel, {
-          parse_mode: "HTML",
-          reply_markup: chatGPTimageDefaultOptions,
-        })
-        .catch((ex: any) => {
-          console.log("### ex", ex);
-        });
-    } else {
-      ctx
-        .editMessageText(
-          "Only the group owner can change OpenAI configuration",
-          {
-            parse_mode: "Markdown",
-            disable_web_page_preview: true,
-          }
-        )
-        .catch((ex: any) => console.log("### ex", ex));
-    }
-  })
-  .row()
-  .back("⬅️ Back");
+  // .text(
+  //   (ctx) =>
+  //     `${
+  //       ctx.session.openAi.chatGpt.isEnabled
+  //         ? "🔴 Disable bot"
+  //         : "🟢 Enable bot"
+  //     }`,
+  //   async (ctx) => {
+  //     if (await isAdmin(ctx)) {
+  //       ctx.session.openAi.chatGpt.isEnabled =
+  //         !ctx.session.openAi.chatGpt.isEnabled;
+  //       ctx.menu.update();
+  //     } else {
+  //       ctx
+  //         .editMessageText("Only the group owner can enable/disable this bot", {
+  //           parse_mode: "Markdown",
+  //           disable_web_page_preview: true,
+  //         })
+  //         .catch((ex: any) => console.log("### ex", ex));
+  //     }
+  //   }
+  // )
+  // .row()
+  // .text("Change default model", async (ctx) => {
+  //   if (await isAdmin(ctx)) {
+  //     ctx
+  //       .editMessageText(appText.chatGptChangeModel, {
+  //         parse_mode: "HTML",
+  //         reply_markup: chatGPTimageDefaultOptions,
+  //       })
+  //       .catch((ex: any) => {
+  //         console.log("### ex", ex);
+  //       });
+  //   } else {
+  //     ctx
+  //       .editMessageText(
+  //         "Only the group owner can change OpenAI configuration",
+  //         {
+  //           parse_mode: "Markdown",
+  //           disable_web_page_preview: true,
+  //         }
+  //       )
+  //       .catch((ex: any) => console.log("### ex", ex));
+  //   }
+  // })
+  // .row()
+    .back(menuText.mainMenu.backButton, (ctx) => {
+    ctx.editMessageText(menuText.mainMenu.menuName).catch((ex) => {
+      console.log("### ex", ex);
+    });
+  });
 
 const chatGPTimageDefaultOptions = new Menu<BotContext>(MenuIds.CHAT_GPT_MODEL)
   // gpt-4, gpt-4-0613, gpt-4-32k, gpt-4-32k-0613, gpt-3.5-turbo, gpt-3.5-turbo-0613, gpt-3.5-turbo-16k, gpt-3.5-turbo-16k-0613
