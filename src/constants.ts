@@ -19,15 +19,32 @@ export enum MenuIds {
 export const menuText = {
   mainMenu: {
     backButton: '⬅️ Back',
-    menuName: 'Main Menu',
+    menuName: `
+    Main Menu
+  
+🌟 Welcome to the Harmony One Bot! 🤖
+  
+💲 Send money to your /balance to start! 🚀
+    `,
   },
   imageMenu: {
     menuName: '👨‍🎨 Image Generation',
     backButton: '⬅️ Back',
-    helpText: `👨‍🎨 Image Generation
+    helpText: `🖼️ *Stable Diffusion Help*
 
-Help text for this menu
-  `,
+    *1. GENERATE A SINGLE IMAGE*
+    • Use */image <PROMPTS>*
+
+    *Example:* \`/image On a sunny day city street, neon signs and streetlights reflect off the wet pavement. Pedestrians hustle with umbrellas, and cars pass with headlights gleaming. Painted with hyperrealistic precision, inspired by artists like Chuck Close, this scene captures every droplet and glint of light, creating an image so lifelike it appears almost like a photograph.
+    \`
+    
+    *2. GENERAGE MULTIPLE IMAGES*
+    • Use */images <PROMPTS>*
+
+    *Example:* \`/images A futuristic cityscape with towering skyscrapers, flying vehicles, and a diverse population of humans and robots, painted in a concept art style inspired by Syd Mead, with a focus on detail and realism.
+    \`
+    
+      `,
   
   }
 }
