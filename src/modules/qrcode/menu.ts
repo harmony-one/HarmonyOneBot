@@ -8,7 +8,7 @@ export const qrCodeMenuText = {
 *1. GENERATE A QR CODE*
 • Use */qr* <LINK> <PROMPTS>
 
-\`/qr h.country/ai /qr t.me/HarmonyOneAIBot Dramatic bonfire on a remote beach, captured at the magic hour with flames dancing against the twilight sky; using a shallow depth of field, a fast lens, and controlled exposure to emphasize the intricate patterns and textures of the fire, complemented by embers in the wind and the gentle glow reflecting on the ocean's edge, moody, intense, and alive.
+\`/qr h.country/ai Dramatic bonfire on a remote beach, captured at the magic hour with flames dancing against the twilight sky; using a shallow depth of field, a fast lens, and controlled exposure to emphasize the intricate patterns and textures of the fire, complemented by embers in the wind and the gentle glow reflecting on the ocean's edge, moody, intense, and alive.
 \`
 `,
 };
