@@ -81,5 +81,8 @@ export default {
     explorerRestApiUrl: process.env.EXPLORER_REST_API_URL || "",
     explorerRestApiKey: process.env.EXPLORER_REST_API_KEY || "",
     swapSubgraphApiUrl: process.env.SWAP_SUBGRAPH_API_URL || "https://api.thegraph.com/subgraphs/name/nick8319/uniswap-v3-harmony",
+  },
+  walletConnect: {
+    projectId: process.env.WALLET_CONNECT_PROJECT_ID || ''
   }
 };
