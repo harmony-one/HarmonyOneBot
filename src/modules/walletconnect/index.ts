@@ -111,7 +111,9 @@ export class WalletConnect {
 
     const qrImgBuffer = await createQRCode({url: uri || '', width: 450, margin: 3 });
 
-    const message = await ctx.replyWithPhoto(new InputFile(qrImgBuffer, `wallet_connect_${Date.now()}.png`));
+    const message = await ctx.replyWithPhoto(new InputFile(qrImgBuffer, `wallet_connect_${Date.now()}.png`), {
+      caption: 'Scan QR code with a WalletConnect-compatible wallet'
+    });
 
     const session = await approval();
 
@@ -186,14 +188,15 @@ export class WalletConnect {
       }
 
       const ownerAddr = getUserAddr(session);
-      const balance = await defaultProvider.getBalance(ownerAddr);
+      const oneBalanceWei = await defaultProvider.getBalance(ownerAddr);
+      const oneBalance = ethers.utils.formatEther(oneBalanceWei);
 
-
-
-      const message = `💰 *My Wallet*
+      const message = `💰 *My Wallet*                    
       
-*ONE*: ${ethers.utils.formatEther(balance)} ONE
+*ONE*: ${Number(oneBalance).toFixed(2)} ONE
+
 *TON*: 0 TON
+
 *USDT*: 0 USDT
 `
       ctx.reply(message, {
