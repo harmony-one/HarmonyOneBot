@@ -151,12 +151,12 @@ export class VoiceMemo {
 
     let translationJob
 
-    for(let i= 0; i < 100; i++) {
+    for(let i= 0; i < 30 * 60; i++) {
       translationJob = this.jobsQueue.get(requestKey)
       if(translationJob) {
         break;
       }
-      await this.sleep(100)
+      await this.sleep(1000)
     }
 
     if(translationJob) {
@@ -197,6 +197,8 @@ export class VoiceMemo {
       } finally {
         this.deleteTempFile(filePath)
       }
+    } else {
+      this.logger.error(`Cannot find translation job ${requestKey}, skip`)
     }
   }
 }
