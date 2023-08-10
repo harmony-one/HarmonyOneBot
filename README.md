@@ -25,7 +25,7 @@
 5) After payment, the bot performs a request
 
 #### Advanced user flow (pay once for multiple requests)
-Paying per request can be inconvenient from a UX perspective.
+Signing a transaction per request can be inconvenient from a UX perspective.
 In this case, we can allow the user to pay for N requests at once.
 
 A smart contract is used to store the available tokens.
