@@ -110,19 +110,21 @@ export class ConversationHandler {
   }
 
   public getEstimatedPrice(ctx: any) {
-    const prompts = ctx.match;
-    if (!prompts) {
-      return 0;
-    }
-    0;
-    if (ctx.hasCommand(SupportedCommands.ask.name)) {
-      const baseTokens = getTokenNumber(prompts as string);
-      const modelName = ctx.session.openAi.chatGpt.model;
-      const model = getChatModel(modelName);
-      const price = getChatModelPrice(model, true, baseTokens); //cents
-      return ctx.chat.type !== "private" ? price * 2 : price;
-    }
     return 0;
+
+    // const prompts = ctx.match;
+    // if (!prompts) {
+    //   return 0;
+    // }
+    // 0;
+    // if (ctx.hasCommand(SupportedCommands.ask.name)) {
+    //   const baseTokens = getTokenNumber(prompts as string);
+    //   const modelName = ctx.session.openAi.chatGpt.model;
+    //   const model = getChatModel(modelName);
+    //   const price = getChatModelPrice(model, true, baseTokens); //cents
+    //   return ctx.chat.type !== "private" ? price * 2 : price;
+    // }
+    // return 0;
   }
 
   public async onEvent(ctx: OnMessageContext | OnCallBackQueryData) {
