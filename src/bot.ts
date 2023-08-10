@@ -138,7 +138,7 @@ const onMessage = async (ctx: OnMessageContext) => {
     if (ctx.session.openAi.imageGen.isEnabled) {
       const price = openAiBot.getEstimatedPrice(ctx);
       if (price > 0) {
-        await ctx.reply(`Processing withdraw for ${price.toFixed(2)}¢...`);
+        //await ctx.reply(`Processing withdraw for ${price.toFixed(2)}¢...`);
       }
       const isPaid = await payments.pay(ctx, price);
       if (isPaid) {
@@ -149,7 +149,6 @@ const onMessage = async (ctx: OnMessageContext) => {
       return;
     }
   }
-
   // if (oneCountryBot.isSupportedEvent(ctx)) {
   //   const price = oneCountryBot.getEstimatedPrice(ctx);
   //   if (price > 0) {

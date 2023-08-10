@@ -142,7 +142,6 @@ export class ConversationHandler {
       const price = getChatModelPrice(model, true, baseTokens); //cents
       return ctx.chat.type !== "private" ? price * 2 : price;
     }
-    return 0;
   }
 
   public async onEvent(ctx: OnMessageContext | OnCallBackQueryData) {

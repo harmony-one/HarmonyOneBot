@@ -18,12 +18,12 @@ export enum MenuIds {
 
 export const menuText = {
   mainMenu: {
-    backButton: 'Back to Main Menu',
+    backButton: '⬅️ Back',
     menuName: 'Main Menu',
   },
   imageMenu: {
     menuName: '👨‍🎨 Image Generation',
-    backButton: 'Back to previous menu',
+    backButton: '⬅️ Back',
     helpText: `👨‍🎨 Image Generation
 
 Help text for this menu
@@ -32,13 +32,39 @@ Help text for this menu
   }
 }
 
-export const commandHelpText = `*COMMANDS*
-/help - this help message
-/wallet - 🏦 Wallet 
-/ask - 🖋️ ChatGPT 4 
-/images - 🎨 Image Generation 
-/qr - 📷 QR Generation 
-/register - 🌐 1.country 
+export const commandHelpText = `*Commands*
+/start - Begin interaction with the bot
+/help - Access help information
 
-*EVENTS*
-The bot will produce a summary audio transcript when uploading a voice message.`
+*Wallet*
+/botfund check funds available for services
+/wallet
+/wallet send <ADDRESS> <AMOUNT>** to send ONE
+/walletconnect
+
+*Voice Memo*
+Send or forward a voice message (.m4a) to @HarmonyOneAIBot for a full transcript and summary
+
+*QR Code Generation*
+/qr <LINK> <PROMPTS>
+
+*ChatGPT*
+/chat <TEXT>
+
+*Image Generation*
+/image <PROMPT>
+/images <PROMPT>
+
+
+`
+
+
+// /help - this help message
+// /wallet - 🏦 Wallet 
+// /ask - 🖋️ ChatGPT 4 
+// /images - 🎨 Image Generation 
+// /qr - 📷 QR Generation 
+// /register - 🌐 1.country 
+
+// *EVENTS*
+// The bot will produce a summary audio transcript when uploading a voice message.

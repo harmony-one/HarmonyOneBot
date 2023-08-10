@@ -1,5 +1,5 @@
 import {Automatic1111Client} from "./Automatic1111Client";
-import {createQRCode, isQRCodeReadable, retryAsync} from "./utils";
+import {createQRCode, isQRCodeReadable, normalizeUrl, retryAsync} from "./utils";
 import config from "../../config";
 import {InlineKeyboard, InputFile} from "grammy";
 import {OnCallBackQueryData, OnMessageContext, RefundCallback} from "../types";
@@ -44,7 +44,7 @@ export class QRCodeBot {
   // }
 
   public getEstimatedPrice(ctx: any) {
-    return 1.5;
+    return 0; // 1.5;
   }
 
   public isSupportedEvent(ctx: OnMessageContext | OnCallBackQueryData): boolean {
@@ -222,7 +222,7 @@ export class QRCodeBot {
   }
 
   private async genQRCode2({qrUrl, qrMargin, prompt, method}: {qrUrl: string, qrMargin: number, prompt: string, method: 'img2img' | 'txt2img'}) {
-    const qrImgBuffer = await createQRCode({url: qrUrl, width: 680, margin: qrMargin });
+    const qrImgBuffer = await createQRCode({url: normalizeUrl(qrUrl), width: 680, margin: qrMargin });
     const extendedPrompt = prompt + ', ' + automatic1111DefaultConfig.additionalPrompt;
     const negativePrompt = automatic1111DefaultConfig.defaultNegativePrompt;
 
