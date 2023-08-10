@@ -8,7 +8,7 @@ interface Params {
   width?: number
 }
 
-function normalizeUrl(url: string) {
+export function normalizeUrl(url: string) {
 
   if (!url.startsWith('http')) {
     url = 'https://' + url;
@@ -28,7 +28,7 @@ function normalizeUrl(url: string) {
 }
 
 export const createQRCode = ({url, margin = 0, width = 512}: Params): Promise<Buffer> => {
-  return QRCode.toBuffer(normalizeUrl(url), {margin: margin, width: width, type: "png", errorCorrectionLevel: "high" })
+  return QRCode.toBuffer(url, {margin: margin, width: width, type: "png", errorCorrectionLevel: "high" })
 }
 
 export async function retryAsync<T>(

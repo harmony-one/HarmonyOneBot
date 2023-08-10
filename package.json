@@ -40,6 +40,7 @@
   "dependencies": {
     "@grammyjs/conversations": "^1.1.2",
     "@grammyjs/menu": "^1.2.1",
+    "@walletconnect/sign-client": "^2.9.2",
     "axios": "^1.4.0",
     "bignumber.js": "^9.1.1",
     "dotenv": "^16.0.3",
@@ -48,6 +49,7 @@
     "gpt-tokenizer": "^2.1.1",
     "grammy": "^1.17.1",
     "jsqr": "^1.4.0",
+    "lokijs": "^1.5.12",
     "lru-cache": "^10.0.0",
     "moment": "^2.29.4",
     "node-cron": "^3.0.2",
