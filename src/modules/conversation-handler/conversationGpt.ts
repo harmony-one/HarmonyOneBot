@@ -28,7 +28,7 @@ export async function conversationGpt(
 ) {
   try {
     await ctx.reply(
-      `_Usign model ${conversation.session.openAi.chatGpt.model}_.\n${appText.gptHelpText}\n`,
+      `${appText.gptHelpText}\n`,
       {
         parse_mode: "Markdown",
       }
@@ -92,20 +92,15 @@ export async function conversationGpt(
       //   maxMilliseconds: 300000 // 5min
       // });
       const userPrompt = userInput?.msg?.text;
-      if (
-        userPrompt.toLocaleLowerCase().includes("end") ||
-        userPrompt.toLocaleLowerCase().includes("/end")
-      ) {
+      if (userPrompt === "/end") 
+      {
         conversation.session.openAi.chatGpt.chatConversation = [];
         await ctx.reply(
           `${appText.gptChatEnd} ${usage} (${totalPrice.toFixed(2)}¢)`
         );
         break;
       }
-      if (
-        userPrompt.toLocaleLowerCase().includes("help") ||
-        userPrompt.toLocaleLowerCase().includes("/help")
-      ) {
+      if (userPrompt === "/help") {
         await ctx.reply(`${appText.gptHelpText}`, {
           parse_mode: "Markdown",
         });
