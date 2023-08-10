@@ -54,6 +54,8 @@ function createInitialSessionData(): BotSessionData {
         model: config.openAi.chatGpt.model,
         isEnabled: config.openAi.chatGpt.isEnabled,
         chatConversation: [],
+        price: 0,
+        usage: 0
       },
     },
     qrMargin: 1,
@@ -81,6 +83,29 @@ const oneCountryBot = new OneCountryBot();
 const conversationHandler = new ConversationHandler(bot);
 
 const onMessage = async (ctx: OnMessageContext) => {
+  if (conversationHandler.isSupportedEvent(ctx)) {
+    if (ctx.session.openAi.chatGpt.isEnabled) {
+      if (conversationHandler.isValidCommand(ctx)) {
+        const price = conversationHandler.getEstimatedPrice(ctx);
+        if (price > 0) {
+          await ctx.reply(`Processing withdraw for ${price.toFixed(2)}¢...`);
+        }
+        const isPaid = await payments.pay(ctx, price);
+        if (isPaid) {
+          return conversationHandler
+            .onEvent(ctx)
+            .catch((e) => payments.refundPayment(e, ctx, price));
+        }
+        return;
+      } else {
+        ctx.reply("Error: Missing prompt");
+        return
+      }
+    } else {
+      ctx.reply("Bot disabled");
+      return;
+    }
+  }
   if (qrCodeBot.isSupportedEvent(ctx)) {
     const price = qrCodeBot.getEstimatedPrice(ctx);
     const isPaid = await payments.pay(ctx, price);
@@ -124,29 +149,7 @@ const onMessage = async (ctx: OnMessageContext) => {
       return;
     }
   }
-  if (conversationHandler.isSupportedEvent(ctx)) {
-    if (ctx.session.openAi.chatGpt.isEnabled) {
-      if (conversationHandler.isValidCommand(ctx)) {
-        const price = conversationHandler.getEstimatedPrice(ctx);
-        if (price > 0) {
-          await ctx.reply(`Processing withdraw for ${price.toFixed(2)}¢...`);
-        }
-        const isPaid = await payments.pay(ctx, price);
-        if (isPaid) {
-          return conversationHandler
-            .onEvent(ctx)
-            .catch((e) => payments.refundPayment(e, ctx, price));
-        }
-        return;
-      } else {
-        ctx.reply("Error: Missing prompt");
-        return
-      }
-    } else {
-      ctx.reply("Bot disabled");
-      return;
-    }
-  }
+
   // if (oneCountryBot.isSupportedEvent(ctx)) {
   //   const price = oneCountryBot.getEstimatedPrice(ctx);
   //   if (price > 0) {

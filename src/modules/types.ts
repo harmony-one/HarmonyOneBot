@@ -25,6 +25,8 @@ export interface ChatGptSessionData {
   model: string;
   isEnabled: boolean;
   chatConversation: ChatConversation[];
+  usage: number;
+  price: number;
 }
 export interface OpenAiSessionData {
   imageGen: ImageGenSessionData;

@@ -10,7 +10,7 @@ export const chatGptMenuText = {
   helpText: `*🖌️ ChatGPT Help*
   
   *1. CHAT WITH AI*
-  • Use */chat* <TEXT>`,
+  • Use */ask* <TEXT>`,
 };
 
 export const chatMainMenu = new Menu<BotContext>(MenuIds.CHAT_GPT_MAIN)

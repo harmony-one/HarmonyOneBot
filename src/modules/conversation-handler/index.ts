@@ -19,6 +19,8 @@ import { conversationGpt } from "./conversationGpt";
 import { conversationDomainName } from "./conversationCountry";
 import { promptGen } from "../open-ai/controller";
 import { getCommandNamePrompt } from "../1country/utils";
+import { appText } from "../open-ai/utils/text";
+import { BotPayments } from "../payment";
 
 const SupportedCommands = {
   ask: {
@@ -31,7 +33,14 @@ const SupportedCommands = {
     groupParams: ">1",
     privateParams: ">0",
   },
+  end: {
+    name: "end",
+    groupParams: "=0",
+    privateParams: "=0",
+  },
 };
+
+const payments = new BotPayments();
 export class ConversationHandler {
   private logger: Logger;
   private bot: Bot<BotContext>;
@@ -68,10 +77,16 @@ export class ConversationHandler {
     const hasCommand = ctx.hasCommand(
       Object.values(SupportedCommands).map((command) => command.name)
     );
-    if (ctx.chat?.type !== 'private') {
+    if (
+      ctx.chat?.type !== "private" &&
+      ctx.session.openAi.chatGpt.chatConversation.length > 0
+    ) {
+      return true;
+    }
+    if (ctx.chat?.type !== "private") {
       const { commandName } = getCommandNamePrompt(ctx);
       if (commandName === SupportedCommands.register.name) {
-        return false
+        return false;
       }
     }
     return hasCommand;
@@ -114,7 +129,12 @@ export class ConversationHandler {
     if (!prompts) {
       return 0;
     }
-    0;
+    if (
+      ctx.chat.type !== "private" &&
+      ctx.session.openAi.chatGpt.chatConversation.length > 0
+    ) {
+      return 0;
+    }
     if (ctx.hasCommand(SupportedCommands.ask.name)) {
       const baseTokens = getTokenNumber(prompts as string);
       const modelName = ctx.session.openAi.chatGpt.model;
@@ -141,6 +161,10 @@ export class ConversationHandler {
       return;
     }
 
+    if (ctx.hasCommand(SupportedCommands.end.name)) {
+      await this.onEnd(ctx);
+      return;
+    }
     this.logger.warn(`### unsupported command`);
     ctx.reply("### unsupported command");
   }
@@ -149,22 +173,47 @@ export class ConversationHandler {
     const prompt = ctx.match;
     if (ctx.session.openAi.chatGpt.isEnabled) {
       if (ctx.chat?.type !== "private") {
+        const chat = ctx.session.openAi.chatGpt.chatConversation;
+        chat.push({ role: "user", content: prompt as string });
         const msgId = (
           await ctx.reply(
-            `Generating response using model ${ctx.session.openAi.chatGpt.model}...`
+            `Generating response using model ${ctx.session.openAi.chatGpt.model}...\n_To end conversation please write /end_`,
+            {
+              parse_mode: "Markdown",
+            }
           )
         ).message_id;
         const payload = {
-          conversation: [{ role: "user", content: prompt as string }],
+          conversation: chat,
           model: ctx.session.openAi.chatGpt.model,
         };
         const response = await promptGen(payload);
+        chat.push({ content: response.completion, role: "system" });
         ctx.api.editMessageText(ctx.chat?.id!, msgId, response.completion);
+        ctx.session.openAi.chatGpt.chatConversation = [...chat];
+        ctx.session.openAi.chatGpt.usage += response.usage;
+        ctx.session.openAi.chatGpt.price += response.price;
+        const isPay = await payments.pay(
+          ctx as OnMessageContext,
+          ctx.session.openAi.chatGpt.price
+        );
+        if (!isPay) {
+          ctx.reply(appText.gptChatPaymentIssue, {
+            parse_mode: "Markdown",
+          });
+        }
       } else {
         await ctx.conversation.enter("botConversation");
       }
     } else {
       ctx.reply("Bot disabled");
     }
+  }
+
+  async onEnd(ctx: OnMessageContext | OnCallBackQueryData) {
+    ctx.session.openAi.chatGpt.chatConversation = [];
+    const usage = ctx.session.openAi.chatGpt.usage;
+    const totalPrice = ctx.session.openAi.chatGpt.price;
+    ctx.reply(`${appText.gptChatEnd} ${usage} (${totalPrice.toFixed(2)}¢)`);
   }
 }
