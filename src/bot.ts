@@ -85,28 +85,32 @@ const onMessage = async (ctx: OnMessageContext) => {
     const price = qrCodeBot.getEstimatedPrice(ctx);
     const isPaid = await payments.pay(ctx, price);
     if (isPaid) {
-      return qrCodeBot
+      qrCodeBot
         .onEvent(ctx, (reason?: string) => {
           payments.refundPayment(reason, ctx, price);
         })
+
+      return;
     }
   }
   if (sdImagesBot.isSupportedEvent(ctx)) {
     const price = sdImagesBot.getEstimatedPrice(ctx);
     const isPaid = await payments.pay(ctx, price);
     if (isPaid) {
-      return sdImagesBot
+      sdImagesBot
         .onEvent(ctx, (reason?: string) => {
           payments.refundPayment(reason, ctx, price);
         })
+      return;
     }
   }
   if (voiceMemo.isSupportedEvent(ctx)) {
     const price = voiceMemo.getEstimatedPrice(ctx);
     const isPaid = await payments.pay(ctx, price);
     if (isPaid) {
-      return voiceMemo
+      voiceMemo
         .onEvent(ctx)
+      return;
     }
   }
   if (openAiBot.isSupportedEvent(ctx)) {
