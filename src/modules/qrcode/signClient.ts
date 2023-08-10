@@ -13,8 +13,8 @@ export const getSignClient = async () => {
     metadata: {
       name: "HarmonyOneBot",
       description: "HarmonyOneBot",
-      url: "#",
-      icons: ["https://walletconnect.com/walletconnect-logo.png"],
+      url: "https://h.country",
+      icons: ["https://cryptologos.cc/logos/harmony-one-logo.png?v=026"],
     },
   });
 

@@ -6,7 +6,7 @@ export const walletMenuText = {
   helpText: `🏦 *One Wallet Help*
 
 *1. HOW TO BUY $ONE*
-• Buy [here](https://harmony.one/buy)
+• Buy here
 
 *2. CREATING A WALLET*
 • Use */wallet* to initiate wallet creation
