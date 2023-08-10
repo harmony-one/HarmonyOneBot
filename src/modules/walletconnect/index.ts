@@ -193,11 +193,11 @@ export class WalletConnect {
 
       const message = `💰 *My Wallet*                    
       
-*ONE*: ${Number(oneBalance).toFixed(2)} ONE
+*ONE*: ${Number(oneBalance).toFixed(2)} ONE       
 
-*TON*: 0 TON
+*TON*: 0 TON       
 
-*USDT*: 0 USDT
+*USDT*: 0 USDT       
 `
       ctx.reply(message, {
         parse_mode: "Markdown",

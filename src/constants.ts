@@ -18,12 +18,12 @@ export enum MenuIds {
 
 export const menuText = {
   mainMenu: {
-    backButton: 'Back to Main Menu',
+    backButton: '⬅️ Back',
     menuName: 'Main Menu',
   },
   imageMenu: {
     menuName: '👨‍🎨 Image Generation',
-    backButton: 'Back to previous menu',
+    backButton: '⬅️ Back',
     helpText: `👨‍🎨 Image Generation
 
 Help text for this menu

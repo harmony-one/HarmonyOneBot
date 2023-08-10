@@ -13,10 +13,10 @@ export const qrCodeMenuText = {
 };
 
 export const qrCodeBotMenu = new Menu<BotContext>(MenuIds.QR_BOT_MAIN) //<MyContext>
-  .text("Change options", async (ctx) => {
-    await ctx.menu.nav(MenuIds.QR_BOT_CHANGE_OPTIONS);
-  })
-  .row()
+  // .text("Change options", async (ctx) => {
+  //   await ctx.menu.nav(MenuIds.QR_BOT_CHANGE_OPTIONS);
+  // })
+  // .row()
   .back(menuText.mainMenu.backButton, (ctx) => {
     ctx.editMessageText(menuText.mainMenu.menuName).catch((ex) => {
       console.log('### ex', ex);
