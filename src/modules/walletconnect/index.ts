@@ -9,6 +9,10 @@ import { SessionTypes } from "@walletconnect/types";
 
 const sessionMap: Record<number, string> = {}
 
+const defaultProvider = new ethers.providers.JsonRpcProvider(
+  config.country.defaultRPC
+);
+
 const getUserAddr = (session: SessionTypes.Struct) => {
   const acc = session.namespaces['eip155'].accounts[0];
   const addr = acc.split(":")[2];
@@ -41,7 +45,7 @@ export class WalletConnect {
   public isSupportedEvent(ctx: OnMessageContext) {
     const { chat } = ctx.update.message;
 
-    return chat.type === 'private' && (ctx.hasCommand('walletconnect') || ctx.hasCommand('pools') || ctx.hasCommand('connect'));
+    return chat.type === 'private' && (ctx.hasCommand('get') || ctx.hasCommand('send') || ctx.hasCommand('pools') || ctx.hasCommand('connect'));
   }
 
   public async onEvent(ctx: OnMessageContext) {
@@ -69,31 +73,21 @@ export class WalletConnect {
       return;
     }
 
-    let keyboard = new InlineKeyboard().webApp(
-      "Open",
-      `${config.walletc.webAppUrl}`
-    );
-
     // /wallet send 0x199177Bcc7cdB22eC10E3A2DA888c7811275fc38 0.01
-    if (text && text.includes("send")) {
-      const [, , to = "", amount = ""] = text.split(" ");
+    if (ctx.hasCommand('send') && text) {
+      const [, to = "", amount = ""] = text.split(" ");
       if (to.startsWith("0x") && +amount) {
-        // console.log(
-        //   `${config.walletc.webAppUrl}/send?type=transfer&amount=${amount}&to=${to}&step=confirm`
-        // );
-        // keyboard = new InlineKeyboard().webApp(
-        //   "Confirm transaction",
-        //   `${config.walletc.webAppUrl}/send?type=transfer&amount=${amount}&to=${to}&step=confirm`
-        // );
-
         this.send(ctx, to, amount);
         return;
       }
     }
 
-    ctx.reply("WalletConnect", {
-      reply_markup: keyboard,
-    });
+    if (ctx.hasCommand('get')) {
+      this.getBalance(ctx);
+      return;
+    }
+
+    ctx.reply('Unsupported command');
   }
 
   async connect(ctx: OnMessageContext) {
@@ -170,5 +164,43 @@ export class WalletConnect {
       })
     }, 1000);
 
+  }
+
+  async getBalance(ctx: OnMessageContext) {
+    try {
+      const signClient = await getSignClient();
+      const userId = ctx.from.id;
+
+      const sessionId = sessionMap[userId];
+
+      if (!sessionId) {
+        ctx.reply('wallet are not connected');
+        return
+      }
+
+      const session = signClient.session.get(sessionId);
+
+      if (!session) {
+        ctx.reply('wallet are not connected');
+        return
+      }
+
+      const ownerAddr = getUserAddr(session);
+      const balance = await defaultProvider.getBalance(ownerAddr);
+
+
+
+      const message = `💰 *My Wallet*
+      
+*ONE*: ${ethers.utils.formatEther(balance)} ONE
+*TON*: 0 TON
+*USDT*: 0 USDT
+`
+      ctx.reply(message, {
+        parse_mode: "Markdown",
+      })
+    } catch (ex) {
+      ctx.reply('Unknown error');
+    }
   }
 }
