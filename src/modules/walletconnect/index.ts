@@ -115,6 +115,10 @@ export class WalletConnect {
       caption: 'Scan QR code with a WalletConnect-compatible wallet'
     });
 
+    ctx.reply(`Copy URI:
+    
+\`${uri}\` `, {parse_mode: 'Markdown'});
+
     const session = await approval();
 
     sessionMap[ctx.from.id] = session.topic;
