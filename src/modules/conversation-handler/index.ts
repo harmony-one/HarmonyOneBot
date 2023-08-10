@@ -21,8 +21,9 @@ import { promptGen } from "../open-ai/controller";
 import { getCommandNamePrompt } from "../1country/utils";
 import { appText } from "../open-ai/utils/text";
 import { BotPayments } from "../payment";
+import { sanitizeParseMode } from "telegram/Utils";
 
-const SupportedCommands = {
+export const SupportedCommands = {
   ask: {
     name: "ask",
     groupParams: ">1",
@@ -71,14 +72,26 @@ export class ConversationHandler {
     }
   }
 
+  private hasPrefix(prompt: string): boolean {
+    const prefixList = config.openAi.chatGpt.groupChatPrefix;
+    for (let i = 0; i < prefixList.length; i++) {
+      if (prompt.startsWith(prefixList[i])) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   public isSupportedEvent(
     ctx: OnMessageContext | OnCallBackQueryData
   ): boolean {
     const hasCommand = ctx.hasCommand(
       Object.values(SupportedCommands).map((command) => command.name)
     );
+    const hasGroupPrefix = this.hasPrefix(ctx.message?.text || "");
     if (
       ctx.chat?.type !== "private" &&
+      hasGroupPrefix &&
       ctx.session.openAi.chatGpt.chatConversation.length > 0
     ) {
       return true;
@@ -94,10 +107,17 @@ export class ConversationHandler {
 
   public isValidCommand(ctx: OnMessageContext | OnCallBackQueryData): boolean {
     const { commandName, prompt } = getCommandNamePrompt(ctx);
+    const promptNumber = prompt === "" ? 0 : prompt.split(" ").length;
+    if (!commandName) {
+      const hasGroupPrefix = this.hasPrefix(ctx.message?.text || "");
+      if (ctx.chat?.type !== "private" && hasGroupPrefix && promptNumber > 1) {
+        return true;
+      }
+      return false;
+    }
     const command = Object.values(SupportedCommands).filter(
       (c) => c.name === commandName
     )[0];
-    const promptNumber = prompt === "" ? 0 : prompt.split(" ").length;
     const comparisonOperator =
       ctx.chat?.type === "private"
         ? command.privateParams[0]
@@ -125,7 +145,7 @@ export class ConversationHandler {
   }
 
   public getEstimatedPrice(ctx: any) {
-    return 0
+    return 0;
     // const prompts = ctx.match;
     // if (!prompts) {
     //   return 0;
@@ -166,16 +186,21 @@ export class ConversationHandler {
       await this.onEnd(ctx);
       return;
     }
+
+    if (this.hasPrefix(ctx.message?.text || "")) {
+      await this.onChat(ctx);
+      return;
+    }
     this.logger.warn(`### unsupported command`);
     ctx.reply("### unsupported command");
   }
 
   async onChat(ctx: OnMessageContext | OnCallBackQueryData) {
-    const prompt = ctx.match;
+    const { prompt } = getCommandNamePrompt(ctx) // ctx.match;
     if (ctx.session.openAi.chatGpt.isEnabled) {
       if (ctx.chat?.type !== "private") {
         const chat = ctx.session.openAi.chatGpt.chatConversation;
-        chat.push({ role: "user", content: prompt as string });
+        chat.push({ role: "user", content: this.hasPrefix(prompt) ? prompt.slice(1) : prompt });
         const msgId = (
           await ctx.reply(
             `Generating response using model ${ctx.session.openAi.chatGpt.model}...\n_To end conversation please write /end_`,
