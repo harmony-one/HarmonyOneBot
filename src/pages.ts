@@ -19,29 +19,29 @@ import { MenuIds, menuText } from "./constants";
 import { walletMenu, walletMenuText } from "./modules/wallet/menu";
 
 const imageMenu = new Menu<BotContext>(MenuIds.IMAGE_MENU)
-  .submenu(
-    "🖼️ Image Generation Stable Diffusion",
-    MenuIds.SD_IMAGES_MAIN,
-    (ctx) => {
-      ctx
-        .editMessageText(sdImagesMenuText.helpText, {
-          parse_mode: "Markdown",
-        })
-        .catch((ex: any) => {
-          console.log("### ex", ex);
-        });
-    }
-  )
-  .row()
-  .submenu("🎨 Image Generation DALL·E 2", MenuIds.IMAGE_GEN_MAIN, (ctx) => {
-    ctx
-      .editMessageText(openAiMenuText.helpText, {
-        parse_mode: "Markdown",
-      })
-      .catch((ex: any) => {
-        console.log("### ex", ex);
-      });
-  })
+  // .submenu(
+  //   "🖼️ Image Generation Stable Diffusion",
+  //   MenuIds.SD_IMAGES_MAIN,
+  //   (ctx) => {
+  //     ctx
+  //       .editMessageText(sdImagesMenuText.helpText, {
+  //         parse_mode: "Markdown",
+  //       })
+  //       .catch((ex: any) => {
+  //         console.log("### ex", ex);
+  //       });
+  //   }
+  // )
+  // .row()
+  // .submenu("🎨 Image Generation DALL·E 2", MenuIds.IMAGE_GEN_MAIN, (ctx) => {
+  //   ctx
+  //     .editMessageText(openAiMenuText.helpText, {
+  //       parse_mode: "Markdown",
+  //     })
+  //     .catch((ex: any) => {
+  //       console.log("### ex", ex);
+  //     });
+  // })
   .row()
   .back(menuText.mainMenu.backButton, (ctx) => {
     ctx.editMessageText(menuText.mainMenu.menuName).catch((ex) => {

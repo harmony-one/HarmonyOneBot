@@ -97,16 +97,35 @@ export class WalletConnect {
       requiredNamespaces: {
         eip155: {
           methods: [
-            'eth_sendTransaction',
-            'eth_signTransaction',
-            'eth_sign',
+            'eth_accounts',
+            'net_version',
+            'eth_chainId',
             'personal_sign',
-            'eth_signTypedData'
+            'eth_sign',
+            'eth_signTypedData',
+            'eth_signTypedData_v4',
+            'eth_sendTransaction',
+            'eth_blockNumber',
+            'eth_getBalance',
+            'eth_getCode',
+            'eth_getTransactionCount',
+            'eth_getStorageAt',
+            'eth_getBlockByNumber',
+            'eth_getBlockByHash',
+            'eth_getTransactionByHash',
+            'eth_getTransactionReceipt',
+            'eth_estimateGas',
+            'eth_call',
+            'eth_getLogs',
+            'eth_gasPrice',
+            'wallet_getPermissions',
+            'wallet_requestPermissions',
+            'safe_setSettings',
           ],
           chains: ['eip155:1666600000'],
           events: ['chainChanged', 'accountsChanged']
         }
-      }
+      },
     })
 
     const qrImgBuffer = await createQRCode({url: uri || '', width: 450, margin: 3 });
@@ -115,12 +134,24 @@ export class WalletConnect {
       caption: 'Scan QR code with a WalletConnect-compatible wallet'
     });
 
-    const session = await approval();
+    const uriMessage = await ctx.reply(`Copy URI:
+    
+\`${uri}\` `, {parse_mode: 'Markdown'});
 
-    sessionMap[ctx.from.id] = session.topic;
+    try {
+      const session = await approval();
 
-    await ctx.api.deleteMessage(ctx.chat.id, message.message_id);
-    ctx.reply('wallet connected: ' + getUserAddr(session));
+      sessionMap[ctx.from.id] = session.topic;
+
+      ctx.api.deleteMessage(ctx.chat.id, message.message_id);
+      ctx.api.deleteMessage(ctx.chat.id, uriMessage.message_id);
+      ctx.reply('wallet connected: ' + getUserAddr(session));
+    } catch (ex) {
+      ctx.api.deleteMessage(ctx.chat.id, message.message_id);
+      ctx.api.deleteMessage(ctx.chat.id, uriMessage.message_id);
+      ctx.reply('internal error');
+      console.log('### ex', ex);
+    }
   }
 
   async send(ctx: OnMessageContext, addr: string, amount: string) {
@@ -130,14 +161,14 @@ export class WalletConnect {
     const sessionId = sessionMap[userId];
 
     if (!sessionId) {
-      ctx.reply('wallet are not connected');
+      ctx.reply('Link wallet with /connect');
       return
     }
 
     const session = signClient.session.get(sessionId);
 
     if (!session) {
-      ctx.reply('wallet are not connected');
+      ctx.reply('Link wallet with /connect');
       return
     }
 
@@ -176,14 +207,14 @@ export class WalletConnect {
       const sessionId = sessionMap[userId];
 
       if (!sessionId) {
-        ctx.reply('wallet are not connected');
+        ctx.reply('Link wallet with /connect');
         return
       }
 
       const session = signClient.session.get(sessionId);
 
       if (!session) {
-        ctx.reply('wallet are not connected');
+        ctx.reply('Link wallet with /connect');
         return
       }
 

@@ -108,25 +108,32 @@ const onMessage = async (ctx: OnMessageContext) => {
     const price = qrCodeBot.getEstimatedPrice(ctx);
     const isPaid = await payments.pay(ctx, price);
     if (isPaid) {
-      return qrCodeBot.onEvent(ctx, (reason?: string) => {
-        payments.refundPayment(reason, ctx, price);
-      });
+      qrCodeBot
+        .onEvent(ctx, (reason?: string) => {
+          payments.refundPayment(reason, ctx, price);
+        })
+
+      return;
     }
   }
   if (sdImagesBot.isSupportedEvent(ctx)) {
     const price = sdImagesBot.getEstimatedPrice(ctx);
     const isPaid = await payments.pay(ctx, price);
     if (isPaid) {
-      return sdImagesBot.onEvent(ctx, (reason?: string) => {
-        payments.refundPayment(reason, ctx, price);
-      });
+      sdImagesBot
+        .onEvent(ctx, (reason?: string) => {
+          payments.refundPayment(reason, ctx, price);
+        })
+      return;
     }
   }
   if (voiceMemo.isSupportedEvent(ctx)) {
     const price = voiceMemo.getEstimatedPrice(ctx);
     const isPaid = await payments.pay(ctx, price);
     if (isPaid) {
-      return voiceMemo.onEvent(ctx);
+      voiceMemo
+        .onEvent(ctx)
+      return;
     }
   }
   if (openAiBot.isSupportedEvent(ctx)) {
@@ -163,16 +170,20 @@ const onMessage = async (ctx: OnMessageContext) => {
   //   }
   // }
   if (wallet.isSupportedEvent(ctx)) {
-    return wallet.onEvent(ctx);
+    wallet.onEvent(ctx);
+    return;
   }
   if (walletConnect.isSupportedEvent(ctx)) {
-    return walletConnect.onEvent(ctx);
+    walletConnect.onEvent(ctx);
+    return;
   }
   if (payments.isSupportedEvent(ctx)) {
-    return payments.onEvent(ctx);
+    payments.onEvent(ctx);
+    return;
   }
   if (schedule.isSupportedEvent(ctx)) {
-    return schedule.onEvent(ctx);
+    schedule.onEvent(ctx);
+    return;
   }
   // if (ctx.update.message.text && ctx.update.message.text.startsWith("/", 0)) {
   //  const command = ctx.update.message.text.split(' ')[0].slice(1)
@@ -227,7 +238,7 @@ bot.command("menu", async (ctx) => {
   
 🌟 Welcome to the Harmony One Bot! 🤖
   
-💲 Send money to your /balance to start! 🚀
+💲 Send money to your /botfund to start! 🚀
   `,
     {
       parse_mode: "Markdown",

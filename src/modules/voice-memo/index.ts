@@ -126,11 +126,9 @@ export class VoiceMemo {
   }
 
   public isSupportedEvent(ctx: OnMessageContext) {
-    const { voice } = ctx.update.message
+    const { voice, audio } = ctx.update.message
 
-    return config.voiceMemo.isEnabled
-      && voice
-      && (voice.mime_type && voice.mime_type.includes('audio'))
+    return config.voiceMemo.isEnabled && (voice || audio)
   }
 
   public getEstimatedPrice(ctx: OnMessageContext) {
@@ -142,8 +140,9 @@ export class VoiceMemo {
   }
 
   public async onEvent(ctx: OnMessageContext) {
-    const { message_id, voice, from } = ctx.update.message
-    const requestKey = `${from.id}_${voice?.file_size}`
+    const { message_id, voice, audio, from } = ctx.update.message
+    const fileSize = (voice || audio)?.file_size
+    const requestKey = `${from.id}_${fileSize}`
 
     this.requestsQueue.set(requestKey, Date.now())
 
