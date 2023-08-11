@@ -164,16 +164,20 @@ const onMessage = async (ctx: OnMessageContext) => {
   //   }
   // }
   if (wallet.isSupportedEvent(ctx)) {
-    return wallet.onEvent(ctx);
+    wallet.onEvent(ctx);
+    return;
   }
   if (walletConnect.isSupportedEvent(ctx)) {
-    return walletConnect.onEvent(ctx);
+    walletConnect.onEvent(ctx);
+    return;
   }
   if (payments.isSupportedEvent(ctx)) {
-    return payments.onEvent(ctx);
+    payments.onEvent(ctx);
+    return;
   }
   if (schedule.isSupportedEvent(ctx)) {
-    return schedule.onEvent(ctx);
+    schedule.onEvent(ctx);
+    return;
   }
   // if (ctx.update.message.text && ctx.update.message.text.startsWith("/", 0)) {
   //  const command = ctx.update.message.text.split(' ')[0].slice(1)
