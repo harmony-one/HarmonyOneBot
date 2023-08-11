@@ -1,14 +1,41 @@
 import config from "../../config";
+import { getCommandNamePrompt } from "../1country/utils";
+import { BotPayments } from "../payment";
 import { OnMessageContext, OnCallBackQueryData } from "../types";
 import { getChatModel, getDalleModel, getDalleModelPrice } from "./api/openAi";
-import { alterImg, imgGen, imgGenEnhanced } from "./controller";
+import { alterImg, imgGen, imgGenEnhanced, promptGen } from "./controller";
 import { Logger, pino } from "pino";
+import { appText } from "./utils/text";
 
-enum SupportedCommands {
-  GEN_IMG = "genImg",
-  GEN_IMG_EN = "genImgEn",
-}
+export const SupportedCommands = {
+  ask: {
+    name: "ask",
+    groupParams: ">1",
+    privateParams: ">0",
+  },
+  register: {
+    name: "register",
+    groupParams: ">1",
+    privateParams: ">0",
+  },
+  genImg: {
+    name: "genImg",
+    groupParams: ">1",
+    privateParams: ">1",
+  },
+  genImgEn: {
+    name: "genImgEn",
+    groupParams: ">1",
+    privateParams: ">1",
+  },
+  end: {
+    name: "end",
+    groupParams: "=0",
+    privateParams: "=0",
+  },
+};
 
+const payments = new BotPayments();
 export class OpenAIBot {
   private logger: Logger;
 
@@ -30,19 +57,88 @@ export class OpenAIBot {
   public isSupportedEvent(
     ctx: OnMessageContext | OnCallBackQueryData
   ): boolean {
-    const hasCommand = ctx.hasCommand(Object.values(SupportedCommands));
+    const hasCommand = ctx.hasCommand(
+      Object.values(SupportedCommands).map((command) => command.name)
+    );
     const hasRepply = this.isSupportedImageReply(ctx);
-
-    if (hasCommand && !ctx.match) {
-      ctx.reply("Error: Missing prompt");
-      return false;
+    const hasGroupPrefix = this.hasPrefix(ctx.message?.text || "");
+    if (
+      hasGroupPrefix &&
+      ctx.session.openAi.chatGpt.chatConversation.length > 0
+    ) {
+      return true;
     }
     return hasCommand || hasRepply;
   }
 
+
+  // public isSupportedEvent(
+  //   ctx: OnMessageContext | OnCallBackQueryData
+  // ): boolean {
+  //   const hasCommand = ctx.hasCommand(Object.values(SupportedCommands));
+  //   const hasRepply = this.isSupportedImageReply(ctx);
+
+  //   if (hasCommand && !ctx.match) {
+  //     ctx.reply("Error: Missing prompt");
+  //     return false;
+  //   }
+  //   return hasCommand || hasRepply;
+  // }
+
+  public isValidCommand(ctx: OnMessageContext | OnCallBackQueryData): boolean {
+    const { commandName, prompt } = getCommandNamePrompt(ctx, SupportedCommands);
+    const promptNumber = prompt === "" ? 0 : prompt.split(" ").length;
+    if (this.isSupportedImageReply(ctx)) {
+      return true
+    }
+    if (!commandName) {
+      const hasGroupPrefix = this.hasPrefix(ctx.message?.text || "");
+      if (hasGroupPrefix && promptNumber > 1) {
+        return true;
+      }
+      return false;
+    }
+    const command = Object.values(SupportedCommands).filter(
+      (c) => c.name === commandName
+    )[0];
+    const comparisonOperator =
+      ctx.chat?.type === "private"
+        ? command.privateParams[0]
+        : command.groupParams[0];
+    const comparisonValue = parseInt(
+      ctx.chat?.type === "private"
+        ? command.privateParams.slice(1)
+        : command.groupParams.slice(1)
+    );
+    switch (comparisonOperator) {
+      case ">":
+        if (promptNumber >= comparisonValue) {
+          return true;
+        }
+        break;
+      case "=":
+        if (promptNumber === comparisonValue) {
+          return true;
+        }
+        break;
+      default:
+        break;
+    }
+    return false;
+  }
+
+  private hasPrefix(prompt: string): boolean {
+    const prefixList = config.openAi.chatGpt.groupChatPrefix;
+    for (let i = 0; i < prefixList.length; i++) {
+      if (prompt.startsWith(prefixList[i])) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   public getEstimatedPrice(ctx: any) {
     return 0;
-
     // const prompts = ctx.match;
     // if (this.isSupportedImageReply(ctx)) {
     //   const imageNumber = ctx.message?.caption || ctx.message?.text;
@@ -52,6 +148,12 @@ export class OpenAIBot {
     //   return price;
     // }
     // if (!prompts) {
+    //   return 0;
+    // }
+    // if (
+    //   ctx.chat.type !== "private" &&
+    //   ctx.session.openAi.chatGpt.chatConversation.length > 0
+    // ) {
     //   return 0;
     // }
     // if (ctx.hasCommand("genImg")) {
@@ -76,6 +178,13 @@ export class OpenAIBot {
     //   ); //cents
     //   return price;
     // }
+    // if (ctx.hasCommand(SupportedCommands.ask.name)) {
+    //   const baseTokens = getTokenNumber(prompts as string);
+    //   const modelName = ctx.session.openAi.chatGpt.model;
+    //   const model = getChatModel(modelName);
+    //   const price = getChatModelPrice(model, true, baseTokens); //cents
+    //   return price // return ctx.chat.type !== "private" ? price * 2 : price;
+    // }  
     // return 0;
   }
 
@@ -96,18 +205,33 @@ export class OpenAIBot {
       return false;
     }
 
-    if (ctx.hasCommand(SupportedCommands.GEN_IMG)) {
+    if (ctx.hasCommand(SupportedCommands.ask.name)) {
+      await this.onChat(ctx);
+      return;
+    }
+
+    if (ctx.hasCommand(SupportedCommands.genImg.name)) {
       this.onGenImgCmd(ctx);
       return;
     }
 
-    if (ctx.hasCommand(SupportedCommands.GEN_IMG_EN)) {
+    if (ctx.hasCommand(SupportedCommands.genImgEn.name)) {
       this.onGenImgEnCmd(ctx);
       return;
     }
 
     if (this.isSupportedImageReply(ctx)) {
       this.onAlterImage(ctx);
+      return;
+    }
+
+    if (ctx.hasCommand(SupportedCommands.end.name)) {
+      await this.onEnd(ctx);
+      return;
+    }
+
+    if (this.hasPrefix(ctx.message?.text || "")) {
+      await this.onChat(ctx);
       return;
     }
 
@@ -177,4 +301,49 @@ export class OpenAIBot {
       ctx.reply("An error occurred while generating the AI edit");
     }
   };
+
+  async onChat(ctx: OnMessageContext | OnCallBackQueryData) {
+    const { prompt } = getCommandNamePrompt(ctx, SupportedCommands) // ctx.match;
+    if (ctx.session.openAi.chatGpt.isEnabled) {
+
+        const chat = ctx.session.openAi.chatGpt.chatConversation;
+        chat.push({ role: "user", content: this.hasPrefix(prompt) ? prompt.slice(1) : prompt });
+        const msgId = (
+          await ctx.reply(
+            `Generating response using model ${ctx.session.openAi.chatGpt.model}...\n_To end conversation please write /end_`,
+            {
+              parse_mode: "Markdown",
+            }
+          )
+        ).message_id;
+        const payload = {
+          conversation: chat,
+          model: ctx.session.openAi.chatGpt.model,
+        };
+        const response = await promptGen(payload);
+        chat.push({ content: response.completion, role: "system" });
+        ctx.api.editMessageText(ctx.chat?.id!, msgId, response.completion);
+        ctx.session.openAi.chatGpt.chatConversation = [...chat];
+        ctx.session.openAi.chatGpt.usage += response.usage;
+        ctx.session.openAi.chatGpt.price += response.price;
+        const isPay = await payments.pay(
+          ctx as OnMessageContext,
+          ctx.session.openAi.chatGpt.price
+        );
+        if (!isPay) {
+          ctx.reply(appText.gptChatPaymentIssue, {
+            parse_mode: "Markdown",
+          });
+        }
+    } else {
+      ctx.reply("Bot disabled");
+    }
+  }
+
+  async onEnd(ctx: OnMessageContext | OnCallBackQueryData) {
+    ctx.session.openAi.chatGpt.chatConversation = [];
+    const usage = ctx.session.openAi.chatGpt.usage;
+    const totalPrice = ctx.session.openAi.chatGpt.price;
+    ctx.reply(`${appText.gptChatEnd} ${usage} (${totalPrice.toFixed(2)}¢)`);
+  }
 }

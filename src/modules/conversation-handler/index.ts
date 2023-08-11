@@ -21,7 +21,6 @@ import { promptGen } from "../open-ai/controller";
 import { getCommandNamePrompt } from "../1country/utils";
 import { appText } from "../open-ai/utils/text";
 import { BotPayments } from "../payment";
-import { sanitizeParseMode } from "telegram/Utils";
 
 export const SupportedCommands = {
   ask: {
@@ -97,7 +96,7 @@ export class ConversationHandler {
       return true;
     }
     if (ctx.chat?.type !== "private") {
-      const { commandName } = getCommandNamePrompt(ctx);
+      const { commandName } = getCommandNamePrompt(ctx, SupportedCommands);
       if (commandName === SupportedCommands.register.name) {
         return false;
       }
@@ -106,7 +105,7 @@ export class ConversationHandler {
   }
 
   public isValidCommand(ctx: OnMessageContext | OnCallBackQueryData): boolean {
-    const { commandName, prompt } = getCommandNamePrompt(ctx);
+    const { commandName, prompt } = getCommandNamePrompt(ctx, SupportedCommands);
     const promptNumber = prompt === "" ? 0 : prompt.split(" ").length;
     if (!commandName) {
       const hasGroupPrefix = this.hasPrefix(ctx.message?.text || "");
@@ -196,7 +195,7 @@ export class ConversationHandler {
   }
 
   async onChat(ctx: OnMessageContext | OnCallBackQueryData) {
-    const { prompt } = getCommandNamePrompt(ctx) // ctx.match;
+    const { prompt } = getCommandNamePrompt(ctx, SupportedCommands) // ctx.match;
     if (ctx.session.openAi.chatGpt.isEnabled) {
       if (ctx.chat?.type !== "private") {
         const chat = ctx.session.openAi.chatGpt.chatConversation;

@@ -24,7 +24,7 @@ import { Wallet } from "./modules/wallet";
 import { WalletConnect } from "./modules/walletconnect";
 import { BotPayments } from "./modules/payment";
 import { BotSchedule } from "./modules/schedule";
-import { ConversationHandler } from "./modules/conversation-handler/";
+// import { ConversationHandler } from "./modules/conversation-handler/";
 import config from "./config";
 import { commandHelpText } from "./constants";
 
@@ -37,8 +37,6 @@ const logger = pino({
     },
   },
 });
-
-
 
 export const bot = new Bot<BotContext>(config.telegramBotAuthToken);
 
@@ -55,7 +53,7 @@ function createInitialSessionData(): BotSessionData {
         isEnabled: config.openAi.chatGpt.isEnabled,
         chatConversation: [],
         price: 0,
-        usage: 0
+        usage: 0,
       },
     },
     qrMargin: 1,
@@ -80,69 +78,72 @@ const payments = new BotPayments();
 const schedule = new BotSchedule(bot);
 const openAiBot = new OpenAIBot();
 const oneCountryBot = new OneCountryBot();
-const conversationHandler = new ConversationHandler(bot);
+// const conversationHandler = new ConversationHandler(bot);
 
 const onMessage = async (ctx: OnMessageContext) => {
-  if (conversationHandler.isSupportedEvent(ctx)) {
-    if (ctx.session.openAi.chatGpt.isEnabled) {
-      if (conversationHandler.isValidCommand(ctx)) {
-        const price = conversationHandler.getEstimatedPrice(ctx);
-        if (price > 0) {
-          await ctx.reply(`Processing withdraw for ${price.toFixed(2)}¢...`);
-        }
-        const isPaid = await payments.pay(ctx, price);
-        if (isPaid) {
-          return conversationHandler
-            .onEvent(ctx)
-            .catch((e) => payments.refundPayment(e, ctx, price));
-        }
-        return;
-      } else {
-        ctx.reply("Error: Missing prompt");
-        return
-      }
-    } else {
-      ctx.reply("Bot disabled");
-      return;
-    }
-  }
+  // if (conversationHandler.isSupportedEvent(ctx)) {
+  //   if (ctx.session.openAi.chatGpt.isEnabled) {
+  //     if (conversationHandler.isValidCommand(ctx)) {
+  //       const price = conversationHandler.getEstimatedPrice(ctx);
+  //       if (price > 0) {
+  //         await ctx.reply(`Processing withdraw for ${price.toFixed(2)}¢...`);
+  //       }
+  //       const isPaid = await payments.pay(ctx, price);
+  //       if (isPaid) {
+  //         return conversationHandler
+  //           .onEvent(ctx)
+  //           .catch((e) => payments.refundPayment(e, ctx, price));
+  //       }
+  //       return;
+  //     } else {
+  //       ctx.reply("Error: Missing prompt");
+  //       return;
+  //     }
+  //   } else {
+  //     ctx.reply("Bot disabled");
+  //     return;
+  //   }
+  // }
   if (qrCodeBot.isSupportedEvent(ctx)) {
     const price = qrCodeBot.getEstimatedPrice(ctx);
     const isPaid = await payments.pay(ctx, price);
     if (isPaid) {
-      return qrCodeBot
-        .onEvent(ctx, (reason?: string) => {
-          payments.refundPayment(reason, ctx, price);
-        })
+      return qrCodeBot.onEvent(ctx, (reason?: string) => {
+        payments.refundPayment(reason, ctx, price);
+      });
     }
   }
   if (sdImagesBot.isSupportedEvent(ctx)) {
     const price = sdImagesBot.getEstimatedPrice(ctx);
     const isPaid = await payments.pay(ctx, price);
     if (isPaid) {
-      return sdImagesBot
-        .onEvent(ctx, (reason?: string) => {
-          payments.refundPayment(reason, ctx, price);
-        })
+      return sdImagesBot.onEvent(ctx, (reason?: string) => {
+        payments.refundPayment(reason, ctx, price);
+      });
     }
   }
   if (voiceMemo.isSupportedEvent(ctx)) {
     const price = voiceMemo.getEstimatedPrice(ctx);
     const isPaid = await payments.pay(ctx, price);
     if (isPaid) {
-      return voiceMemo
-        .onEvent(ctx)
+      return voiceMemo.onEvent(ctx);
     }
   }
   if (openAiBot.isSupportedEvent(ctx)) {
     if (ctx.session.openAi.imageGen.isEnabled) {
-      const price = openAiBot.getEstimatedPrice(ctx);
-      if (price > 0) {
-        //await ctx.reply(`Processing withdraw for ${price.toFixed(2)}¢...`);
-      }
-      const isPaid = await payments.pay(ctx, price);
-      if (isPaid) {
-        return openAiBot.onEvent(ctx)
+      if (openAiBot.isValidCommand(ctx)) {
+        const price = openAiBot.getEstimatedPrice(ctx);
+        if (price > 0) {
+          await ctx.reply(`Processing withdraw for ${price.toFixed(2)}¢...`);
+        }
+        const isPaid = await payments.pay(ctx, price);
+        if (isPaid) {
+          return openAiBot.onEvent(ctx).catch((e) => payments.refundPayment(e, ctx, price));;
+        }
+        return;
+      } else {
+        ctx.reply("Error: Missing prompt");
+        return;
       }
     } else {
       ctx.reply("Bot disabled");
@@ -176,7 +177,7 @@ const onMessage = async (ctx: OnMessageContext) => {
   // if (ctx.update.message.text && ctx.update.message.text.startsWith("/", 0)) {
   //  const command = ctx.update.message.text.split(' ')[0].slice(1)
   // onlfy for private chats
-  if (ctx.update.message.chat && ctx.chat.type === 'private') {
+  if (ctx.update.message.chat && ctx.chat.type === "private") {
     ctx.reply(
       `Command not supported.\nWrite */menu* to learn available commands`,
       {
@@ -193,25 +194,27 @@ const onMessage = async (ctx: OnMessageContext) => {
 const onCallback = async (ctx: OnCallBackQueryData) => {
   if (qrCodeBot.isSupportedEvent(ctx)) {
     qrCodeBot.onEvent(ctx, (reason) => {
-      logger.error(`qr generate error: ${reason}`)
+      logger.error(`qr generate error: ${reason}`);
     });
     return;
   }
 
   if (sdImagesBot.isSupportedEvent(ctx)) {
-    sdImagesBot.onEvent(ctx, (e) => { console.log(e, '// TODO refund payment'); });
+    sdImagesBot.onEvent(ctx, (e) => {
+      console.log(e, "// TODO refund payment");
+    });
     return;
   }
 };
 
 bot.command("start", (ctx) =>
-  ctx.reply(commandHelpText,{
+  ctx.reply(commandHelpText, {
     parse_mode: "Markdown",
   })
 );
 
 bot.command("help", (ctx) =>
-  ctx.reply(commandHelpText,{
+  ctx.reply(commandHelpText, {
     parse_mode: "Markdown",
   })
 );
