@@ -8,8 +8,8 @@ import { Logger, pino } from "pino";
 import { appText } from "./utils/text";
 
 export const SupportedCommands = {
-  ask: {
-    name: "ask",
+  chat: {
+    name: "chat",
     groupParams: ">0",
     privateParams: ">0",
   },
@@ -64,10 +64,9 @@ export class OpenAIBot {
   public isSupportedEvent(
     ctx: OnMessageContext | OnCallBackQueryData
   ): boolean {
-    const hasCommand =
-      ctx.hasCommand(
-        Object.values(SupportedCommands).map((command) => command.name)
-      )
+    const hasCommand = ctx.hasCommand(
+      Object.values(SupportedCommands).map((command) => command.name)
+    );
     const hasRepply = this.isSupportedImageReply(ctx);
     const hasGroupPrefix = this.hasPrefix(ctx.message?.text || "");
     if (
@@ -188,7 +187,7 @@ export class OpenAIBot {
     //   ); //cents
     //   return price;
     // }
-    // if (ctx.hasCommand(SupportedCommands.ask.name)) {
+    // if (ctx.hasCommand(SupportedCommands.chat.name)) {
     //   const baseTokens = getTokenNumber(prompts as string);
     //   const modelName = ctx.session.openAi.chatGpt.model;
     //   const model = getChatModel(modelName);
@@ -215,8 +214,8 @@ export class OpenAIBot {
       return false;
     }
 
-    if (ctx.hasCommand(SupportedCommands.ask.name)) {
-      this.onChat(ctx);
+    if (ctx.hasCommand(SupportedCommands.chat.name)) {
+      await this.onChat(ctx);
       return;
     }
 
@@ -320,7 +319,7 @@ export class OpenAIBot {
   async onChat(ctx: OnMessageContext | OnCallBackQueryData) {
     const { prompt } = getCommandNamePrompt(ctx, SupportedCommands); // ctx.match;
     if (ctx.session.openAi.chatGpt.isEnabled) {
-      this.logger.info("promtp:", prompt);
+      this.logger.info("prompt:", prompt);
       const chat = ctx.session.openAi.chatGpt.chatConversation;
       if (prompt === "") {
         const msg =
@@ -343,12 +342,9 @@ export class OpenAIBot {
         content: this.hasPrefix(prompt) ? prompt.slice(1) : prompt,
       });
       const msgId = (
-        await ctx.reply(
-          `Generating response using model ${ctx.session.openAi.chatGpt.model}...\n_To end conversation please write /end_`,
-          {
-            parse_mode: "Markdown",
-          }
-        )
+        await ctx.reply(`Generating...\n\n*Close chat with /end*`, {
+          parse_mode: "Markdown",
+        })
       ).message_id;
       const payload = {
         conversation: chat,
@@ -382,7 +378,7 @@ export class OpenAIBot {
         parse_mode: "Markdown",
       });
     } else {
-      ctx.reply(`To start a conversation please write */ask*`, {
+      ctx.reply(`To start a conversation please write */chat*`, {
         parse_mode: "Markdown",
       });
     }

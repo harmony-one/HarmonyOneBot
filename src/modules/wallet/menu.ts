@@ -3,22 +3,17 @@ import { BotContext } from "../types";
 import { MenuIds, menuText } from "../../constants";
 
 export const walletMenuText = {
-  helpText: `🏦 *One Wallet Help*
+  helpText: `💰 *Bot Fund*
 
-*1. HOW TO BUY $ONE*
-• Buy here
+1. /buy - Buy ONE with USD
 
-*2. CREATING A WALLET*
-• Use */wallet* to initiate wallet creation
-• Follow the instructions that appear
+2. /connect - Connect your wallet
 
-*3. SENDING ONE TO ANOTHER ADDRESS*
-• Use */wallet* send <ADDRESS> <AMOUNT>
+3. /send <ADDRESS> <AMOUNT> - Send Tokens
 
-\`/wallet send 0x199177Bcc7cdB22eC10E3A2DA888c7811275fc38 2.55\`
+Example: \`/send 0x199177Bcc7cdB22eC10E3A2DA888c7811275fc38 2.55\`
 
-*4. WALLETCONNECT*
-• Use */walletconnect*
+
   `,
 };
 

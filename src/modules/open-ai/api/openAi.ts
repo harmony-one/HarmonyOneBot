@@ -90,7 +90,7 @@ export async function alterGeneratedImg(
           size
         );
       }
-      bot.api.sendMessage(chatId, "generating the output...");
+      bot.api.sendMessage(chatId, "Generating...");
       deleteFile(imageData.fileName!);
       return response.data.data;
     } else {

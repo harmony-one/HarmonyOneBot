@@ -71,7 +71,7 @@ bot.use(mainMenu);
 const voiceMemo = new VoiceMemo();
 const qrCodeBot = new QRCodeBot();
 const sdImagesBot = new SDImagesBot();
-const wallet = new Wallet();
+// const wallet = new Wallet();
 const walletConnect = new WalletConnect();
 const payments = new BotPayments();
 const schedule = new BotSchedule(bot);
@@ -151,6 +151,7 @@ const onMessage = async (ctx: OnMessageContext) => {
     wallet.onEvent(ctx);
     return;
   }
+
   if (walletConnect.isSupportedEvent(ctx)) {
     walletConnect.onEvent(ctx);
     return;

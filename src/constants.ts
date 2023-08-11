@@ -20,7 +20,7 @@ export const menuText = {
   mainMenu: {
     backButton: '⬅️ Back',
     menuName: `
-    Main Menu
+    *Main Menu*
   
 🌟 Welcome to the Harmony One Bot! 🤖
   
@@ -30,21 +30,17 @@ export const menuText = {
   imageMenu: {
     menuName: '👨‍🎨 Image Generation',
     backButton: '⬅️ Back',
-    helpText: `🖼️ *Stable Diffusion Help*
+    helpText: `👨‍🎨 *Image Generation*
 
-    *1. GENERATE A SINGLE IMAGE*
-    • Use */image <PROMPTS>*
+    1. /image <PROMPT> - Generate a stunning image 
 
-    *Example:* \`/image On a sunny day city street, neon signs and streetlights reflect off the wet pavement. Pedestrians hustle with umbrellas, and cars pass with headlights gleaming. Painted with hyperrealistic precision, inspired by artists like Chuck Close, this scene captures every droplet and glint of light, creating an image so lifelike it appears almost like a photograph.
-    \`
+    *Example:* \`/image Lake Como Italy, sailboats, sunset, 8k\`
     
-    *2. GENERAGE MULTIPLE IMAGES*
-    • Use */images <PROMPTS>*
+    2. /images <PROMPT> - Generate stunning images
 
-    *Example:* \`/images A futuristic cityscape with towering skyscrapers, flying vehicles, and a diverse population of humans and robots, painted in a concept art style inspired by Syd Mead, with a focus on detail and realism.
-    \`
+    *Example:* \`/images A futuristic cityscape with towering skyscrapers, flying vehicles, and a diverse population of humans and robots, painted in a concept art style inspired by Syd Mead, with a focus on detail and realism.\`
     
-      `,
+    `,
   
   }
 }
@@ -66,7 +62,7 @@ Send or forward a voice message (.m4a) to @HarmonyOneAIBot for a full transcript
 /qr <LINK> <PROMPT>
 
 *ChatGPT*
-/ask <TEXT>
+/chat <TEXT>
 
 *Image Generation*
 /image <PROMPT>
@@ -79,7 +75,7 @@ Send or forward a voice message (.m4a) to @HarmonyOneAIBot for a full transcript
 
 // /help - this help message
 // /wallet - 🏦 Wallet 
-// /ask - 🖋️ ChatGPT 4 
+// /chat - 🖋️ ChatGPT 4 
 // /images - 🎨 Image Generation 
 // /qr - 📷 QR Generation 
 // /register - 🌐 1.country 
