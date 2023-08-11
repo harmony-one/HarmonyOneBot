@@ -40,7 +40,7 @@ export default {
     chatGpt: {
       isEnabled: Boolean(parseInt(process.env.CHAT_GPT_ENABLED || "1")),
       //hard coded gpt-4
-      model: process.env.OPENAI_MODEL || 'gpt-4',
+      model: 'gpt-4', // process.env.OPENAI_MODEL ||
       groupChatPrefix: process.env.GROUP_PREFIX
         ? process.env.GROUP_PREFIX.split(",")
         : ["?", ">"],
