@@ -10,8 +10,13 @@ import { appText } from "./utils/text";
 export const SupportedCommands = {
   ask: {
     name: "ask",
-    groupParams: ">1",
+    groupParams: ">0",
     privateParams: ">0",
+  },
+  last: {
+    name: "last",
+    groupParams: "=0",
+    privateParams: "=0",
   },
   register: {
     name: "register",
@@ -57,9 +62,13 @@ export class OpenAIBot {
   public isSupportedEvent(
     ctx: OnMessageContext | OnCallBackQueryData
   ): boolean {
-    const hasCommand = ctx.hasCommand(
-      Object.values(SupportedCommands).map((command) => command.name)
-    );
+    const hasCommand =
+      ctx.hasCommand(
+        Object.values(SupportedCommands).map((command) => command.name)
+      ) ||
+      ctx.hasCallbackQuery(
+        Object.values(SupportedCommands).map((command) => command.name)
+      );
     const hasRepply = this.isSupportedImageReply(ctx);
     const hasGroupPrefix = this.hasPrefix(ctx.message?.text || "");
     if (
@@ -70,7 +79,6 @@ export class OpenAIBot {
     }
     return hasCommand || hasRepply;
   }
-
 
   // public isSupportedEvent(
   //   ctx: OnMessageContext | OnCallBackQueryData
@@ -86,10 +94,13 @@ export class OpenAIBot {
   // }
 
   public isValidCommand(ctx: OnMessageContext | OnCallBackQueryData): boolean {
-    const { commandName, prompt } = getCommandNamePrompt(ctx, SupportedCommands);
+    const { commandName, prompt } = getCommandNamePrompt(
+      ctx,
+      SupportedCommands
+    );
     const promptNumber = prompt === "" ? 0 : prompt.split(" ").length;
     if (this.isSupportedImageReply(ctx)) {
-      return true
+      return true;
     }
     if (!commandName) {
       const hasGroupPrefix = this.hasPrefix(ctx.message?.text || "");
@@ -98,8 +109,8 @@ export class OpenAIBot {
       }
       return false;
     }
-    const command = Object.values(SupportedCommands).filter(
-      (c) => c.name === commandName
+    const command = Object.values(SupportedCommands).filter((c) =>
+      commandName.includes(c.name)
     )[0];
     const comparisonOperator =
       ctx.chat?.type === "private"
@@ -184,7 +195,7 @@ export class OpenAIBot {
     //   const model = getChatModel(modelName);
     //   const price = getChatModelPrice(model, true, baseTokens); //cents
     //   return price // return ctx.chat.type !== "private" ? price * 2 : price;
-    // }  
+    // }
     // return 0;
   }
 
@@ -227,6 +238,11 @@ export class OpenAIBot {
 
     if (ctx.hasCommand(SupportedCommands.end.name)) {
       await this.onEnd(ctx);
+      return;
+    }
+
+    if (ctx.hasCommand(SupportedCommands.last.name)) {
+      await this.onLast(ctx);
       return;
     }
 
@@ -303,41 +319,73 @@ export class OpenAIBot {
   };
 
   async onChat(ctx: OnMessageContext | OnCallBackQueryData) {
-    const { prompt } = getCommandNamePrompt(ctx, SupportedCommands) // ctx.match;
+    const { prompt } = getCommandNamePrompt(ctx, SupportedCommands); // ctx.match;
     if (ctx.session.openAi.chatGpt.isEnabled) {
-
-        const chat = ctx.session.openAi.chatGpt.chatConversation;
-        chat.push({ role: "user", content: this.hasPrefix(prompt) ? prompt.slice(1) : prompt });
-        const msgId = (
-          await ctx.reply(
-            `Generating response using model ${ctx.session.openAi.chatGpt.model}...\n_To end conversation please write /end_`,
-            {
-              parse_mode: "Markdown",
-            }
-          )
-        ).message_id;
-        const payload = {
-          conversation: chat,
-          model: ctx.session.openAi.chatGpt.model,
-        };
-        const response = await promptGen(payload);
-        chat.push({ content: response.completion, role: "system" });
-        ctx.api.editMessageText(ctx.chat?.id!, msgId, response.completion);
-        ctx.session.openAi.chatGpt.chatConversation = [...chat];
-        ctx.session.openAi.chatGpt.usage += response.usage;
-        ctx.session.openAi.chatGpt.price += response.price;
-        const isPay = true 
-        // await payments.pay(
-        //   ctx as OnMessageContext,
-        //   response.price
-        // );
-        if (!isPay) {
-          ctx.reply(appText.gptChatPaymentIssue, {
+      this.logger.info("promtp:", prompt);
+      const chat = ctx.session.openAi.chatGpt.chatConversation;
+      if (prompt === "") {
+        const msg =
+          chat.length > 0
+            ? `${appText.gptLast}\n_${chat[chat.length - 1].content}_`
+            : appText.introText;
+        await ctx.reply(msg, {
+          parse_mode: "Markdown",
+        });
+        return;
+      } else {
+        if (chat.length === 0) {
+          await ctx.reply(appText.gptHelpText, {
             parse_mode: "Markdown",
           });
         }
+      }
+      chat.push({
+        role: "user",
+        content: this.hasPrefix(prompt) ? prompt.slice(1) : prompt,
+      });
+      const msgId = (
+        await ctx.reply(
+          `Generating response using model ${ctx.session.openAi.chatGpt.model}...\n_To end conversation please write /end_`,
+          {
+            parse_mode: "Markdown",
+          }
+        )
+      ).message_id;
+      const payload = {
+        conversation: chat,
+        model: ctx.session.openAi.chatGpt.model,
+      };
+      const response = await promptGen(payload);
+      chat.push({ content: response.completion, role: "system" });
+      ctx.api.editMessageText(ctx.chat?.id!, msgId, response.completion);
+      ctx.session.openAi.chatGpt.chatConversation = [...chat];
+      ctx.session.openAi.chatGpt.usage += response.usage;
+      ctx.session.openAi.chatGpt.price += response.price;
+      const isPay = true;
+      // await payments.pay(
+      //   ctx as OnMessageContext,
+      //   response.price
+      // );
+      if (!isPay) {
+        ctx.reply(appText.gptChatPaymentIssue, {
+          parse_mode: "Markdown",
+        });
+      }
     } else {
       ctx.reply("Bot disabled");
+    }
+  }
+
+  async onLast(ctx: OnMessageContext | OnCallBackQueryData) {
+    if (ctx.session.openAi.chatGpt.chatConversation.length > 0) {
+      const chat = ctx.session.openAi.chatGpt.chatConversation;
+      ctx.reply(`${appText.gptLast}\n_${chat[chat.length - 1].content}_`, {
+        parse_mode: "Markdown",
+      });
+    } else {
+      ctx.reply(`To start a conversation please write */ask*`, {
+        parse_mode: "Markdown",
+      });
     }
   }
 

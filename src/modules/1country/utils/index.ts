@@ -34,13 +34,16 @@ export const getUrl = (url: string, fullUrl = true) => {
 };
 
 export const getCommandNamePrompt = (
-  ctx: OnMessageContext | OnCallBackQueryData, supportedCommands: any 
+  ctx: OnMessageContext | OnCallBackQueryData,
+  supportedCommands: any
 ) => {
-  const hasCommand =  ctx.hasCommand(
+  const hasCommand = ctx.hasCommand(
     Object.values(supportedCommands).map((command: any) => command.name)
   );
-  const commandName = hasCommand ? ctx.message?.text?.split(" ")[0].slice(1) : "";
-  const prompt = hasCommand ? ctx.match || '' : ctx.message?.text || '';
+  const commandName = hasCommand
+    ? ctx.message?.text?.split(" ")[0].slice(1)
+    : "";
+  const prompt = hasCommand ? ctx.match || "" : ctx.message?.text || "";
   return {
     commandName,
     prompt,
