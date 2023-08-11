@@ -62,10 +62,9 @@ export class OpenAIBot {
   public isSupportedEvent(
     ctx: OnMessageContext | OnCallBackQueryData
   ): boolean {
-    const hasCommand =
-      ctx.hasCommand(
-        Object.values(SupportedCommands).map((command) => command.name)
-      )
+    const hasCommand = ctx.hasCommand(
+      Object.values(SupportedCommands).map((command) => command.name)
+    );
     const hasRepply = this.isSupportedImageReply(ctx);
     const hasGroupPrefix = this.hasPrefix(ctx.message?.text || "");
     if (
@@ -341,12 +340,9 @@ export class OpenAIBot {
         content: this.hasPrefix(prompt) ? prompt.slice(1) : prompt,
       });
       const msgId = (
-        await ctx.reply(
-          `Generating...\n\n*Close chat with /end*`,
-          {
-            parse_mode: "Markdown",
-          }
-        )
+        await ctx.reply(`Generating...\n\n*Close chat with /end*`, {
+          parse_mode: "Markdown",
+        })
       ).message_id;
       const payload = {
         conversation: chat,
