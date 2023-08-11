@@ -8,7 +8,7 @@ import { Logger, pino } from "pino";
 import { appText } from "./utils/text";
 
 export const SupportedCommands = {
-  ask: {
+  chat: {
     name: "chat",
     groupParams: ">0",
     privateParams: ">0",
@@ -186,7 +186,7 @@ export class OpenAIBot {
     //   ); //cents
     //   return price;
     // }
-    // if (ctx.hasCommand(SupportedCommands.ask.name)) {
+    // if (ctx.hasCommand(SupportedCommands.chat.name)) {
     //   const baseTokens = getTokenNumber(prompts as string);
     //   const modelName = ctx.session.openAi.chatGpt.model;
     //   const model = getChatModel(modelName);
@@ -213,7 +213,7 @@ export class OpenAIBot {
       return false;
     }
 
-    if (ctx.hasCommand(SupportedCommands.ask.name)) {
+    if (ctx.hasCommand(SupportedCommands.chat.name)) {
       await this.onChat(ctx);
       return;
     }
