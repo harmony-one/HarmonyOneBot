@@ -54,24 +54,23 @@ export const commandHelpText = `*Commands*
 /help - Access help information
 
 *Wallet*
-/botfund check funds available for services
-/wallet
-/wallet send <ADDRESS> <AMOUNT>** to send ONE
-/walletconnect
+/botfund - View botfund balance
+/connect - Use walletconnect to pair external wallet
+/get - View external wallet balance
+/send <ADDRESS> <AMOUNT> - Send funds from external wallet
 
 *Voice Memo*
 Send or forward a voice message (.m4a) to @HarmonyOneAIBot for a full transcript and summary
 
 *QR Code Generation*
-/qr <LINK> <PROMPTS>
+/qr <LINK> <PROMPT>
 
 *ChatGPT*
-/chat <TEXT>
+/ask <TEXT>
 
 *Image Generation*
 /image <PROMPT>
 /images <PROMPT>
-
 
 `
 
