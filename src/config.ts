@@ -38,9 +38,12 @@ export default {
       },
     },
     chatGpt: {
+      priceAdjustment: process.env.PRICE_ADJUSTMENT
+        ? parseInt(process.env.PRICE_ADJUSTMENT)
+        : 1.5,
       isEnabled: Boolean(parseInt(process.env.CHAT_GPT_ENABLED || "1")),
       //hard coded gpt-4
-      model: 'gpt-4', // process.env.OPENAI_MODEL ||
+      model: "gpt-4", // process.env.OPENAI_MODEL ||
       chatPrefix: process.env.GROUP_PREFIX
         ? process.env.GROUP_PREFIX.split(",")
         : ["?", ">"],
@@ -58,7 +61,7 @@ export default {
       : ["metamask", "walletconnect"],
     registerPrefix: process.env.GROUP_PREFIX
       ? process.env.GROUP_PREFIX.split(",")
-      : ["?", ">"],
+      : ["+", "%"],
   },
   voiceMemo: {
     isEnabled: Boolean(parseInt(process.env.VOICE_MEMO_ENABLED || "1")),

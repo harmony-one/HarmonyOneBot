@@ -26,6 +26,7 @@ import { BotPayments } from "./modules/payment";
 import { BotSchedule } from "./modules/schedule";
 import config from "./config";
 import { commandHelpText } from "./constants";
+import { getONEPrice } from "./modules/1country/api/coingecko";
 
 const logger = pino({
   name: "bot",
@@ -55,6 +56,9 @@ function createInitialSessionData(): BotSessionData {
         usage: 0,
       },
     },
+    oneCountry: {
+      lastDomain: "",
+    },
     qrMargin: 1,
   };
 }
@@ -79,15 +83,13 @@ const openAiBot = new OpenAIBot(payments);
 const oneCountryBot = new OneCountryBot();
 
 const onMessage = async (ctx: OnMessageContext) => {
-
   if (qrCodeBot.isSupportedEvent(ctx)) {
     const price = qrCodeBot.getEstimatedPrice(ctx);
     const isPaid = await payments.pay(ctx, price);
     if (isPaid) {
-      qrCodeBot
-        .onEvent(ctx, (reason?: string) => {
-          payments.refundPayment(reason, ctx, price);
-        })
+      qrCodeBot.onEvent(ctx, (reason?: string) => {
+        payments.refundPayment(reason, ctx, price);
+      });
 
       return;
     }
@@ -96,10 +98,9 @@ const onMessage = async (ctx: OnMessageContext) => {
     const price = sdImagesBot.getEstimatedPrice(ctx);
     const isPaid = await payments.pay(ctx, price);
     if (isPaid) {
-      sdImagesBot
-        .onEvent(ctx, (reason?: string) => {
-          payments.refundPayment(reason, ctx, price);
-        })
+      sdImagesBot.onEvent(ctx, (reason?: string) => {
+        payments.refundPayment(reason, ctx, price);
+      });
       return;
     }
   }
@@ -107,8 +108,7 @@ const onMessage = async (ctx: OnMessageContext) => {
     const price = voiceMemo.getEstimatedPrice(ctx);
     const isPaid = await payments.pay(ctx, price);
     if (isPaid) {
-      voiceMemo
-        .onEvent(ctx)
+      voiceMemo.onEvent(ctx);
       return;
     }
   }
@@ -116,12 +116,15 @@ const onMessage = async (ctx: OnMessageContext) => {
     if (ctx.session.openAi.imageGen.isEnabled) {
       if (openAiBot.isValidCommand(ctx)) {
         const price = openAiBot.getEstimatedPrice(ctx);
+        const priceONE = await getONEPrice(price);
         if (price > 0) {
-          await ctx.reply(`Processing withdraw for ${price.toFixed(2)}¢...`);
+          await ctx.reply(`Processing withdraw for ${priceONE} ONE...`); //${price.toFixed(2)}¢...`);
         }
         const isPaid = await payments.pay(ctx, price);
         if (isPaid) {
-          openAiBot.onEvent(ctx).catch((e) => payments.refundPayment(e, ctx, price));
+          openAiBot
+            .onEvent(ctx)
+            .catch((e) => payments.refundPayment(e, ctx, price));
           return;
         }
         return;
@@ -147,10 +150,10 @@ const onMessage = async (ctx: OnMessageContext) => {
       return;
     }
   }
-  if (wallet.isSupportedEvent(ctx)) {
-    wallet.onEvent(ctx);
-    return;
-  }
+  // if (wallet.isSupportedEvent(ctx)) {
+  //   wallet.onEvent(ctx);
+  //   return;
+  // }
 
   if (walletConnect.isSupportedEvent(ctx)) {
     walletConnect.onEvent(ctx);

@@ -6,6 +6,7 @@ import { getChatModel, getDalleModel, getDalleModelPrice } from "./api/openAi";
 import { alterImg, imgGen, imgGenEnhanced, promptGen } from "./controller";
 import { Logger, pino } from "pino";
 import { appText } from "./utils/text";
+import { getONEPrice } from "../1country/api/coingecko";
 
 export const SupportedCommands = {
   chat: {
@@ -17,11 +18,6 @@ export const SupportedCommands = {
     name: "last",
     groupParams: "=0",
     privateParams: "=0",
-  },
-  register: {
-    name: "register",
-    groupParams: ">1",
-    privateParams: ">0",
   },
   genImg: {
     name: "genImg",
@@ -147,6 +143,7 @@ export class OpenAIBot {
   }
 
   public getEstimatedPrice(ctx: any) {
+    const priceAdjustment = config.openAi.chatGpt.priceAdjustment
     return 0;
     // const prompts = ctx.match;
     // if (this.isSupportedImageReply(ctx)) {
@@ -388,6 +385,7 @@ export class OpenAIBot {
     ctx.session.openAi.chatGpt.chatConversation = [];
     const usage = ctx.session.openAi.chatGpt.usage;
     const totalPrice = ctx.session.openAi.chatGpt.price;
-    ctx.reply(`${appText.gptChatEnd} ${usage} (${totalPrice.toFixed(2)}¢)`);
+    const onePrice = await getONEPrice(totalPrice)
+    ctx.reply(`${appText.gptChatEnd} ${onePrice.price}ONE Spent (${usage} tokens)`); //(${totalPrice.toFixed(2)}¢ )`);
   }
 }

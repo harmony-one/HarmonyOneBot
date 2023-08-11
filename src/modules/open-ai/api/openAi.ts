@@ -128,7 +128,7 @@ export async function chatCompilation(
     return {
       completion: response.data.choices[0].message?.content!,
       usage: response.data.usage?.total_tokens!,
-      price: price,
+      price: price * config.openAi.chatGpt.priceAdjustment,
     };
   } catch (e: any) {
     logger.error(e.response);
