@@ -161,14 +161,14 @@ export class WalletConnect {
     const sessionId = sessionMap[userId];
 
     if (!sessionId) {
-      ctx.reply('wallet are not connected');
+      ctx.reply('Link wallet with /connect');
       return
     }
 
     const session = signClient.session.get(sessionId);
 
     if (!session) {
-      ctx.reply('wallet are not connected');
+      ctx.reply('Link wallet with /connect');
       return
     }
 
@@ -207,14 +207,14 @@ export class WalletConnect {
       const sessionId = sessionMap[userId];
 
       if (!sessionId) {
-        ctx.reply('wallet are not connected');
+        ctx.reply('Link wallet with /connect');
         return
       }
 
       const session = signClient.session.get(sessionId);
 
       if (!session) {
-        ctx.reply('wallet are not connected');
+        ctx.reply('Link wallet with /connect');
         return
       }
 
