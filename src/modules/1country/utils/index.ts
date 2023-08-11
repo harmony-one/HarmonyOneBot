@@ -1,4 +1,5 @@
 import config from "../../../config";
+import { SupportedCommands } from "../../conversation-handler";
 import { OnCallBackQueryData, OnMessageContext } from "../../types";
 
 export const formatONEAmount = (num: number | string) => {
@@ -33,10 +34,16 @@ export const getUrl = (url: string, fullUrl = true) => {
 };
 
 export const getCommandNamePrompt = (
-  ctx: OnMessageContext | OnCallBackQueryData
+  ctx: OnMessageContext | OnCallBackQueryData,
+  supportedCommands: any
 ) => {
-  const commandName = ctx.message?.text?.split(" ")[0].slice(1) || "";
-  const prompt = ctx.match as string;
+  const hasCommand = ctx.hasCommand(
+    Object.values(supportedCommands).map((command: any) => command.name)
+  );
+  const commandName = hasCommand
+    ? ctx.message?.text?.split(" ")[0].slice(1)
+    : "";
+  const prompt = hasCommand ? ctx.match || "" : ctx.message?.text || "";
   return {
     commandName,
     prompt,

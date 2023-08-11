@@ -91,7 +91,8 @@ export async function conversationGpt(
       // {
       //   maxMilliseconds: 300000 // 5min
       // });
-      const userPrompt = userInput?.msg?.text;
+      const msg = userInput?.msg?.text
+      const userPrompt = msg.startsWith('/ask') ? msg.slice(4) : msg;
       if (userPrompt === "/end") 
       {
         conversation.session.openAi.chatGpt.chatConversation = [];
