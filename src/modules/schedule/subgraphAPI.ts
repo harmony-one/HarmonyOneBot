@@ -84,7 +84,7 @@ export const getSwapFees = async() =>  {
   const value = daysAmountList[0] // Latest day
   const valueTotal = daysAmountList.reduce((sum, item) => sum += item, 0)
   const average = valueTotal / realDaysCount
-  let change = getPercentDiff(average, value).toFixed(2)
+  let change = getPercentDiff(average, value).toFixed(1)
   if(+change > 0) {
     change = `+${change}`
   }

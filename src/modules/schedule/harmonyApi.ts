@@ -57,7 +57,7 @@ export const getBotFeeStats = async (address: string) => {
   const value = daysAmountList[0]
   const valueTotal = daysAmountList.reduce((sum, item) => sum += item, 0)
   const average = valueTotal / daysCount
-  let change = getPercentDiff(average, value).toFixed(2)
+  let change = getPercentDiff(average, value).toFixed(1)
   if(+change > 0) {
     change = `+${change}`
   }

@@ -35,7 +35,7 @@ export const getFeeStats = async () => {
 
   const value = +metrics[0].value
   const average = feeTotal / daysCount
-  let change = getPercentDiff(average, value).toFixed(2)
+  let change = getPercentDiff(average, value).toFixed(1)
   if(+change > 0) {
     change = `+${change}`
   }
