@@ -9,7 +9,7 @@ import { appText } from "./utils/text";
 
 export const SupportedCommands = {
   ask: {
-    name: "ask",
+    name: "chat",
     groupParams: ">0",
     privateParams: ">0",
   },
@@ -318,7 +318,7 @@ export class OpenAIBot {
   async onChat(ctx: OnMessageContext | OnCallBackQueryData) {
     const { prompt } = getCommandNamePrompt(ctx, SupportedCommands); // ctx.match;
     if (ctx.session.openAi.chatGpt.isEnabled) {
-      this.logger.info("promtp:", prompt);
+      this.logger.info("prompt:", prompt);
       const chat = ctx.session.openAi.chatGpt.chatConversation;
       if (prompt === "") {
         const msg =
@@ -342,7 +342,7 @@ export class OpenAIBot {
       });
       const msgId = (
         await ctx.reply(
-          `Generating response using model ${ctx.session.openAi.chatGpt.model}...\n_To end conversation please write /end_`,
+          `Generating...\n\n*Close chat with /end*`,
           {
             parse_mode: "Markdown",
           }
@@ -380,7 +380,7 @@ export class OpenAIBot {
         parse_mode: "Markdown",
       });
     } else {
-      ctx.reply(`To start a conversation please write */ask*`, {
+      ctx.reply(`To start a conversation please write */chat*`, {
         parse_mode: "Markdown",
       });
     }
