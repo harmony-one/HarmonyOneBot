@@ -75,6 +75,8 @@ Send or forward a voice message (.m4a) to @HarmonyOneAIBot for a full transcript
 `
 
 
+
+
 // /help - this help message
 // /wallet - 🏦 Wallet 
 // /ask - 🖋️ ChatGPT 4 
