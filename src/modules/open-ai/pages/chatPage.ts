@@ -10,7 +10,9 @@ import { menuText } from "../../../constants";
 export const chatGptMenuText = {
   helpText: `*🖌️ ChatGPT*
   
-  1. /chat - Chat with AI`,
+
+  *1. CHAT WITH AI*
+  • Use */chat* <TEXT>`,
 };
 
 export const chatMainMenu = new Menu<BotContext>(MenuIds.CHAT_GPT_MAIN)

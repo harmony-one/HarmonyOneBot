@@ -62,7 +62,7 @@ Send or forward a voice message (.m4a) to @HarmonyOneAIBot for a full transcript
 /qr <LINK> <PROMPT>
 
 *ChatGPT*
-/ask <TEXT>
+/chat <TEXT>
 
 *Image Generation*
 /image <PROMPT>
@@ -75,7 +75,7 @@ Send or forward a voice message (.m4a) to @HarmonyOneAIBot for a full transcript
 
 // /help - this help message
 // /wallet - 🏦 Wallet 
-// /ask - 🖋️ ChatGPT 4 
+// /chat - 🖋️ ChatGPT 4 
 // /images - 🎨 Image Generation 
 // /qr - 📷 QR Generation 
 // /register - 🌐 1.country 
