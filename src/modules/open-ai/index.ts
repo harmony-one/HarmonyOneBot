@@ -65,10 +65,7 @@ export class OpenAIBot {
     const hasCommand =
       ctx.hasCommand(
         Object.values(SupportedCommands).map((command) => command.name)
-      ) ||
-      ctx.hasCallbackQuery(
-        Object.values(SupportedCommands).map((command) => command.name)
-      );
+      )
     const hasRepply = this.isSupportedImageReply(ctx);
     const hasGroupPrefix = this.hasPrefix(ctx.message?.text || "");
     if (
