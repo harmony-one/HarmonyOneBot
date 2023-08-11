@@ -137,19 +137,19 @@ const onMessage = async (ctx: OnMessageContext) => {
       return;
     }
   }
-  if (oneCountryBot.isSupportedEvent(ctx)) {
-    const price = oneCountryBot.getEstimatedPrice(ctx);
-    if (price > 0) {
-      await ctx.reply(`Processing withdraw for ${price.toFixed(2)}¢...`);
-    }
-    const isPaid = await payments.pay(ctx, price);
-    if (isPaid) {
-      oneCountryBot
-        .onEvent(ctx)
-        .catch((e) => payments.refundPayment(e, ctx, price));
-      return;
-    }
-  }
+  // if (oneCountryBot.isSupportedEvent(ctx)) {
+  //   const price = oneCountryBot.getEstimatedPrice(ctx);
+  //   if (price > 0) {
+  //     await ctx.reply(`Processing withdraw for ${price.toFixed(2)}¢...`);
+  //   }
+  //   const isPaid = await payments.pay(ctx, price);
+  //   if (isPaid) {
+  //     oneCountryBot
+  //       .onEvent(ctx)
+  //       .catch((e) => payments.refundPayment(e, ctx, price));
+  //     return;
+  //   }
+  // }
   // if (wallet.isSupportedEvent(ctx)) {
   //   wallet.onEvent(ctx);
   //   return;
