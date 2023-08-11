@@ -80,7 +80,7 @@ export const mainMenu = new Menu<BotContext>(MenuIds.MAIN_MENU)
       });
   })
   .row()
-  .submenu("🏦 ONE Wallet", MenuIds.WALLET_MAIN, (ctx) => {
+  .submenu("💰 Bot Fund", MenuIds.WALLET_MAIN, (ctx) => {
     ctx
       .editMessageText(walletMenuText.helpText, {
         parse_mode: "Markdown",

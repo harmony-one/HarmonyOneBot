@@ -3,10 +3,9 @@ import { BotContext, MenuContext } from "../types";
 import { MenuIds, menuText } from "../../constants";
 
 export const qrCodeMenuText = {
-  helpText: `📷 *QR Generation Help* 
+  helpText: `📷 *QR Generation* 
 
-*1. GENERATE A QR CODE*
-• Use */qr* <LINK> <PROMPTS>
+1. /qr <LINK> <PROMPT> - Generate Aesthetic QR Codes
 
 \`/qr h.country/ai Dramatic bonfire on a remote beach, captured at the magic hour with flames dancing against the twilight sky; using a shallow depth of field, a fast lens, and controlled exposure to emphasize the intricate patterns and textures of the fire, complemented by embers in the wind and the gentle glow reflecting on the ocean's edge, moody, intense, and alive.
 \`

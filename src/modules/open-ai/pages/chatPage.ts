@@ -8,10 +8,9 @@ import { ChatGPTModelsEnum } from "../types";
 import { menuText } from "../../../constants";
 
 export const chatGptMenuText = {
-  helpText: `*🖌️ ChatGPT Help*
+  helpText: `*🖌️ ChatGPT*
   
-  *1. CHAT WITH AI*
-  • Use */ask* <TEXT>`,
+  1. /chat - Chat with AI`,
 };
 
 export const chatMainMenu = new Menu<BotContext>(MenuIds.CHAT_GPT_MAIN)
