@@ -230,7 +230,7 @@ bot.command("menu", async (ctx) => {
   
 🌟 Welcome to the Harmony One Bot! 🤖
   
-💲 Send money to your /balance to start! 🚀
+💲 Send money to your /botfund to start! 🚀
   `,
     {
       parse_mode: "Markdown",
