@@ -40,11 +40,12 @@ export const SupportedCommands = {
   },
 };
 
-const payments = new BotPayments();
+// const payments = new BotPayments();
 export class OpenAIBot {
   private logger: Logger;
+  private payments: BotPayments
 
-  constructor() {
+  constructor(payments: BotPayments) {
     this.logger = pino({
       name: "OpenAIBot",
       transport: {
@@ -54,6 +55,7 @@ export class OpenAIBot {
         },
       },
     });
+    this.payments = payments
     if (!config.openAi.imageGen.isEnabled) {
       this.logger.warn("DALL·E 2 Image Bot is disabled in config");
     }
@@ -136,7 +138,7 @@ export class OpenAIBot {
   }
 
   private hasPrefix(prompt: string): boolean {
-    const prefixList = config.openAi.chatGpt.groupChatPrefix;
+    const prefixList = config.openAi.chatGpt.chatPrefix;
     for (let i = 0; i < prefixList.length; i++) {
       if (prompt.startsWith(prefixList[i])) {
         return true;
@@ -214,7 +216,7 @@ export class OpenAIBot {
     }
 
     if (ctx.hasCommand(SupportedCommands.ask.name)) {
-      await this.onChat(ctx);
+      this.onChat(ctx);
       return;
     }
 
@@ -234,17 +236,17 @@ export class OpenAIBot {
     }
 
     if (ctx.hasCommand(SupportedCommands.end.name)) {
-      await this.onEnd(ctx);
+      this.onEnd(ctx);
       return;
     }
 
     if (ctx.hasCommand(SupportedCommands.last.name)) {
-      await this.onLast(ctx);
+      this.onLast(ctx);
       return;
     }
 
     if (this.hasPrefix(ctx.message?.text || "")) {
-      await this.onChat(ctx);
+      this.onChat(ctx);
       return;
     }
 
@@ -359,7 +361,7 @@ export class OpenAIBot {
       ctx.session.openAi.chatGpt.usage += response.usage;
       ctx.session.openAi.chatGpt.price += response.price;
       const isPay = true;
-      // await payments.pay(
+      // await this.payments.pay(
       //   ctx as OnMessageContext,
       //   response.price
       // );

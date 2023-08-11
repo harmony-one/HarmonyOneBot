@@ -24,7 +24,6 @@ import { Wallet } from "./modules/wallet";
 import { WalletConnect } from "./modules/walletconnect";
 import { BotPayments } from "./modules/payment";
 import { BotSchedule } from "./modules/schedule";
-// import { ConversationHandler } from "./modules/conversation-handler/";
 import config from "./config";
 import { commandHelpText } from "./constants";
 
@@ -76,34 +75,11 @@ const wallet = new Wallet();
 const walletConnect = new WalletConnect();
 const payments = new BotPayments();
 const schedule = new BotSchedule(bot);
-const openAiBot = new OpenAIBot();
+const openAiBot = new OpenAIBot(payments);
 const oneCountryBot = new OneCountryBot();
-// const conversationHandler = new ConversationHandler(bot);
 
 const onMessage = async (ctx: OnMessageContext) => {
-  // if (conversationHandler.isSupportedEvent(ctx)) {
-  //   if (ctx.session.openAi.chatGpt.isEnabled) {
-  //     if (conversationHandler.isValidCommand(ctx)) {
-  //       const price = conversationHandler.getEstimatedPrice(ctx);
-  //       if (price > 0) {
-  //         await ctx.reply(`Processing withdraw for ${price.toFixed(2)}¢...`);
-  //       }
-  //       const isPaid = await payments.pay(ctx, price);
-  //       if (isPaid) {
-  //         return conversationHandler
-  //           .onEvent(ctx)
-  //           .catch((e) => payments.refundPayment(e, ctx, price));
-  //       }
-  //       return;
-  //     } else {
-  //       ctx.reply("Error: Missing prompt");
-  //       return;
-  //     }
-  //   } else {
-  //     ctx.reply("Bot disabled");
-  //     return;
-  //   }
-  // }
+
   if (qrCodeBot.isSupportedEvent(ctx)) {
     const price = qrCodeBot.getEstimatedPrice(ctx);
     const isPaid = await payments.pay(ctx, price);
@@ -145,7 +121,8 @@ const onMessage = async (ctx: OnMessageContext) => {
         }
         const isPaid = await payments.pay(ctx, price);
         if (isPaid) {
-          return openAiBot.onEvent(ctx).catch((e) => payments.refundPayment(e, ctx, price));;
+          openAiBot.onEvent(ctx).catch((e) => payments.refundPayment(e, ctx, price));
+          return;
         }
         return;
       } else {
@@ -157,18 +134,19 @@ const onMessage = async (ctx: OnMessageContext) => {
       return;
     }
   }
-  // if (oneCountryBot.isSupportedEvent(ctx)) {
-  //   const price = oneCountryBot.getEstimatedPrice(ctx);
-  //   if (price > 0) {
-  //     await ctx.reply(`Processing withdraw for ${price.toFixed(2)}¢...`);
-  //   }
-  //   const isPaid = await payments.pay(ctx, price);
-  //   if (isPaid) {
-  //     return oneCountryBot
-  //       .onEvent(ctx)
-  //       .catch((e) => payments.refundPayment(e, ctx, price));
-  //   }
-  // }
+  if (oneCountryBot.isSupportedEvent(ctx)) {
+    const price = oneCountryBot.getEstimatedPrice(ctx);
+    if (price > 0) {
+      await ctx.reply(`Processing withdraw for ${price.toFixed(2)}¢...`);
+    }
+    const isPaid = await payments.pay(ctx, price);
+    if (isPaid) {
+      oneCountryBot
+        .onEvent(ctx)
+        .catch((e) => payments.refundPayment(e, ctx, price));
+      return;
+    }
+  }
   if (wallet.isSupportedEvent(ctx)) {
     wallet.onEvent(ctx);
     return;

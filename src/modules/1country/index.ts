@@ -4,19 +4,38 @@ import { AxiosError } from "axios";
 import { isDomainAvailable, validateDomainName } from "./utils/domain";
 import { appText } from "./utils/text";
 import { OnMessageContext, OnCallBackQueryData } from "../types";
-import { getUrl } from "./utils/";
+import { getCommandNamePrompt, getUrl } from "./utils/";
 import { Logger, pino } from "pino";
 import { isAdmin } from "../open-ai/utils/context";
+import config from "../../config";
 
-enum SupportedCommands {
-  CHECK = "check",
-  NFT = "nft",
-  VISIT = "visit",
-  CERT = "cert",
-  RENEW = "renew",
-  NOTION = "notion",
-  SUBDOMAIN = "subdomain",
+export const SupportedCommands = {
+  register: {
+    name: "register",
+    groupParams: ">0",
+    privateParams: ">0",
+  },
+  visit: {
+    name: "visit",
+    groupParams: "=1", // TODO: add support for groups
+    privateParams: "=1"
+  },
+  check: {
+    name: "check",
+    groupParams: "=1", // TODO: add support for groups
+    privateParams: "=1"
+  },
 }
+
+// enum SupportedCommands {
+//   CHECK = "check",
+//   NFT = "nft",
+//   VISIT = "visit",
+//   CERT = "cert",
+//   RENEW = "renew",
+//   NOTION = "notion",
+//   SUBDOMAIN = "subdomain",
+// }
 
 export class OneCountryBot {
   private logger: Logger;
@@ -36,7 +55,7 @@ export class OneCountryBot {
   public isSupportedEvent(
     ctx: OnMessageContext | OnCallBackQueryData
   ): boolean {
-    const hasCommand = ctx.hasCommand(Object.values(SupportedCommands));
+    const hasCommand = ctx.hasCommand(Object.values(SupportedCommands).map((command) => command.name))
 
     if (hasCommand && !ctx.match) {
       ctx.reply("Error: Missing prompt");
@@ -45,6 +64,57 @@ export class OneCountryBot {
     return hasCommand;
   }
 
+  public isValidCommand(ctx: OnMessageContext | OnCallBackQueryData): boolean {
+    const { commandName, prompt } = getCommandNamePrompt(
+      ctx,
+      SupportedCommands
+    );
+    const promptNumber = prompt === "" ? 0 : prompt.split(" ").length;
+    if (!commandName) {
+      const hasGroupPrefix = this.hasPrefix(ctx.message?.text || "");
+      if (hasGroupPrefix && promptNumber > 1) {
+        return true;
+      }
+      return false;
+    }
+    const command = Object.values(SupportedCommands).filter((c) =>
+      commandName.includes(c.name)
+    )[0];
+    const comparisonOperator =
+      ctx.chat?.type === "private"
+        ? command.privateParams[0]
+        : command.groupParams[0];
+    const comparisonValue = parseInt(
+      ctx.chat?.type === "private"
+        ? command.privateParams.slice(1)
+        : command.groupParams.slice(1)
+    );
+    switch (comparisonOperator) {
+      case ">":
+        if (promptNumber >= comparisonValue) {
+          return true;
+        }
+        break;
+      case "=":
+        if (promptNumber === comparisonValue) {
+          return true;
+        }
+        break;
+      default:
+        break;
+    }
+    return false;
+  }
+
+  private hasPrefix(prompt: string): boolean {
+    const prefixList = config.country.registerPrefix
+    for (let i = 0; i < prefixList.length; i++) {
+      if (prompt.startsWith(prefixList[i])) {
+        return true;
+      }
+    }
+    return false;
+  }
   public getEstimatedPrice(ctx: any) {
     return 0;
   }
@@ -55,40 +125,50 @@ export class OneCountryBot {
       return false;
     }
 
-    if (ctx.hasCommand(SupportedCommands.VISIT)) {
+    if (ctx.hasCommand(SupportedCommands.visit.name)) {
       this.onVistitCmd(ctx);
       return;
     }
 
-    if (ctx.hasCommand(SupportedCommands.CHECK)) {
+    if (ctx.hasCommand(SupportedCommands.check.name)) {
       this.onCheckCmd(ctx);
       return;
     }
 
-    if (ctx.hasCommand(SupportedCommands.NFT)) {
-      this.onNftCmd(ctx);
+    if (ctx.hasCommand(SupportedCommands.register.name)) {
+      this.onRegister(ctx);
       return;
     }
 
-    if (ctx.hasCommand(SupportedCommands.CERT)) {
-      this.onCertCmd(ctx);
+    if (this.hasPrefix(ctx.message?.text || "")) {
+      this.onRegister(ctx);
       return;
     }
 
-    if (ctx.hasCommand(SupportedCommands.RENEW)) {
-      this.onRenewCmd(ctx);
-      return;
-    }
+    // if (ctx.hasCommand(SupportedCommands.NFT)) {
+    //   this.onNftCmd(ctx);
+    //   return;
+    // }
 
-    if (ctx.hasCommand(SupportedCommands.NOTION)) {
-      this.onNotionCmd(ctx);
-      return;
-    }
+    // if (ctx.hasCommand(SupportedCommands.CERT)) {
+    //   this.onCertCmd(ctx);
+    //   return;
+    // }
 
-    if (ctx.hasCommand(SupportedCommands.SUBDOMAIN)) {
-      this.onEnableSubomain(ctx);
-      return;
-    }
+    // if (ctx.hasCommand(SupportedCommands.RENEW)) {
+    //   this.onRenewCmd(ctx);
+    //   return;
+    // }
+
+    // if (ctx.hasCommand(SupportedCommands.NOTION)) {
+    //   this.onNotionCmd(ctx);
+    //   return;
+    // }
+
+    // if (ctx.hasCommand(SupportedCommands.SUBDOMAIN)) {
+    //   this.onEnableSubomain(ctx);
+    //   return;
+    // }
 
     this.logger.warn(`### unsupported command`);
     ctx.reply("### unsupported command");
@@ -235,6 +315,64 @@ export class OneCountryBot {
       ctx.reply("This command is reserved");
     }
   };
+
+  async onRegister(ctx: OnMessageContext | OnCallBackQueryData) {
+    const { prompt } = getCommandNamePrompt(ctx, SupportedCommands); // ctx.match;
+    // if (ctx.session.openAi.chatGpt.isEnabled) {
+    //   this.logger.info("promtp:", prompt);
+    //   const chat = ctx.session.openAi.chatGpt.chatConversation;
+    //   if (prompt === "") {
+    //     const msg =
+    //       chat.length > 0
+    //         ? `${appText.gptLast}\n_${chat[chat.length - 1].content}_`
+    //         : appText.introText;
+    //     await ctx.reply(msg, {
+    //       parse_mode: "Markdown",
+    //     });
+    //     return;
+    //   } else {
+    //     if (chat.length === 0) {
+    //       await ctx.reply(appText.gptHelpText, {
+    //         parse_mode: "Markdown",
+    //       });
+    //     }
+    //   }
+    //   chat.push({
+    //     role: "user",
+    //     content: this.hasPrefix(prompt) ? prompt.slice(1) : prompt,
+    //   });
+    //   const msgId = (
+    //     await ctx.reply(
+    //       `Generating response using model ${ctx.session.openAi.chatGpt.model}...\n_To end conversation please write /end_`,
+    //       {
+    //         parse_mode: "Markdown",
+    //       }
+    //     )
+    //   ).message_id;
+    //   const payload = {
+    //     conversation: chat,
+    //     model: ctx.session.openAi.chatGpt.model,
+    //   };
+    //   const response = await promptGen(payload);
+    //   chat.push({ content: response.completion, role: "system" });
+    //   ctx.api.editMessageText(ctx.chat?.id!, msgId, response.completion);
+    //   ctx.session.openAi.chatGpt.chatConversation = [...chat];
+    //   ctx.session.openAi.chatGpt.usage += response.usage;
+    //   ctx.session.openAi.chatGpt.price += response.price;
+    //   const isPay = true;
+    //   // await this.payments.pay(
+    //   //   ctx as OnMessageContext,
+    //   //   response.price
+    //   // );
+    //   if (!isPay) {
+    //     ctx.reply(appText.gptChatPaymentIssue, {
+    //       parse_mode: "Markdown",
+    //     });
+    //   }
+    // } else {
+    //   ctx.reply("Bot disabled");
+    // }
+  }
 
   onEnableSubomain = async (ctx: OnMessageContext) => {
     const { text, from: { id: userId, username }, } = ctx.update.message;

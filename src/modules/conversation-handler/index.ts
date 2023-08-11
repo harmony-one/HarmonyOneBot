@@ -72,7 +72,7 @@ export class ConversationHandler {
   }
 
   private hasPrefix(prompt: string): boolean {
-    const prefixList = config.openAi.chatGpt.groupChatPrefix;
+    const prefixList = config.openAi.chatGpt.chatPrefix;
     for (let i = 0; i < prefixList.length; i++) {
       if (prompt.startsWith(prefixList[i])) {
         return true;
