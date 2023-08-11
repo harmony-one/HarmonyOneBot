@@ -20,7 +20,7 @@ export const menuText = {
   mainMenu: {
     backButton: '⬅️ Back',
     menuName: `
-    Main Menu
+    *Main Menu*
   
 🌟 Welcome to the Harmony One Bot! 🤖
   
