@@ -172,6 +172,11 @@ export class WalletConnect {
       return
     }
 
+    if(ethers.utils.parseEther(amount).gt(ethers.utils.parseEther('100'))) {
+      ctx.reply('Deposit cannot exceed 100 ONE');
+      return
+    }
+
     const ownerAdd = getUserAddr(session);
 
     // metamask issue: setTimeout

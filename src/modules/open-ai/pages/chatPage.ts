@@ -8,8 +8,9 @@ import { ChatGPTModelsEnum } from "../types";
 import { menuText } from "../../../constants";
 
 export const chatGptMenuText = {
-  helpText: `*🖌️ ChatGPT Help*
+  helpText: `*🖌️ ChatGPT*
   
+
   *1. CHAT WITH AI*
   • Use */chat* <TEXT>`,
 };

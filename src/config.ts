@@ -66,7 +66,6 @@ export default {
     servicePublicUrl: process.env.SERVICE_PUBLIC_URL || "",
   },
   wallet: {
-    secret: process.env.TELEGRAM_WALLET_SECRET || "",
     webAppUrl:
       process.env.WALLET_WEB_APP_URL || "https://wallet-web-app.netlify.app",
   },
