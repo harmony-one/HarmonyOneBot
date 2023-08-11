@@ -326,10 +326,11 @@ export class OpenAIBot {
         ctx.session.openAi.chatGpt.chatConversation = [...chat];
         ctx.session.openAi.chatGpt.usage += response.usage;
         ctx.session.openAi.chatGpt.price += response.price;
-        const isPay = await payments.pay(
-          ctx as OnMessageContext,
-          ctx.session.openAi.chatGpt.price
-        );
+        const isPay = true 
+        // await payments.pay(
+        //   ctx as OnMessageContext,
+        //   response.price
+        // );
         if (!isPay) {
           ctx.reply(appText.gptChatPaymentIssue, {
             parse_mode: "Markdown",
