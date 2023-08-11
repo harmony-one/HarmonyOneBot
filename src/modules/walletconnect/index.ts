@@ -173,7 +173,7 @@ export class WalletConnect {
     }
 
     if(ethers.utils.parseEther(amount).gt(ethers.utils.parseEther('100'))) {
-      ctx.reply('Amount should be less than 100 ONE');
+      ctx.reply('Deposit cannot exceed 100 ONE');
       return
     }
 
