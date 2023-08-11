@@ -33,7 +33,11 @@ export interface OpenAiSessionData {
   chatGpt: ChatGptSessionData;
 }
 
+export interface OneCountryData {
+  lastDomain: string;
+}
 export interface BotSessionData {
+  oneCountry: OneCountryData;
   qrMargin: number;
   openAi: OpenAiSessionData;
 }

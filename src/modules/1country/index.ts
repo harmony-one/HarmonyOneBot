@@ -18,14 +18,14 @@ export const SupportedCommands = {
   visit: {
     name: "visit",
     groupParams: "=1", // TODO: add support for groups
-    privateParams: "=1"
+    privateParams: "=1",
   },
   check: {
     name: "check",
     groupParams: "=1", // TODO: add support for groups
-    privateParams: "=1"
+    privateParams: "=1",
   },
-}
+};
 
 // enum SupportedCommands {
 //   CHECK = "check",
@@ -55,11 +55,12 @@ export class OneCountryBot {
   public isSupportedEvent(
     ctx: OnMessageContext | OnCallBackQueryData
   ): boolean {
-    const hasCommand = ctx.hasCommand(Object.values(SupportedCommands).map((command) => command.name))
-
-    if (hasCommand && !ctx.match) {
-      ctx.reply("Error: Missing prompt");
-      return false;
+    const hasCommand = ctx.hasCommand(
+      Object.values(SupportedCommands).map((command) => command.name)
+    );
+    const hasPrefix = this.hasPrefix(ctx.message?.text || "");
+    if (hasPrefix && ctx.session.oneCountry.lastDomain) {
+      return true;
     }
     return hasCommand;
   }
@@ -107,7 +108,7 @@ export class OneCountryBot {
   }
 
   private hasPrefix(prompt: string): boolean {
-    const prefixList = config.country.registerPrefix
+    const prefixList = config.country.registerPrefix;
     for (let i = 0; i < prefixList.length; i++) {
       if (prompt.startsWith(prefixList[i])) {
         return true;
@@ -240,7 +241,7 @@ export class OneCountryBot {
   };
 
   onCertCmd = async (ctx: OnMessageContext | OnCallBackQueryData) => {
-    if (await isAdmin(ctx, false, true)) { 
+    if (await isAdmin(ctx, false, true)) {
       if (!ctx.match) {
         ctx.reply("Error: Missing 1.country domain");
         return;
@@ -264,34 +265,33 @@ export class OneCountryBot {
     } else {
       ctx.reply("This command is reserved");
     }
-   
   };
 
   onNftCmd = async (ctx: OnMessageContext | OnCallBackQueryData) => {
     const url = getUrl(ctx.match as string);
     if (await isAdmin(ctx, false, true)) {
-    try {
-      const response = await relayApi().genNFT({ domain: url });
-      ctx.reply("NFT metadata generated");
-    } catch (e) {
-      this.logger.error(
-        e instanceof AxiosError
-          ? e.response?.data.error
-          : "There was an error processing your request"
-      );
-      ctx.reply(
-        e instanceof AxiosError
-          ? e.response?.data.error
-          : "There was an error processing your request"
-      );
+      try {
+        const response = await relayApi().genNFT({ domain: url });
+        ctx.reply("NFT metadata generated");
+      } catch (e) {
+        this.logger.error(
+          e instanceof AxiosError
+            ? e.response?.data.error
+            : "There was an error processing your request"
+        );
+        ctx.reply(
+          e instanceof AxiosError
+            ? e.response?.data.error
+            : "There was an error processing your request"
+        );
+      }
+    } else {
+      ctx.reply("This command is reserved");
     }
-  } else {
-    ctx.reply("This command is reserved");
-  }
   };
 
   onCheckCmd = async (ctx: OnMessageContext | OnCallBackQueryData) => {
-    if (await isAdmin(ctx, false,  true)) {
+    if (await isAdmin(ctx, false, true)) {
       let domain = this.cleanInput(ctx.match as string);
       const avaliable = await isDomainAvailable(domain);
       let msg = `The name *${domain}* `;
@@ -317,65 +317,61 @@ export class OneCountryBot {
   };
 
   async onRegister(ctx: OnMessageContext | OnCallBackQueryData) {
-    const { prompt } = getCommandNamePrompt(ctx, SupportedCommands); // ctx.match;
-    // if (ctx.session.openAi.chatGpt.isEnabled) {
-    //   this.logger.info("promtp:", prompt);
-    //   const chat = ctx.session.openAi.chatGpt.chatConversation;
-    //   if (prompt === "") {
-    //     const msg =
-    //       chat.length > 0
-    //         ? `${appText.gptLast}\n_${chat[chat.length - 1].content}_`
-    //         : appText.introText;
-    //     await ctx.reply(msg, {
-    //       parse_mode: "Markdown",
-    //     });
-    //     return;
-    //   } else {
-    //     if (chat.length === 0) {
-    //       await ctx.reply(appText.gptHelpText, {
-    //         parse_mode: "Markdown",
-    //       });
-    //     }
-    //   }
-    //   chat.push({
-    //     role: "user",
-    //     content: this.hasPrefix(prompt) ? prompt.slice(1) : prompt,
-    //   });
-    //   const msgId = (
-    //     await ctx.reply(
-    //       `Generating response using model ${ctx.session.openAi.chatGpt.model}...\n_To end conversation please write /end_`,
-    //       {
-    //         parse_mode: "Markdown",
-    //       }
-    //     )
-    //   ).message_id;
-    //   const payload = {
-    //     conversation: chat,
-    //     model: ctx.session.openAi.chatGpt.model,
-    //   };
-    //   const response = await promptGen(payload);
-    //   chat.push({ content: response.completion, role: "system" });
-    //   ctx.api.editMessageText(ctx.chat?.id!, msgId, response.completion);
-    //   ctx.session.openAi.chatGpt.chatConversation = [...chat];
-    //   ctx.session.openAi.chatGpt.usage += response.usage;
-    //   ctx.session.openAi.chatGpt.price += response.price;
-    //   const isPay = true;
-    //   // await this.payments.pay(
-    //   //   ctx as OnMessageContext,
-    //   //   response.price
-    //   // );
-    //   if (!isPay) {
-    //     ctx.reply(appText.gptChatPaymentIssue, {
-    //       parse_mode: "Markdown",
-    //     });
-    //   }
-    // } else {
-    //   ctx.reply("Bot disabled");
-    // }
+    const { prompt } = getCommandNamePrompt(ctx, SupportedCommands);
+    const lastDomain = ctx.session.oneCountry.lastDomain;
+    let msgId = 0;
+    if (!prompt && !lastDomain) {
+      await ctx.reply(`Write a domain name`);
+      return;
+    }
+    if (!prompt && lastDomain) {
+      let keyboard = new InlineKeyboard().webApp(
+        "Rent in 1.country",
+        `${config.country.hostname}?domain=${lastDomain}`
+      );
+      await ctx.reply(`Rent ${lastDomain}`, {
+        reply_markup: keyboard,
+      });
+      return;
+    }
+    let domain = this.cleanInput(
+      this.hasPrefix(prompt) ? prompt.slice(1) : prompt
+    );
+    const validate = validateDomainName(domain);
+    if (!validate.valid) {
+      ctx.reply(validate.error, {
+        parse_mode: "Markdown",
+      });
+      return;
+    }
+    ctx.session.oneCountry.lastDomain = domain;
+    msgId = (await ctx.reply("Checking name...")).message_id;
+    const response = await isDomainAvailable(domain);
+    const domainAvailable = response.isAvailable;
+    let msg = `The name *${domain}* `;
+    if (!domainAvailable && response.isInGracePeriod) {
+      msg += `is in grace period ❌. Only the owner is able to renew the domain`;
+    } else if (!domainAvailable) {
+      msg += `is unavailable ❌.\n keep writing new options starting the following prompts with\n*% <DOMAIN_NAME>*.`;
+    } else {
+      msg += "is available ✅.\n";
+      if (!response.priceUSD.error) {
+        msg += `${response.priceOne} ONE = ${response.priceUSD.price} USD for 30 days\n`;
+      } else {
+        msg += `${response.priceOne} for 30 days\n`;
+      }
+      msg += `Write */register* to purchase it, or keep writing new options starting the following prompts with\n*% <DOMAIN_NAME>*`;
+    }
+    ctx.api.editMessageText(ctx.chat?.id!, msgId, msg, {
+      parse_mode: "Markdown",
+    });
   }
 
   onEnableSubomain = async (ctx: OnMessageContext) => {
-    const { text, from: { id: userId, username }, } = ctx.update.message;
+    const {
+      text,
+      from: { id: userId, username },
+    } = ctx.update.message;
     this.logger.info(`Message from ${username} (${userId}): "${text}"`);
     if (await isAdmin(ctx, false, true)) {
       let domain = this.cleanInput(ctx.match as string);

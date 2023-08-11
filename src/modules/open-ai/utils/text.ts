@@ -8,7 +8,7 @@ Adjust image size or how many images are generated`,
   introText: `To start a conversation write:\n\n*/chat <TEXT>*`,
   gptHelpText: `Close chat with /end\n\nTo continue the conversation, start the following prompts with:\n\n *>*`,
   gptLast: `*This is where our conversation stands:*`,
-  gptChatEnd: "Chat finished. Total tokens used:",
+  gptChatEnd: "Chat finished.", // Total tokens used:
   endChat: "Thanks for using 1.country services",
   gptChatPaymentIssue: `Once the withdrawal instructions are completed, you can return to the current conversation by writing the */chat* command.`,
 };

@@ -59,8 +59,8 @@ export default {
     restrictedPhrases: process.env.RESTRICTED_PHRASES
       ? process.env.RESTRICTED_PHRASES.split(", ")
       : ["metamask", "walletconnect"],
-    registerPrefix: process.env.GROUP_PREFIX
-      ? process.env.GROUP_PREFIX.split(",")
+    registerPrefix: process.env.COUNTRY_PREFIX
+      ? process.env.COUNTRY_PREFIX.split(",")
       : ["+", "%"],
   },
   voiceMemo: {
