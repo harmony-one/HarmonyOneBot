@@ -22,7 +22,7 @@ export const menuText = {
     menuName: `Main Menu`,
     helpText: `*Main Menu*
      
-🤖 welcome to the harmony ONE bot! access ai models, agents, characters, services pay-per-use.`,
+🤖 welcome to the [harmony ONE bot](https://stse.substack.com/p/one-bot-for-all-generative-ai-on)! access ai models, agents, characters, services pay-per-use.`,
   },
   askMenu: {
     menuName: `ask me anything`,
@@ -77,7 +77,7 @@ export const commandsHelpText = {
 
 /ask Ask me anything (OpenAI ChatGPT-4). Or, / without "ask".
 /image Make a photo (Stable Diffusion XL). Or, /images for multiple.
-/help This tutorial. 
+/help This tutorial. Docs at harmony.one/bot
 Examples:
 
     _/ask act like elon musk, expand our q4 roadmap "telegram ai bot"

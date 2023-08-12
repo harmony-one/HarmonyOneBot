@@ -233,6 +233,7 @@ bot.command("start", async (ctx) => {
   await ctx.reply(startText, {
     parse_mode: "Markdown",
     reply_markup: mainMenu,
+    disable_web_page_preview: true,
   });
 });
 
@@ -245,6 +246,7 @@ bot.command("help", async (ctx) => {
   await ctx.reply(startText, {
     parse_mode: "Markdown",
     reply_markup: mainMenu,
+    disable_web_page_preview: true,
   });
 
   //   ctx.reply(startText, {
