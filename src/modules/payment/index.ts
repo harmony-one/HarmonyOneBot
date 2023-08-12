@@ -276,7 +276,7 @@ export class BotPayments {
 
   public isSupportedEvent(ctx: OnMessageContext) {
     const { text = "" } = ctx.update.message;
-    return text?.toLowerCase().includes("/botfund");
+    return text?.toLowerCase().includes("/balance");
   }
 
   public async onEvent(ctx: OnMessageContext) {
@@ -284,12 +284,12 @@ export class BotPayments {
     const { message_id, text = "" } = ctx.update.message;
 
     const account = this.getUserAccount(id);
-    if (account && text?.toLowerCase().includes("/botfund")) {
+    if (account && text?.toLowerCase().includes("/balance")) {
       const balance = await this.getAddressBalance(account.address);
       const balanceOne = this.toONE(balance, false);
       ctx.reply(
         `
-      🤖 *Bot Fund* 
+      🤖 *Balance* 
       
 *ONE*: ${balanceOne.toFixed(2)} 
 
