@@ -26,7 +26,7 @@ import { WalletConnect } from "./modules/walletconnect";
 import { BotPayments } from "./modules/payment";
 import { BotSchedule } from "./modules/schedule";
 import config from "./config";
-import { commandHelpText } from "./constants";
+import { commandHelpText, commandsHelpText } from "./constants";
 import { getONEPrice } from "./modules/1country/api/coingecko";
 
 const logger = pino({
@@ -173,7 +173,6 @@ const onMessage = async (ctx: OnMessageContext) => {
       ctx.reply("Error: Missing prompt");
       return;
     }
-   
   }
   // if (wallet.isSupportedEvent(ctx)) {
   //   wallet.onEvent(ctx);
@@ -225,17 +224,27 @@ const onCallback = async (ctx: OnCallBackQueryData) => {
   }
 };
 
-bot.command("start", (ctx) =>
-  ctx.reply(commandHelpText, {
+bot.command("start", async (ctx) => {
+  const userWalletAddress = "0x742c4788CC47A94cf260abc474E2Fa45695a79Cd"; //getUserAddress
+  const balance = 50; // getAddressBalance
+  const startText = commandsHelpText.start
+    .replace("$CREDITS", balance + "")
+    .replace("$WALLET_ADDRESS", userWalletAddress);
+  ctx.reply(startText, {
     parse_mode: "Markdown",
-  })
-);
+  });
+});
 
-bot.command("help", (ctx) =>
-  ctx.reply(commandHelpText, {
+bot.command("help", async (ctx) => {
+  const userWalletAddress = "0x742c4788CC47A94cf260abc474E2Fa45695a79Cd"; //getUserAddress
+  const balance = 50; // getAddressBalance
+  const startText = commandsHelpText.start
+    .replace("$CREDITS", balance + "")
+    .replace("$WALLET_ADDRESS", userWalletAddress);
+  ctx.reply(startText, {
     parse_mode: "Markdown",
-  })
-);
+  });
+});
 
 bot.command("menu", async (ctx) => {
   await ctx.reply(

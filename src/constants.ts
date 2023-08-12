@@ -69,9 +69,38 @@ Send or forward a voice message (.m4a) to @HarmonyOneAIBot for a full transcript
 /images <PROMPT>
 
 `
+export const commandsHelpText = {
+  start: `Hello, I am @HarmonyOneAIBot, ONE Bot from Harmony AI 🧚‍♀️. Type
 
+/ask Ask me anything (OpenAI ChatGPT-4). Or, / without "ask".
+/image Make a photo (Stable Diffusion XL). Or, /images for multiple.
+/help This tutorial. Docs at harmony.one/bot. 
+Examples:
 
+    _/ask act like elon musk, expand our q4 roadmap "telegram ai bot"
 
+    > act like mark zuckerberg instead_
+
+/image glimpses of a herd of wild elephants crossing a savanna
+/more Other commands for voice memo summary, artistic QR code, Wallet Connect, ChatGPT 32K, DALL-E.
+
+*Soon:* 🧠 Web∞ (CivitAI embed models, Character.AI celebrity chats, RunwayML video clips, HuggingFace LoRa/ControlNet, ElevenLabs speech clones, Zapier task automations) + 🌳 Web3 (self-custody wallets, token swaps, collectible mints, price auctions, multi-signature safes, governance votes) + 🐝 Web2 (news curation, gated access, emoji tipping) + 🏴‍☠️ Web1 (.country domains, vanity URLs, Notion/Substack hosting).
+
+*Your credits:* $CREDITS ONE tokens. Send to $WALLET_ADDRESS for recharge.
+
++-----------------------------+
+| 💬 /ask Ask me anything       |
++-----------------------------+
+| 📸 /image Make a photo        |
++-----------------------------+
+| 🤩 /more Other commands   |
++-----------------------------+
+`
+}
+
+// 0x742c4788CC47A94cf260abc474E2Fa45695a79Cd
+
+// /images vintage hot rod with custom flame paint job
 
 // /help - this help message
 // /wallet - 🏦 Wallet 
