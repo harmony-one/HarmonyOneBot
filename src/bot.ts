@@ -230,8 +230,9 @@ bot.command("start", async (ctx) => {
   const startText = commandsHelpText.start
     .replace("$CREDITS", balance + "")
     .replace("$WALLET_ADDRESS", userWalletAddress);
-  ctx.reply(startText, {
+  await ctx.reply(startText, {
     parse_mode: "Markdown",
+    reply_markup: mainMenu,
   });
 });
 
@@ -241,17 +242,22 @@ bot.command("help", async (ctx) => {
   const startText = commandsHelpText.start
     .replace("$CREDITS", balance + "")
     .replace("$WALLET_ADDRESS", userWalletAddress);
-  ctx.reply(startText, {
-    parse_mode: "Markdown",
-  });
-});
-
-bot.command("menu", async (ctx) => {
-  await ctx.reply(menuText.mainMenu.helpText, {
+  await ctx.reply(startText, {
     parse_mode: "Markdown",
     reply_markup: mainMenu,
   });
+
+  //   ctx.reply(startText, {
+  //   parse_mode: "Markdown",
+  // });
 });
+
+// bot.command("menu", async (ctx) => {
+//   await ctx.reply(menuText.mainMenu.helpText, {
+//     parse_mode: "Markdown",
+//     reply_markup: mainMenu,
+//   });
+// });
 
 bot.on("message", onMessage);
 bot.on("callback_query:data", onCallback);

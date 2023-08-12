@@ -77,7 +77,7 @@ export const commandsHelpText = {
 
 /ask Ask me anything (OpenAI ChatGPT-4). Or, / without "ask".
 /image Make a photo (Stable Diffusion XL). Or, /images for multiple.
-/help This tutorial. Docs at harmony.one/bot. 
+/help This tutorial. 
 Examples:
 
     _/ask act like elon musk, expand our q4 roadmap "telegram ai bot"

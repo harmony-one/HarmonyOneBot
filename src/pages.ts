@@ -79,12 +79,12 @@ export const mainMenu = new Menu<BotContext>(MenuIds.MAIN_MENU)
       .catch((ex: any) => {
         console.log("### ex", ex);
       });
-  })
-  .row()
-  .text("Close", async (ctx) => {
-    await ctx.editMessageText("Bye");
-    ctx.menu.close();
   });
+// .row()
+// .text("Close", async (ctx) => {
+//   await ctx.editMessageText("Bye");
+//   ctx.menu.close();
+// });
 
 // .row()
 // .submenu("💰 Bot Fund", MenuIds.WALLET_MAIN, (ctx) => {
