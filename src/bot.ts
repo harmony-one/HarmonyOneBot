@@ -6,6 +6,7 @@ import {
   MemorySessionStorage,
   session,
 } from "grammy";
+import { limit } from "@grammyjs/ratelimiter";
 import { pino } from "pino";
 
 import {
@@ -39,6 +40,24 @@ const logger = pino({
 });
 
 export const bot = new Bot<BotContext>(config.telegramBotAuthToken);
+
+bot.use(
+  limit({
+    // Allow only 1 message to be handled every 2 seconds.
+    timeFrame: 2000,
+    limit: 1,
+
+    // This is called when the limit is exceeded.
+    onLimitExceeded: async (ctx) => {
+      await ctx.reply("Please refrain from sending too many requests!");
+    },
+
+    // Note that the key should be a number in string format such as "123456789".
+    keyGenerator: (ctx) => {
+      return ctx.from?.id.toString();
+    },
+  })
+);
 
 function createInitialSessionData(): BotSessionData {
   return {
