@@ -1,6 +1,6 @@
 export enum MenuIds {
   MAIN_MENU = "main-menu",
-  IMAGE_MENU = 'image-menu-main',
+  IMAGE_MENU = "image-menu-main",
   QR_BOT_MAIN = "qrbot-menu-main",
   QR_BOT_CHANGE_OPTIONS = "qrbot-menu-change-options",
   QR_BOT_CHANGE_MARGIN = "qrbot-menu-change-margin",
@@ -18,32 +18,35 @@ export enum MenuIds {
 
 export const menuText = {
   mainMenu: {
-    backButton: '⬅️ Back',
-    menuName: `
-    *Main Menu*
-  
-🌟 Welcome to the Harmony One Bot! 🤖
-  
-💲 Send money to your /botfund to start! 🚀
-    `,
+    backButton: "⬅️ Back",
+    menuName: `Main Menu`,
+    helpText: `*Main Menu*
+     
+🤖 welcome to the harmony ONE bot! access ai models, agents, characters, services pay-per-use.`,
+  },
+  askMenu: {
+    menuName: `ask me anything`,
+    helpText: `*ask me anything*
+        
+/ask what's the most bizarre animal fact?
+`,
   },
   imageMenu: {
-    menuName: '👨‍🎨 Image Generation',
-    backButton: '⬅️ Back',
-    helpText: `👨‍🎨 *Image Generation*
-
-    1. /image <PROMPT> - Generate a stunning image 
-
-    *Example:* \`/image Lake Como Italy, sailboats, sunset, 8k\`
+    menuName: "make an image",
+    backButton: "⬅️ Back",
+    helpText: `*make an image*
+        
+/image a futuristic cityscape with towering skyscrapers, flying vehicles, and a diverse population of humans and robots, painted in a concept art style inspired by Syd Mead, with a focus on detail and realism.
+  `,
+  },
+  voiceMemoMenu: {
+    menuName: "voice memo",
+    backButton: "⬅️ Back",
+    helpText: `*voice memo*
     
-    2. /images <PROMPT> - Generate stunning images
-
-    *Example:* \`/images A futuristic cityscape with towering skyscrapers, flying vehicles, and a diverse population of humans and robots, painted in a concept art style inspired by Syd Mead, with a focus on detail and realism.\`
-    
-    `,
-  
-  }
-}
+send a voice message to me for a transcript and summary.`,
+  },
+};
 
 export const commandHelpText = `*Commands*
 /start - Begin interaction with the bot
@@ -68,7 +71,7 @@ Send or forward a voice message (.m4a) to @HarmonyOneAIBot for a full transcript
 /image <PROMPT>
 /images <PROMPT>
 
-`
+`;
 export const commandsHelpText = {
   start: `Hello, I am @HarmonyOneAIBot, ONE Bot from Harmony AI 🧚‍♀️. Type
 
@@ -95,19 +98,19 @@ Examples:
 +-----------------------------+
 | 🤩 /more Other commands   |
 +-----------------------------+
-`
-}
+`,
+};
 
 // 0x742c4788CC47A94cf260abc474E2Fa45695a79Cd
 
 // /images vintage hot rod with custom flame paint job
 
 // /help - this help message
-// /wallet - 🏦 Wallet 
-// /chat - 🖋️ ChatGPT 4 
-// /images - 🎨 Image Generation 
-// /qr - 📷 QR Generation 
-// /register - 🌐 1.country 
+// /wallet - 🏦 Wallet
+// /chat - 🖋️ ChatGPT 4
+// /images - 🎨 Image Generation
+// /qr - 📷 QR Generation
+// /register - 🌐 1.country
 
 // *EVENTS*
 // The bot will produce a summary audio transcript when uploading a voice message.

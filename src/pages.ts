@@ -50,29 +50,9 @@ const imageMenu = new Menu<BotContext>(MenuIds.IMAGE_MENU)
   });
 
 export const mainMenu = new Menu<BotContext>(MenuIds.MAIN_MENU)
-.submenu(menuText.imageMenu.menuName, MenuIds.IMAGE_MENU, (ctx) => {
-  ctx
-    .editMessageText(menuText.imageMenu.helpText, {
-      parse_mode: "Markdown",
-    })
-    .catch((ex: any) => {
-      console.log("### ex", ex);
-    });
-})
-.row()
-.submenu("🖌️ ChatGPT", MenuIds.CHAT_GPT_MAIN, (ctx) => {
-  ctx
-    .editMessageText(chatGptMenuText.helpText, {
-      parse_mode: "Markdown",
-    })
-    .catch((ex: any) => {
-      console.log("### ex", ex);
-    });
-})
-  .row()
-  .submenu("🎙 Voice Memo", MenuIds.VOICE_MEMO_MAIN, (ctx) => {
+  .submenu(menuText.askMenu.menuName, MenuIds.CHAT_GPT_MAIN, (ctx) => {
     ctx
-      .editMessageText(voiceMemoMenuText.helpText, {
+      .editMessageText(menuText.askMenu.helpText, {
         parse_mode: "Markdown",
       })
       .catch((ex: any) => {
@@ -80,44 +60,70 @@ export const mainMenu = new Menu<BotContext>(MenuIds.MAIN_MENU)
       });
   })
   .row()
-  .submenu("💰 Bot Fund", MenuIds.WALLET_MAIN, (ctx) => {
+  .submenu(menuText.imageMenu.menuName, MenuIds.IMAGE_MENU, (ctx) => {
     ctx
-      .editMessageText(walletMenuText.helpText, {
+      .editMessageText(menuText.imageMenu.helpText, {
         parse_mode: "Markdown",
       })
       .catch((ex: any) => {
         console.log("### ex", ex);
       });
   })
-  
-  // .submenu("🌐 1.country", MenuIds.ONE_COUNTRY_MAIN, (ctx) => {
-  //   ctx
-  //     .editMessageText(onCountryMenuText.helpText, {
-  //       parse_mode: "Markdown",
-  //     })
-  //     .catch((ex: any) => {
-  //       console.log("### ex", ex);
-  //     });
-  // })
-  // .row()
-
   .row()
-  .submenu("📷 QR Generation", MenuIds.QR_BOT_MAIN, (ctx) => {
+
+  .submenu(menuText.voiceMemoMenu.menuName, MenuIds.VOICE_MEMO_MAIN, (ctx) => {
     ctx
-      .editMessageText(qrCodeMenuText.helpText, {
+      .editMessageText(menuText.voiceMemoMenu.helpText, {
         parse_mode: "Markdown",
       })
       .catch((ex: any) => {
         console.log("### ex", ex);
       });
   })
+  .row()
+  .text("Close", async (ctx) => {
+    await ctx.editMessageText("Bye");
+    ctx.menu.close();
+  });
 
+// .row()
+// .submenu("💰 Bot Fund", MenuIds.WALLET_MAIN, (ctx) => {
+//   ctx
+//     .editMessageText(walletMenuText.helpText, {
+//       parse_mode: "Markdown",
+//     })
+//     .catch((ex: any) => {
+//       console.log("### ex", ex);
+//     });
+// })
 
-  // .row()
-  // .text("Close", async (ctx) => {
-  //   await ctx.editMessageText("Bye");
-  //   ctx.menu.close();
-  // });
+// .submenu("🌐 1.country", MenuIds.ONE_COUNTRY_MAIN, (ctx) => {
+//   ctx
+//     .editMessageText(onCountryMenuText.helpText, {
+//       parse_mode: "Markdown",
+//     })
+//     .catch((ex: any) => {
+//       console.log("### ex", ex);
+//     });
+// })
+// .row()
+
+// .row()
+// .submenu("📷 QR Generation", MenuIds.QR_BOT_MAIN, (ctx) => {
+//   ctx
+//     .editMessageText(qrCodeMenuText.helpText, {
+//       parse_mode: "Markdown",
+//     })
+//     .catch((ex: any) => {
+//       console.log("### ex", ex);
+//     });
+// });
+
+// .row()
+// .text("Close", async (ctx) => {
+//   await ctx.editMessageText("Bye");
+//   ctx.menu.close();
+// });
 
 imageMenu.register(sdImagesMenu);
 imageMenu.register(imageGenMainMenu);

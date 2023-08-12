@@ -26,7 +26,7 @@ import { WalletConnect } from "./modules/walletconnect";
 import { BotPayments } from "./modules/payment";
 import { BotSchedule } from "./modules/schedule";
 import config from "./config";
-import { commandHelpText, commandsHelpText } from "./constants";
+import { commandHelpText, commandsHelpText, menuText } from "./constants";
 import { getONEPrice } from "./modules/1country/api/coingecko";
 
 const logger = pino({
@@ -247,20 +247,10 @@ bot.command("help", async (ctx) => {
 });
 
 bot.command("menu", async (ctx) => {
-  await ctx.reply(
-    `
-  
-*Main Menu*
-  
-🌟 Welcome to the Harmony One Bot! 🤖
-  
-💲 Send money to your /botfund to start! 🚀
-  `,
-    {
-      parse_mode: "Markdown",
-      reply_markup: mainMenu,
-    }
-  );
+  await ctx.reply(menuText.mainMenu.helpText, {
+    parse_mode: "Markdown",
+    reply_markup: mainMenu,
+  });
 });
 
 bot.on("message", onMessage);
