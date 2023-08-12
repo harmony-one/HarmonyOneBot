@@ -289,7 +289,7 @@ export class BotPayments {
       const balanceOne = this.toONE(balance, false);
       ctx.reply(
         `
-      🤖 *Bot Fund* 
+      🤖 *Balance* 
       
 *ONE*: ${balanceOne.toFixed(2)} 
 
