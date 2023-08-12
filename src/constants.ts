@@ -62,7 +62,7 @@ Send or forward a voice message (.m4a) to @HarmonyOneAIBot for a full transcript
 /qr <LINK> <PROMPT>
 
 *ChatGPT*
-/chat <TEXT>
+/ask <TEXT>
 
 *Image Generation*
 /image <PROMPT>

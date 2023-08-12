@@ -9,8 +9,13 @@ import { appText } from "./utils/text";
 import { getONEPrice } from "../1country/api/coingecko";
 
 export const SupportedCommands = {
-  chat: {
-    name: "chat",
+  // chat: {
+  //   name: "chat",
+  //   groupParams: ">0",
+  //   privateParams: ">0",
+  // },
+  ask: {
+    name: "ask",
     groupParams: ">0",
     privateParams: ">0",
   },
@@ -211,10 +216,16 @@ export class OpenAIBot {
       return false;
     }
 
-    if (ctx.hasCommand(SupportedCommands.chat.name)) {
+    // if (ctx.hasCommand(SupportedCommands.chat.name)) {
+    //   await this.onChat(ctx);
+    //   return;
+    // }
+
+    if (ctx.hasCommand(SupportedCommands.ask.name)) {
       await this.onChat(ctx);
       return;
     }
+
 
     if (ctx.hasCommand(SupportedCommands.genImg.name)) {
       this.onGenImgCmd(ctx);
@@ -339,7 +350,7 @@ export class OpenAIBot {
         content: this.hasPrefix(prompt) ? prompt.slice(1) : prompt,
       });
       const msgId = (
-        await ctx.reply(`Generating...\n\n*Close chat with /end*`, {
+        await ctx.reply(`Generating...`, { //\n\n*Close chat with /end*
           parse_mode: "Markdown",
         })
       ).message_id;
@@ -375,7 +386,7 @@ export class OpenAIBot {
         parse_mode: "Markdown",
       });
     } else {
-      ctx.reply(`To start a conversation please write */chat*`, {
+      ctx.reply(`To start a conversation please write */ask*`, {
         parse_mode: "Markdown",
       });
     }

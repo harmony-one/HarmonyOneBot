@@ -352,7 +352,7 @@ export class OneCountryBot {
     if (!domainAvailable && response.isInGracePeriod) {
       msg += `is in grace period ❌. Only the owner is able to renew the domain`;
     } else if (!domainAvailable) {
-      msg += `is unavailable ❌.\n keep writing new options starting the following prompts with\n*% <DOMAIN_NAME>*.`;
+      msg += `is unavailable ❌.\n${appText.registerKeepWriting}`;
     } else {
       msg += "is available ✅.\n";
       if (!response.priceUSD.error) {
@@ -360,7 +360,7 @@ export class OneCountryBot {
       } else {
         msg += `${response.priceOne} for 30 days\n`;
       }
-      msg += `Write */register* to purchase it, or keep writing new options starting the following prompts with\n*% <DOMAIN_NAME>*`;
+      msg += `${appText.registerConfirmation}, or ${appText.registerKeepWriting}`;
     }
     ctx.api.editMessageText(ctx.chat?.id!, msgId, msg, {
       parse_mode: "Markdown",
