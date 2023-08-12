@@ -24,7 +24,7 @@ export const menuText = {
   
 🌟 Welcome to the Harmony One Bot! 🤖
   
-💲 Send money to your /botfund to start! 🚀
+💲 Send money to your /balance to start! 🚀
     `,
   },
   imageMenu: {
