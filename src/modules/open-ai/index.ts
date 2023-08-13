@@ -395,6 +395,8 @@ export class OpenAIBot {
     const usage = ctx.session.openAi.chatGpt.usage;
     const totalPrice = ctx.session.openAi.chatGpt.price;
     const onePrice = await getONEPrice(totalPrice)
-    ctx.reply(`${appText.gptChatEnd} ${onePrice.price}ONE Spent (${usage} tokens)`); //(${totalPrice.toFixed(2)}¢ )`);
+    ctx.reply(`${appText.gptChatEnd} \n\n*${onePrice.price} ONE* Spent (${usage} tokens)`, {
+      parse_mode: "Markdown"
+    }); //(${totalPrice.toFixed(2)}¢ )`);
   }
 }

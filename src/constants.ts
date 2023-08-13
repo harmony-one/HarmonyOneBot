@@ -78,40 +78,25 @@ Send to $WALLET_ADDRESS for recharge.
 +-----------------------------+
 `,
   more: `
-  +-----------------------------+
   | 💬 More Options |
-  +-----------------------------+
-  | /more - See this menu |
-  | /start - Get started with core uses |
-  | /help - Access all features |
-  +-----------------------------+
-  
-  +-----------------------------+
+  /more - See this menu
+  /start - Get started with core uses
+  /help - Access all features
+
   | 🧠 Ask Me Anything |
-  +-----------------------------+
-  | /ask What was the greatest invention in the 1960's? |
-  +-----------------------------+
-  
-  +-----------------------------+
+  /ask What was the greatest invention in the 1960's? 
+
   | 📸 Images and Visuals |
-  +-----------------------------+
-  | /image a futuristic cityscape with towering skyscrapers, flying vehicles, 8k, photorealistic |
-  | /qr h.country Dramatic bonfire on a remote beach, captured at the magic hour with flames dancing against the twilight sky; using a shallow depth of field |
-  +-----------------------------+
+  \`/image a futuristic cityscape with towering skyscrapers, flying vehicles, 8k, photorealistic\`
+  \`/qr h.country Dramatic bonfire on a remote beach, captured at the magic hour with flames dancing against the twilight sky; using a shallow depth of field\`
   
-  +-----------------------------+
   | 🎙️ Voice Messages |
-  +-----------------------------+
-  | Send a voice message (.m4a) to me for a transcript and summary. |
-  +-----------------------------+
+  Send a voice message (.m4a) to me for a transcript and summary.
   
-  +-----------------------------+
   | 💰 Wallet and Balance |
-  +-----------------------------+
-  | /balance - Check balance |
-  | /connect - Use walletconnect to pair external wallet |
-  | /send ADDRESS AMOUNT - Send funds from walletconnect |
-  +-----------------------------+number-to-bn
+  /balance - Check balance
+  /connect - Use walletconnect to pair external wallet
+  /send ADDRESS AMOUNT - Send funds from walletconnect
   `
 };
 
