@@ -87,7 +87,8 @@ Send to $WALLET_ADDRESS for recharge.
   /ask What was the greatest invention in the 1960's? 
 
   | 📸 Images and Visuals |
-  \`/image a futuristic cityscape with towering skyscrapers, flying vehicles, 8k, photorealistic\`
+  \`/image Intricate dynamic action shot of cowboy riding a horse, cinematic Steve Henderson Fabian Perez Henry Asencio Jeremy Mann Marc Simonetti Fantasy, red dead redemption 2 atmosphere, cinematic, photograph\`
+  \`/images close up headshot, futuristic young woman, wild hair sly smile in front of gigantic UFO, dslr, sharp focus, dynamic composition\`
   \`/qr h.country Dramatic bonfire on a remote beach, captured at the magic hour with flames dancing against the twilight sky; using a shallow depth of field\`
   
   | 🎙️ Voice Messages |
