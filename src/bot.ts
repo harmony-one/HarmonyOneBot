@@ -26,7 +26,7 @@ import { WalletConnect } from "./modules/walletconnect";
 import { BotPayments } from "./modules/payment";
 import { BotSchedule } from "./modules/schedule";
 import config from "./config";
-import { commandHelpText, commandsHelpText, menuText } from "./constants";
+import { commandsHelpText } from "./constants";
 import { getONEPrice } from "./modules/1country/api/coingecko";
 
 const logger = pino({
@@ -109,9 +109,10 @@ const onMessage = async (ctx: OnMessageContext) => {
       qrCodeBot
         .onEvent(ctx, (reason?: string) => {
           payments.refundPayment(reason, ctx, price);
-        }).catch((e) => {
-          payments.refundPayment((e.message || 'Unknown error'), ctx, price);
         })
+        .catch((e) => {
+          payments.refundPayment(e.message || "Unknown error", ctx, price);
+        });
       return;
     }
   }
@@ -122,9 +123,10 @@ const onMessage = async (ctx: OnMessageContext) => {
       sdImagesBot
         .onEvent(ctx, (reason?: string) => {
           payments.refundPayment(reason, ctx, price);
-        }).catch((e) => {
-          payments.refundPayment((e.message || 'Unknown error'), ctx, price);
         })
+        .catch((e) => {
+          payments.refundPayment(e.message || "Unknown error", ctx, price);
+        });
       return;
     }
   }
@@ -133,8 +135,8 @@ const onMessage = async (ctx: OnMessageContext) => {
     const isPaid = await payments.pay(ctx, price);
     if (isPaid) {
       voiceMemo.onEvent(ctx).catch((e) => {
-        payments.refundPayment((e.message || 'Unknown error'), ctx, price);
-      })
+        payments.refundPayment(e.message || "Unknown error", ctx, price);
+      });
       return;
     }
   }
@@ -148,8 +150,9 @@ const onMessage = async (ctx: OnMessageContext) => {
         }
         const isPaid = await payments.pay(ctx, price);
         if (isPaid) {
-          return openAiBot.onEvent(ctx)
-            .catch((e) => payments.refundPayment(e, ctx, price));;
+          return openAiBot
+            .onEvent(ctx)
+            .catch((e) => payments.refundPayment(e, ctx, price));
         }
         return;
       } else {
@@ -230,10 +233,12 @@ const onCallback = async (ctx: OnCallBackQueryData) => {
 };
 
 bot.command("start", async (ctx) => {
-  const userWalletAddress = "0x742c4788CC47A94cf260abc474E2Fa45695a79Cd"; //getUserAddress
-  const balance = 50; // getAddressBalance
+  const userWalletAddress =
+    (await payments.getUserAccount(ctx.from?.id!)?.address) || "";
+  const balance = await payments.getAddressBalance(userWalletAddress);
+  const balanceOne = payments.toONE(balance, false).toFixed(2);
   const startText = commandsHelpText.start
-    .replace("$CREDITS", balance + "")
+    .replace("$CREDITS", balanceOne + "")
     .replace("$WALLET_ADDRESS", userWalletAddress);
   await ctx.reply(startText, {
     parse_mode: "Markdown",
@@ -243,20 +248,24 @@ bot.command("start", async (ctx) => {
 });
 
 bot.command("help", async (ctx) => {
-  const userWalletAddress = "0x742c4788CC47A94cf260abc474E2Fa45695a79Cd"; //getUserAddress
-  const balance = 50; // getAddressBalance
+  const userWalletAddress =
+    (await payments.getUserAccount(ctx.from?.id!)?.address) || "";
+  const balance = await payments.getAddressBalance(userWalletAddress);
+  const balanceOne = payments.toONE(balance, false).toFixed(2);
   const startText = commandsHelpText.start
-    .replace("$CREDITS", balance + "")
+    .replace("$CREDITS", balanceOne + "")
     .replace("$WALLET_ADDRESS", userWalletAddress);
   await ctx.reply(startText, {
     parse_mode: "Markdown",
     reply_markup: mainMenu,
     disable_web_page_preview: true,
   });
+});
 
-  //   ctx.reply(startText, {
-  //   parse_mode: "Markdown",
-  // });
+bot.command('more', async (ctx) => {
+    ctx.reply(commandsHelpText.more, {
+    parse_mode: "Markdown",
+  });
 });
 
 // bot.command("menu", async (ctx) => {

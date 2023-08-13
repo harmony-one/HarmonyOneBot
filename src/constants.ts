@@ -48,30 +48,6 @@ send a voice message to me for a transcript and summary.`,
   },
 };
 
-export const commandHelpText = `*Commands*
-/start - Begin interaction with the bot
-/help - Access help information
-
-*Wallet*
-/botfund - View botfund balance
-/connect - Use walletconnect to pair external wallet
-/get - View external wallet balance
-/send <ADDRESS> <AMOUNT> - Send funds from external wallet
-
-*Voice Memo*
-Send or forward a voice message (.m4a) to @HarmonyOneAIBot for a full transcript and summary
-
-*QR Code Generation*
-/qr <LINK> <PROMPT>
-
-*ChatGPT*
-/ask <TEXT>
-
-*Image Generation*
-/image <PROMPT>
-/images <PROMPT>
-
-`;
 export const commandsHelpText = {
   start: `Hello, I am @HarmonyOneAIBot, ONE Bot from Harmony AI 🧚‍♀️. Type
 
@@ -99,6 +75,29 @@ Examples:
 | 🤩 /more Other commands   |
 +-----------------------------+
 `,
+  more: `*Commands*
+/start - Begin interaction with the bot
+/help - Access help information
+
+*Wallet*
+/botfund - View botfund balance
+/connect - Use walletconnect to pair external wallet
+/get - View external wallet balance
+/send <ADDRESS> <AMOUNT> - Send funds from external wallet
+
+*Voice Memo*
+Send or forward a voice message (.m4a) to @HarmonyOneAIBot for a full transcript and summary
+
+*QR Code Generation*
+/qr <LINK> <PROMPT>
+
+*ChatGPT*
+/ask <TEXT>
+
+*Image Generation*
+/image <PROMPT>
+/images <PROMPT>
+  `
 };
 
 // 0x742c4788CC47A94cf260abc474E2Fa45695a79Cd

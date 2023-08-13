@@ -63,7 +63,7 @@ export class BotPayments {
     }
   }
 
-  private getUserAccount(userId: number | string) {
+  public getUserAccount(userId: number | string) {
     const privateKey = this.web3.utils.sha3(
       `${config.payment.secret}_${userId}`
     );
@@ -92,7 +92,7 @@ export class BotPayments {
     return bn(balance.toString());
   }
 
-  private async getUserBalance(userId: number) {
+  public async getUserBalance(userId: number) {
     const account = this.getUserAccount(userId);
     if (account) {
       return await this.getAddressBalance(account.address);
