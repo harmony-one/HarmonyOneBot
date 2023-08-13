@@ -146,7 +146,10 @@ const onMessage = async (ctx: OnMessageContext) => {
         const price = openAiBot.getEstimatedPrice(ctx);
         const priceONE = await getONEPrice(price);
         if (price > 0) {
-          priceONE.price && await ctx.reply(`Processing withdraw for ${priceONE.price} ONE...`); //${price.toFixed(2)}¢...`);
+          priceONE.price &&
+            (await ctx.reply(
+              `Processing withdraw for ${priceONE.price} ONE...`
+            )); //${price.toFixed(2)}¢...`);
         }
         const isPaid = await payments.pay(ctx, price);
         if (isPaid) {
@@ -262,8 +265,8 @@ bot.command("help", async (ctx) => {
   });
 });
 
-bot.command('more', async (ctx) => {
-    ctx.reply(commandsHelpText.more, {
+bot.command("more", async (ctx) => {
+  ctx.reply(commandsHelpText.more, {
     parse_mode: "Markdown",
   });
 });
