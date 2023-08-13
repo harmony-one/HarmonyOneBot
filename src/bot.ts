@@ -130,6 +130,8 @@ const onMessage = async (ctx: OnMessageContext) => {
       qrCodeBot
         .onEvent(ctx, (reason?: string) => {
           payments.refundPayment(reason, ctx, price);
+        }).catch((e) => {
+          payments.refundPayment((e.message || 'Unknown error'), ctx, price);
         })
 
       return;
@@ -142,6 +144,8 @@ const onMessage = async (ctx: OnMessageContext) => {
       sdImagesBot
         .onEvent(ctx, (reason?: string) => {
           payments.refundPayment(reason, ctx, price);
+        }).catch((e) => {
+          payments.refundPayment((e.message || 'Unknown error'), ctx, price);
         })
       return;
     }
@@ -150,8 +154,9 @@ const onMessage = async (ctx: OnMessageContext) => {
     const price = voiceMemo.getEstimatedPrice(ctx);
     const isPaid = await payments.pay(ctx, price);
     if (isPaid) {
-      voiceMemo
-        .onEvent(ctx)
+      voiceMemo.onEvent(ctx).catch((e) => {
+        payments.refundPayment((e.message || 'Unknown error'), ctx, price);
+      })
       return;
     }
   }
@@ -164,7 +169,8 @@ const onMessage = async (ctx: OnMessageContext) => {
         }
         const isPaid = await payments.pay(ctx, price);
         if (isPaid) {
-          return openAiBot.onEvent(ctx).catch((e) => payments.refundPayment(e, ctx, price));;
+          return openAiBot.onEvent(ctx)
+            .catch((e) => payments.refundPayment(e, ctx, price));;
         }
         return;
       } else {
