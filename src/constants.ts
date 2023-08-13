@@ -75,28 +75,19 @@ Examples:
 | 🤩 /more Other commands   |
 +-----------------------------+
 `,
-  more: `*Commands*
-/start - Begin interaction with the bot
-/help - Access help information
+  more: `
+  /more - See this menu
+  /start - Get started with core uses
+  /help - Access all features
+  
+  /ask can you explain albert einstein’s most famous discovery?
+  /image a futuristic cityscape with towering skyscrapers, flying vehicles, and a diverse population of humans and robots, painted in a concept art style inspired by Syd Mead, with a focus on detail and realism.
+  Send a voice message (.m4a) to me for a transcript and summary.
+  /qr WEBSITE Dramatic bonfire on a remote beach, captured at the magic hour with flames dancing against the twilight sky; using a shallow depth of field
 
-*Wallet*
-/botfund - View botfund balance
-/connect - Use walletconnect to pair external wallet
-/get - View external wallet balance
-/send <ADDRESS> <AMOUNT> - Send funds from external wallet
-
-*Voice Memo*
-Send or forward a voice message (.m4a) to @HarmonyOneAIBot for a full transcript and summary
-
-*QR Code Generation*
-/qr <LINK> <PROMPT>
-
-*ChatGPT*
-/ask <TEXT>
-
-*Image Generation*
-/image <PROMPT>
-/images <PROMPT>
+  /balance - Check balance
+  /connect - Use walletconnect to pair external wallet
+  /send ADDRESS AMOUNT - Send funds from walletconnect
   `
 };
 
