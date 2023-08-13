@@ -106,10 +106,12 @@ const onMessage = async (ctx: OnMessageContext) => {
     const price = qrCodeBot.getEstimatedPrice(ctx);
     const isPaid = await payments.pay(ctx, price);
     if (isPaid) {
-      qrCodeBot.onEvent(ctx, (reason?: string) => {
-        payments.refundPayment(reason, ctx, price);
-      });
-
+      qrCodeBot
+        .onEvent(ctx, (reason?: string) => {
+          payments.refundPayment(reason, ctx, price);
+        }).catch((e) => {
+          payments.refundPayment((e.message || 'Unknown error'), ctx, price);
+        })
       return;
     }
   }
@@ -117,9 +119,12 @@ const onMessage = async (ctx: OnMessageContext) => {
     const price = sdImagesBot.getEstimatedPrice(ctx);
     const isPaid = await payments.pay(ctx, price);
     if (isPaid) {
-      sdImagesBot.onEvent(ctx, (reason?: string) => {
-        payments.refundPayment(reason, ctx, price);
-      });
+      sdImagesBot
+        .onEvent(ctx, (reason?: string) => {
+          payments.refundPayment(reason, ctx, price);
+        }).catch((e) => {
+          payments.refundPayment((e.message || 'Unknown error'), ctx, price);
+        })
       return;
     }
   }
@@ -127,7 +132,9 @@ const onMessage = async (ctx: OnMessageContext) => {
     const price = voiceMemo.getEstimatedPrice(ctx);
     const isPaid = await payments.pay(ctx, price);
     if (isPaid) {
-      voiceMemo.onEvent(ctx);
+      voiceMemo.onEvent(ctx).catch((e) => {
+        payments.refundPayment((e.message || 'Unknown error'), ctx, price);
+      })
       return;
     }
   }
@@ -141,10 +148,8 @@ const onMessage = async (ctx: OnMessageContext) => {
         }
         const isPaid = await payments.pay(ctx, price);
         if (isPaid) {
-          openAiBot
-            .onEvent(ctx)
-            .catch((e) => payments.refundPayment(e, ctx, price));
-          return;
+          return openAiBot.onEvent(ctx)
+            .catch((e) => payments.refundPayment(e, ctx, price));;
         }
         return;
       } else {
@@ -197,7 +202,7 @@ const onMessage = async (ctx: OnMessageContext) => {
   // onlfy for private chats
   if (ctx.update.message.chat && ctx.chat.type === "private") {
     ctx.reply(
-      `Command not supported.\nWrite */menu* to learn available commands`,
+      `Command not supported.\n\nWrite */help* to view available commands`,
       {
         parse_mode: "Markdown",
       }
@@ -245,7 +250,7 @@ bot.command("menu", async (ctx) => {
   
 🌟 Welcome to the Harmony One Bot! 🤖
   
-💲 Send money to your /botfund to start! 🚀
+💲 Send money to your /balance to start! 🚀
   `,
     {
       parse_mode: "Markdown",
