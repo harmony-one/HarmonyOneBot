@@ -45,28 +45,20 @@ export const menuText = {
   }
 }
 
-export const commandHelpText = `*Commands*
-/start - Begin interaction with the bot
-/help - Access help information
+export const commandHelpText = `
+**Address**: 0x…
 
-*Wallet*
-/botfund - View botfund balance
+**Current Balance**: xx ONE
+
+/start - Get started with core uses
+/help - Access all features
+/ask can you explain albert einstein’s most famous discovery?
+/image a futuristic cityscape with towering skyscrapers, flying vehicles, and a diverse population of humans and robots, painted in a concept art style inspired by Syd Mead, with a focus on detail and realism.
+/qr h.country <add a PROMPT>
+/balance - Check balance
 /connect - Use walletconnect to pair external wallet
-/get - View external wallet balance
-/send <ADDRESS> <AMOUNT> - Send funds from external wallet
-
-*Voice Memo*
-Send or forward a voice message (.m4a) to @HarmonyOneAIBot for a full transcript and summary
-
-*QR Code Generation*
-/qr <LINK> <PROMPT>
-
-*ChatGPT*
-/chat <TEXT>
-
-*Image Generation*
-/image <PROMPT>
-/images <PROMPT>
+/send ADDRESS AMOUNT - Send funds from walletconnect
+send a voice message to me for a transcript and summary.
 
 `
 
