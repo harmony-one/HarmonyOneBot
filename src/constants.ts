@@ -76,18 +76,18 @@ Examples:
 +-----------------------------+
 `,
   more: `
-  /more - See this menu
-  /start - Get started with core uses
-  /help - Access all features
-  
-  /ask can you explain albert einstein’s most famous discovery?
-  /image a futuristic cityscape with towering skyscrapers, flying vehicles, and a diverse population of humans and robots, painted in a concept art style inspired by Syd Mead, with a focus on detail and realism.
-  Send a voice message (.m4a) to me for a transcript and summary.
-  /qr WEBSITE Dramatic bonfire on a remote beach, captured at the magic hour with flames dancing against the twilight sky; using a shallow depth of field
+/more - See this menu
+/start - Get started with core uses
+/help - Access all features
 
-  /balance - Check balance
-  /connect - Use walletconnect to pair external wallet
-  /send ADDRESS AMOUNT - Send funds from walletconnect
+/ask What was the greatest invention in the 1960's?
+/image a futuristic cityscape with towering skyscrapers, flying vehicles, 8k, photorealistic
+Send a voice message (.m4a) to me for a transcript and summary.
+/qr WEBSITE Dramatic bonfire on a remote beach, captured at the magic hour with flames dancing against the twilight sky; using a shallow depth of field
+
+/balance - Check balance
+/connect - Use walletconnect to pair external wallet
+/send ADDRESS AMOUNT - Send funds from walletconnect
   `
 };
 
