@@ -109,7 +109,7 @@ export class OpenAIBot {
     }
     if (!commandName) {
       const hasGroupPrefix = this.hasPrefix(ctx.message?.text || "");
-      if (hasGroupPrefix && promptNumber > 1) {
+      if (hasGroupPrefix && promptNumber >= 1) {
         return true;
       }
       return false;
