@@ -296,7 +296,7 @@ export class BotPayments {
 
   public isSupportedEvent(ctx: OnMessageContext) {
     const { text = '' } = ctx.update.message;
-    return ['/balance', '/migrateAccount'].includes(text)
+    return ['/balance', '/migrate'].includes(text)
   }
 
   public async onEvent(ctx: OnMessageContext) {
@@ -330,15 +330,15 @@ export class BotPayments {
         this.logger.error(e);
         ctx.reply(`Error retrieving wallet balance`);
       }
-    } else if(text === '/migrateAccount') {
+    } else if(text === '/migrate') {
       const amount = await this.migrateFunds(id)
       const balance = await this.getAddressBalance(account.address);
       const balanceOne  = this.toONE(balance, false)
       let replyText = ''
       if(amount.gt(0)) {
-        replyText = `Transferred ${this.toONE(amount, false)} ONE from previous accounts to ${account.address}. Current balance: ${balanceOne.toFixed(2)} ONE.`
+        replyText = `Transferred ${this.toONE(amount, false).toFixed(2)} ONE from previous accounts to ${account.address}\n\nCurrent balance: ${balanceOne.toFixed(2)} ONE`
       } else {
-        replyText = `No funds were found on the balance of previous accounts. Current balance: ${balanceOne.toFixed(2)} ONE.`
+        replyText = `No funds were found on the balance of previous accounts\n\nCurrent balance: ${balanceOne.toFixed(2)} ONE`
       }
       ctx.reply(replyText, {
         parse_mode: "Markdown",
