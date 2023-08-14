@@ -47,6 +47,7 @@ export default {
       chatPrefix: process.env.GROUP_PREFIX
         ? process.env.GROUP_PREFIX.split(",")
         : ["?", ">"],
+      minimumBalance: 10
     },
   },
   country: {

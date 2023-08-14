@@ -146,7 +146,7 @@ const onMessage = async (ctx: OnMessageContext) => {
     if (ctx.session.openAi.imageGen.isEnabled) {
       if (openAiBot.isValidCommand(ctx)) {
         const price = openAiBot.getEstimatedPrice(ctx);
-        const priceONE = await getONEPrice(price);
+        // const priceONE = await getONEPrice(price);
         // if (price > 0) {
         //   priceONE.price &&
         //     (await ctx.reply(
