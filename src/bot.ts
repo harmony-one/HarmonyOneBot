@@ -109,10 +109,10 @@ const onMessage = async (ctx: OnMessageContext) => {
       qrCodeBot
         .onEvent(ctx, (reason?: string) => {
           payments.refundPayment(reason, ctx, price);
-        })
-        .catch((e) => {
+        }).catch((e) => {
           payments.refundPayment(e.message || "Unknown error", ctx, price);
         });
+
       return;
     }
   }
@@ -182,6 +182,7 @@ const onMessage = async (ctx: OnMessageContext) => {
           .catch((e) => payments.refundPayment(e, ctx, price));
         return;
       }
+      return;
     } else {
       ctx.reply("Error: Missing prompt");
       return;
