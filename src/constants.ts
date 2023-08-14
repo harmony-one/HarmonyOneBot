@@ -16,16 +16,17 @@ export enum MenuIds {
   CHAT_GPT_MODEL = "chat-gpt-model",
 }
 export const commandsHelpText = {
-  start: `*Hello, I am @HarmonyOneAIBot, ONE Bot from Harmony AI 🧚‍♀️.* Type
+  start: `*Hello, I am @HarmonyOneAIBot, ONE Bot from Harmony AI 🧚‍♀️* 
+  
+Type:
 
 /ask Ask me anything (OpenAI ChatGPT-4). Or, / without "ask".
 /image Make a photo (Stable Diffusion XL). Or, /images for multiple.
 /help This tutorial. Docs at harmony.one/bot
+
 Examples:
-
-    _/ask act like elon musk, expand our q4 roadmap "telegram ai bot"
-
-    > act like mark zuckerberg instead_
+_/ask act like elon musk, expand our q4 roadmap "telegram ai bot"
+> act like mark zuckerberg instead_
 
 /image glimpses of a herd of wild elephants crossing a savanna
 /more Other commands for voice memo summary, artistic QR code, Wallet Connect, ChatGPT 32K, DALL-E.
@@ -81,7 +82,7 @@ export const menuText = {
     menuName: `ask me anything`,
     helpText: `*ask me anything*
         
-\`/ask what's the most interesting fact about the development of AI?\`
+\`/ask what is one intersting historical fact about technological development in the 2000s?\`
 `,
   },
   imageMenu: {
