@@ -6,6 +6,7 @@ import {
   MemorySessionStorage,
   session,
 } from "grammy";
+import { limit } from "@grammyjs/ratelimiter";
 import { pino } from "pino";
 
 import {
@@ -24,10 +25,9 @@ import { Wallet } from "./modules/wallet";
 import { WalletConnect } from "./modules/walletconnect";
 import { BotPayments } from "./modules/payment";
 import { BotSchedule } from "./modules/schedule";
-// import { ConversationHandler } from "./modules/conversation-handler/";
 import config from "./config";
-import { commandHelpText } from "./constants";
-import { limit } from "@grammyjs/ratelimiter";
+import { commandsHelpText } from "./constants";
+import { getONEPrice } from "./modules/1country/api/coingecko";
 
 const logger = pino({
   name: "bot",
@@ -75,6 +75,9 @@ function createInitialSessionData(): BotSessionData {
         usage: 0,
       },
     },
+    oneCountry: {
+      lastDomain: "",
+    },
     qrMargin: 1,
   };
 }
@@ -95,34 +98,10 @@ const sdImagesBot = new SDImagesBot();
 const walletConnect = new WalletConnect();
 const payments = new BotPayments();
 const schedule = new BotSchedule(bot);
-const openAiBot = new OpenAIBot();
+const openAiBot = new OpenAIBot(payments);
 const oneCountryBot = new OneCountryBot();
-// const conversationHandler = new ConversationHandler(bot);
 
 const onMessage = async (ctx: OnMessageContext) => {
-  // if (conversationHandler.isSupportedEvent(ctx)) {
-  //   if (ctx.session.openAi.chatGpt.isEnabled) {
-  //     if (conversationHandler.isValidCommand(ctx)) {
-  //       const price = conversationHandler.getEstimatedPrice(ctx);
-  //       if (price > 0) {
-  //         await ctx.reply(`Processing withdraw for ${price.toFixed(2)}¢...`);
-  //       }
-  //       const isPaid = await payments.pay(ctx, price);
-  //       if (isPaid) {
-  //         return conversationHandler
-  //           .onEvent(ctx)
-  //           .catch((e) => payments.refundPayment(e, ctx, price));
-  //       }
-  //       return;
-  //     } else {
-  //       ctx.reply("Error: Missing prompt");
-  //       return;
-  //     }
-  //   } else {
-  //     ctx.reply("Bot disabled");
-  //     return;
-  //   }
-  // }
   if (qrCodeBot.isSupportedEvent(ctx)) {
     const price = qrCodeBot.getEstimatedPrice(ctx);
     const isPaid = await payments.pay(ctx, price);
@@ -130,10 +109,10 @@ const onMessage = async (ctx: OnMessageContext) => {
       qrCodeBot
         .onEvent(ctx, (reason?: string) => {
           payments.refundPayment(reason, ctx, price);
-        }).catch((e) => {
-          payments.refundPayment((e.message || 'Unknown error'), ctx, price);
         })
-
+        .catch((e) => {
+          payments.refundPayment(e.message || "Unknown error", ctx, price);
+        });
       return;
     }
   }
@@ -144,33 +123,41 @@ const onMessage = async (ctx: OnMessageContext) => {
       sdImagesBot
         .onEvent(ctx, (reason?: string) => {
           payments.refundPayment(reason, ctx, price);
-        }).catch((e) => {
-          payments.refundPayment((e.message || 'Unknown error'), ctx, price);
         })
+        .catch((e) => {
+          payments.refundPayment(e.message || "Unknown error", ctx, price);
+        });
       return;
     }
+    return
   }
   if (voiceMemo.isSupportedEvent(ctx)) {
     const price = voiceMemo.getEstimatedPrice(ctx);
     const isPaid = await payments.pay(ctx, price);
     if (isPaid) {
       voiceMemo.onEvent(ctx).catch((e) => {
-        payments.refundPayment((e.message || 'Unknown error'), ctx, price);
-      })
+        payments.refundPayment(e.message || "Unknown error", ctx, price);
+      });
       return;
     }
+    return
   }
   if (openAiBot.isSupportedEvent(ctx)) {
     if (ctx.session.openAi.imageGen.isEnabled) {
       if (openAiBot.isValidCommand(ctx)) {
         const price = openAiBot.getEstimatedPrice(ctx);
-        if (price > 0) {
-          await ctx.reply(`Processing withdraw for ${price.toFixed(2)}¢...`);
-        }
+        const priceONE = await getONEPrice(price);
+        // if (price > 0) {
+        //   priceONE.price &&
+        //     (await ctx.reply(
+        //       `Processing withdraw for ${priceONE.price} ONE...`
+        //     )); //${price.toFixed(2)}¢...`);
+        // }
         const isPaid = await payments.pay(ctx, price);
         if (isPaid) {
-          return openAiBot.onEvent(ctx)
-            .catch((e) => payments.refundPayment(e, ctx, price));;
+          return openAiBot
+            .onEvent(ctx)
+            .catch((e) => payments.refundPayment(e, ctx, price));
         }
         return;
       } else {
@@ -182,22 +169,29 @@ const onMessage = async (ctx: OnMessageContext) => {
       return;
     }
   }
-  // if (oneCountryBot.isSupportedEvent(ctx)) {
-  //   const price = oneCountryBot.getEstimatedPrice(ctx);
-  //   if (price > 0) {
-  //     await ctx.reply(`Processing withdraw for ${price.toFixed(2)}¢...`);
-  //   }
-  //   const isPaid = await payments.pay(ctx, price);
-  //   if (isPaid) {
-  //     return oneCountryBot
-  //       .onEvent(ctx)
-  //       .catch((e) => payments.refundPayment(e, ctx, price));
-  //   }
-  // }
+  if (oneCountryBot.isSupportedEvent(ctx)) {
+    if (oneCountryBot.isValidCommand(ctx)) {
+      const price = oneCountryBot.getEstimatedPrice(ctx);
+      // if (price > 0) {
+      //   await ctx.reply(`Processing withdraw for ${price.toFixed(2)}¢...`);
+      // }
+      const isPaid = await payments.pay(ctx, price);
+      if (isPaid) {
+        oneCountryBot
+          .onEvent(ctx)
+          .catch((e) => payments.refundPayment(e, ctx, price));
+        return;
+      }
+    } else {
+      ctx.reply("Error: Missing prompt");
+      return;
+    }
+  }
   // if (wallet.isSupportedEvent(ctx)) {
   //   wallet.onEvent(ctx);
   //   return;
   // }
+
   if (walletConnect.isSupportedEvent(ctx)) {
     walletConnect.onEvent(ctx);
     return;
@@ -243,34 +237,34 @@ const onCallback = async (ctx: OnCallBackQueryData) => {
   }
 };
 
-bot.command("start", (ctx) =>
-  ctx.reply(commandHelpText, {
-    parse_mode: "Markdown",
-  })
-);
 
-bot.command("help", (ctx) =>
-  ctx.reply(commandHelpText, {
+bot.command(["start","help","menu"], async (ctx) => {
+  const userWalletAddress =
+    (await payments.getUserAccount(ctx.from?.id!)?.address) || "";
+  const balance = await payments.getAddressBalance(userWalletAddress);
+  const balanceOne = payments.toONE(balance, false).toFixed(2);
+  const startText = commandsHelpText.start
+    .replace("$CREDITS", balanceOne + "")
+    .replace("$WALLET_ADDRESS", userWalletAddress);
+  await ctx.reply(startText, {
     parse_mode: "Markdown",
-  })
-);
-
-bot.command("menu", async (ctx) => {
-  await ctx.reply(
-    `
-  
-*Main Menu*
-  
-🌟 Welcome to the Harmony One Bot! 🤖
-  
-💲 Send money to your /balance to start! 🚀
-  `,
-    {
-      parse_mode: "Markdown",
-      reply_markup: mainMenu,
-    }
-  );
+    reply_markup: mainMenu,
+    disable_web_page_preview: true,
+  });
 });
+
+bot.command("more", async (ctx) => {
+  ctx.reply(commandsHelpText.more, {
+    parse_mode: "Markdown",
+  });
+});
+
+// bot.command("menu", async (ctx) => {
+//   await ctx.reply(menuText.mainMenu.helpText, {
+//     parse_mode: "Markdown",
+//     reply_markup: mainMenu,
+//   });
+// });
 
 bot.on("message", onMessage);
 bot.on("callback_query:data", onCallback);

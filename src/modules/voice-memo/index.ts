@@ -132,10 +132,10 @@ export class VoiceMemo {
   }
 
   public getEstimatedPrice(ctx: OnMessageContext) {
-    // const { update: { message: { voice } } } = ctx
-    // if(voice) {
-    //   return this.speechmatics.estimatePrice(voice.duration)
-    // }
+    const { update: { message: { voice } } } = ctx
+    if(voice) {
+      return this.speechmatics.estimatePrice(voice.duration)
+    }
     return 0
   }
 

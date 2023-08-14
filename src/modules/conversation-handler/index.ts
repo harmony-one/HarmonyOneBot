@@ -72,7 +72,7 @@ export class ConversationHandler {
   }
 
   private hasPrefix(prompt: string): boolean {
-    const prefixList = config.openAi.chatGpt.groupChatPrefix;
+    const prefixList = config.openAi.chatGpt.chatPrefix;
     for (let i = 0; i < prefixList.length; i++) {
       if (prompt.startsWith(prefixList[i])) {
         return true;
@@ -202,7 +202,7 @@ export class ConversationHandler {
         chat.push({ role: "user", content: this.hasPrefix(prompt) ? prompt.slice(1) : prompt });
         const msgId = (
           await ctx.reply(
-            `Generating...\n*End Conversation with /end*`,
+            `Generating...\n`, // *End Conversation with /end*
             {
               parse_mode: "Markdown",
             }
