@@ -80,19 +80,11 @@ export class BotPayments {
   }
 
   public toONE(amount: BigNumber, roundCeil = true) {
-    try {
-      const value = this.web3.utils.fromWei(
-        amount.toFormat(0).replace(/,/g, ""), //
-        "ether"
-      );
-      if (roundCeil) {
-        return Math.ceil(+value);
-      }
-      return +value;
-    } catch (e) {
-      this.logger.error(e);
-      return 0;
+    const value = this.web3.utils.fromWei(amount.toFixed(), 'ether')
+    if(roundCeil) {
+      return Math.ceil(+value)
     }
+    return +value
   }
 
   public async getAddressBalance(address: string) {
