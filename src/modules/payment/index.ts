@@ -91,7 +91,7 @@ export class BotPayments {
       return +value;
     } catch (e) {
       this.logger.error(e);
-      return 10;
+      return 0;
     }
   }
 
