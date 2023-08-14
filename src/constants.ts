@@ -81,7 +81,7 @@ export const menuText = {
     menuName: `ask me anything`,
     helpText: `*ask me anything*
         
-/ask what's the most bizarre animal fact?
+\`/ask what's the most interesting fact about the development of AI?\`
 `,
   },
   imageMenu: {
@@ -89,7 +89,7 @@ export const menuText = {
     backButton: "⬅️ Back",
     helpText: `*make an image*
         
-/image a futuristic cityscape with towering skyscrapers, flying vehicles, and a diverse population of humans and robots, painted in a concept art style inspired by Syd Mead, with a focus on detail and realism.
+\`/image a futuristic cityscape with towering skyscrapers, flying vehicles, and a diverse population of humans and robots, painted in a concept art style inspired by Syd Mead, with a focus on detail and realism.\`
   `,
   },
   voiceMemoMenu: {
