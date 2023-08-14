@@ -138,7 +138,6 @@ const onMessage = async (ctx: OnMessageContext) => {
       voiceMemo.onEvent(ctx).catch((e) => {
         payments.refundPayment(e.message || "Unknown error", ctx, price);
       });
-      return;
     }
     return
   }
