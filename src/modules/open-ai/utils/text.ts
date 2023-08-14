@@ -1,5 +1,3 @@
-import config from "../../../config";
-
 export const appText = {
   imageGenChangeDefault: `*🎨 Image Generation DALL·E 2 Help*\n\n*Change image output sizes and numbers*
 Adjust image size or how many images are generated`,
@@ -11,6 +9,8 @@ Adjust image size or how many images are generated`,
   gptChatEnd: "Chat Complete", // Total tokens used:
   endChat: "Thanks for using 1.country services",
   gptChatPaymentIssue: `Once the withdrawal instructions are completed, you can return to the current conversation by writing the */ask* command.`,
+  notEnoughBalance:
+    "Not enough balance. Minimum balance required is 10 ONE per completion",
 };
 
 // <b>Edit an Image</b>
