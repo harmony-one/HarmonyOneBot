@@ -26,7 +26,7 @@ import { WalletConnect } from "./modules/walletconnect";
 import { BotPayments } from "./modules/payment";
 import { BotSchedule } from "./modules/schedule";
 import config from "./config";
-import { commandHelpText } from "./constants";
+import { commandsHelpText } from "./constants";
 import { getONEPrice } from "./modules/1country/api/coingecko";
 
 const logger = pino({
@@ -110,8 +110,9 @@ const onMessage = async (ctx: OnMessageContext) => {
         .onEvent(ctx, (reason?: string) => {
           payments.refundPayment(reason, ctx, price);
         }).catch((e) => {
-          payments.refundPayment((e.message || 'Unknown error'), ctx, price);
-        })
+          payments.refundPayment(e.message || "Unknown error", ctx, price);
+        });
+
       return;
     }
   }
@@ -122,34 +123,41 @@ const onMessage = async (ctx: OnMessageContext) => {
       sdImagesBot
         .onEvent(ctx, (reason?: string) => {
           payments.refundPayment(reason, ctx, price);
-        }).catch((e) => {
-          payments.refundPayment((e.message || 'Unknown error'), ctx, price);
         })
+        .catch((e) => {
+          payments.refundPayment(e.message || "Unknown error", ctx, price);
+        });
       return;
     }
+    return
   }
   if (voiceMemo.isSupportedEvent(ctx)) {
     const price = voiceMemo.getEstimatedPrice(ctx);
     const isPaid = await payments.pay(ctx, price);
     if (isPaid) {
       voiceMemo.onEvent(ctx).catch((e) => {
-        payments.refundPayment((e.message || 'Unknown error'), ctx, price);
-      })
+        payments.refundPayment(e.message || "Unknown error", ctx, price);
+      });
       return;
     }
+    return
   }
   if (openAiBot.isSupportedEvent(ctx)) {
     if (ctx.session.openAi.imageGen.isEnabled) {
       if (openAiBot.isValidCommand(ctx)) {
         const price = openAiBot.getEstimatedPrice(ctx);
         const priceONE = await getONEPrice(price);
-        if (price > 0) {
-          await ctx.reply(`Processing withdraw for ${priceONE} ONE...`); //${price.toFixed(2)}¢...`);
-        }
+        // if (price > 0) {
+        //   priceONE.price &&
+        //     (await ctx.reply(
+        //       `Processing withdraw for ${priceONE.price} ONE...`
+        //     )); //${price.toFixed(2)}¢...`);
+        // }
         const isPaid = await payments.pay(ctx, price);
         if (isPaid) {
-          return openAiBot.onEvent(ctx)
-            .catch((e) => payments.refundPayment(e, ctx, price));;
+          return openAiBot
+            .onEvent(ctx)
+            .catch((e) => payments.refundPayment(e, ctx, price));
         }
         return;
       } else {
@@ -164,9 +172,9 @@ const onMessage = async (ctx: OnMessageContext) => {
   if (oneCountryBot.isSupportedEvent(ctx)) {
     if (oneCountryBot.isValidCommand(ctx)) {
       const price = oneCountryBot.getEstimatedPrice(ctx);
-      if (price > 0) {
-        await ctx.reply(`Processing withdraw for ${price.toFixed(2)}¢...`);
-      }
+      // if (price > 0) {
+      //   await ctx.reply(`Processing withdraw for ${price.toFixed(2)}¢...`);
+      // }
       const isPaid = await payments.pay(ctx, price);
       if (isPaid) {
         oneCountryBot
@@ -174,11 +182,11 @@ const onMessage = async (ctx: OnMessageContext) => {
           .catch((e) => payments.refundPayment(e, ctx, price));
         return;
       }
+      return;
     } else {
       ctx.reply("Error: Missing prompt");
       return;
     }
-   
   }
   // if (wallet.isSupportedEvent(ctx)) {
   //   wallet.onEvent(ctx);
@@ -230,34 +238,34 @@ const onCallback = async (ctx: OnCallBackQueryData) => {
   }
 };
 
-bot.command("start", (ctx) =>
-  ctx.reply(commandHelpText, {
-    parse_mode: "Markdown",
-  })
-);
 
-bot.command("help", (ctx) =>
-  ctx.reply(commandHelpText, {
+bot.command(["start","help","menu"], async (ctx) => {
+  const userWalletAddress =
+    (await payments.getUserAccount(ctx.from?.id!)?.address) || "";
+  const balance = await payments.getAddressBalance(userWalletAddress);
+  const balanceOne = payments.toONE(balance, false).toFixed(2);
+  const startText = commandsHelpText.start
+    .replace("$CREDITS", balanceOne + "")
+    .replace("$WALLET_ADDRESS", userWalletAddress);
+  await ctx.reply(startText, {
     parse_mode: "Markdown",
-  })
-);
-
-bot.command("menu", async (ctx) => {
-  await ctx.reply(
-    `
-  
-*Main Menu*
-  
-🌟 Welcome to the Harmony One Bot! 🤖
-  
-💲 Send money to your /balance to start! 🚀
-  `,
-    {
-      parse_mode: "Markdown",
-      reply_markup: mainMenu,
-    }
-  );
+    reply_markup: mainMenu,
+    disable_web_page_preview: true,
+  });
 });
+
+bot.command("more", async (ctx) => {
+  ctx.reply(commandsHelpText.more, {
+    parse_mode: "Markdown",
+  });
+});
+
+// bot.command("menu", async (ctx) => {
+//   await ctx.reply(menuText.mainMenu.helpText, {
+//     parse_mode: "Markdown",
+//     reply_markup: mainMenu,
+//   });
+// });
 
 bot.on("message", onMessage);
 bot.on("callback_query:data", onCallback);

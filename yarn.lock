@@ -401,10 +401,10 @@
 
 "@grammyjs/ratelimiter@^1.2.0":
   version "1.2.0"
-  resolved "https://registry.npmjs.org/@grammyjs/ratelimiter/-/ratelimiter-1.2.0.tgz"
+  resolved "https://registry.yarnpkg.com/@grammyjs/ratelimiter/-/ratelimiter-1.2.0.tgz#20ad674f1535cd597e91c59a4ae85964588786e7"
   integrity sha512-xBkH/ATJsuv5JgVYX9yQM9DNg75Qqjw+gh82lVsBn4j+d0DkxxC+kuy6WFoB96Cb6oifQfaBJL8CTikdYG4v0A==
 
-"@grammyjs/types@^3.1.1", "@grammyjs/types@3.1.2":
+"@grammyjs/types@3.1.2":
   version "3.1.2"
   resolved "https://registry.npmjs.org/@grammyjs/types/-/types-3.1.2.tgz"
   integrity sha512-AsSkTUfZCfSEIacUBOQ94qLbZZy3UofkschWv4uBJKEHjuEfGnjeZZgiwhDfTDjmpmW+MbcasvS+FEfD2jiSLw==
@@ -687,15 +687,20 @@
     "@types/node" "*"
     form-data "^3.0.0"
 
-"@types/node@*", "@types/node@^18.15.11":
-  version "18.16.18"
-  resolved "https://registry.npmjs.org/@types/node/-/node-18.16.18.tgz"
-  integrity sha512-/aNaQZD0+iSBAGnvvN2Cx92HqE5sZCPZtx2TsK+4nvV23fFe09jVDvpArXr2j9DnYlzuU9WuoykDDc6wqvpNcw==
+"@types/node@*":
+  version "20.5.0"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-20.5.0.tgz#7fc8636d5f1aaa3b21e6245e97d56b7f56702313"
+  integrity sha512-Mgq7eCtoTjT89FqNoTzzXg2XvCi5VMhRV6+I2aYanc6kQCBImeNaAYRs/DyoVqk1YEUJK5gN9VO7HRIdz4Wo3Q==
 
 "@types/node@^12.12.6":
   version "12.20.55"
   resolved "https://registry.npmjs.org/@types/node/-/node-12.20.55.tgz"
   integrity sha512-J8xLz7q2OFulZ2cyGTLE1TbbZcjpno7FaN6zdJNrgAdrJ+DZzh/uFR6YrTb4C+nXakvud8Q4+rbhoIWlYQbUFQ==
+
+"@types/node@^18.15.11":
+  version "18.17.5"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-18.17.5.tgz#c58b12bca8c2a437b38c15270615627e96dd0bc5"
+  integrity sha512-xNbS75FxH6P4UXTPUJp/zNPq6/xsfdJKussCWNOnz4aULWIRwMgP1LgaB5RiBnMX1DPCYenuqGZfnIAx5mbFLA==
 
 "@types/pbkdf2@^3.0.0":
   version "3.1.0"
@@ -3933,9 +3938,9 @@ tar@^4.0.2:
     yallist "^3.1.1"
 
 telegram@^2.17.10:
-  version "2.17.10"
-  resolved "https://registry.npmjs.org/telegram/-/telegram-2.17.10.tgz"
-  integrity sha512-BeWrH6jrTjtmZtGi63mM2UWwciOivqQknhRIysULVRQkDbo+MW4I2jI6d3sPM5m8Ge9mhjeKg1aVZf2qG4vh2Q==
+  version "2.18.26"
+  resolved "https://registry.yarnpkg.com/telegram/-/telegram-2.18.26.tgz#071d0985d93aed3af0f373d5200986dc762037b6"
+  integrity sha512-W05ltjndq/xj4yFG77ttaUDmm+ywJFlNV1WVYm63ptRg2UXyhkq0RZuwshvNdYLA2ic2Re9VqZpg5c9ySeDouw==
   dependencies:
     "@cryptography/aes" "^0.1.1"
     async-mutex "^0.3.0"

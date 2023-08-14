@@ -2,7 +2,7 @@ import config from "../../config";
 import { getCommandNamePrompt } from "../1country/utils";
 import { BotPayments } from "../payment";
 import { OnMessageContext, OnCallBackQueryData } from "../types";
-import { getChatModel, getDalleModel, getDalleModelPrice } from "./api/openAi";
+import { getChatModel, getChatModelPrice, getDalleModel, getDalleModelPrice, getTokenNumber } from "./api/openAi";
 import { alterImg, imgGen, imgGenEnhanced, promptGen } from "./controller";
 import { Logger, pino } from "pino";
 import { appText } from "./utils/text";
@@ -149,54 +149,53 @@ export class OpenAIBot {
 
   public getEstimatedPrice(ctx: any) {
     const priceAdjustment = config.openAi.chatGpt.priceAdjustment
+    const prompts = ctx.match;
+    if (this.isSupportedImageReply(ctx)) {
+      const imageNumber = ctx.message?.caption || ctx.message?.text;
+      const imageSize = ctx.session.openAi.imageGen.imgSize;
+      const model = getDalleModel(imageSize);
+      const price = getDalleModelPrice(model, true, imageNumber); //cents
+      return price;
+    }
+    if (!prompts) {
+      return 0;
+    }
+    if (
+      ctx.chat.type !== "private" &&
+      ctx.session.openAi.chatGpt.chatConversation.length > 0
+    ) {
+      return 0;
+    }
+    if (ctx.hasCommand(SupportedCommands.genImg.name)) {
+      const imageNumber = ctx.session.openAi.imageGen.numImages;
+      const imageSize = ctx.session.openAi.imageGen.imgSize;
+      const model = getDalleModel(imageSize);
+      const price = getDalleModelPrice(model, true, imageNumber); //cents
+      return price;
+    }
+    if (ctx.hasCommand(SupportedCommands.genImgEn.name)) {
+      const imageNumber = ctx.session.openAi.imageGen.numImages;
+      const imageSize = ctx.session.openAi.imageGen.imgSize;
+      const chatModelName = ctx.session.openAi.chatGpt.model;
+      const chatModel = getChatModel(chatModelName);
+      const model = getDalleModel(imageSize);
+      const price = getDalleModelPrice(
+        model,
+        true,
+        imageNumber,
+        true,
+        chatModel
+      ); //cents
+      return price;
+    }
+    if (ctx.hasCommand(SupportedCommands.ask.name)) {
+      const baseTokens = getTokenNumber(prompts as string);
+      const modelName = ctx.session.openAi.chatGpt.model;
+      const model = getChatModel(modelName);
+      const price = getChatModelPrice(model, true, baseTokens); //cents
+      return price 
+    }
     return 0;
-    // const prompts = ctx.match;
-    // if (this.isSupportedImageReply(ctx)) {
-    //   const imageNumber = ctx.message?.caption || ctx.message?.text;
-    //   const imageSize = ctx.session.openAi.imageGen.imgSize;
-    //   const model = getDalleModel(imageSize);
-    //   const price = getDalleModelPrice(model, true, imageNumber); //cents
-    //   return price;
-    // }
-    // if (!prompts) {
-    //   return 0;
-    // }
-    // if (
-    //   ctx.chat.type !== "private" &&
-    //   ctx.session.openAi.chatGpt.chatConversation.length > 0
-    // ) {
-    //   return 0;
-    // }
-    // if (ctx.hasCommand("genImg")) {
-    //   const imageNumber = ctx.session.openAi.imageGen.numImages;
-    //   const imageSize = ctx.session.openAi.imageGen.imgSize;
-    //   const model = getDalleModel(imageSize);
-    //   const price = getDalleModelPrice(model, true, imageNumber); //cents
-    //   return price;
-    // }
-    // if (ctx.hasCommand("genImgEn")) {
-    //   const imageNumber = ctx.session.openAi.imageGen.numImages;
-    //   const imageSize = ctx.session.openAi.imageGen.imgSize;
-    //   const chatModelName = ctx.session.openAi.chatGpt.model;
-    //   const chatModel = getChatModel(chatModelName);
-    //   const model = getDalleModel(imageSize);
-    //   const price = getDalleModelPrice(
-    //     model,
-    //     true,
-    //     imageNumber,
-    //     true,
-    //     chatModel
-    //   ); //cents
-    //   return price;
-    // }
-    // if (ctx.hasCommand(SupportedCommands.chat.name)) {
-    //   const baseTokens = getTokenNumber(prompts as string);
-    //   const modelName = ctx.session.openAi.chatGpt.model;
-    //   const model = getChatModel(modelName);
-    //   const price = getChatModelPrice(model, true, baseTokens); //cents
-    //   return price // return ctx.chat.type !== "private" ? price * 2 : price;
-    // }
-    // return 0;
   }
 
   isSupportedImageReply(ctx: OnMessageContext | OnCallBackQueryData) {
@@ -364,11 +363,10 @@ export class OpenAIBot {
       ctx.session.openAi.chatGpt.chatConversation = [...chat];
       ctx.session.openAi.chatGpt.usage += response.usage;
       ctx.session.openAi.chatGpt.price += response.price;
-      const isPay = true;
-      // await this.payments.pay(
-      //   ctx as OnMessageContext,
-      //   response.price
-      // );
+      const isPay = await this.payments.pay(
+        ctx as OnMessageContext,
+        response.price
+      );
       if (!isPay) {
         ctx.reply(appText.gptChatPaymentIssue, {
           parse_mode: "Markdown",
@@ -397,6 +395,8 @@ export class OpenAIBot {
     const usage = ctx.session.openAi.chatGpt.usage;
     const totalPrice = ctx.session.openAi.chatGpt.price;
     const onePrice = await getONEPrice(totalPrice)
-    ctx.reply(`${appText.gptChatEnd} ${onePrice.price}ONE Spent (${usage} tokens)`); //(${totalPrice.toFixed(2)}¢ )`);
+    ctx.reply(`${appText.gptChatEnd} \n\n*${onePrice.price} ONE* Spent (${usage} tokens)`, {
+      parse_mode: "Markdown"
+    }); //(${totalPrice.toFixed(2)}¢ )`);
   }
 }

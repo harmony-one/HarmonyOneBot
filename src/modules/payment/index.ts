@@ -63,7 +63,7 @@ export class BotPayments {
     }
   }
 
-  private getUserAccount(userId: number | string) {
+  public getUserAccount(userId: number | string) {
     const privateKey = this.web3.utils.sha3(
       `${config.payment.secret}_${userId}`
     );
@@ -80,11 +80,19 @@ export class BotPayments {
   }
 
   public toONE(amount: BigNumber, roundCeil = true) {
-    const value = this.web3.utils.fromWei(amount.toString(), "ether");
-    if (roundCeil) {
-      return Math.ceil(+value);
+    try {
+      const value = this.web3.utils.fromWei(
+        amount.toFormat(0).replace(/,/g, ""),
+        "ether"
+      );
+      if (roundCeil) {
+        return Math.ceil(+value);
+      }
+      return +value;
+    } catch (e) {
+      console.log("ERRROR", e);
+      return 10;
     }
-    return +value;
   }
 
   public async getAddressBalance(address: string) {
@@ -92,7 +100,7 @@ export class BotPayments {
     return bn(balance.toString());
   }
 
-  private async getUserBalance(userId: number) {
+  public async getUserBalance(userId: number) {
     const account = this.getUserAccount(userId);
     if (account) {
       return await this.getAddressBalance(account.address);
@@ -285,19 +293,24 @@ export class BotPayments {
 
     const account = this.getUserAccount(id);
     if (account && text?.toLowerCase().includes("/balance")) {
-      const balance = await this.getAddressBalance(account.address);
-      const balanceOne = this.toONE(balance, false);
-      ctx.reply(
-        `
+      try {
+        const balance = await this.getAddressBalance(account.address);
+        const balanceOne = this.toONE(balance, false);
+        ctx.reply(
+          `
       🤖 *Balance* 
       
 *ONE*: ${balanceOne.toFixed(2)} 
 
 *Deposit Address*: \`${account.address}\``,
-        {
-          parse_mode: "Markdown",
-        }
-      );
+          {
+            parse_mode: "Markdown",
+          }
+        );
+      } catch (e) {
+        this.logger.error(e);
+        ctx.reply(`Error retrieving wallet balance`);
+      }
     }
   }
 

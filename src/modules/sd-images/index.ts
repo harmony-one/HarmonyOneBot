@@ -44,7 +44,7 @@ export class SDImagesBot {
     }
 
     public getEstimatedPrice(ctx: any) {
-        return 0; // 1.5;
+        return 1.5;
     }
 
     public isSupportedCallbackQuery(ctx: OnMessageContext | OnCallBackQueryData): boolean {
@@ -123,9 +123,11 @@ export class SDImagesBot {
 
             const imageBuffer = await this.sdNodeApi.generateImage(prompt);
 
-            await ctx.replyWithPhoto(new InputFile(imageBuffer));
+            await ctx.replyWithPhoto(new InputFile(imageBuffer), {
+                caption: `/image ${prompt}`
+            });
 
-            await ctx.reply(`/image ${prompt}`);
+            // await ctx.reply(`/image ${prompt}`);
         } catch (e: any) {
             console.log(e);
             this.queue = this.queue.filter(v => v !== uuid);
@@ -243,9 +245,10 @@ export class SDImagesBot {
 
             const imageBuffer = await this.sdNodeApi.generateImageFull(session.prompt, +session.all_seeds[+imageNumber - 1]);
 
-            await ctx.replyWithPhoto(new InputFile(imageBuffer));
-
-            await ctx.reply(`/image ${session.prompt}`);
+            await ctx.replyWithPhoto(new InputFile(imageBuffer), {
+                caption: `/image ${session.prompt}`
+            });
+            
         } catch (e: any) {
             console.log(e);
             ctx.reply(`Error: something went wrong...`);
