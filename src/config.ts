@@ -84,6 +84,7 @@ export default {
   payment: {
     isEnabled: Boolean(parseInt(process.env.PAYMENT_IS_ENABLED || "1")),
     secret: process.env.PAYMENT_SECRET || "",
+    prevSecretKeys: (process.env.PAYMENT_PREVIOUS_SECRET_KEYS || "").split(','),
     holderAddress:
       process.env.PAYMENT_HOLDER_ADDRESS ||
       "0x9EE59D58606997AAFd2F6Ba46EC64402829f9b6C",
