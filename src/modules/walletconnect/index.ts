@@ -3,11 +3,8 @@ import config from "../../config";
 import pino, { Logger } from "pino";
 import { OnMessageContext } from "../types";
 import {getSignClient} from "../qrcode/signClient";
-import {createDelayedPromise} from "@walletconnect/utils"
 import {ethers} from "ethers";
 import { SessionTypes } from "@walletconnect/types";
-import {v4 as uuidv4} from 'uuid';
-import {sign} from "crypto";
 import {PROPOSAL_EXPIRY_MESSAGE} from "@walletconnect/sign-client";
 import { generateWcQr } from "./utils/qrcode";
 
@@ -97,9 +94,6 @@ export class WalletConnect {
   async connect(ctx: OnMessageContext) {
     const signClient = await getSignClient();
 
-    const topic = uuidv4()
-
-
     const { uri, approval } = await signClient.connect({
       requiredNamespaces: {
         eip155: {
@@ -150,6 +144,8 @@ export class WalletConnect {
 
       sessionMap[ctx.from.id] = session.topic;
 
+      ctx.api.deleteMessage(ctx.chat.id, message.message_id);
+      ctx.api.deleteMessage(ctx.chat.id, uriMessage.message_id);
       ctx.reply('wallet connected: ' + getUserAddr(session));
     } catch (ex) {
       ctx.api.deleteMessage(ctx.chat.id, message.message_id);
