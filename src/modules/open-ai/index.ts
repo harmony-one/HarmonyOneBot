@@ -160,12 +160,12 @@ export class OpenAIBot {
     if (!prompts) {
       return 0;
     }
-    if (
-      ctx.chat.type !== "private" &&
-      ctx.session.openAi.chatGpt.chatConversation.length > 0
-    ) {
-      return 0;
-    }
+    // if (
+    //   ctx.chat.type !== "private" &&
+    //   ctx.session.openAi.chatGpt.chatConversation.length > 0
+    // ) {
+    //   return 0;
+    // }
     if (ctx.hasCommand(SupportedCommands.genImg.name)) {
       const imageNumber = ctx.session.openAi.imageGen.numImages;
       const imageSize = ctx.session.openAi.imageGen.imgSize;
@@ -188,13 +188,13 @@ export class OpenAIBot {
       ); //cents
       return price;
     }
-    if (ctx.hasCommand(SupportedCommands.ask.name)) {
-      const baseTokens = getTokenNumber(prompts as string);
-      const modelName = ctx.session.openAi.chatGpt.model;
-      const model = getChatModel(modelName);
-      const price = getChatModelPrice(model, true, baseTokens); //cents
-      return price 
-    }
+    // if (ctx.hasCommand(SupportedCommands.ask.name)) {
+    //   const baseTokens = getTokenNumber(prompts as string);
+    //   const modelName = ctx.session.openAi.chatGpt.model;
+    //   const model = getChatModel(modelName);
+    //   const price = getChatModelPrice(model, true, baseTokens); //cents
+    //   return price 
+    // }
     return 0;
   }
 
