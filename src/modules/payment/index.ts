@@ -352,7 +352,7 @@ export class BotPayments {
       if(amount.gt(0)) {
         replyText = `Transferred ${this.toONE(amount, false)} ONE from previous accounts to ${account.address}. Current balance: ${balanceOne} ONE.`
       } else {
-        replyText = `No funds found on previous accounts. Current balance: ${balanceOne} ONE.`
+        replyText = `No funds were found on the balance of previous accounts. Current balance: ${balanceOne} ONE.`
       }
       ctx.reply(replyText, {
         parse_mode: "Markdown",
