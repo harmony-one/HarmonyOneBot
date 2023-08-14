@@ -80,19 +80,11 @@ export class BotPayments {
   }
 
   public toONE(amount: BigNumber, roundCeil = true) {
-    try {
-      const value = this.web3.utils.fromWei(
-        amount.toFormat(0).replace(/,/g, ""),
-        "ether"
-      );
-      if (roundCeil) {
-        return Math.ceil(+value);
-      }
-      return +value;
-    } catch (e) {
-      console.log("ERRROR", e);
-      return 10;
+    const value = this.web3.utils.fromWei(amount.toFixed(), 'ether')
+    if(roundCeil) {
+      return Math.ceil(+value)
     }
+    return +value
   }
 
   public async getAddressBalance(address: string) {
@@ -158,11 +150,9 @@ export class BotPayments {
     if (!this.isPaymentsEnabled()) {
       return true;
     }
-
     if (amountUSD === 0) {
       return true;
     }
-
     if (this.isUserInWhitelist(userId, username)) {
       this.logger.info(
         `@${username} (${userId}) is in the whitelist, skip payment`
@@ -223,17 +213,14 @@ export class BotPayments {
   public async pay(ctx: OnMessageContext, amountUSD: number) {
     const { from, message_id } = ctx.update.message;
     const { id: userId, username = "" } = from;
-
     if (this.skipPayment(ctx, amountUSD)) {
       return true;
     }
-
     const userAccount = this.getUserAccount(userId);
     if (!userAccount) {
       ctx.reply(`Cannot get @${username}(${userId}) blockchain account`);
       return false;
     }
-
     const amountONE = this.getPriceInONE(amountUSD);
     const fee = await this.getTransactionFee();
     const userBalance = await this.getUserBalance(userId);
@@ -242,7 +229,6 @@ export class BotPayments {
     this.logger.info(
       `[${userId} @${username}] withdraw request, amount: ${amountUSD}$c (${amountONE.toString()} ONE), balance after withdraw: ${balanceDelta.toString()}`
     );
-
     if (balanceDelta.gte(0)) {
       try {
         const tx = await this.transferFunds(

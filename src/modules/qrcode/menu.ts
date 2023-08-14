@@ -18,9 +18,14 @@ export const qrCodeBotMenu = new Menu<BotContext>(MenuIds.QR_BOT_MAIN) //<MyCont
   // })
   // .row()
   .back(menuText.mainMenu.backButton, (ctx) => {
-    ctx.editMessageText(menuText.mainMenu.menuName).catch((ex) => {
-      console.log('### ex', ex);
-    });
+    ctx
+      .editMessageText(menuText.mainMenu.menuName, {
+        parse_mode: "Markdown",
+        disable_web_page_preview: true,
+      })
+      .catch((ex) => {
+        console.log("### ex", ex);
+      });
   });
 
 const qrChooseOptionsMenu = new Menu<BotContext>(MenuIds.QR_BOT_CHANGE_OPTIONS)

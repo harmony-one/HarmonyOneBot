@@ -43,8 +43,8 @@ export const bot = new Bot<BotContext>(config.telegramBotAuthToken);
 
 bot.use(
   limit({
-    // Allow only 1 message to be handled every 2 seconds.
-    timeFrame: 2000,
+    // Allow only 1 message to be handled every 0.5 seconds.
+    timeFrame: 500,
     limit: 1,
 
     // This is called when the limit is exceeded.
@@ -146,7 +146,7 @@ const onMessage = async (ctx: OnMessageContext) => {
     if (ctx.session.openAi.imageGen.isEnabled) {
       if (openAiBot.isValidCommand(ctx)) {
         const price = openAiBot.getEstimatedPrice(ctx);
-        const priceONE = await getONEPrice(price);
+        // const priceONE = await getONEPrice(price);
         // if (price > 0) {
         //   priceONE.price &&
         //     (await ctx.reply(

@@ -15,39 +15,6 @@ export enum MenuIds {
   CHAT_GPT_MAIN = "chat-gpt-main",
   CHAT_GPT_MODEL = "chat-gpt-model",
 }
-
-export const menuText = {
-  mainMenu: {
-    backButton: "⬅️ Back",
-    menuName: `Main Menu`,
-    helpText: `*Main Menu*
-     
-🤖 welcome to the [harmony ONE bot](https://stse.substack.com/p/one-bot-for-all-generative-ai-on)! access ai models, agents, characters, services pay-per-use.`,
-  },
-  askMenu: {
-    menuName: `ask me anything`,
-    helpText: `*ask me anything*
-        
-/ask what's the most bizarre animal fact?
-`,
-  },
-  imageMenu: {
-    menuName: "make an image",
-    backButton: "⬅️ Back",
-    helpText: `*make an image*
-        
-/image a futuristic cityscape with towering skyscrapers, flying vehicles, and a diverse population of humans and robots, painted in a concept art style inspired by Syd Mead, with a focus on detail and realism.
-  `,
-  },
-  voiceMemoMenu: {
-    menuName: "voice memo",
-    backButton: "⬅️ Back",
-    helpText: `*voice memo*
-    
-send a voice message to me for a transcript and summary.`,
-  },
-};
-
 export const commandsHelpText = {
   start: `*Hello, I am @HarmonyOneAIBot, ONE Bot from Harmony AI 🧚‍♀️.* Type
 
@@ -101,6 +68,40 @@ Send to \`$WALLET_ADDRESS\` for recharge.
   /send ADDRESS AMOUNT - Send funds from walletconnect
   `
 };
+
+export const menuText = {
+  mainMenu: {
+    backButton: "⬅️ Back",
+    menuName: commandsHelpText.start,
+    helpText: `*Main Menu*
+     
+🤖 welcome to the [harmony ONE bot](https://stse.substack.com/p/one-bot-for-all-generative-ai-on)! access ai models, agents, characters, services pay-per-use.`,
+  },
+  askMenu: {
+    menuName: `ask me anything`,
+    helpText: `*ask me anything*
+        
+\`/ask what's the most interesting fact about the development of AI?\`
+`,
+  },
+  imageMenu: {
+    menuName: "make an image",
+    backButton: "⬅️ Back",
+    helpText: `*make an image*
+        
+\`/image a futuristic cityscape with towering skyscrapers, flying vehicles, and a diverse population of humans and robots, painted in a concept art style inspired by Syd Mead, with a focus on detail and realism.\`
+  `,
+  },
+  voiceMemoMenu: {
+    menuName: "voice memo",
+    backButton: "⬅️ Back",
+    helpText: `*voice memo*
+    
+send a voice message to me for a transcript and summary.`,
+  },
+};
+
+
 
 // 0x742c4788CC47A94cf260abc474E2Fa45695a79Cd
 

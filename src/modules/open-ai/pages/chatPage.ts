@@ -62,10 +62,15 @@ export const chatMainMenu = new Menu<BotContext>(MenuIds.CHAT_GPT_MAIN)
   //   }
   // })
   // .row()
-    .back(menuText.mainMenu.backButton, (ctx) => {
-    ctx.editMessageText(menuText.mainMenu.menuName).catch((ex) => {
-      console.log("### ex", ex);
-    });
+  .back(menuText.mainMenu.backButton, (ctx) => {
+    ctx
+      .editMessageText(menuText.mainMenu.menuName, {
+        parse_mode: "Markdown",
+        disable_web_page_preview: true,
+      })
+      .catch((ex) => {
+        console.log("### ex", ex);
+      });
   });
 
 const chatGPTimageDefaultOptions = new Menu<BotContext>(MenuIds.CHAT_GPT_MODEL)

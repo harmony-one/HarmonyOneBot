@@ -13,7 +13,10 @@ export const voiceMemoMenuText = {
 export const voiceMemoMenu = new Menu<BotContext>(MenuIds.VOICE_MEMO_MAIN)
   .row()
   .back(menuText.mainMenu.backButton, (ctx) => {
-    ctx.editMessageText(menuText.mainMenu.menuName).catch((ex) => {
+    ctx.editMessageText(menuText.mainMenu.menuName, {
+      parse_mode: "Markdown",
+      disable_web_page_preview: true,
+    }).catch((ex) => {
       console.log('### ex', ex);
     });
   });

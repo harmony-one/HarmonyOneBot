@@ -54,6 +54,7 @@ export const mainMenu = new Menu<BotContext>(MenuIds.MAIN_MENU)
     ctx
       .editMessageText(menuText.askMenu.helpText, {
         parse_mode: "Markdown",
+        disable_web_page_preview: true,
       })
       .catch((ex: any) => {
         console.log("### ex", ex);
@@ -64,6 +65,7 @@ export const mainMenu = new Menu<BotContext>(MenuIds.MAIN_MENU)
     ctx
       .editMessageText(menuText.imageMenu.helpText, {
         parse_mode: "Markdown",
+        disable_web_page_preview: true,
       })
       .catch((ex: any) => {
         console.log("### ex", ex);
@@ -75,6 +77,7 @@ export const mainMenu = new Menu<BotContext>(MenuIds.MAIN_MENU)
     ctx
       .editMessageText(menuText.voiceMemoMenu.helpText, {
         parse_mode: "Markdown",
+        disable_web_page_preview: true,
       })
       .catch((ex: any) => {
         console.log("### ex", ex);
