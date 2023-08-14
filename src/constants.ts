@@ -16,34 +16,25 @@ export enum MenuIds {
   CHAT_GPT_MODEL = "chat-gpt-model",
 }
 export const commandsHelpText = {
-  start: `*Hello, I am @HarmonyOneAIBot, ONE Bot from Harmony AI 🧚‍♀️* 
+  start: `Hello, I am @HarmonyOneAIBot, ONE Bot from Harmony AI 🧚‍♀️. Type
+
+  /ask Ask me anything (OpenAI ChatGPT-4). Or, / without "ask".
+  /image Make a photo (Stable Diffusion XL). Or, /images for multiple.
+  /help This tutorial. Docs at harmony.one/bot. Examples:
   
-Type:
-
-/ask Ask me anything (OpenAI ChatGPT-4). Or, / without "ask".
-/image Make a photo (Stable Diffusion XL). Or, /images for multiple.
-/help This tutorial. Docs at harmony.one/bot
-
-Examples:
-_/ask act like elon musk, expand our q4 roadmap "telegram ai bot"
-> act like mark zuckerberg instead_
-
-/image glimpses of a herd of wild elephants crossing a savanna
-/more Other commands for voice memo summary, artistic QR code, Wallet Connect, ChatGPT 32K, DALL-E.
-
-*Soon:* 🧠 Web ∞ (CivitAI embed models, Character.AI celebrity chats, RunwayML video clips, HuggingFace LoRa/ControlNet, ElevenLabs speech clones, Zapier task automations) + 🌳 Web3 (self-custody wallets, token swaps, collectible mints, price auctions, multi-signature safes, governance votes) + 🐝 Web2 (news curation, gated access, emoji tipping) + 🏴‍☠️ Web1 (.country domains, vanity URLs, Notion/Substack hosting).
-
-Your Credits: *$CREDITS ONE* tokens. 
-
-Send to \`$WALLET_ADDRESS\` for recharge.
-
-+-----------------------------+
-| 💬 /ask Ask me anything       |
-+-----------------------------+
-| 📸 /image Make a photo        |
-+-----------------------------+
-| 🤩 /more Other commands   |
-+-----------------------------+
+  /ask act like elon musk, expand our q4 roadmap "telegram ai bot"
+  
+  / act like mark zuckerberg instead
+  
+  /image glimpses of a herd of wild elephants crossing a savanna
+  
+  /images vintage hot rod with custom flame paint job
+  
+  /more Other commands for summarizing voice messages, artistic QR code, Wallet Connect, ChatGPT 32K, DALL-E.
+  
+  Soon: 🧠 Web∞ (CivitAI custom models, Character.AI celebrity chats, RunwayML video clips, HuggingFace embed ControlNet, ElevenLabs speech clones, Zapier task automations) + 🌳 Web3 (self-custody wallets, token swaps, fiat onramps, collectible mints, price auctions, multi-signature safes, governance votes) + 🐝 Web2 (news curation, gated access, emoji tipping) + 🏴‍☠️ Web1 (.country domains, email aliases, vanity URLs, Notion/Substack hosting).
+  
+  Your credits: $CREDITS ONE tokens. Send to $WALLET_ADDRESS for recharge.
 `,
   more: 
   ` 
@@ -63,8 +54,8 @@ Send to \`$WALLET_ADDRESS\` for recharge.
 *| 🎙️ Voice Messages |*
   Send a voice message (.m4a) to me for a transcript and summary.
   
-*| 💰 Wallet and Balance |*
-  /balance - Check balance
+*| 💰 Wallet and Credits |*
+  /credits - Check credits
   /connect - Use walletconnect to pair external wallet
   /send ADDRESS AMOUNT - Send funds from walletconnect
   `
