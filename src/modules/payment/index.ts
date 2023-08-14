@@ -63,9 +63,9 @@ export class BotPayments {
     }
   }
 
-  public getUserAccount(userId: number | string) {
+  public getUserAccount(userId: number | string, botSecret = config.payment.secret) {
     const privateKey = this.web3.utils.sha3(
-      `${config.payment.secret}_${userId}`
+      `${botSecret}_${userId}`
     );
     if (privateKey) {
       return this.web3.eth.accounts.privateKeyToAccount(privateKey);
@@ -282,17 +282,50 @@ export class BotPayments {
     }
   }
 
+  private async migrateFunds(userId: number): Promise<BigNumber> {
+    let totalFunds = bn(0)
+    const currentAccount = this.getUserAccount(userId)
+    if(!currentAccount) {
+      return totalFunds
+    }
+    const fee = await this.getTransactionFee();
+
+    const { prevSecretKeys } = config.payment
+
+    for(let i = 0; i < prevSecretKeys.length; i++) {
+      const expiredSecretKey = prevSecretKeys[i]
+      const prevAccount = this.getUserAccount(userId, expiredSecretKey);
+      if(prevAccount) {
+        const balance = await this.getAddressBalance(prevAccount.address)
+        const availableFunds = balance.minus(fee)
+        if(availableFunds.gt(0)) {
+          await this.transferFunds(prevAccount, currentAccount.address, availableFunds)
+          this.logger.info(`UserId ${userId} ${availableFunds.toString()} ONE transferred from ${prevAccount.address} to ${currentAccount.address}`)
+          totalFunds = totalFunds.plus(availableFunds)
+        }
+      }
+    }
+    return totalFunds
+  }
+
   public isSupportedEvent(ctx: OnMessageContext) {
-    const { text = "" } = ctx.update.message;
-    return text?.toLowerCase().includes("/balance");
+    const { text = '' } = ctx.update.message;
+    return ['/balance', '/migrateAccount'].includes(text)
   }
 
   public async onEvent(ctx: OnMessageContext) {
     const { id } = ctx.update.message.from;
-    const { message_id, text = "" } = ctx.update.message;
+    const { message_id, text = '' } = ctx.update.message;
+
+    if(!this.isSupportedEvent(ctx)) {
+      return false
+    }
 
     const account = this.getUserAccount(id);
-    if (account && text?.toLowerCase().includes("/balance")) {
+    if(!account) {
+      return false
+    }
+    if (text === '/balance') {
       try {
         const balance = await this.getAddressBalance(account.address);
         const balanceOne = this.toONE(balance, false);
@@ -311,6 +344,19 @@ export class BotPayments {
         this.logger.error(e);
         ctx.reply(`Error retrieving wallet balance`);
       }
+    } else if(text === '/migrateAccount') {
+      const amount = await this.migrateFunds(id)
+      const balance = await this.getAddressBalance(account.address);
+      const balanceOne  = this.toONE(balance, false)
+      let replyText = ''
+      if(amount.gt(0)) {
+        replyText = `Transferred ${this.toONE(amount, false)} ONE from previous accounts to ${account.address}. Current balance: ${balanceOne} ONE.`
+      } else {
+        replyText = `No funds found on previous accounts. Current balance: ${balanceOne} ONE.`
+      }
+      ctx.reply(replyText, {
+        parse_mode: "Markdown",
+      })
     }
   }
 
