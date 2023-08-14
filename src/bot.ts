@@ -129,6 +129,7 @@ const onMessage = async (ctx: OnMessageContext) => {
         });
       return;
     }
+    return
   }
   if (voiceMemo.isSupportedEvent(ctx)) {
     const price = voiceMemo.getEstimatedPrice(ctx);
@@ -139,18 +140,19 @@ const onMessage = async (ctx: OnMessageContext) => {
       });
       return;
     }
+    return
   }
   if (openAiBot.isSupportedEvent(ctx)) {
     if (ctx.session.openAi.imageGen.isEnabled) {
       if (openAiBot.isValidCommand(ctx)) {
         const price = openAiBot.getEstimatedPrice(ctx);
         const priceONE = await getONEPrice(price);
-        if (price > 0) {
-          priceONE.price &&
-            (await ctx.reply(
-              `Processing withdraw for ${priceONE.price} ONE...`
-            )); //${price.toFixed(2)}¢...`);
-        }
+        // if (price > 0) {
+        //   priceONE.price &&
+        //     (await ctx.reply(
+        //       `Processing withdraw for ${priceONE.price} ONE...`
+        //     )); //${price.toFixed(2)}¢...`);
+        // }
         const isPaid = await payments.pay(ctx, price);
         if (isPaid) {
           return openAiBot
@@ -170,9 +172,9 @@ const onMessage = async (ctx: OnMessageContext) => {
   if (oneCountryBot.isSupportedEvent(ctx)) {
     if (oneCountryBot.isValidCommand(ctx)) {
       const price = oneCountryBot.getEstimatedPrice(ctx);
-      if (price > 0) {
-        await ctx.reply(`Processing withdraw for ${price.toFixed(2)}¢...`);
-      }
+      // if (price > 0) {
+      //   await ctx.reply(`Processing withdraw for ${price.toFixed(2)}¢...`);
+      // }
       const isPaid = await payments.pay(ctx, price);
       if (isPaid) {
         oneCountryBot
@@ -235,22 +237,8 @@ const onCallback = async (ctx: OnCallBackQueryData) => {
   }
 };
 
-bot.command("start", async (ctx) => {
-  const userWalletAddress =
-    (await payments.getUserAccount(ctx.from?.id!)?.address) || "";
-  const balance = await payments.getAddressBalance(userWalletAddress);
-  const balanceOne = payments.toONE(balance, false).toFixed(2);
-  const startText = commandsHelpText.start
-    .replace("$CREDITS", balanceOne + "")
-    .replace("$WALLET_ADDRESS", userWalletAddress);
-  await ctx.reply(startText, {
-    parse_mode: "Markdown",
-    reply_markup: mainMenu,
-    disable_web_page_preview: true,
-  });
-});
 
-bot.command("help", async (ctx) => {
+bot.command(["start","help","menu"], async (ctx) => {
   const userWalletAddress =
     (await payments.getUserAccount(ctx.from?.id!)?.address) || "";
   const balance = await payments.getAddressBalance(userWalletAddress);
