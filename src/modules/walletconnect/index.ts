@@ -2,7 +2,6 @@ import {InlineKeyboard, InputFile} from "grammy";
 import config from "../../config";
 import pino, { Logger } from "pino";
 import { OnMessageContext } from "../types";
-import {createQRCode} from "../qrcode/utils";
 import {getSignClient} from "../qrcode/signClient";
 import {createDelayedPromise} from "@walletconnect/utils"
 import {ethers} from "ethers";
@@ -10,6 +9,7 @@ import { SessionTypes } from "@walletconnect/types";
 import {v4 as uuidv4} from 'uuid';
 import {sign} from "crypto";
 import {PROPOSAL_EXPIRY_MESSAGE} from "@walletconnect/sign-client";
+import { generateWcQr } from "./utils/qrcode";
 
 const sessionMap: Record<number, string> = {}
 
@@ -135,7 +135,7 @@ export class WalletConnect {
       },
     })
 
-    const qrImgBuffer = await createQRCode({url: uri || '', width: 450, margin: 3 });
+    const qrImgBuffer = await generateWcQr(uri || '', 480);
 
     const message = await ctx.replyWithPhoto(new InputFile(qrImgBuffer, `wallet_connect_${Date.now()}.png`), {
       caption: 'Scan QR code with a WalletConnect-compatible wallet'
