@@ -117,7 +117,7 @@ export class BotPayments {
     const txBody = {
       from: accountFrom.address,
       to: addressTo,
-      value: web3.utils.toHex(amount.toString()),
+      value: web3.utils.toHex(amount.toFixed()),
     };
     const gasLimit = await web3.eth.estimateGas(txBody);
     const tx = await web3.eth.sendTransaction({
@@ -197,12 +197,12 @@ export class BotPayments {
         this.logger.info(
           `[${userId} @${username}] refund successful, from: ${tx.from}, to: ${
             tx.to
-          }, amount ONE: ${amountONE.toString()}, txHash: ${tx.transactionHash}`
+          }, amount ONE: ${amountONE.toFixed()}, txHash: ${tx.transactionHash}`
         );
         return true;
       } catch (e) {
         this.logger.error(
-          `[${userId} @${username}] amountONE: ${amountONE.toString()} refund error : ${
+          `[${userId} @${username}] amountONE: ${amountONE.toFixed()} refund error : ${
             (e as Error).message
           }`
         );
@@ -227,7 +227,7 @@ export class BotPayments {
     const balanceDelta = userBalance.minus(amountONE.plus(fee));
 
     this.logger.info(
-      `[${userId} @${username}] withdraw request, amount: ${amountUSD}$c (${amountONE.toString()} ONE), balance after withdraw: ${balanceDelta.toString()}`
+      `[${userId} @${username}] withdraw request, amount: ${amountUSD}$c (${amountONE.toFixed()} ONE), balance after withdraw: ${balanceDelta.toFixed()}`
     );
     if (balanceDelta.gte(0)) {
       try {
@@ -286,7 +286,7 @@ export class BotPayments {
         const availableFunds = balance.minus(fee)
         if(availableFunds.gt(0)) {
           await this.transferFunds(prevAccount, currentAccount.address, availableFunds)
-          this.logger.info(`UserId ${userId} ${availableFunds.toString()} ONE transferred from ${prevAccount.address} to ${currentAccount.address}`)
+          this.logger.info(`UserId ${userId} ${availableFunds.toFixed()} ONE transferred from ${prevAccount.address} to ${currentAccount.address}`)
           totalFunds = totalFunds.plus(availableFunds)
         }
       }
@@ -365,7 +365,7 @@ export class BotPayments {
           this.hotWallet.address
         } to holder address: ${
           this.holderAddress
-        }, amount: ${hotWalletBalance.toString()}`
+        }, amount: ${hotWalletBalance.toFixed()}`
       );
     } else {
       // this.logger.info(`Hot wallet ${this.hotWallet.address} balance is zero, skip withdrawal`)
