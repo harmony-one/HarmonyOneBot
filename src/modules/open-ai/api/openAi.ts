@@ -159,20 +159,55 @@ export const streamChatCompletion = async (
     },
     { responseType: "stream" }
   );
-  console.log({ response });
-  const readable = Readable.from(response.data);
+  // console.log({ response });
+  // const readable = Readable.from(response.data);
   let msg = "";
-  readable.on("readable", async () => {
-    let chunk;
-    while (null !== (chunk = readable.read())) {
-      msg += chunk || '';
-      msg && await ctx.api.editMessageText(ctx.chat?.id!, msgId,msg);
-      // console.log(`read: ${chunk}`);
-    }
-  });
-  // readable.on('close', () => {
 
-  // })
+  response.data.on("data", async (chunk: Buffer) => {
+    // console.log(chunk);
+    const chunkStr = chunk.toString(); // Convert the chunk to a string
+    const jsonStartIndex = chunkStr.indexOf('data: {');
+    if (jsonStartIndex !== -1) {
+      const jsonChunk = chunkStr.slice(jsonStartIndex + 6); // Extract the JSON content after 'data: '
+      try {
+        const parsedChunk = JSON.parse(jsonChunk);
+        if (parsedChunk && parsedChunk.choices && parsedChunk.choices.length > 0) {
+          const chunkContent = parsedChunk.choices[0].delta.content;
+          msg += chunkContent; // Concatenate the content to the completion text
+          console.log(msg);
+          chunkContent && await ctx.api.editMessageText(ctx.chat?.id!, msgId,msg);
+        }
+      } catch (error) {
+        console.error("Error parsing JSON chunk:", error);
+      }
+    }
+
+
+    // const parsedChunk = JSON.parse(chunk.data);
+    // if (parsedChunk && parsedChunk.choices && parsedChunk.choices.length > 0) {
+    //   const chunkContent = parsedChunk.choices[0].delta.content;
+    //   msg += chunkContent; // Concatenate the content to the completion text
+    //   console.log(msg);
+    // }
+  });
+
+  // response.data.on("end", () => {
+  //   console.log(`Completion text: ${completionText}`);
+  //   console.timeEnd("chatCompletion");
+  // });
+
+  // readable.on("readable", async () => {
+  //   let chunk;
+  //   while (null !== (chunk = readable.read())) {
+  //     msg += chunk || '';
+  //     console.log(`read: ${chunk}`);
+  //     // msg && await ctx.api.editMessageText(ctx.chat?.id!, msgId,msg);
+  //     await ctx.api.editMessageText(ctx.chat?.id!, msgId,'hola');
+  //   }
+  // });
+  // // readable.on('close', () => {
+
+  // // })
   console.timeEnd("chatCompletion");
   const chatModel = getChatModel("gpt-3.5-turbo");
   const price = getChatModelPrice(
@@ -181,12 +216,24 @@ export const streamChatCompletion = async (
     response.data.usage?.prompt_tokens!,
     response.data.usage?.completion_tokens
   );
-  console.log('HERE')
-  return {
-    completion: response.data.choices[0].message?.content!,
-    usage: response.data.usage?.total_tokens!,
-    price: price * config.openAi.chatGpt.priceAdjustment,
-  };
+  console.log("HERE");
+  return new Promise<ChatCompletion>((resolve) => {
+    response.data.on("end", () => {
+      console.log(`Completion text: ${msg}`);
+      console.timeEnd("chatCompletion");
+      resolve({
+        completion: msg,
+        usage: response.data.usage?.total_tokens!,
+        price: price * config.openAi.chatGpt.priceAdjustment,
+      }); // Resolve the promise with the completion text
+    });
+  });
+
+  // return {
+  //   completion: response.data.choices[0].message?.content!,
+  //   usage: response.data.usage?.total_tokens!,
+  //   price: price * config.openAi.chatGpt.priceAdjustment,
+  // };
 };
 
 export async function improvePrompt(promptText: string, model: string) {
