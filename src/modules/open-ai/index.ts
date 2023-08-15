@@ -369,6 +369,8 @@ export class OpenAIBot {
           conversation: chat,
           model: ctx.session.openAi.chatGpt.model,
         };
+        ctx.api.sendChatAction(ctx.chat?.id!, "typing");
+
         const response = await promptGen(payload);
         chat.push({ content: response.completion, role: "system" });
         ctx.api.editMessageText(ctx.chat?.id!, msgId, response.completion);
@@ -420,7 +422,7 @@ export class OpenAIBot {
         parse_mode: "Markdown",
       }
     ); //(${totalPrice.toFixed(2)}¢ )`);
-    ctx.session.openAi.chatGpt.usage = 0
-    ctx.session.openAi.chatGpt.price = 0
+    ctx.session.openAi.chatGpt.usage = 0;
+    ctx.session.openAi.chatGpt.price = 0;
   }
 }
