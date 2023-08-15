@@ -26,24 +26,20 @@ export enum MenuIds {
 // Your credits: $CREDITS ONE tokens. Send to $WALLET_ADDRESS for recharge.
 
 export const commandsHelpText = {
-  start: `Hello, I am @HarmonyOneAIBot, ONE Bot from Harmony AI 🧚‍♀️. Type these:
+  start: `Hello, I am @harmony1bot, ONE Bot from Harmony AI 🧚‍♀️.
 
-/ask Ask me anything (OpenAI ChatGPT-4). Or, "." before the prompts.
-/image Make a photo (Stable Diffusion XL). Or, /images for multiple.
-/help This tutorial. Docs at harmony.one/bot. Examples:
+/ask act like elon musk, expand our q4 roadmap "telegram ai bot"
 
-/ask act like elon musk, expand our [q4 roadmap](https://xn--qv9h.s.country/p/generating-roadmap-as-ceo-vs-cto) "telegram ai bot"
-
-[/](https://xn--qv9h.s.country/p/generating-roadmap-as-ceo-vs-cto) act like mark zuckerberg instead
+[.](https://t.me/harmony1bot?.%20act%20like%20mark%20zuckerberg%20instead) act like mark zuckerberg instead
 
 /image glimpses of a herd of wild elephants crossing a savanna
 
 /images vintage hot rod with custom flame paint job
-  
-/more Other commands for summarizing voice messages, artistic QR code, Wallet Connect, ChatGPT 32K, DALL-E.
-  
-[Soon](https://xn--qv9h.s.country/p/dear-engineer-our-tech-lead-role): 🧠 Web∞ (CivitAI custom models, Character.AI celebrity chats, RunwayML video clips, HuggingFace embed ControlNet, ElevenLabs speech clones, Zapier task automations, document or website summary) + 🌳 Web3 (self-custody wallets, token swaps, cross-chain bridges, fiat onramps, collectible mints, price auctions, multi-signature safes, governance votes) + 🐝 Web2 (news curation, gated access, emoji tipping) + 🏴‍☠️ Web1 (.country domains, email aliases, vanity URLs, Notion/Substack hosting).
 
+/more Summarizing voice messages, artistic QR code, ChatGPT 32K, DALL-E, Wallet Connect, send tokens, sign transactions.
+
+/help This tutorial. Docs at harmony.one/bot.
+  
 Your credits: $CREDITS ONE tokens. Send to [$WALLET_ADDRESS](https://explorer.harmony.one/address/$WALLET_ADDRESS) for recharge.
 `,
   more: 
