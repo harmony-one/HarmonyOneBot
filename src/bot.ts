@@ -44,12 +44,12 @@ export const bot = new Bot<BotContext>(config.telegramBotAuthToken);
 bot.use(
   limit({
     // Allow only 1 message to be handled every 0.5 seconds.
-    timeFrame: 500,
+    timeFrame: 100,
     limit: 1,
 
     // This is called when the limit is exceeded.
     onLimitExceeded: async (ctx) => {
-      await ctx.reply("Please refrain from sending too many requests!");
+      await ctx.reply("");
     },
 
     // Note that the key should be a number in string format such as "123456789".
