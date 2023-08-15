@@ -26,26 +26,25 @@ export enum MenuIds {
 // Your credits: $CREDITS ONE tokens. Send to $WALLET_ADDRESS for recharge.
 
 export const commandsHelpText = {
-  start: `Hello, I am @HarmonyOneAIBot, ONE Bot from Harmony AI 🧚‍♀️. Type
+  start: `Hello, I am @HarmonyOneAIBot, ONE Bot from Harmony AI 🧚‍♀️. Type these:
 
-/ask Ask me anything (OpenAI ChatGPT-4). Or, / without "ask".
+/ask Ask me anything (OpenAI ChatGPT-4). Or, "." before the prompts.
 /image Make a photo (Stable Diffusion XL). Or, /images for multiple.
 /help This tutorial. Docs at harmony.one/bot. Examples:
 
-/ask act like elon musk, expand our q4 roadmap "telegram ai bot"
+/ask act like elon musk, expand our [q4 roadmap](https://xn--qv9h.s.country/p/generating-roadmap-as-ceo-vs-cto) "telegram ai bot"
 
-/ act like mark zuckerberg instead
+[/](https://xn--qv9h.s.country/p/generating-roadmap-as-ceo-vs-cto) act like mark zuckerberg instead
 
 /image glimpses of a herd of wild elephants crossing a savanna
 
 /images vintage hot rod with custom flame paint job
-
+  
 /more Other commands for summarizing voice messages, artistic QR code, Wallet Connect, ChatGPT 32K, DALL-E.
+  
+[Soon](https://xn--qv9h.s.country/p/dear-engineer-our-tech-lead-role): 🧠 Web∞ (CivitAI custom models, Character.AI celebrity chats, RunwayML video clips, HuggingFace embed ControlNet, ElevenLabs speech clones, Zapier task automations, document or website summary) + 🌳 Web3 (self-custody wallets, token swaps, cross-chain bridges, fiat onramps, collectible mints, price auctions, multi-signature safes, governance votes) + 🐝 Web2 (news curation, gated access, emoji tipping) + 🏴‍☠️ Web1 (.country domains, email aliases, vanity URLs, Notion/Substack hosting).
 
-Soon: 🧠 Web∞ (CivitAI custom models, Character.AI celebrity chats, RunwayML video clips, HuggingFace embed ControlNet, ElevenLabs speech clones, Zapier task automations) + 🌳 Web3 (self-custody wallets, token swaps, fiat onramps, collectible mints, price auctions, multi-signature safes, governance votes) + 🐝 Web2 (news curation, gated access, emoji tipping) + 🏴‍☠️ Web1 (.country domains, email aliases, vanity URLs, Notion/Substack hosting).
-
-Your credits: *$CREDITS* ONE tokens.
-Send to [$WALLET_ADDRESS](https://explorer.harmony.one/address/$WALLET_ADDRESS) for recharge.
+Your credits: $CREDITS ONE tokens. Send to [$WALLET_ADDRESS](https://explorer.harmony.one/address/$WALLET_ADDRESS) for recharge.
 `,
   more: 
   ` 
@@ -63,9 +62,9 @@ Send to [$WALLET_ADDRESS](https://explorer.harmony.one/address/$WALLET_ADDRESS) 
 
 /image cracked or broken sculpture art of two people holding hands, mirror polished, stainless steel, heavenly sunset sky, shot from below, in the style of michael benisty
 
-/images birds-eye view, 8k, realistic, *location* for [farm], [racetrack], [las vegas], [beach], [island], [forrest]
+/images birds-eye view, 8k, realistic, \\*location\\* for [farm], [racetrack], [las vegas], [beach], [island], [forrest]
 
-/image *in the shape of this logo* for [island], [clear blue ocean water surrounding], [photo taken from above], [global], beautiful and vibrant]
+/image \\*in the shape of this logo\\* for [island], [clear blue ocean water surrounding], [photo taken from above], [global], beautiful and vibrant]
 
 /image (masterpiece, best quality, detailed:1.2), 1girl, adult female, ginger hair, small braids, blue eyes, freckles, smile, red short sleeved flannel shirt, knee-length denim shorts, sitting in a colorful flower field, looking at the sky, birds in the sky, dreamy mood, magical. [negative: child, kid, underage, teen, worst quality, extra digits, watermark, signature:1.2]
   `
