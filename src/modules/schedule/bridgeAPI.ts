@@ -1,6 +1,6 @@
 import axios from 'axios'
 import moment from 'moment'
-import {getPercentDiff} from "./utils";
+import {abbreviateNumber, getPercentDiff} from "./utils";
 
 const bridgeUrl = 'https://hmy-lz-api-token.fly.dev'
 
@@ -125,7 +125,7 @@ export const getBridgeStats = async () => {
   }
 
   return {
-    value,
+    value: abbreviateNumber(value),
     change
   }
 }

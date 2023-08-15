@@ -1,6 +1,6 @@
 import axios from 'axios'
 import moment from "moment/moment";
-import {getPercentDiff} from "./utils";
+import {abbreviateNumber, getPercentDiff} from "./utils";
 
 const rpcUrl = 'https://rpc.s0.t.hmny.io'
 
@@ -61,9 +61,10 @@ export const getBotFeeStats = async (address: string) => {
   if(+change > 0) {
     change = `+${change}`
   }
+  const valueFormatted = Math.round(value / Math.pow(10, 18))
 
   return {
-    value: Math.round(value / Math.pow(10, 18)),
+    value: abbreviateNumber(valueFormatted),
     change
   }
 }
