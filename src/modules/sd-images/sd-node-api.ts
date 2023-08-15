@@ -1,5 +1,5 @@
 // import sdwebui, { Client, SamplingMethod } from 'node-sd-webui'
-import { Client, SamplingMethod } from './sd-node-client'
+import { Client } from './sd-node-client'
 
 const NEGATIVE_PROMPT = 'ugly, deformed, watermark';
 
@@ -13,9 +13,7 @@ export class SDNodeApi {
   generateImage = async (prompt: string) => {
     const { images, parameters, info } = await this.client.txt2img({
       prompt,
-      // negativePrompt: '(deformed, distorted, disfigured:1.3), poorly drawn, bad anatomy, wrong anatomy, extra limb, missing limb, floating limbs, (mutated hands and fingers:1.4), disconnected limbs, mutation, mutated, ugly, disgusting, blurry, amputation',
       negativePrompt: NEGATIVE_PROMPT,
-      samplingMethod: SamplingMethod.DPMPlusPlus_2M_Karras,
       width: 1024,
       height: 1024,
       steps: 30,
@@ -28,9 +26,7 @@ export class SDNodeApi {
   generateImageFull = async (prompt: string, seed: number) => {
     const { images, parameters, info } = await this.client.txt2img({
       prompt,
-      // negativePrompt: '(deformed, distorted, disfigured:1.3), poorly drawn, bad anatomy, wrong anatomy, extra limb, missing limb, floating limbs, (mutated hands and fingers:1.4), disconnected limbs, mutation, mutated, ugly, disgusting, blurry, amputation',
       negativePrompt: NEGATIVE_PROMPT,
-      samplingMethod: SamplingMethod.DPMPlusPlus_2M_Karras,
       width: 1024,
       height: 1024,
       steps: 30,
@@ -45,7 +41,6 @@ export class SDNodeApi {
   generateImagesPreviews = async (prompt: string) => {
     const res = await this.client.txt2img({
       prompt,
-      // negativePrompt: '(deformed, distorted, disfigured:1.3), poorly drawn, bad anatomy, wrong anatomy, extra limb, missing limb, floating limbs, (mutated hands and fingers:1.4), disconnected limbs, mutation, mutated, ugly, disgusting, blurry, amputation',
       negativePrompt: NEGATIVE_PROMPT,
       samplingMethod: SamplingMethod.DPMPlusPlus_2M_Karras,
       width: 1024,
