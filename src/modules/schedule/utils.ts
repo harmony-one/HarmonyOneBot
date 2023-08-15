@@ -15,7 +15,7 @@ export const abbreviateNumber = (value: number) => {
     index = Math.ceil((length - 3) / 3),
     suffix = ['k', 'm', 'b', 't', 'q', 'q'];
 
-  if(Math.abs(value) < 100 || length % 3 === 0) { // exception for values < 100, no decimal part
+  if(Math.abs(value) < 100 || length % 3 === 0) { // exception for values < 100, no fractional part
     fractionalDigits = 0
   } else if(length % 3 === 1) {
     fractionalDigits = 2
