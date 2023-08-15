@@ -2,7 +2,13 @@ import config from "../../config";
 import { getCommandNamePrompt } from "../1country/utils";
 import { BotPayments } from "../payment";
 import { OnMessageContext, OnCallBackQueryData } from "../types";
-import { getChatModel, getChatModelPrice, getDalleModel, getDalleModelPrice, getTokenNumber } from "./api/openAi";
+import {
+  getChatModel,
+  getChatModelPrice,
+  getDalleModel,
+  getDalleModelPrice,
+  getTokenNumber,
+} from "./api/openAi";
 import { alterImg, imgGen, imgGenEnhanced, promptGen } from "./controller";
 import { Logger, pino } from "pino";
 import { appText } from "./utils/text";
@@ -44,7 +50,7 @@ export const SupportedCommands = {
 // const payments = new BotPayments();
 export class OpenAIBot {
   private logger: Logger;
-  private payments: BotPayments
+  private payments: BotPayments;
 
   constructor(payments: BotPayments) {
     this.logger = pino({
@@ -56,7 +62,7 @@ export class OpenAIBot {
         },
       },
     });
-    this.payments = payments
+    this.payments = payments;
     if (!config.openAi.imageGen.isEnabled) {
       this.logger.warn("DALL·E 2 Image Bot is disabled in config");
     }
@@ -103,7 +109,7 @@ export class OpenAIBot {
     }
     if (!commandName) {
       const hasGroupPrefix = this.hasPrefix(ctx.message?.text || "");
-      if (hasGroupPrefix && promptNumber > 1) {
+      if (hasGroupPrefix && promptNumber >= 1) {
         return true;
       }
       return false;
@@ -148,30 +154,30 @@ export class OpenAIBot {
   }
 
   public getEstimatedPrice(ctx: any) {
-    const priceAdjustment = config.openAi.chatGpt.priceAdjustment
+    const priceAdjustment = config.openAi.chatGpt.priceAdjustment;
     const prompts = ctx.match;
     if (this.isSupportedImageReply(ctx)) {
       const imageNumber = ctx.message?.caption || ctx.message?.text;
       const imageSize = ctx.session.openAi.imageGen.imgSize;
       const model = getDalleModel(imageSize);
       const price = getDalleModelPrice(model, true, imageNumber); //cents
-      return price;
+      return price * priceAdjustment;
     }
     if (!prompts) {
       return 0;
     }
-    if (
-      ctx.chat.type !== "private" &&
-      ctx.session.openAi.chatGpt.chatConversation.length > 0
-    ) {
-      return 0;
-    }
+    // if (
+    //   ctx.chat.type !== "private" &&
+    //   ctx.session.openAi.chatGpt.chatConversation.length > 0
+    // ) {
+    //   return 0;
+    // }
     if (ctx.hasCommand(SupportedCommands.genImg.name)) {
       const imageNumber = ctx.session.openAi.imageGen.numImages;
       const imageSize = ctx.session.openAi.imageGen.imgSize;
       const model = getDalleModel(imageSize);
       const price = getDalleModelPrice(model, true, imageNumber); //cents
-      return price;
+      return price * priceAdjustment;
     }
     if (ctx.hasCommand(SupportedCommands.genImgEn.name)) {
       const imageNumber = ctx.session.openAi.imageGen.numImages;
@@ -186,15 +192,15 @@ export class OpenAIBot {
         true,
         chatModel
       ); //cents
-      return price;
+      return price * priceAdjustment;
     }
-    if (ctx.hasCommand(SupportedCommands.ask.name)) {
-      const baseTokens = getTokenNumber(prompts as string);
-      const modelName = ctx.session.openAi.chatGpt.model;
-      const model = getChatModel(modelName);
-      const price = getChatModelPrice(model, true, baseTokens); //cents
-      return price 
-    }
+    // if (ctx.hasCommand(SupportedCommands.ask.name)) {
+    //   const baseTokens = getTokenNumber(prompts as string);
+    //   const modelName = ctx.session.openAi.chatGpt.model;
+    //   const model = getChatModel(modelName);
+    //   const price = getChatModelPrice(model, true, baseTokens, 100); //cents
+    //   return price
+    // }
     return 0;
   }
 
@@ -224,7 +230,6 @@ export class OpenAIBot {
       await this.onChat(ctx);
       return;
     }
-
 
     if (ctx.hasCommand(SupportedCommands.genImg.name)) {
       this.onGenImgCmd(ctx);
@@ -328,47 +333,59 @@ export class OpenAIBot {
     if (ctx.session.openAi.chatGpt.isEnabled) {
       this.logger.info("prompt:", prompt);
       const chat = ctx.session.openAi.chatGpt.chatConversation;
-      if (prompt === "") {
-        const msg =
-          chat.length > 0
-            ? `${appText.gptLast}\n_${chat[chat.length - 1].content}_`
-            : appText.introText;
-        await ctx.reply(msg, {
-          parse_mode: "Markdown",
+      const balance = await this.payments.getUserBalance(ctx.from.id);
+      const balanceOne = await this.payments.toONE(balance, false).toFixed(2);
+      if (
+        +balanceOne >= config.openAi.chatGpt.minimumBalance ||
+        (await this.payments.isUserInWhitelist(ctx.from.id, ctx.from.username))
+      ) {
+        if (prompt === "") {
+          const msg =
+            chat.length > 0
+              ? `${appText.gptLast}\n_${chat[chat.length - 1].content}_`
+              : appText.introText;
+          await ctx.reply(msg, {
+            parse_mode: "Markdown",
+          });
+          return;
+        } else {
+          // if (chat.length === 0) {
+          //   await ctx.reply(appText.gptHelpText, {
+          //     parse_mode: "Markdown",
+          //   });
+          // }
+        }
+        chat.push({
+          role: "user",
+          content: this.hasPrefix(prompt) ? prompt.slice(1) : prompt,
         });
-        return;
-      } else {
-        if (chat.length === 0) {
-          await ctx.reply(appText.gptHelpText, {
+        // const msgId = (
+        //   await ctx.reply(`Generating...`, {
+        //     //\n\n*Close chat with /end*
+        //     parse_mode: "Markdown",
+        //   })
+        // ).message_id;
+        const payload = {
+          conversation: chat,
+          model: ctx.session.openAi.chatGpt.model,
+        };
+        const response = await promptGen(payload);
+        chat.push({ content: response.completion, role: "system" });
+        ctx.reply(response.completion);
+        ctx.session.openAi.chatGpt.chatConversation = [...chat];
+        ctx.session.openAi.chatGpt.usage += response.usage;
+        ctx.session.openAi.chatGpt.price += response.price;
+        const isPay = await this.payments.pay(
+          ctx as OnMessageContext,
+          response.price
+        );
+        if (!isPay) {
+          ctx.reply(appText.gptChatPaymentIssue, {
             parse_mode: "Markdown",
           });
         }
-      }
-      chat.push({
-        role: "user",
-        content: this.hasPrefix(prompt) ? prompt.slice(1) : prompt,
-      });
-      const msgId = (
-        await ctx.reply(`Generating...`, { //\n\n*Close chat with /end*
-          parse_mode: "Markdown",
-        })
-      ).message_id;
-      const payload = {
-        conversation: chat,
-        model: ctx.session.openAi.chatGpt.model,
-      };
-      const response = await promptGen(payload);
-      chat.push({ content: response.completion, role: "system" });
-      ctx.api.editMessageText(ctx.chat?.id!, msgId, response.completion);
-      ctx.session.openAi.chatGpt.chatConversation = [...chat];
-      ctx.session.openAi.chatGpt.usage += response.usage;
-      ctx.session.openAi.chatGpt.price += response.price;
-      const isPay = await this.payments.pay(
-        ctx as OnMessageContext,
-        response.price
-      );
-      if (!isPay) {
-        ctx.reply(appText.gptChatPaymentIssue, {
+      } else {
+        ctx.reply(appText.notEnoughBalance, {
           parse_mode: "Markdown",
         });
       }
@@ -394,9 +411,16 @@ export class OpenAIBot {
     ctx.session.openAi.chatGpt.chatConversation = [];
     const usage = ctx.session.openAi.chatGpt.usage;
     const totalPrice = ctx.session.openAi.chatGpt.price;
-    const onePrice = await getONEPrice(totalPrice)
-    ctx.reply(`${appText.gptChatEnd} \n\n*${onePrice.price} ONE* Spent (${usage} tokens)`, {
-      parse_mode: "Markdown"
-    }); //(${totalPrice.toFixed(2)}¢ )`);
+    const onePrice = await getONEPrice(totalPrice);
+    // const onePrice = await this.payments.toONE(this.payments.getPriceInONE(totalPrice));
+    ctx.reply(
+      `${appText.gptChatEnd} \n\n*${onePrice.price} ONE* Spent (${usage} tokens)`,
+      // `${appText.gptChatEnd} \n\n*${onePrice.toFixed()} ONE* Spent (${usage} tokens)`,
+      {
+        parse_mode: "Markdown",
+      }
+    ); //(${totalPrice.toFixed(2)}¢ )`);
+    ctx.session.openAi.chatGpt.usage = 0
+    ctx.session.openAi.chatGpt.price = 0
   }
 }

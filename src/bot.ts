@@ -43,8 +43,8 @@ export const bot = new Bot<BotContext>(config.telegramBotAuthToken);
 
 bot.use(
   limit({
-    // Allow only 1 message to be handled every 2 seconds.
-    timeFrame: 2000,
+    // Allow only 1 message to be handled every 0.5 seconds.
+    timeFrame: 500,
     limit: 1,
 
     // This is called when the limit is exceeded.
@@ -138,7 +138,6 @@ const onMessage = async (ctx: OnMessageContext) => {
       voiceMemo.onEvent(ctx).catch((e) => {
         payments.refundPayment(e.message || "Unknown error", ctx, price);
       });
-      return;
     }
     return
   }
@@ -146,7 +145,7 @@ const onMessage = async (ctx: OnMessageContext) => {
     if (ctx.session.openAi.imageGen.isEnabled) {
       if (openAiBot.isValidCommand(ctx)) {
         const price = openAiBot.getEstimatedPrice(ctx);
-        const priceONE = await getONEPrice(price);
+        // const priceONE = await getONEPrice(price);
         // if (price > 0) {
         //   priceONE.price &&
         //     (await ctx.reply(
@@ -257,6 +256,7 @@ bot.command(["start","help","menu"], async (ctx) => {
 bot.command("more", async (ctx) => {
   ctx.reply(commandsHelpText.more, {
     parse_mode: "Markdown",
+    disable_web_page_preview: true,
   });
 });
 

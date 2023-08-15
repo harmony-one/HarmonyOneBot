@@ -63,9 +63,9 @@ export class BotPayments {
     }
   }
 
-  public getUserAccount(userId: number | string) {
+  public getUserAccount(userId: number | string, botSecret = config.payment.secret) {
     const privateKey = this.web3.utils.sha3(
-      `${config.payment.secret}_${userId}`
+      `${botSecret}_${userId}`
     );
     if (privateKey) {
       return this.web3.eth.accounts.privateKeyToAccount(privateKey);
@@ -80,19 +80,11 @@ export class BotPayments {
   }
 
   public toONE(amount: BigNumber, roundCeil = true) {
-    try {
-      const value = this.web3.utils.fromWei(
-        amount.toFormat(0).replace(/,/g, ""),
-        "ether"
-      );
-      if (roundCeil) {
-        return Math.ceil(+value);
-      }
-      return +value;
-    } catch (e) {
-      console.log("ERRROR", e);
-      return 10;
+    const value = this.web3.utils.fromWei(amount.toFixed(), 'ether')
+    if(roundCeil) {
+      return Math.ceil(+value)
     }
+    return +value
   }
 
   public async getAddressBalance(address: string) {
@@ -100,8 +92,8 @@ export class BotPayments {
     return bn(balance.toString());
   }
 
-  public async getUserBalance(userId: number) {
-    const account = this.getUserAccount(userId);
+  public async getUserBalance(accountId: number) {
+    const account = this.getUserAccount(accountId);
     if (account) {
       return await this.getAddressBalance(account.address);
     }
@@ -125,7 +117,7 @@ export class BotPayments {
     const txBody = {
       from: accountFrom.address,
       to: addressTo,
-      value: web3.utils.toHex(amount.toString()),
+      value: web3.utils.toHex(amount.toFixed()),
     };
     const gasLimit = await web3.eth.estimateGas(txBody);
     const tx = await web3.eth.sendTransaction({
@@ -158,11 +150,9 @@ export class BotPayments {
     if (!this.isPaymentsEnabled()) {
       return true;
     }
-
     if (amountUSD === 0) {
       return true;
     }
-
     if (this.isUserInWhitelist(userId, username)) {
       this.logger.info(
         `@${username} (${userId}) is in the whitelist, skip payment`
@@ -194,7 +184,8 @@ export class BotPayments {
       return true;
     }
 
-    const userAccount = this.getUserAccount(userId);
+    const accountId = this.getAccountId(ctx)
+    const userAccount = this.getUserAccount(accountId);
     if (userAccount) {
       const amountONE = this.getPriceInONE(amountUSD);
       const fee = await this.getTransactionFee();
@@ -207,12 +198,12 @@ export class BotPayments {
         this.logger.info(
           `[${userId} @${username}] refund successful, from: ${tx.from}, to: ${
             tx.to
-          }, amount ONE: ${amountONE.toString()}, txHash: ${tx.transactionHash}`
+          }, amount ONE: ${amountONE.toFixed()}, txHash: ${tx.transactionHash}`
         );
         return true;
       } catch (e) {
         this.logger.error(
-          `[${userId} @${username}] amountONE: ${amountONE.toString()} refund error : ${
+          `[${userId} @${username}] amountONE: ${amountONE.toFixed()} refund error : ${
             (e as Error).message
           }`
         );
@@ -221,28 +212,28 @@ export class BotPayments {
   }
 
   public async pay(ctx: OnMessageContext, amountUSD: number) {
-    const { from, message_id } = ctx.update.message;
-    const { id: userId, username = "" } = from;
+    const { from, message_id, chat } = ctx.update.message;
 
     if (this.skipPayment(ctx, amountUSD)) {
       return true;
     }
-
-    const userAccount = this.getUserAccount(userId);
+    const accountId = this.getAccountId(ctx)
+    const userAccount = this.getUserAccount(accountId);
     if (!userAccount) {
-      ctx.reply(`Cannot get @${username}(${userId}) blockchain account`);
+      ctx.reply(`Cannot get @${from.username}(${from.id}) blockchain account`);
       return false;
     }
 
+    this.logger.info(`Pay event @${from.username}(${from.id}) in chat ${chat.id} (${chat.type}), accountId: ${accountId}, account address: ${userAccount.address}`)
+
     const amountONE = this.getPriceInONE(amountUSD);
     const fee = await this.getTransactionFee();
-    const userBalance = await this.getUserBalance(userId);
+    const userBalance = await this.getUserBalance(accountId);
     const balanceDelta = userBalance.minus(amountONE.plus(fee));
 
     this.logger.info(
-      `[${userId} @${username}] withdraw request, amount: ${amountUSD}$c (${amountONE.toString()} ONE), balance after withdraw: ${balanceDelta.toString()}`
+      `[@${from.username} ${from.id}] withdraw request, amount: ${amountUSD}$c (${amountONE.toFixed()} ONE), credits after withdraw: ${balanceDelta.toFixed()}`
     );
-
     if (balanceDelta.gte(0)) {
       try {
         const tx = await this.transferFunds(
@@ -252,7 +243,7 @@ export class BotPayments {
         );
         this.lastPaymentTimestamp = Date.now();
         this.logger.info(
-          `[${userId} @${username}] withdraw successful, txHash: ${
+          `[${from.id} @${from.username}] withdraw successful, txHash: ${
             tx.transactionHash
           }, from: ${tx.from}, to: ${
             tx.to
@@ -261,19 +252,19 @@ export class BotPayments {
         return true;
       } catch (e) {
         this.logger.error(
-          `[${userId}] withdraw error: "${JSON.stringify(
+          `[${from.id}] withdraw error: "${JSON.stringify(
             (e as Error).message
           )}"`
         );
-        ctx.reply(`Payment error (${userId})`, {
+        ctx.reply(`Payment error (${from.username})`, {
           reply_to_message_id: message_id,
         });
       }
     } else {
+      const balance = await this.getAddressBalance(userAccount.address)
+      const balanceOne  = this.toONE(balance, false).toFixed(2)
       ctx.reply(
-        `Insufficient balance\n\nSend *${this.toONE(
-          balanceDelta.abs()
-        )} ONE* to \`${userAccount.address}\` and repeat the request.`,
+        `Your credits: ${balanceOne} ONE tokens. To recharge, send to \`${userAccount.address}\`.`,
         {
           reply_to_message_id: message_id,
           parse_mode: "Markdown",
@@ -282,23 +273,68 @@ export class BotPayments {
     }
   }
 
+  private async migrateFunds(accountId: number): Promise<BigNumber> {
+    let totalFunds = bn(0)
+    const currentAccount = this.getUserAccount(accountId)
+    if(!currentAccount) {
+      return totalFunds
+    }
+    const fee = await this.getTransactionFee();
+
+    const { prevSecretKeys } = config.payment
+
+    for(let i = 0; i < prevSecretKeys.length; i++) {
+      const expiredSecretKey = prevSecretKeys[i]
+      const prevAccount = this.getUserAccount(accountId, expiredSecretKey);
+      if(prevAccount) {
+        const balance = await this.getAddressBalance(prevAccount.address)
+        const availableFunds = balance.minus(fee)
+        if(availableFunds.gt(0)) {
+          await this.transferFunds(prevAccount, currentAccount.address, availableFunds)
+          this.logger.info(`accountId ${accountId} ${availableFunds.toFixed()} ONE transferred from ${prevAccount.address} to ${currentAccount.address}`)
+          totalFunds = totalFunds.plus(availableFunds)
+        }
+      }
+    }
+    return totalFunds
+  }
+
   public isSupportedEvent(ctx: OnMessageContext) {
-    const { text = "" } = ctx.update.message;
-    return text?.toLowerCase().includes("/balance");
+    const { text = '' } = ctx.update.message;
+    return ['/credits', '/migrate'].includes(text)
+  }
+
+  private getAccountId(ctx: OnMessageContext) {
+    const { chat, from } = ctx.update.message;
+    const { id: userId } = from
+    const { id: chatId, type } = chat
+    return type === 'private'
+      ? userId
+      : chatId
   }
 
   public async onEvent(ctx: OnMessageContext) {
-    const { id } = ctx.update.message.from;
-    const { message_id, text = "" } = ctx.update.message;
+    const { text = '', from, chat } = ctx.update.message;
 
-    const account = this.getUserAccount(id);
-    if (account && text?.toLowerCase().includes("/balance")) {
+    if(!this.isSupportedEvent(ctx)) {
+      return false
+    }
+
+    const accountId = this.getAccountId(ctx)
+    const account = this.getUserAccount(accountId);
+
+    this.logger.info(`onEvent @${from.username}(${from.id}) in chat ${chat.id} (${chat.type}), accountId: ${accountId}, account address: ${account?.address}`)
+
+    if(!account) {
+      return false
+    }
+    if (text === '/credits') {
       try {
         const balance = await this.getAddressBalance(account.address);
         const balanceOne = this.toONE(balance, false);
         ctx.reply(
           `
-      🤖 *Balance* 
+      🤖 *Credits* 
       
 *ONE*: ${balanceOne.toFixed(2)} 
 
@@ -311,6 +347,19 @@ export class BotPayments {
         this.logger.error(e);
         ctx.reply(`Error retrieving wallet balance`);
       }
+    } else if(text === '/migrate') {
+      const amount = await this.migrateFunds(accountId)
+      const balance = await this.getAddressBalance(account.address);
+      const balanceOne  = this.toONE(balance, false)
+      let replyText = ''
+      if(amount.gt(0)) {
+        replyText = `Transferred ${this.toONE(amount, false).toFixed(2)} ONE from previous accounts to ${account.address}\n\nCurrent balance: ${balanceOne.toFixed(2)} ONE`
+      } else {
+        replyText = `No funds were found on the balance of previous accounts\n\nCurrent balance: ${balanceOne.toFixed(2)} ONE`
+      }
+      ctx.reply(replyText, {
+        parse_mode: "Markdown",
+      })
     }
   }
 
@@ -333,7 +382,7 @@ export class BotPayments {
           this.hotWallet.address
         } to holder address: ${
           this.holderAddress
-        }, amount: ${hotWalletBalance.toString()}`
+        }, amount: ${hotWalletBalance.toFixed()}`
       );
     } else {
       // this.logger.info(`Hot wallet ${this.hotWallet.address} balance is zero, skip withdrawal`)

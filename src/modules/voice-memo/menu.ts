@@ -1,6 +1,7 @@
 import { Menu } from "@grammyjs/menu";
 import { BotContext } from "../types";
-import { MenuIds, menuText } from "../../constants";
+import { MenuIds, commandsHelpText, menuText } from "../../constants";
+import { getStartMenuText } from "../../pages";
 
 export const voiceMemoMenuText = {
   helpText: `🎙 *Voice Memo Help*
@@ -12,8 +13,12 @@ export const voiceMemoMenuText = {
 
 export const voiceMemoMenu = new Menu<BotContext>(MenuIds.VOICE_MEMO_MAIN)
   .row()
-  .back(menuText.mainMenu.backButton, (ctx) => {
-    ctx.editMessageText(menuText.mainMenu.menuName).catch((ex) => {
+  .back(menuText.mainMenu.backButton, async (ctx) => {
+    const text = await getStartMenuText(ctx) || ""
+    ctx.editMessageText(text, {
+      parse_mode: "Markdown",
+      disable_web_page_preview: true,
+    }).catch((ex) => {
       console.log('### ex', ex);
     });
   });

@@ -2,10 +2,11 @@ import {InlineKeyboard, InputFile} from "grammy";
 import config from "../../config";
 import pino, { Logger } from "pino";
 import { OnMessageContext } from "../types";
-import {createQRCode} from "../qrcode/utils";
 import {getSignClient} from "../qrcode/signClient";
 import {ethers} from "ethers";
 import { SessionTypes } from "@walletconnect/types";
+import {PROPOSAL_EXPIRY_MESSAGE} from "@walletconnect/sign-client";
+import { generateWcQr } from "./utils/qrcode";
 
 const sessionMap: Record<number, string> = {}
 
@@ -43,9 +44,7 @@ export class WalletConnect {
   }
 
   public isSupportedEvent(ctx: OnMessageContext) {
-    const { chat } = ctx.update.message;
-
-    return chat.type === 'private' && (ctx.hasCommand('get') || ctx.hasCommand('send') || ctx.hasCommand('pools') || ctx.hasCommand('connect'));
+    return (ctx.hasCommand('get') || ctx.hasCommand('send') || ctx.hasCommand('pools') || ctx.hasCommand('connect'));
   }
 
   public async onEvent(ctx: OnMessageContext) {
@@ -128,7 +127,7 @@ export class WalletConnect {
       },
     })
 
-    const qrImgBuffer = await createQRCode({url: uri || '', width: 450, margin: 3 });
+    const qrImgBuffer = await generateWcQr(uri || '', 480);
 
     const message = await ctx.replyWithPhoto(new InputFile(qrImgBuffer, `wallet_connect_${Date.now()}.png`), {
       caption: 'Scan QR code with a WalletConnect-compatible wallet'
@@ -149,8 +148,14 @@ export class WalletConnect {
     } catch (ex) {
       ctx.api.deleteMessage(ctx.chat.id, message.message_id);
       ctx.api.deleteMessage(ctx.chat.id, uriMessage.message_id);
-      ctx.reply('internal error');
-      console.log('### ex', ex);
+      if (ex instanceof Error) {
+        this.logger.error('error wc connect ' + ex.message)
+        if (ex.message === PROPOSAL_EXPIRY_MESSAGE) {
+          return;
+        }
+
+        ctx.reply('Error while connection');
+      }
     }
   }
 

@@ -3,7 +3,7 @@ import { BotContext } from "../types";
 import { MenuIds, menuText } from "../../constants";
 
 export const walletMenuText = {
-  helpText: `💰 *Balance*
+  helpText: `💰 *Credits*
 
 1. /buy - Buy ONE with USD
 
