@@ -244,8 +244,8 @@ bot.command(["start","help","menu"], async (ctx) => {
   const balance = await payments.getAddressBalance(userWalletAddress);
   const balanceOne = payments.toONE(balance, false).toFixed(2);
   const startText = commandsHelpText.start
-    .replace("$CREDITS", balanceOne + "")
-    .replace("$WALLET_ADDRESS", userWalletAddress);
+    .replaceAll("$CREDITS", balanceOne + "")
+    .replaceAll("$WALLET_ADDRESS", userWalletAddress);
   await ctx.reply(startText, {
     parse_mode: "Markdown",
     reply_markup: mainMenu,
