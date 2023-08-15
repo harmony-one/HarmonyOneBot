@@ -264,7 +264,7 @@ export class BotPayments {
       const balance = await this.getAddressBalance(userAccount.address)
       const balanceOne  = this.toONE(balance, false).toFixed(2)
       ctx.reply(
-        `Your credits: ${balanceOne} ONE tokens. To recharge, send to \`${userAccount.address}\`.`,
+        `Your credits: ${balanceOne} ONE tokens. To recharge, send ${this.toONE(balanceDelta.abs())} ONE to \`${userAccount.address}\`.`,
         {
           reply_to_message_id: message_id,
           parse_mode: "Markdown",
