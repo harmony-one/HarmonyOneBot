@@ -44,9 +44,7 @@ export class WalletConnect {
   }
 
   public isSupportedEvent(ctx: OnMessageContext) {
-    const { chat } = ctx.update.message;
-
-    return chat.type === 'private' && (ctx.hasCommand('get') || ctx.hasCommand('send') || ctx.hasCommand('pools') || ctx.hasCommand('connect'));
+    return (ctx.hasCommand('get') || ctx.hasCommand('send') || ctx.hasCommand('pools') || ctx.hasCommand('connect'));
   }
 
   public async onEvent(ctx: OnMessageContext) {
