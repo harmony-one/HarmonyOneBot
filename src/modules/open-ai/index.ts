@@ -8,6 +8,7 @@ import {
   getDalleModel,
   getDalleModelPrice,
   getTokenNumber,
+  streamChatCompletion,
 } from "./api/openAi";
 import { alterImg, imgGen, imgGenEnhanced, promptGen } from "./controller";
 import { Logger, pino } from "pino";
@@ -330,6 +331,8 @@ export class OpenAIBot {
 
   async onChat(ctx: OnMessageContext | OnCallBackQueryData) {
     const { prompt } = getCommandNamePrompt(ctx, SupportedCommands); // ctx.match;
+    
+
     if (ctx.session.openAi.chatGpt.isEnabled) {
       this.logger.info("prompt:", prompt);
       const chat = ctx.session.openAi.chatGpt.chatConversation;
@@ -369,9 +372,10 @@ export class OpenAIBot {
           conversation: chat,
           model: ctx.session.openAi.chatGpt.model,
         };
-        const response = await promptGen(payload);
+        const response = await streamChatCompletion(chat,ctx,msgId) // { message: prompt })
+        // const response = await promptGen(payload);
         chat.push({ content: response.completion, role: "system" });
-        ctx.api.editMessageText(ctx.chat?.id!, msgId, response.completion);
+        // ctx.api.editMessageText(ctx.chat?.id!, msgId, response.completion);
         ctx.session.openAi.chatGpt.chatConversation = [...chat];
         ctx.session.openAi.chatGpt.usage += response.usage;
         ctx.session.openAi.chatGpt.price += response.price;

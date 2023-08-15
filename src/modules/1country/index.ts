@@ -25,6 +25,11 @@ export const SupportedCommands = {
     groupParams: "=1", // TODO: add support for groups
     privateParams: "=1",
   },
+  cert: {
+    name: "cert",
+    groupParams: "=1", // TODO: add support for groups
+    privateParams: "=1",
+  },
 };
 
 // enum SupportedCommands {
@@ -151,10 +156,10 @@ export class OneCountryBot {
     //   return;
     // }
 
-    // if (ctx.hasCommand(SupportedCommands.CERT)) {
-    //   this.onCertCmd(ctx);
-    //   return;
-    // }
+    if (ctx.hasCommand(SupportedCommands.cert.name)) {
+      this.onCertCmd(ctx);
+      return;
+    }
 
     // if (ctx.hasCommand(SupportedCommands.RENEW)) {
     //   this.onRenewCmd(ctx);

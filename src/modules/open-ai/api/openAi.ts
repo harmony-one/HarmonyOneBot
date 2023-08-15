@@ -3,8 +3,10 @@ import {
   OpenAIApi,
   CreateImageRequest,
   CreateChatCompletionRequest,
+  ChatCompletionRequestMessage,
 } from "openai";
 import { encode } from "gpt-tokenizer";
+import { Readable } from "stream"; // Import the Readable class
 
 import config from "../../../config";
 import { deleteFile, getImage } from "../utils/file";
@@ -138,6 +140,54 @@ export async function chatCompilation(
     );
   }
 }
+
+export const streamChatCompletion = async (
+  conversation: ChatConversation[],
+  // model = config.openAi.chatGpt.model,
+  // limitTokens = true,
+  ctx: any,
+  msgId: number
+): Promise<ChatCompletion> => {
+  console.time("chatCompletion");
+  const response: any = await openai.createChatCompletion(
+    {
+      model: "gpt-3.5-turbo",
+      stream: true,
+      messages: conversation as ChatCompletionRequestMessage[],
+      max_tokens: 512,
+      temperature: 0.9,
+    },
+    { responseType: "stream" }
+  );
+  console.log({ response });
+  const readable = Readable.from(response.data);
+  let msg = "";
+  readable.on("readable", async () => {
+    let chunk;
+    while (null !== (chunk = readable.read())) {
+      msg += chunk || '';
+      msg && await ctx.api.editMessageText(ctx.chat?.id!, msgId,msg);
+      // console.log(`read: ${chunk}`);
+    }
+  });
+  // readable.on('close', () => {
+
+  // })
+  console.timeEnd("chatCompletion");
+  const chatModel = getChatModel("gpt-3.5-turbo");
+  const price = getChatModelPrice(
+    chatModel,
+    true,
+    response.data.usage?.prompt_tokens!,
+    response.data.usage?.completion_tokens
+  );
+  console.log('HERE')
+  return {
+    completion: response.data.choices[0].message?.content!,
+    usage: response.data.usage?.total_tokens!,
+    price: price * config.openAi.chatGpt.priceAdjustment,
+  };
+};
 
 export async function improvePrompt(promptText: string, model: string) {
   const prompt = `Improve this picture description using max 100 words and don't add additional text to the image: ${promptText} `;
