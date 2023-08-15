@@ -15,6 +15,16 @@ export enum MenuIds {
   CHAT_GPT_MAIN = "chat-gpt-main",
   CHAT_GPT_MODEL = "chat-gpt-model",
 }
+
+// const balance = await payments.getAddressBalance(userWalletAddress);
+//   const balanceOne = payments.toONE(balance, false).toFixed(2);
+//   const startText = commandsHelpText.start
+//     .replace("$CREDITS", balanceOne + "")
+//     .replace("$WALLET_ADDRESS", userWalletAddress);
+
+
+// Your credits: $CREDITS ONE tokens. Send to $WALLET_ADDRESS for recharge.
+
 export const commandsHelpText = {
   start: `Hello, I am @HarmonyOneAIBot, ONE Bot from Harmony AI 🧚‍♀️. Type
 
@@ -39,26 +49,25 @@ Send to [$WALLET_ADDRESS](https://explorer.harmony.one/address/$WALLET_ADDRESS) 
 `,
   more: 
   ` 
-  *| 💬 More Options |*
-  /more - See this menu
-  /start - Get started with core uses
-  /help - Access all features
+/qr s.country/ai astronaut, exuberant, anime girl, smile, sky, colorful
 
-*| 🧠 Ask Me Anything |*
-  /ask What was the greatest invention in the 1960's? 
+/ask rewrite harmony.one/poster like apple press release
 
-*| 📸 Images and Visuals |*
-  \`/image Intricate dynamic action shot of cowboy riding a horse, cinematic Steve Henderson Fabian Perez Henry Asencio Jeremy Mann Marc Simonetti Fantasy, red dead redemption 2 atmosphere, cinematic, photograph\`
-  \n\`/images close up headshot, futuristic young woman, wild hair sly smile in front of gigantic UFO, dslr, sharp focus, dynamic composition\`
-  \n\`/qr h.country Dramatic bonfire on a remote beach, captured at the magic hour with flames dancing against the twilight sky; using a shallow depth of field\`
-  
-*| 🎙️ Voice Messages |*
-  Send a voice message (.m4a) to me for a transcript and summary.
-  
-*| 💰 Wallet and Credits |*
-  /credits - Check credits
-  /connect - Use walletconnect to pair external wallet
-  /send ADDRESS AMOUNT - Send funds from walletconnect
+/image ancient, mysterious temple in a mountain range, surrounded by misty clouds and tall peaks
+
+/image beautiful waterfall in a lush jungle, with sunlight shining through the trees
+
+/image epic long distance cityscape photo of New York City flooded by the ocean and overgrown buildings and jungle ruins in rainforest, at sunset, cinematic shot, highly detailed, 8k, golden light
+
+/image girl with slightly shocked facial expression, looking out at the many hands holding out phones in front of her (like reporters with microphones), with many social media icons surrounding her, including paper letters with hearts on them, in the style of children's book illustrator, rough crayon brushstrokes, rough-edged 2d animation, fred calleri
+
+/image cracked or broken sculpture art of two people holding hands, mirror polished, stainless steel, heavenly sunset sky, shot from below, in the style of michael benisty
+
+/images birds-eye view, 8k, realistic, *location* for [farm], [racetrack], [las vegas], [beach], [island], [forrest]
+
+/image *in the shape of this logo* for [island], [clear blue ocean water surrounding], [photo taken from above], [global], beautiful and vibrant]
+
+/image (masterpiece, best quality, detailed:1.2), 1girl, adult female, ginger hair, small braids, blue eyes, freckles, smile, red short sleeved flannel shirt, knee-length denim shorts, sitting in a colorful flower field, looking at the sky, birds in the sky, dreamy mood, magical. [negative: child, kid, underage, teen, worst quality, extra digits, watermark, signature:1.2]
   `
 };
 
@@ -71,26 +80,25 @@ export const menuText = {
 🤖 welcome to the [harmony ONE bot](https://stse.substack.com/p/one-bot-for-all-generative-ai-on)! access ai models, agents, characters, services pay-per-use.`,
   },
   askMenu: {
-    menuName: `ask me anything`,
+    menuName: `💬 /ask Ask me anything`,
     helpText: `*ask me anything*
         
 \`/ask what is one intersting historical fact about technological development in the 2000s?\`
 `,
   },
   imageMenu: {
-    menuName: "make an image",
+    menuName: "📸 /image Make a photo",
     backButton: "⬅️ Back",
     helpText: `*make an image*
         
-\`/image a futuristic cityscape with towering skyscrapers, flying vehicles, and a diverse population of humans and robots, painted in a concept art style inspired by Syd Mead, with a focus on detail and realism.\`
+\`/image ancient, mysterious temple in a mountain range, surrounded by misty clouds and tall peaks
+\`
   `,
   },
   voiceMemoMenu: {
-    menuName: "voice memo",
+    menuName: "🤩 /more Other commands",
     backButton: "⬅️ Back",
-    helpText: `*voice memo*
-    
-send a voice message to me for a transcript and summary.`,
+    helpText: commandsHelpText.more,
   },
 };
 
