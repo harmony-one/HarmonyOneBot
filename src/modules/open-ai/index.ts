@@ -412,11 +412,15 @@ export class OpenAIBot {
     const usage = ctx.session.openAi.chatGpt.usage;
     const totalPrice = ctx.session.openAi.chatGpt.price;
     const onePrice = await getONEPrice(totalPrice);
+    // const onePrice = await this.payments.toONE(this.payments.getPriceInONE(totalPrice));
     ctx.reply(
       `${appText.gptChatEnd} \n\n*${onePrice.price} ONE* Spent (${usage} tokens)`,
+      // `${appText.gptChatEnd} \n\n*${onePrice.toFixed()} ONE* Spent (${usage} tokens)`,
       {
         parse_mode: "Markdown",
       }
     ); //(${totalPrice.toFixed(2)}¢ )`);
+    ctx.session.openAi.chatGpt.usage = 0
+    ctx.session.openAi.chatGpt.price = 0
   }
 }

@@ -232,7 +232,7 @@ export class BotPayments {
     const balanceDelta = userBalance.minus(amountONE.plus(fee));
 
     this.logger.info(
-      `[@${from.username} ${from.id}] withdraw request, amount: ${amountUSD}$c (${amountONE.toFixed()} ONE), balance after withdraw: ${balanceDelta.toFixed()}`
+      `[@${from.username} ${from.id}] withdraw request, amount: ${amountUSD}$c (${amountONE.toFixed()} ONE), credits after withdraw: ${balanceDelta.toFixed()}`
     );
     if (balanceDelta.gte(0)) {
       try {
@@ -262,7 +262,7 @@ export class BotPayments {
       }
     } else {
       ctx.reply(
-        `Insufficient balance\n\nSend *${this.toONE(
+        `Insufficient credits\n\nSend *${this.toONE(
           balanceDelta.abs()
         )} ONE* to \`${userAccount.address}\` and repeat the request.`,
         {
@@ -301,7 +301,7 @@ export class BotPayments {
 
   public isSupportedEvent(ctx: OnMessageContext) {
     const { text = '' } = ctx.update.message;
-    return ['/balance', '/migrate'].includes(text)
+    return ['/credits', '/migrate'].includes(text)
   }
 
   private getAccountId(ctx: OnMessageContext) {
@@ -328,13 +328,13 @@ export class BotPayments {
     if(!account) {
       return false
     }
-    if (text === '/balance') {
+    if (text === '/credits') {
       try {
         const balance = await this.getAddressBalance(account.address);
         const balanceOne = this.toONE(balance, false);
         ctx.reply(
           `
-      🤖 *Balance* 
+      🤖 *Credits* 
       
 *ONE*: ${balanceOne.toFixed(2)} 
 
