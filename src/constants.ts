@@ -44,8 +44,8 @@ export const commandsHelpText = {
 
 Soon: 🧠 Web∞ (CivitAI custom models, Character.AI celebrity chats, RunwayML video clips, HuggingFace embed ControlNet, ElevenLabs speech clones, Zapier task automations) + 🌳 Web3 (self-custody wallets, token swaps, fiat onramps, collectible mints, price auctions, multi-signature safes, governance votes) + 🐝 Web2 (news curation, gated access, emoji tipping) + 🏴‍☠️ Web1 (.country domains, email aliases, vanity URLs, Notion/Substack hosting).
 
-Your credits: *$CREDITS* ONE tokens. Send to *$WALLET_ADDRESS* for recharge.
-
+Your credits: *$CREDITS* ONE tokens.
+Send to [$WALLET_ADDRESS](https://explorer.harmony.one/address/$WALLET_ADDRESS) for recharge.
 `,
   more: 
   ` 
@@ -74,7 +74,7 @@ Your credits: *$CREDITS* ONE tokens. Send to *$WALLET_ADDRESS* for recharge.
 export const menuText = {
   mainMenu: {
     backButton: "⬅️ Back",
-    menuName: commandsHelpText.start,
+    menuName: 'Main Menu',
     helpText: `*Main Menu*
      
 🤖 welcome to the [harmony ONE bot](https://stse.substack.com/p/one-bot-for-all-generative-ai-on)! access ai models, agents, characters, services pay-per-use.`,
