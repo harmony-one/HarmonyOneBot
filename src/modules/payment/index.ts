@@ -345,7 +345,7 @@ export class BotPayments {
         );
       } catch (e) {
         this.logger.error(e);
-        ctx.reply(`Error retrieving wallet balance`);
+        ctx.reply(`Error retrieving credits`);
       }
     } else if(text === '/migrate') {
       const amount = await this.migrateFunds(accountId)
@@ -353,9 +353,9 @@ export class BotPayments {
       const balanceOne  = this.toONE(balance, false)
       let replyText = ''
       if(amount.gt(0)) {
-        replyText = `Transferred ${this.toONE(amount, false).toFixed(2)} ONE from previous accounts to ${account.address}\n\nCurrent balance: ${balanceOne.toFixed(2)} ONE`
+        replyText = `Transferred ${this.toONE(amount, false).toFixed(2)} ONE from previous accounts to ${account.address}\n\nCurrent credits: ${balanceOne.toFixed(2)} ONE`
       } else {
-        replyText = `No funds were found on the balance of previous accounts\n\nCurrent balance: ${balanceOne.toFixed(2)} ONE`
+        replyText = `No funds were found in the credits of previous accounts\n\nCurrent credits: ${balanceOne.toFixed(2)} ONE`
       }
       ctx.reply(replyText, {
         parse_mode: "Markdown",
