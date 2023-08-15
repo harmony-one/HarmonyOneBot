@@ -349,29 +349,29 @@ export class OpenAIBot {
           });
           return;
         } else {
-          if (chat.length === 0) {
-            await ctx.reply(appText.gptHelpText, {
-              parse_mode: "Markdown",
-            });
-          }
+          // if (chat.length === 0) {
+          //   await ctx.reply(appText.gptHelpText, {
+          //     parse_mode: "Markdown",
+          //   });
+          // }
         }
         chat.push({
           role: "user",
           content: this.hasPrefix(prompt) ? prompt.slice(1) : prompt,
         });
-        const msgId = (
-          await ctx.reply(`Generating...`, {
-            //\n\n*Close chat with /end*
-            parse_mode: "Markdown",
-          })
-        ).message_id;
+        // const msgId = (
+        //   await ctx.reply(`Generating...`, {
+        //     //\n\n*Close chat with /end*
+        //     parse_mode: "Markdown",
+        //   })
+        // ).message_id;
         const payload = {
           conversation: chat,
           model: ctx.session.openAi.chatGpt.model,
         };
         const response = await promptGen(payload);
         chat.push({ content: response.completion, role: "system" });
-        ctx.api.editMessageText(ctx.chat?.id!, msgId, response.completion);
+        ctx.reply(response.completion);
         ctx.session.openAi.chatGpt.chatConversation = [...chat];
         ctx.session.openAi.chatGpt.usage += response.usage;
         ctx.session.openAi.chatGpt.price += response.price;
