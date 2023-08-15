@@ -32,7 +32,6 @@ export const mainMenu = new Menu<BotContext>(MenuIds.MAIN_MENU)
         console.log("### ex", ex);
       });
   })
-  .row()
   .submenu(menuText.imageMenu.menuName, MenuIds.SD_IMAGES_MAIN, (ctx) => {
     ctx
       .editMessageText(menuText.imageMenu.helpText, {
@@ -43,7 +42,7 @@ export const mainMenu = new Menu<BotContext>(MenuIds.MAIN_MENU)
         console.log("### ex", ex);
       });
   })
-  .row()
+  
   .submenu(menuText.voiceMemoMenu.menuName, MenuIds.VOICE_MEMO_MAIN, (ctx) => {
     ctx
       .editMessageText(menuText.voiceMemoMenu.helpText, {

@@ -256,6 +256,7 @@ bot.command(["start","help","menu"], async (ctx) => {
 bot.command("more", async (ctx) => {
   ctx.reply(commandsHelpText.more, {
     parse_mode: "Markdown",
+    disable_web_page_preview: true,
   });
 });
 

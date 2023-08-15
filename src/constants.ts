@@ -46,23 +46,17 @@ Your credits: $CREDITS ONE tokens. Send to [$WALLET_ADDRESS](https://explorer.ha
   ` 
 /qr s.country/ai astronaut, exuberant, anime girl, smile, sky, colorful
 
-/ask rewrite harmony.one/poster like apple press release
+/connect # Wallet Connect to MetaMask / Gnosis Safe / Timeless
 
-/image ancient, mysterious temple in a mountain range, surrounded by misty clouds and tall peaks
+/send 0x742c4788CC47A94cf260abc474E2Fa45695a79Cd 42
 
-/image beautiful waterfall in a lush jungle, with sunlight shining through the trees
+🧠 Web∞: CivitAI custom models, Character.AI celebrity chats, RunwayML video clips, HuggingFace embedding ControlNet, ElevenLabs speech clones, Zapier task automations, document or website queries.
 
-/image epic long distance cityscape photo of New York City flooded by the ocean and overgrown buildings and jungle ruins in rainforest, at sunset, cinematic shot, highly detailed, 8k, golden light
+🌳 Web3: self-custody wallets, token swaps, cross-chain bridges, fiat onramps, collectible mints, price auctions, multi-signature safes, governance votes.
 
-/image girl with slightly shocked facial expression, looking out at the many hands holding out phones in front of her (like reporters with microphones), with many social media icons surrounding her, including paper letters with hearts on them, in the style of children's book illustrator, rough crayon brushstrokes, rough-edged 2d animation, fred calleri
+🐝 Web2: news curation, gated access, emoji tipping, collective moments.
 
-/image cracked or broken sculpture art of two people holding hands, mirror polished, stainless steel, heavenly sunset sky, shot from below, in the style of michael benisty
-
-/images birds-eye view, 8k, realistic, \\*location\\* for [farm], [racetrack], [las vegas], [beach], [island], [forrest]
-
-/image \\*in the shape of this logo\\* for [island], [clear blue ocean water surrounding], [photo taken from above], [global], beautiful and vibrant]
-
-/image (masterpiece, best quality, detailed:1.2), 1girl, adult female, ginger hair, small braids, blue eyes, freckles, smile, red short sleeved flannel shirt, knee-length denim shorts, sitting in a colorful flower field, looking at the sky, birds in the sky, dreamy mood, magical. [negative: child, kid, underage, teen, worst quality, extra digits, watermark, signature:1.2]
+🏴‍☠️ Web1: .country domains, email aliases, vanity URLs, Notion/Substack hosting.
   `
 };
 
@@ -75,14 +69,14 @@ export const menuText = {
 🤖 welcome to the [harmony ONE bot](https://stse.substack.com/p/one-bot-for-all-generative-ai-on)! access ai models, agents, characters, services pay-per-use.`,
   },
   askMenu: {
-    menuName: `💬 /ask Ask me anything`,
+    menuName: `💬 /ask ChatGPT4`,
     helpText: `*ask me anything*
         
 \`/ask what is one intersting historical fact about technological development in the 2000s?\`
 `,
   },
   imageMenu: {
-    menuName: "📸 /image Make a photo",
+    menuName: "📸 /image Stability",
     backButton: "⬅️ Back",
     helpText: `*make an image*
         
@@ -91,7 +85,7 @@ export const menuText = {
   `,
   },
   voiceMemoMenu: {
-    menuName: "🤩 /more Other commands",
+    menuName: "🤩 /more",
     backButton: "⬅️ Back",
     helpText: commandsHelpText.more,
   },

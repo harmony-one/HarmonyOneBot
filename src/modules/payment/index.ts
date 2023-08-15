@@ -261,10 +261,10 @@ export class BotPayments {
         });
       }
     } else {
+      const balance = await this.getAddressBalance(userAccount.address)
+      const balanceOne  = this.toONE(balance, false).toFixed(2)
       ctx.reply(
-        `Insufficient credits\n\nSend *${this.toONE(
-          balanceDelta.abs()
-        )} ONE* to \`${userAccount.address}\` and repeat the request.`,
+        `Your credits: ${balanceOne} ONE tokens. To recharge, send to \`${userAccount.address}\`.`,
         {
           reply_to_message_id: message_id,
           parse_mode: "Markdown",
