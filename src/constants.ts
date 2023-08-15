@@ -18,23 +18,24 @@ export enum MenuIds {
 export const commandsHelpText = {
   start: `Hello, I am @HarmonyOneAIBot, ONE Bot from Harmony AI 🧚‍♀️. Type
 
-  /ask Ask me anything (OpenAI ChatGPT-4). Or, / without "ask".
-  /image Make a photo (Stable Diffusion XL). Or, /images for multiple.
-  /help This tutorial. Docs at harmony.one/bot. Examples:
-  
-  /ask act like elon musk, expand our q4 roadmap "telegram ai bot"
-  
-  / act like mark zuckerberg instead
-  
-  /image glimpses of a herd of wild elephants crossing a savanna
-  
-  /images vintage hot rod with custom flame paint job
-  
-  /more Other commands for summarizing voice messages, artistic QR code, Wallet Connect, ChatGPT 32K, DALL-E.
-  
-  Soon: 🧠 Web∞ (CivitAI custom models, Character.AI celebrity chats, RunwayML video clips, HuggingFace embed ControlNet, ElevenLabs speech clones, Zapier task automations) + 🌳 Web3 (self-custody wallets, token swaps, fiat onramps, collectible mints, price auctions, multi-signature safes, governance votes) + 🐝 Web2 (news curation, gated access, emoji tipping) + 🏴‍☠️ Web1 (.country domains, email aliases, vanity URLs, Notion/Substack hosting).
-  
-  Your credits: $CREDITS ONE tokens. Send to $WALLET_ADDRESS for recharge.
+/ask Ask me anything (OpenAI ChatGPT-4). Or, / without "ask".
+/image Make a photo (Stable Diffusion XL). Or, /images for multiple.
+/help This tutorial. Docs at harmony.one/bot. Examples:
+
+/ask act like elon musk, expand our q4 roadmap "telegram ai bot"
+
+/ act like mark zuckerberg instead
+
+/image glimpses of a herd of wild elephants crossing a savanna
+
+/images vintage hot rod with custom flame paint job
+
+/more Other commands for summarizing voice messages, artistic QR code, Wallet Connect, ChatGPT 32K, DALL-E.
+
+Soon: 🧠 Web∞ (CivitAI custom models, Character.AI celebrity chats, RunwayML video clips, HuggingFace embed ControlNet, ElevenLabs speech clones, Zapier task automations) + 🌳 Web3 (self-custody wallets, token swaps, fiat onramps, collectible mints, price auctions, multi-signature safes, governance votes) + 🐝 Web2 (news curation, gated access, emoji tipping) + 🏴‍☠️ Web1 (.country domains, email aliases, vanity URLs, Notion/Substack hosting).
+
+Your credits: *$CREDITS* ONE tokens.
+Send to [$WALLET_ADDRESS](https://explorer.harmony.one/address/$WALLET_ADDRESS) for recharge.
 `,
   more: 
   ` 
@@ -64,7 +65,7 @@ export const commandsHelpText = {
 export const menuText = {
   mainMenu: {
     backButton: "⬅️ Back",
-    menuName: commandsHelpText.start,
+    menuName: 'Main Menu',
     helpText: `*Main Menu*
      
 🤖 welcome to the [harmony ONE bot](https://stse.substack.com/p/one-bot-for-all-generative-ai-on)! access ai models, agents, characters, services pay-per-use.`,
