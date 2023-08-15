@@ -360,7 +360,7 @@ export class OpenAIBot {
         }
         chat.push({
           role: "user",
-          content: this.hasPrefix(prompt) ? prompt.slice(1) : prompt,
+          content: `${this.hasPrefix(prompt) ? prompt.slice(1) : prompt}.`, // Please add %&% to every end of a whole sentece in a text or conversation
         });
         const msgId = (
           await ctx.reply(`Generating...`, {

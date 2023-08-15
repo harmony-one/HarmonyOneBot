@@ -154,15 +154,13 @@ export const streamChatCompletion = async (
       model: "gpt-3.5-turbo",
       stream: true,
       messages: conversation as ChatCompletionRequestMessage[],
-      max_tokens: 512,
+      // max_tokens: 512,
       temperature: 0.9,
     },
     { responseType: "stream" }
   );
-  // console.log({ response });
-  // const readable = Readable.from(response.data);
   let msg = "";
-
+  let wordCount = 0;
   response.data.on("data", async (chunk: Buffer) => {
     // console.log(chunk);
     const chunkStr = chunk.toString(); // Convert the chunk to a string
@@ -173,54 +171,38 @@ export const streamChatCompletion = async (
         const parsedChunk = JSON.parse(jsonChunk);
         if (parsedChunk && parsedChunk.choices && parsedChunk.choices.length > 0) {
           const chunkContent = parsedChunk.choices[0].delta.content;
-          msg += chunkContent; // Concatenate the content to the completion text
-          console.log(msg);
-          chunkContent && await ctx.api.editMessageText(ctx.chat?.id!, msgId,msg);
+          msg += chunkContent;
+
+          const wordsInChunk = chunkContent.trim().split(/\s+/).length;
+          wordCount += wordsInChunk;
+
+          if (wordCount >= 60) {
+            if (chunkContent === '\n') {
+              console.log("EL AVION EL AVION")
+            }
+            await ctx.api.editMessageText(ctx.chat?.id!, msgId, msg);
+            wordCount = 0; // Reset word count
+            // await new Promise(resolve => setTimeout(resolve, 2000)); // Wait for 1 second
+          }
         }
       } catch (error) {
         console.error("Error parsing JSON chunk:", error);
       }
     }
-
-
-    // const parsedChunk = JSON.parse(chunk.data);
-    // if (parsedChunk && parsedChunk.choices && parsedChunk.choices.length > 0) {
-    //   const chunkContent = parsedChunk.choices[0].delta.content;
-    //   msg += chunkContent; // Concatenate the content to the completion text
-    //   console.log(msg);
-    // }
   });
-
-  // response.data.on("end", () => {
-  //   console.log(`Completion text: ${completionText}`);
-  //   console.timeEnd("chatCompletion");
-  // });
-
-  // readable.on("readable", async () => {
-  //   let chunk;
-  //   while (null !== (chunk = readable.read())) {
-  //     msg += chunk || '';
-  //     console.log(`read: ${chunk}`);
-  //     // msg && await ctx.api.editMessageText(ctx.chat?.id!, msgId,msg);
-  //     await ctx.api.editMessageText(ctx.chat?.id!, msgId,'hola');
-  //   }
-  // });
-  // // readable.on('close', () => {
-
-  // // })
-  console.timeEnd("chatCompletion");
-  const chatModel = getChatModel("gpt-3.5-turbo");
-  const price = getChatModelPrice(
-    chatModel,
-    true,
-    response.data.usage?.prompt_tokens!,
-    response.data.usage?.completion_tokens
-  );
-  console.log("HERE");
   return new Promise<ChatCompletion>((resolve) => {
-    response.data.on("end", () => {
-      console.log(`Completion text: ${msg}`);
-      console.timeEnd("chatCompletion");
+    response.data.on("end", async () => {
+      const chatModel = getChatModel("gpt-3.5-turbo");
+      console.log("FINAL", msg)
+      const price = getChatModelPrice(
+        chatModel,
+        true,
+        response.data.usage?.prompt_tokens!,
+        response.data.usage?.completion_tokens
+      );
+      await ctx.api.editMessageText(ctx.chat?.id!, msgId, msg).catch((e:any) => {
+        console.log(e)
+      });
       resolve({
         completion: msg,
         usage: response.data.usage?.total_tokens!,
