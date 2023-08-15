@@ -171,7 +171,7 @@ export class SDImagesBot {
                 idx = this.queue.findIndex(v => v === uuid);
             }
 
-            ctx.reply(`${author} starting to generate your images`);
+            // ctx.reply(`${author} starting to generate your images`);
             ctx.api.sendChatAction(ctx.chat?.id!,'upload_photo')
             const res = await this.sdNodeApi.generateImagesPreviews(prompt);
 
@@ -241,7 +241,7 @@ export class SDImagesBot {
                 return;
             }
 
-            ctx.reply(`${author} starting to generate your image ${imageNumber} in high quality`);
+            // ctx.reply(`${author} starting to generate your image ${imageNumber} in high quality`);
             ctx.api.sendChatAction(ctx.chat?.id!,'upload_photo')
             const imageBuffer = await this.sdNodeApi.generateImageFull(session.prompt, +session.all_seeds[+imageNumber - 1]);
 
