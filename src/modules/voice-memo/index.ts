@@ -126,6 +126,9 @@ export class VoiceMemo {
         resultText += '\n\n'
       }
     }
+    if(!resultText.endsWith('.')) {
+      resultText += '.'
+    }
     return resultText
   }
 
