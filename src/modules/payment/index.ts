@@ -304,7 +304,7 @@ export class BotPayments {
     return ['/credits', '/migrate'].includes(text)
   }
 
-  private getAccountId(ctx: OnMessageContext) {
+  public getAccountId(ctx: OnMessageContext) {
     const { chat, from } = ctx.update.message;
     const { id: userId } = from
     const { id: chatId, type } = chat
@@ -319,10 +319,9 @@ export class BotPayments {
     if(!this.isSupportedEvent(ctx)) {
       return false
     }
-
+    console.log(ctx)
     const accountId = this.getAccountId(ctx)
     const account = this.getUserAccount(accountId);
-
     this.logger.info(`onEvent @${from.username}(${from.id}) in chat ${chat.id} (${chat.type}), accountId: ${accountId}, account address: ${account?.address}`)
 
     if(!account) {
@@ -333,8 +332,7 @@ export class BotPayments {
         const balance = await this.getAddressBalance(account.address);
         const balanceOne = this.toONE(balance, false);
         ctx.reply(
-          `
-      🤖 *Credits* 
+          `🤖 *Credits* 
       
 *ONE*: ${balanceOne.toFixed(2)} 
 

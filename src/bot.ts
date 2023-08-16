@@ -239,13 +239,20 @@ const onCallback = async (ctx: OnCallBackQueryData) => {
 
 
 bot.command(["start","help","menu"], async (ctx) => {
-  const userWalletAddress =
-    (await payments.getUserAccount(ctx.from?.id!)?.address) || "";
-  const balance = await payments.getAddressBalance(userWalletAddress);
+  console.log(ctx)
+  const accountId = payments.getAccountId(ctx as OnMessageContext)
+  const account = payments.getUserAccount(accountId);
+
+  // const userWalletAddress =
+  //   (await payments.getUserAccount(ctx.from?.id!)?.address) || "";
+  if(!account) {
+    return false
+  }
+  const balance = await payments.getAddressBalance(account.address);
   const balanceOne = payments.toONE(balance, false).toFixed(2);
   const startText = commandsHelpText.start
     .replace("$CREDITS", balanceOne + "")
-    .replace("$WALLET_ADDRESS", userWalletAddress);
+    .replace("$WALLET_ADDRESS", account.address);
   await ctx.reply(startText, {
     parse_mode: "Markdown",
     reply_markup: mainMenu,
