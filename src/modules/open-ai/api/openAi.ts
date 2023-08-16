@@ -144,10 +144,6 @@ export async function chatCompilation(
   }
 }
 
-function getRandomNumberBetween(min: number, max: number) {
-  return Math.floor(Math.random() * (max - min + 1) + min);
-}
-
 export const streamChatCompletion = async (
   conversation: ChatConversation[],
   ctx: OnMessageContext | OnCallBackQueryData,
@@ -167,7 +163,6 @@ export const streamChatCompletion = async (
     let completion = "";
     let msgId = 0;
     let showStatus = false;
-    let statusRunning = false;
     return new Promise<string>(async (resolve, reject) => {
       const res = await openai.createChatCompletion(
         payload as CreateChatCompletionRequest,
