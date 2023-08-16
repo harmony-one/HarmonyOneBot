@@ -372,7 +372,7 @@ export class OpenAIBot {
           conversation: chat,
           model: ctx.session.openAi.chatGpt.model,
         };
-        const response = await streamChatCompletion(chat,ctx,msgId) // { message: prompt })
+        const response = await streamChatCompletion(chat,ctx as OnMessageContext,msgId) // { message: prompt })
         // const response = await promptGen(payload);
         chat.push({ content: response.completion, role: "system" });
         // ctx.api.editMessageText(ctx.chat?.id!, msgId, response.completion);
