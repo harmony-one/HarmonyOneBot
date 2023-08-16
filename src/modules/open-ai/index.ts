@@ -331,7 +331,6 @@ export class OpenAIBot {
 
   async onChat(ctx: OnMessageContext | OnCallBackQueryData) {
     const { prompt } = getCommandNamePrompt(ctx, SupportedCommands); // ctx.match;
-    
 
     if (ctx.session.openAi.chatGpt.isEnabled) {
       this.logger.info("prompt:", prompt);
@@ -362,27 +361,14 @@ export class OpenAIBot {
           role: "user",
           content: `${this.hasPrefix(prompt) ? prompt.slice(1) : prompt}.`, // Please add %&% to every end of a whole sentece in a text or conversation
         });
-        const msgId = (
-          await ctx.reply(`Generating...`, {
-            //\n\n*Close chat with /end*
-            parse_mode: "Markdown",
-          })
-        ).message_id;
         const payload = {
-          conversation: chat,
-          model: ctx.session.openAi.chatGpt.model,
+          conversation: chat!,
+          model:
+            ctx.session.openAi.chatGpt.model || config.openAi.chatGpt.model,
+          ctx,
         };
-        const response = await streamChatCompletion(chat,ctx as OnMessageContext,msgId) // { message: prompt })
-        // const response = await promptGen(payload);
-        chat.push({ content: response.completion, role: "system" });
-        // ctx.api.editMessageText(ctx.chat?.id!, msgId, response.completion);
-        ctx.session.openAi.chatGpt.chatConversation = [...chat];
-        ctx.session.openAi.chatGpt.usage += response.usage;
-        ctx.session.openAi.chatGpt.price += response.price;
-        const isPay = await this.payments.pay(
-          ctx as OnMessageContext,
-          response.price
-        );
+        await promptGen(payload);
+        const isPay = await this.payments.pay(ctx as OnMessageContext, 0);
         if (!isPay) {
           ctx.reply(appText.gptChatPaymentIssue, {
             parse_mode: "Markdown",

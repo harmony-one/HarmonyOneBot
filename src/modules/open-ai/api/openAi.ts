@@ -12,7 +12,12 @@ import { Readable } from "stream"; // Import the Readable class
 import config from "../../../config";
 import { deleteFile, getImage } from "../utils/file";
 import { bot } from "../../../bot";
-import { ChatCompletion, ChatConversation, OnCallBackQueryData, OnMessageContext } from "../../types";
+import {
+  ChatCompletion,
+  ChatConversation,
+  OnCallBackQueryData,
+  OnMessageContext,
+} from "../../types";
 import { pino } from "pino";
 import {
   ChatGPTModel,
@@ -144,60 +149,74 @@ export async function chatCompilation(
 
 export const streamChatCompletion = async (
   conversation: ChatConversation[],
-  // model = config.openAi.chatGpt.model,
-  // limitTokens = true,
   ctx: OnMessageContext | OnCallBackQueryData,
-  msgId: number
-): Promise<ChatCompletion> => {
-  console.time("chatCompletion");
-  let completion = ''
-  let wordCount = 0;
-  let i = 1
-  const streamConfig: ServerStreamChatCompletionConfig = {
-    openai,
-    handler: {
-      // Content contains the string draft, which may be partial. When isFinal is true, the completion is done.
-      async onContent(content: string, isFinal: boolean, stream: any) {
-        if (isFinal) {
-          await ctx.api.editMessageText(ctx.chat?.id!, msgId, content).catch((e:any) => console.log(e));
-        } else if (completion !== content) {
-
-          const wordsInChunk = content.trim().split(/\s+/).length;
-          console.log(wordsInChunk,content)
-          wordCount += wordsInChunk;
-          completion = content
-          
-          if (wordCount >= 5000 * i) {
-            i++
-            console.log(wordCount, i)
-            await ctx.api.editMessageText(ctx.chat?.id!, msgId, content).catch((e:any) => console.log(e));
+  model = config.openAi.chatGpt.model,
+  limitTokens = true
+): Promise<string> => {
+  try {
+    const payload = {
+      model: model,
+      max_tokens: limitTokens
+        ? config.openAi.imageGen.completions.maxTokens
+        : undefined,
+      temperature: config.openAi.imageGen.completions.temperature,
+      messages: conversation,
+      stream: true,
+    };
+    let completion = "";
+    let msgId = 0;
+    return new Promise<string>(async (resolve, reject) => {
+      const res = await openai.createChatCompletion(
+        payload as CreateChatCompletionRequest,
+        { responseType: "stream" }
+      );
+      //@ts-ignore
+      res.data.on("data", async (data: any) => {
+        const lines = data
+          .toString()
+          .split("\n")
+          .filter((line: string) => line.trim() !== "");
+        for (const line of lines) {
+          const message = line.replace(/^data: /, "");
+          if (message === "[DONE]") {
+            if (!completion.endsWith(".")) {
+              if (msgId === 0) {
+                msgId = (await ctx.reply(completion)).message_id;
+              } else {
+                await ctx.api
+                  .editMessageText(ctx.chat?.id!, msgId, completion)
+                  .catch((e: any) => console.log(e));
+              }
+            }
+            resolve(completion); // Resolve the promise with the completion variable
+            return; // Stream finished
+          }
+          try {
+            const parsed = JSON.parse(message);
+            completion +=
+              parsed.choices[0].delta.content !== undefined
+                ? parsed.choices[0].delta.content
+                : "";
+            if (parsed.choices[0].delta.content === ".") {
+              if (msgId === 0) {
+                msgId = (await ctx.reply(completion)).message_id;
+              } else {
+                ctx.api
+                  .editMessageText(ctx.chat?.id!, msgId, completion)
+                  .catch((e: any) => console.log(e));
+              }
+            }
+          } catch (error) {
+            logger.error("Could not JSON parse stream message", message, error);
+            reject(`An error occurred during OpenAI request: ${error}`);
           }
         }
-      },
-      onDone(stream: any) {
-        console.log('Done!');
-        console.log(completion)
-      },
-      onError(error: any, stream: any) {
-        console.error(error);
-      },
-    },
-  };
-
-  await OpenAIExt.streamServerChatCompletion(
-    {
-      model: "gpt-3.5-turbo",
-      messages: conversation,
-      // max_tokens: 512,
-    },
-    streamConfig
-  );
-
-  return {
-    completion: completion, // response.data.choices[0].message?.content!,
-    usage: 30, //response.data.usage?.total_tokens!,
-    price: 10 //price * config.openAi.chatGpt.priceAdjustment,
-  };
+      });
+    });
+  } catch (error: any) {
+    logger.error("Could not JSON parse stream message", error);
+    return Promise.reject(`An error occurred during OpenAI request: ${error}`);
+  }
 };
 
 export async function improvePrompt(promptText: string, model: string) {
@@ -256,71 +275,3 @@ export const getDalleModelPrice = (
   }
   return price;
 };
-
-
-
-
-  // await new Promise(resolve => setTimeout(resolve, 10000))
-  // const response: any = await openai.createChatCompletion(
-  //   {
-  //     model: "gpt-3.5-turbo",
-  //     stream: true,
-  //     messages: conversation as ChatCompletionRequestMessage[],
-  //     // max_tokens: 512,
-  //     temperature: 0.9,
-  //   },
-  //   { responseType: "stream" }
-  // );
-  // for await (const part of response) {
-  //   console.log(part.choices[0]?.delta?.content || '');
-  // }
-  // process.stdout.write('\n');
-
-  
-  // let msg = "";
-  // let wordCount = 0;
-  // response.data.on("data", async (chunk: Buffer) => {
-  //   // console.log(chunk);
-  //   const chunkStr = chunk.toString(); // Convert the chunk to a string
-  //   const jsonStartIndex = chunkStr.indexOf('data: {');
-  //   if (jsonStartIndex !== -1) {
-  //     const jsonChunk = chunkStr.slice(jsonStartIndex + 6); // Extract the JSON content after 'data: '
-  //     try {
-  //       const parsedChunk = JSON.parse(jsonChunk);
-  //       if (parsedChunk && parsedChunk.choices && parsedChunk.choices.length > 0) {
-  //         const chunkContent = parsedChunk.choices[0].delta.content;
-  //         msg += chunkContent;
-
-  //         const wordsInChunk = chunkContent.trim().split(/\s+/).length;
-  //         wordCount += wordsInChunk;
-
-  //         if (wordCount >= 60) {
-  //           await ctx.api.editMessageText(ctx.chat?.id!, msgId, msg);
-  //           wordCount = 0; // Reset word count
-  //           // await new Promise(resolve => setTimeout(resolve, 2000)); // Wait for 1 second
-  //         }
-  //       }
-  //     } catch (error) {
-  //       console.error("Error parsing JSON chunk:", error);
-  //     }
-  //   }
-  // });
-  // return new Promise<ChatCompletion>((resolve) => {
-  //   response.data.on("end", async () => {
-  //     const chatModel = getChatModel("gpt-3.5-turbo");
-  //     const price = getChatModelPrice(
-  //       chatModel,
-  //       true,
-  //       response.data.usage?.prompt_tokens!,
-  //       response.data.usage?.completion_tokens
-  //     );
-  //     await ctx.api.editMessageText(ctx.chat?.id!, msgId, msg).catch((e:any) => {
-  //       console.log(e)
-  //     });
-  //     resolve({
-  //       completion: msg,
-  //       usage: response.data.usage?.total_tokens!,
-  //       price: price * config.openAi.chatGpt.priceAdjustment,
-  //     }); // Resolve the promise with the completion text
-  //   });
-  // });
