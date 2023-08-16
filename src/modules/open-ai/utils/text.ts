@@ -5,12 +5,12 @@ Adjust image size or how many images are generated`,
   generatingText: `Generating response...`,
   introText: `To start a conversation write:\n\n*/ask TEXT*`,
   gptHelpText: `To continue the conversation, start the following prompts with:\n\n *>*`, // Close chat with /end\n\n
-  gptLast: `*This is where our conversation stands:*`,
+  gptLast: `*Here is your most recenent message:*\n`,
   gptChatEnd: "Chat Complete", // Total tokens used:
   endChat: "Thanks for using 1.country services",
   gptChatPaymentIssue: `Once the withdrawal instructions are completed, you can return to the current conversation by writing the */ask* command.`,
   notEnoughBalance:
-    "Not enough balance. Minimum balance required is 10 ONE per completion",
+    `Your credits: $CREDITS ONE tokens. To recharge, send to \`$WALLET_ADDRESS\``,
 };
 
 // <b>Edit an Image</b>

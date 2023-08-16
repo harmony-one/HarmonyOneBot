@@ -6,6 +6,7 @@ import { isAdmin } from "../utils/context";
 import { MenuIds } from "../../../constants";
 import { ChatGPTModelsEnum } from "../types";
 import { menuText } from "../../../constants";
+import { getStartMenuText } from "../../../pages";
 
 export const chatGptMenuText = {
   helpText: `*🖌️ ChatGPT*
@@ -16,55 +17,10 @@ export const chatGptMenuText = {
 };
 
 export const chatMainMenu = new Menu<BotContext>(MenuIds.CHAT_GPT_MAIN)
-  // .text(
-  //   (ctx) =>
-  //     `${
-  //       ctx.session.openAi.chatGpt.isEnabled
-  //         ? "🔴 Disable bot"
-  //         : "🟢 Enable bot"
-  //     }`,
-  //   async (ctx) => {
-  //     if (await isAdmin(ctx)) {
-  //       ctx.session.openAi.chatGpt.isEnabled =
-  //         !ctx.session.openAi.chatGpt.isEnabled;
-  //       ctx.menu.update();
-  //     } else {
-  //       ctx
-  //         .editMessageText("Only the group owner can enable/disable this bot", {
-  //           parse_mode: "Markdown",
-  //           disable_web_page_preview: true,
-  //         })
-  //         .catch((ex: any) => console.log("### ex", ex));
-  //     }
-  //   }
-  // )
-  // .row()
-  // .text("Change default model", async (ctx) => {
-  //   if (await isAdmin(ctx)) {
-  //     ctx
-  //       .editMessageText(appText.chatGptChangeModel, {
-  //         parse_mode: "HTML",
-  //         reply_markup: chatGPTimageDefaultOptions,
-  //       })
-  //       .catch((ex: any) => {
-  //         console.log("### ex", ex);
-  //       });
-  //   } else {
-  //     ctx
-  //       .editMessageText(
-  //         "Only the group owner can change OpenAI configuration",
-  //         {
-  //           parse_mode: "Markdown",
-  //           disable_web_page_preview: true,
-  //         }
-  //       )
-  //       .catch((ex: any) => console.log("### ex", ex));
-  //   }
-  // })
-  // .row()
-  .back(menuText.mainMenu.backButton, (ctx) => {
+  .back(menuText.mainMenu.backButton, async (ctx) => {
+    const text = await getStartMenuText(ctx) || ""
     ctx
-      .editMessageText(menuText.mainMenu.menuName, {
+      .editMessageText(text, {
         parse_mode: "Markdown",
         disable_web_page_preview: true,
       })

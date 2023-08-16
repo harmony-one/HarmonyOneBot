@@ -1,6 +1,6 @@
 import axios from 'axios'
 import config from "../../config";
-import {getPercentDiff} from "./utils";
+import {abbreviateNumber, getPercentDiff} from "./utils";
 
 export enum MetricsDailyType {
   walletsCount = 'wallets_count',
@@ -41,7 +41,7 @@ export const getFeeStats = async () => {
   }
 
   return {
-    value,
+    value: abbreviateNumber(value),
     change
   }
 }

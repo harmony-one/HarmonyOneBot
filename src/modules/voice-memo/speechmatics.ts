@@ -77,13 +77,23 @@ export class Speechmatics {
     return data && data.summary && data.summary.content ? data.summary.content:  ''
   }
 
+  private enrichTranslation(text: string) {
+    return text
+      .split('SPEAKER: S')
+      .filter(item => item).map(item => {
+        const [speakerIndex, text] = item.split('\n')
+        return `${speakerIndex} > ${text}`
+      })
+      .join('\n\n')
+  }
+
   private async pollJobResult (jobId: string): Promise<SpeechmaticsResult | null> {
     for(let i = 0; i < 30 * 60; i++) {
       try {
         const translation = await this.getJobResult(jobId)
         const summarization = await this.getJobSummarization(jobId)
         return {
-          translation,
+          translation: this.enrichTranslation(translation),
           summarization
         }
       } catch (e) {}

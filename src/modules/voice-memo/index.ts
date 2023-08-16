@@ -51,6 +51,10 @@ export class VoiceMemo {
 
   private writeTempFile (buffer: string | Buffer, filename: string) {
     const filePath = this.getTempFilePath(filename)
+    const dirPath = `./${this.tempDirectory}`
+    if(!fs.existsSync(dirPath)) {
+      fs.mkdirSync(dirPath)
+    }
     fs.writeFileSync(filePath, buffer)
     return filePath
   }
@@ -121,6 +125,9 @@ export class VoiceMemo {
       if(i < splitText.length - 3) {
         resultText += '\n\n'
       }
+    }
+    if(!resultText.endsWith('.')) {
+      resultText += '.'
     }
     return resultText
   }

@@ -44,12 +44,12 @@ export const bot = new Bot<BotContext>(config.telegramBotAuthToken);
 bot.use(
   limit({
     // Allow only 1 message to be handled every 0.5 seconds.
-    timeFrame: 500,
+    timeFrame: 100,
     limit: 1,
 
     // This is called when the limit is exceeded.
     onLimitExceeded: async (ctx) => {
-      await ctx.reply("Please refrain from sending too many requests!");
+      await ctx.reply("");
     },
 
     // Note that the key should be a number in string format such as "123456789".
@@ -138,7 +138,6 @@ const onMessage = async (ctx: OnMessageContext) => {
       voiceMemo.onEvent(ctx).catch((e) => {
         payments.refundPayment(e.message || "Unknown error", ctx, price);
       });
-      return;
     }
     return
   }
@@ -240,13 +239,19 @@ const onCallback = async (ctx: OnCallBackQueryData) => {
 
 
 bot.command(["start","help","menu"], async (ctx) => {
-  const userWalletAddress =
-    (await payments.getUserAccount(ctx.from?.id!)?.address) || "";
-  const balance = await payments.getAddressBalance(userWalletAddress);
+  const accountId = payments.getAccountId(ctx as OnMessageContext)
+  const account = payments.getUserAccount(accountId);
+  // const userWalletAddress =
+  //   (await payments.getUserAccount(ctx.from?.id!)?.address) || "";
+  if(!account) {
+    return false
+  }
+  const balance = await payments.getAddressBalance(account.address);
   const balanceOne = payments.toONE(balance, false).toFixed(2);
   const startText = commandsHelpText.start
-    .replace("$CREDITS", balanceOne + "")
-    .replace("$WALLET_ADDRESS", userWalletAddress);
+    .replaceAll("$CREDITS", balanceOne + "")
+    .replaceAll("$WALLET_ADDRESS", account.address);
+  
   await ctx.reply(startText, {
     parse_mode: "Markdown",
     reply_markup: mainMenu,
@@ -257,6 +262,7 @@ bot.command(["start","help","menu"], async (ctx) => {
 bot.command("more", async (ctx) => {
   ctx.reply(commandsHelpText.more, {
     parse_mode: "Markdown",
+    disable_web_page_preview: true,
   });
 });
 

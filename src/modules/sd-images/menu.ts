@@ -1,6 +1,7 @@
 import { Menu } from "@grammyjs/menu";
 import { BotContext } from "../types";
 import { MenuIds, menuText } from "../../constants";
+import { getStartMenuText } from "../../pages";
 
 // export const sdImagesMenuText = {
 //   helpText: `🖼️ *Stable Diffusion Help*
@@ -20,9 +21,10 @@ import { MenuIds, menuText } from "../../constants";
 
 export const sdImagesMenu = new Menu<BotContext>(MenuIds.SD_IMAGES_MAIN).back(
   menuText.mainMenu.backButton,
-  (ctx) => {
+  async (ctx) => {
+    const text = (await getStartMenuText(ctx)) || "";
     ctx
-      .editMessageText(menuText.mainMenu.menuName, {
+      .editMessageText(text, {
         parse_mode: "Markdown",
         disable_web_page_preview: true,
       })

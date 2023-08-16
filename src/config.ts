@@ -47,7 +47,7 @@ export default {
       chatPrefix: process.env.GROUP_PREFIX
         ? process.env.GROUP_PREFIX.split(",")
         : ["?", ">"],
-      minimumBalance: process.env.MIN_BALANCE ? parseInt(process.env.MIN_BALANCE) : 10
+      minimumBalance: process.env.MIN_BALANCE ? parseInt(process.env.MIN_BALANCE) : 0
     },
   },
   country: {
@@ -88,7 +88,7 @@ export default {
     holderAddress:
       process.env.PAYMENT_HOLDER_ADDRESS ||
       "0x9EE59D58606997AAFd2F6Ba46EC64402829f9b6C",
-    whitelist: (process.env.PAYMENT_WHITELIST || "stephentse,lijiangxyz")
+    whitelist: (process.env.PAYMENT_WHITELIST || "")
       .split(",")
       .map((item) => item.toString().toLowerCase()),
   },

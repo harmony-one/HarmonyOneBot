@@ -32,7 +32,7 @@ export class SDImagesBot {
     private showcaseCount = 0;
 
     constructor() {
-        this.sdNodeApi = new SDNodeApi({ apiUrl: config.stableDiffusionHost });
+        this.sdNodeApi = new SDNodeApi();
     }
 
     public isSupportedEvent(ctx: OnMessageContext | OnCallBackQueryData): boolean {
