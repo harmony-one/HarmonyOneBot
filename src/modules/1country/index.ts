@@ -30,6 +30,11 @@ export const SupportedCommands = {
     groupParams: "=1", // TODO: add support for groups
     privateParams: "=1",
   },
+  nft: {
+    name: "nft",
+    groupParams: "=1", // TODO: add support for groups
+    privateParams: "=1",
+  }
 };
 
 // enum SupportedCommands {
@@ -151,15 +156,16 @@ export class OneCountryBot {
       return;
     }
 
-    // if (ctx.hasCommand(SupportedCommands.NFT)) {
-    //   this.onNftCmd(ctx);
-    //   return;
-    // }
+    if (ctx.hasCommand(SupportedCommands.nft.name)) {
+      this.onNftCmd(ctx);
+      return;
+    }
 
     if (ctx.hasCommand(SupportedCommands.cert.name)) {
       this.onCertCmd(ctx);
       return;
     }
+
 
     // if (ctx.hasCommand(SupportedCommands.RENEW)) {
     //   this.onRenewCmd(ctx);
