@@ -301,7 +301,7 @@ export class BotPayments {
 
   public isSupportedEvent(ctx: OnMessageContext) {
     const { text = '' } = ctx.update.message;
-    return ['/credits', '/migrate'].includes(text)
+    return ['/secret', '/migrate'].includes(text)
   }
 
   public getAccountId(ctx: OnMessageContext) {
@@ -326,7 +326,7 @@ export class BotPayments {
     if(!account) {
       return false
     }
-    if (text === '/credits') {
+    if (text === '/secret') {
       try {
         const balance = await this.getAddressBalance(account.address);
         const balanceOne = this.toONE(balance, false);
