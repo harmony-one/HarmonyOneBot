@@ -149,7 +149,7 @@ export class WalletConnect {
       sessionMap[ctx.from.id] = session.topic;
 
       ctx.api.deleteMessage(ctx.chat.id, message.message_id);
-      ctx.reply('wallet connected: ' + getUserAddr(session));
+      // ctx.reply('wallet connected: ' + getUserAddr(session));
     } catch (ex) {
       ctx.api.deleteMessage(ctx.chat.id, message.message_id);
       if (ex instanceof Error) {
@@ -174,7 +174,7 @@ export class WalletConnect {
       sessionMap[ctx.from.id] = session.topic;
 
       ctx.api.deleteMessage(ctx.chat.id, message.message_id);
-      ctx.reply('wallet connected: ' + getUserAddr(session));
+      // ctx.reply('wallet connected: ' + getUserAddr(session));
     } catch (ex) {
       ctx.api.deleteMessage(ctx.chat.id, message.message_id);
       if (ex instanceof Error) {
