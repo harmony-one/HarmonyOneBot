@@ -135,6 +135,12 @@ export const promptGen = async (data: ChatGptPayload) => {
       ctx.session.openAi.chatGpt.usage += promptTokens + completionTokens;
       ctx.session.openAi.chatGpt.price += price;
       ctx.session.openAi.chatGpt.chatConversation = [...conversation!];
+      return {
+        price
+      }
+    }
+    return {
+      price: 0
     }
   } catch (e) {
     logger.error("promptGen Error", e);
