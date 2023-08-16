@@ -372,6 +372,8 @@ export class OpenAIBot {
           conversation: chat,
           model: ctx.session.openAi.chatGpt.model,
         };
+        ctx.api.sendChatAction(ctx.chat?.id!, "typing");
+
         const response = await promptGen(payload);
         chat.push({ content: response.completion, role: "system" });
         ctx.reply(response.completion);
