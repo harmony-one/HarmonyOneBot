@@ -374,6 +374,7 @@ export class OpenAIBot {
               ctx.session.openAi.chatGpt.model || config.openAi.chatGpt.model,
             ctx,
           };
+          ctx.api.sendChatAction(ctx.chat?.id!, "typing");
           const response = await promptGen(payload);
           const isPay = await this.payments.pay(
             ctx as OnMessageContext,
