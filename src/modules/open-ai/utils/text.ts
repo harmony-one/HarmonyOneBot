@@ -10,7 +10,7 @@ Adjust image size or how many images are generated`,
   endChat: "Thanks for using 1.country services",
   gptChatPaymentIssue: `Once the withdrawal instructions are completed, you can return to the current conversation by writing the */ask* command.`,
   notEnoughBalance:
-    "Insufficient credit. Minimum credit required is 10 ONE per completion",
+    `Your credits: $CREDITS ONE tokens. To recharge, send to \`$WALLET_ADDRESS\``,
 };
 
 // <b>Edit an Image</b>

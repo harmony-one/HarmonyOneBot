@@ -333,10 +333,12 @@ export class OpenAIBot {
     if (ctx.session.openAi.chatGpt.isEnabled) {
       this.logger.info("prompt:", prompt);
       const chat = ctx.session.openAi.chatGpt.chatConversation;
-      const balance = await this.payments.getUserBalance(ctx.from.id);
+      const accountId = this.payments.getAccountId(ctx as OnMessageContext);
+      const account = await this.payments.getUserAccount(accountId);
+      const balance = await this.payments.getUserBalance(accountId);
       const balanceOne = await this.payments.toONE(balance, false).toFixed(2);
       if (
-        +balanceOne >= config.openAi.chatGpt.minimumBalance ||
+        +balanceOne > +config.openAi.chatGpt.minimumBalance ||
         (await this.payments.isUserInWhitelist(ctx.from.id, ctx.from.username))
       ) {
         if (prompt === "") {
@@ -348,13 +350,14 @@ export class OpenAIBot {
             parse_mode: "Markdown",
           });
           return;
-        } else {
-          // if (chat.length === 0) {
-          //   await ctx.reply(appText.gptHelpText, {
-          //     parse_mode: "Markdown",
-          //   });
-          // }
         }
+        //  else {
+        // if (chat.length === 0) {
+        //   await ctx.reply(appText.gptHelpText, {
+        //     parse_mode: "Markdown",
+        //   });
+        // }
+        // }
         chat.push({
           role: "user",
           content: this.hasPrefix(prompt) ? prompt.slice(1) : prompt,
@@ -380,14 +383,23 @@ export class OpenAIBot {
           response.price
         );
         if (!isPay) {
-          ctx.reply(appText.gptChatPaymentIssue, {
+          let balanceMessage = appText.notEnoughBalance
+            .replaceAll("$CREDITS", balanceOne)
+            .replaceAll("$WALLET_ADDRESS", account?.address || "");
+          ctx.reply(balanceMessage, {
             parse_mode: "Markdown",
           });
         }
       } else {
-        ctx.reply(appText.notEnoughBalance, {
+        let balanceMessage = appText.notEnoughBalance
+          .replaceAll("$CREDITS", balanceOne)
+          .replaceAll("$WALLET_ADDRESS", account?.address || "");
+        ctx.reply(balanceMessage, {
           parse_mode: "Markdown",
         });
+        // ctx.reply(appText.notEnoughBalance, {
+        //   parse_mode: "Markdown",
+        // });
       }
     } else {
       ctx.reply("Bot disabled");
@@ -420,7 +432,7 @@ export class OpenAIBot {
         parse_mode: "Markdown",
       }
     ); //(${totalPrice.toFixed(2)}¢ )`);
-    ctx.session.openAi.chatGpt.usage = 0
-    ctx.session.openAi.chatGpt.price = 0
+    ctx.session.openAi.chatGpt.usage = 0;
+    ctx.session.openAi.chatGpt.price = 0;
   }
 }
