@@ -241,7 +241,6 @@ const onCallback = async (ctx: OnCallBackQueryData) => {
 bot.command(["start","help","menu"], async (ctx) => {
   const accountId = payments.getAccountId(ctx as OnMessageContext)
   const account = payments.getUserAccount(accountId);
-
   // const userWalletAddress =
   //   (await payments.getUserAccount(ctx.from?.id!)?.address) || "";
   if(!account) {
