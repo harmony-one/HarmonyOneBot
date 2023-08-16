@@ -32,7 +32,7 @@ export class SDImagesBot {
     private showcaseCount = 0;
 
     constructor() {
-        this.sdNodeApi = new SDNodeApi({ apiUrl: config.stableDiffusionHost });
+        this.sdNodeApi = new SDNodeApi();
     }
 
     public isSupportedEvent(ctx: OnMessageContext | OnCallBackQueryData): boolean {
@@ -119,8 +119,8 @@ export class SDImagesBot {
                 idx = this.queue.findIndex(v => v === uuid);
             }
 
-            ctx.reply(`${author} starting to generate your image`);
-
+            // ctx.reply(`${author} starting to generate your image`);
+            ctx.api.sendChatAction(ctx.chat?.id!,'upload_photo')
             const imageBuffer = await this.sdNodeApi.generateImage(prompt);
 
             await ctx.replyWithPhoto(new InputFile(imageBuffer), {
@@ -171,8 +171,8 @@ export class SDImagesBot {
                 idx = this.queue.findIndex(v => v === uuid);
             }
 
-            ctx.reply(`${author} starting to generate your images`);
-
+            // ctx.reply(`${author} starting to generate your images`);
+            ctx.api.sendChatAction(ctx.chat?.id!,'upload_photo')
             const res = await this.sdNodeApi.generateImagesPreviews(prompt);
 
             // res.images.map(img => new InputFile(Buffer.from(img, 'base64')));
@@ -241,8 +241,8 @@ export class SDImagesBot {
                 return;
             }
 
-            ctx.reply(`${author} starting to generate your image ${imageNumber} in high quality`);
-
+            // ctx.reply(`${author} starting to generate your image ${imageNumber} in high quality`);
+            ctx.api.sendChatAction(ctx.chat?.id!,'upload_photo')
             const imageBuffer = await this.sdNodeApi.generateImageFull(session.prompt, +session.all_seeds[+imageNumber - 1]);
 
             await ctx.replyWithPhoto(new InputFile(imageBuffer), {

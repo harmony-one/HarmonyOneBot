@@ -56,13 +56,13 @@ Your credits: $CREDITS ONE tokens. Send to [$WALLET_ADDRESS](https://explorer.ha
 
 ❤️‍🔥 [Join](https://xn--qv9h.s.country/p/dear-engineer-our-tech-lead-role) us to build [.country for bots](https://xn--qv9h.s.country/p/radically-fair-economy-for-1country)! [Coming SOON](https://xn--qv9h.s.country/p/generating-roadmap-as-ceo-vs-cto):
 
-🧠 Web∞: CivitAI custom models (low-rank adaptations, clothes & accessories, human poses, comics & brand characters, video-to-video transformations), Character.AI celebrity chats, RunwayML video clips, HuggingFace embedding ControlNet, Meta segment anything, ElevenLabs speech clones, Zapier task automations, document or website queries.
+[🧠 Web∞](https://xn--qv9h.s.country/p/learning-machine-cryptography): CivitAI custom models (low-rank adaptations, clothes & accessories, human poses, comics & brand characters, video-to-video transformations), Character.AI celebrity chats, RunwayML video clips, HuggingFace embedding ControlNet, Meta segment anything, ElevenLabs speech clones, Zapier task automations, document or website queries.
 
-🌳 Web3: self-custody wallets, token swaps, cross-chain bridges, fiat onramps, lending yields, collectible mints, price auctions, multi-signature safes, governance votes, portfolio management. 
+[🌳 Web3](https://xn--qv9h.s.country/p/telegram-bots-and-clients-self-custody): self-custody wallets, token swaps, cross-chain bridges, fiat onramps, lending yields, collectible mints, price auctions, multi-signature safes, governance votes, portfolio management, .1 name services. 
 
-🐝 Web2: news curation, gated access, emoji tipping, collective moments.
+[🐝 Web2](https://xn--qv9h.s.country/p/new-forum-for-ai-crypto-reddit-discourse): news curation, gated access, emoji tipping, collective moments, group discount, social commerce.
 
-🏴‍☠️ Web1: .country domains, email aliases, vanity URLs, Notion/Substack hosting.
+[🏴‍☠️ Web1](https://xn--qv9h.s.country/p/controlnet-lora-1country-qr-code): .country domains, email aliases, vanity URLs, Notion/Substack hosting.
   `
 };
 

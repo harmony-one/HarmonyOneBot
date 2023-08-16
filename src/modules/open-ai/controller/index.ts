@@ -1,12 +1,20 @@
 import { pino } from "pino";
 import { bot } from "../../../bot";
-import { ChatCompletion, ChatConversation } from "../../types";
+import {
+  ChatConversation,
+  OnCallBackQueryData,
+  OnMessageContext,
+} from "../../types";
 import {
   improvePrompt,
   postGenerateImg,
   alterGeneratedImg,
-  chatCompilation,
+  streamChatCompletion,
+  getTokenNumber,
+  getChatModel,
+  getChatModelPrice,
 } from "../api/openAi";
+import config from "../../../config";
 
 interface ImageGenPayload {
   chatId: number;
@@ -18,8 +26,9 @@ interface ImageGenPayload {
 }
 
 interface ChatGptPayload {
-  conversation?: ChatConversation[];
+  conversation: ChatConversation[];
   model: string;
+  ctx: OnMessageContext | OnCallBackQueryData;
 }
 
 const logger = pino({
@@ -54,7 +63,7 @@ export const imgGen = async (data: ImageGenPayload) => {
 export const imgGenEnhanced = async (data: ImageGenPayload) => {
   const { chatId, prompt, numImages, imgSize, model } = data;
   try {
-    const upgratedPrompt = await improvePrompt(prompt,model!);
+    const upgratedPrompt = await improvePrompt(prompt, model!);
     if (upgratedPrompt) {
       bot.api.sendMessage(
         chatId,
@@ -94,7 +103,7 @@ export const alterImg = async (data: ImageGenPayload) => {
       bot.api.sendPhoto(chatId, img.url);
     });
   } catch (e) {
-    logger.error("/genEn Error", e);
+    logger.error("alterImg Error", e);
     bot.api.sendMessage(
       chatId,
       "There was an error while generating the image"
@@ -103,13 +112,39 @@ export const alterImg = async (data: ImageGenPayload) => {
   }
 };
 
-export const promptGen = async (data: ChatGptPayload): Promise<ChatCompletion> => {
-  const { conversation, model } = data;
+export const promptGen = async (data: ChatGptPayload) => {
+  const { conversation, ctx, model } = data;
   try {
-    const resp = await chatCompilation(conversation!, model, false);
-    return resp
+    const completion = await streamChatCompletion(
+      conversation!,
+      ctx,
+      model,
+      false
+    );
+    if (completion) {
+      const prompt = conversation[conversation.length - 1].content;
+      const promptTokens = getTokenNumber(prompt);
+      const completionTokens = getTokenNumber(completion);
+      const modelPrice = getChatModel(model);
+      const price = getChatModelPrice(
+        modelPrice,
+        true,
+        promptTokens,
+        completionTokens
+      ) * config.openAi.chatGpt.priceAdjustment;
+      conversation.push({ content: completion, role: "system" });
+      ctx.session.openAi.chatGpt.usage += promptTokens + completionTokens;
+      ctx.session.openAi.chatGpt.price += price;
+      ctx.session.openAi.chatGpt.chatConversation = [...conversation!];
+      return {
+        price 
+      }
+    }
+    return {
+      price: 0
+    }
   } catch (e) {
-    logger.error("/genEn Error", e);
-    throw "There was an error while generating the image"
+    logger.error("promptGen Error", e);
+    throw "There was an error while generating the image";
   }
 };

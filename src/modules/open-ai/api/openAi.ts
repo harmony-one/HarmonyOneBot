@@ -9,7 +9,12 @@ import { encode } from "gpt-tokenizer";
 import config from "../../../config";
 import { deleteFile, getImage } from "../utils/file";
 import { bot } from "../../../bot";
-import { ChatCompletion, ChatConversation } from "../../types";
+import {
+  ChatCompletion,
+  ChatConversation,
+  OnCallBackQueryData,
+  OnMessageContext,
+} from "../../types";
 import { pino } from "pino";
 import {
   ChatGPTModel,
@@ -138,6 +143,78 @@ export async function chatCompilation(
     );
   }
 }
+
+export const streamChatCompletion = async (
+  conversation: ChatConversation[],
+  ctx: OnMessageContext | OnCallBackQueryData,
+  model = config.openAi.chatGpt.model,
+  limitTokens = true
+): Promise<string> => {
+  try {
+    const payload = {
+      model: model,
+      max_tokens: limitTokens
+        ? config.openAi.imageGen.completions.maxTokens
+        : undefined,
+      temperature: config.openAi.imageGen.completions.temperature,
+      messages: conversation,
+      stream: true,
+    };
+    let completion = "";
+    let msgId = 0;
+    return new Promise<string>(async (resolve, reject) => {
+      const res = await openai.createChatCompletion(
+        payload as CreateChatCompletionRequest,
+        { responseType: "stream" }
+      );
+      //@ts-ignore
+      res.data.on("data", async (data: any) => {
+        const lines = data
+          .toString()
+          .split("\n")
+          .filter((line: string) => line.trim() !== "");
+        for (const line of lines) {
+          const message = line.replace(/^data: /, "");
+          if (message === "[DONE]") {
+            if (!completion.endsWith(".")) {
+              if (msgId === 0) {
+                msgId = (await ctx.reply(completion)).message_id;
+              } else {
+                await ctx.api
+                  .editMessageText(ctx.chat?.id!, msgId, completion)
+                  .catch((e: any) => console.log(e));
+              }
+            }
+            resolve(completion); // Resolve the promise with the completion variable
+            return; // Stream finished
+          }
+          try {
+            const parsed = JSON.parse(message);
+            completion +=
+              parsed.choices[0].delta.content !== undefined
+                ? parsed.choices[0].delta.content
+                : "";
+            if (parsed.choices[0].delta.content === ".") {
+              if (msgId === 0) {
+                msgId = (await ctx.reply(completion)).message_id;
+              } else {
+                ctx.api
+                  .editMessageText(ctx.chat?.id!, msgId, completion)
+                  .catch((e: any) => console.log(e));
+              }
+            }
+          } catch (error) {
+            logger.error("Could not JSON parse stream message", message, error);
+            reject(`An error occurred during OpenAI request: ${error}`);
+          }
+        }
+      });
+    });
+  } catch (error: any) {
+    logger.error("Could not JSON parse stream message", error);
+    return Promise.reject(`An error occurred during OpenAI request: ${error}`);
+  }
+};
 
 export async function improvePrompt(promptText: string, model: string) {
   const prompt = `Improve this picture description using max 100 words and don't add additional text to the image: ${promptText} `;
