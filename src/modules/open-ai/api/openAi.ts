@@ -3,11 +3,8 @@ import {
   OpenAIApi,
   CreateImageRequest,
   CreateChatCompletionRequest,
-  ChatCompletionRequestMessage,
 } from "openai";
 import { encode } from "gpt-tokenizer";
-import { OpenAIExt, ServerStreamChatCompletionConfig } from "openai-ext";
-import { Readable } from "stream"; // Import the Readable class
 
 import config from "../../../config";
 import { deleteFile, getImage } from "../utils/file";

@@ -14,6 +14,7 @@ import {
   getChatModel,
   getChatModelPrice,
 } from "../api/openAi";
+import config from "../../../config";
 
 interface ImageGenPayload {
   chatId: number;
@@ -130,13 +131,13 @@ export const promptGen = async (data: ChatGptPayload) => {
         true,
         promptTokens,
         completionTokens
-      );
+      ) * config.openAi.chatGpt.priceAdjustment;
       conversation.push({ content: completion, role: "system" });
       ctx.session.openAi.chatGpt.usage += promptTokens + completionTokens;
       ctx.session.openAi.chatGpt.price += price;
       ctx.session.openAi.chatGpt.chatConversation = [...conversation!];
       return {
-        price
+        price 
       }
     }
     return {
