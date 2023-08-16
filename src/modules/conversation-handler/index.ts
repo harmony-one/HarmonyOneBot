@@ -212,21 +212,21 @@ export class ConversationHandler {
           conversation: chat,
           model: ctx.session.openAi.chatGpt.model,
         };
-        const response = await promptGen(payload);
-        chat.push({ content: response.completion, role: "system" });
-        ctx.api.editMessageText(ctx.chat?.id!, msgId, response.completion);
-        ctx.session.openAi.chatGpt.chatConversation = [...chat];
-        ctx.session.openAi.chatGpt.usage += response.usage;
-        ctx.session.openAi.chatGpt.price += response.price;
-        const isPay = await payments.pay(
-          ctx as OnMessageContext,
-          ctx.session.openAi.chatGpt.price
-        );
-        if (!isPay) {
-          ctx.reply(appText.gptChatPaymentIssue, {
-            parse_mode: "Markdown",
-          });
-        }
+        // const response = await promptGen(payload);
+        // chat.push({ content: response.completion, role: "system" });
+        // ctx.api.editMessageText(ctx.chat?.id!, msgId, response.completion);
+        // ctx.session.openAi.chatGpt.chatConversation = [...chat];
+        // ctx.session.openAi.chatGpt.usage += response.usage;
+        // ctx.session.openAi.chatGpt.price += response.price;
+        // const isPay = await payments.pay(
+        //   ctx as OnMessageContext,
+        //   ctx.session.openAi.chatGpt.price
+        // );
+        // if (!isPay) {
+        //   ctx.reply(appText.gptChatPaymentIssue, {
+        //     parse_mode: "Markdown",
+        //   });
+        // }
       } else {
         await ctx.conversation.enter("botConversation");
       }
