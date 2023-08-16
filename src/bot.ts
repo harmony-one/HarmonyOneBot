@@ -239,7 +239,6 @@ const onCallback = async (ctx: OnCallBackQueryData) => {
 
 
 bot.command(["start","help","menu"], async (ctx) => {
-  console.log(ctx)
   const accountId = payments.getAccountId(ctx as OnMessageContext)
   const account = payments.getUserAccount(accountId);
 

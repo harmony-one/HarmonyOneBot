@@ -319,7 +319,6 @@ export class BotPayments {
     if(!this.isSupportedEvent(ctx)) {
       return false
     }
-    console.log(ctx)
     const accountId = this.getAccountId(ctx)
     const account = this.getUserAccount(accountId);
     this.logger.info(`onEvent @${from.username}(${from.id}) in chat ${chat.id} (${chat.type}), accountId: ${accountId}, account address: ${account?.address}`)
