@@ -337,7 +337,7 @@ export class OpenAIBot {
       const balance = await this.payments.getUserBalance(ctx.from.id);
       const balanceOne = await this.payments.toONE(balance, false).toFixed(2);
       if (
-        +balanceOne >= +config.openAi.chatGpt.minimumBalance ||
+        +balanceOne > +config.openAi.chatGpt.minimumBalance ||
         (await this.payments.isUserInWhitelist(ctx.from.id, ctx.from.username))
       ) {
         if (prompt === "") {
