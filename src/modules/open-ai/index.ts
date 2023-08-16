@@ -333,8 +333,9 @@ export class OpenAIBot {
     if (ctx.session.openAi.chatGpt.isEnabled) {
       this.logger.info("prompt:", prompt);
       const chat = ctx.session.openAi.chatGpt.chatConversation;
-      const account = await this.payments.getUserAccount(ctx.from.id);
-      const balance = await this.payments.getUserBalance(ctx.from.id);
+      const accountId = this.payments.getAccountId(ctx as OnMessageContext);
+      const account = await this.payments.getUserAccount(accountId);
+      const balance = await this.payments.getUserBalance(accountId);
       const balanceOne = await this.payments.toONE(balance, false).toFixed(2);
       if (
         +balanceOne > +config.openAi.chatGpt.minimumBalance ||
@@ -349,13 +350,13 @@ export class OpenAIBot {
             parse_mode: "Markdown",
           });
           return;
-        } 
+        }
         //  else {
-          // if (chat.length === 0) {
-          //   await ctx.reply(appText.gptHelpText, {
-          //     parse_mode: "Markdown",
-          //   });
-          // }
+        // if (chat.length === 0) {
+        //   await ctx.reply(appText.gptHelpText, {
+        //     parse_mode: "Markdown",
+        //   });
+        // }
         // }
         chat.push({
           role: "user",
