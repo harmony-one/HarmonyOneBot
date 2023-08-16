@@ -4,7 +4,8 @@ import { Account } from "web3-core";
 import axios from "axios";
 import bn, { BigNumber } from "bignumber.js";
 import config from "../../config";
-import { OnCallBackQueryData, OnMessageContext } from "../types";
+import {creditsService} from "../../database/services";
+import { OnMessageContext } from "../types";
 
 interface CoinGeckoResponse {
   harmony: {
@@ -95,7 +96,9 @@ export class BotPayments {
   public async getUserBalance(accountId: number) {
     const account = this.getUserAccount(accountId);
     if (account) {
-      return await this.getAddressBalance(account.address);
+      const creditsBalance = await creditsService.getBalance(accountId.toString())
+      const addressBalance = await this.getAddressBalance(account.address);
+      return creditsBalance.plus(addressBalance)
     }
     return bn(0);
   }

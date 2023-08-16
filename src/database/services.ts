@@ -1,3 +1,3 @@
-import {CreditsService} from "./entities/credits.service";
+import {CreditsService} from "./credits.service";
 
 export const creditsService = new CreditsService();

@@ -21,13 +21,11 @@ import { QRCodeBot } from "./modules/qrcode/QRCodeBot";
 import { SDImagesBot } from "./modules/sd-images";
 import { OpenAIBot } from "./modules/open-ai";
 import { OneCountryBot } from "./modules/1country";
-import { Wallet } from "./modules/wallet";
 import { WalletConnect } from "./modules/walletconnect";
 import { BotPayments } from "./modules/payment";
 import { BotSchedule } from "./modules/schedule";
 import config from "./config";
 import { commandsHelpText } from "./constants";
-import { getONEPrice } from "./modules/1country/api/coingecko";
 import {creditsService} from "./database/services";
 import {ethers} from "ethers";
 import {AppDataSource} from "./database/datasource";
@@ -242,15 +240,22 @@ const onCallback = async (ctx: OnCallBackQueryData) => {
 
 
 bot.command(["start","help","menu"], async (ctx) => {
+  const { from, chat } = (ctx as OnMessageContext).update.message
   const accountId = payments.getAccountId(ctx as OnMessageContext)
   const account = payments.getUserAccount(accountId);
 
-  const demoAmount = ethers.utils.parseEther('100').toString();
   try {
-    const credits = await creditsService.initAccount(accountId.toString(), demoAmount);
-    console.log('### credits', credits);
-  } catch (ex) {
-    console.log('### ex', ex);
+    const creditsAccount = await creditsService.getAccountById(accountId.toString())
+    if(!creditsAccount) {
+      const amountInteger = '100'
+      const creditsAmount = ethers.utils.parseEther(amountInteger).toString();
+      await creditsService.initAccount(accountId.toString(), creditsAmount);
+      logger.info(`${amountInteger} credits transferred to accountId ${accountId} @${from.username} (${from.id}), chat ${chat.type} ${chat.id}`)
+    } else {
+      logger.info(`Credits account already initialized ${creditsAccount}`)
+    }
+  } catch (e) {
+    logger.error(`Cannot refill with credits: ${(e as Error).message}`)
   }
 
   // const userWalletAddress =
@@ -263,7 +268,7 @@ bot.command(["start","help","menu"], async (ctx) => {
   const startText = commandsHelpText.start
     .replaceAll("$CREDITS", balanceOne + "")
     .replaceAll("$WALLET_ADDRESS", account.address);
-  
+
   await ctx.reply(startText, {
     parse_mode: "Markdown",
     reply_markup: mainMenu,
