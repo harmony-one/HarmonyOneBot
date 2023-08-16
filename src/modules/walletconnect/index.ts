@@ -44,7 +44,8 @@ export class WalletConnect {
   }
 
   public isSupportedEvent(ctx: OnMessageContext) {
-    return (ctx.hasCommand('get') || ctx.hasCommand('send') || ctx.hasCommand('pools') || ctx.hasCommand('connect'));
+    const commands = ['get', 'send', 'pools', 'connect', 'connecthex']
+    return commands.find((command) => ctx.hasCommand(command));
   }
 
   public async onEvent(ctx: OnMessageContext) {
@@ -57,6 +58,11 @@ export class WalletConnect {
 
     if (ctx.hasCommand('connect')) {
       this.connect(ctx);
+      return;
+    }
+
+    if (ctx.hasCommand('connecthex')) {
+      this.connecthex(ctx)
       return;
     }
 
@@ -89,10 +95,10 @@ export class WalletConnect {
     ctx.reply('Unsupported command');
   }
 
-  async connect(ctx: OnMessageContext) {
+  async requestProposal() {
     const signClient = await getSignClient();
 
-    const { uri, approval } = await signClient.connect({
+    return  signClient.connect({
       requiredNamespaces: {
         eip155: {
           methods: [
@@ -126,16 +132,16 @@ export class WalletConnect {
         }
       },
     })
+  }
 
+  async connect(ctx: OnMessageContext) {
+    const { uri, approval } = await this.requestProposal();
     const qrImgBuffer = await generateWcQr(uri || '', 480);
 
     const message = await ctx.replyWithPhoto(new InputFile(qrImgBuffer, `wallet_connect_${Date.now()}.png`), {
-      caption: 'Scan QR code with a WalletConnect-compatible wallet'
+      caption: 'Scan this QR Code to use Wallet Connect with your MetaMask / Gnosis Safe / Timeless wallets\n\nEnter /connecthex to see Web Address',
+      parse_mode: 'Markdown'
     });
-
-    const uriMessage = await ctx.reply(`Copy URI:
-    
-\`${uri}\` `, {parse_mode: 'Markdown'});
 
     try {
       const session = await approval();
@@ -143,11 +149,9 @@ export class WalletConnect {
       sessionMap[ctx.from.id] = session.topic;
 
       ctx.api.deleteMessage(ctx.chat.id, message.message_id);
-      ctx.api.deleteMessage(ctx.chat.id, uriMessage.message_id);
       ctx.reply('wallet connected: ' + getUserAddr(session));
     } catch (ex) {
       ctx.api.deleteMessage(ctx.chat.id, message.message_id);
-      ctx.api.deleteMessage(ctx.chat.id, uriMessage.message_id);
       if (ex instanceof Error) {
         this.logger.error('error wc connect ' + ex.message)
         if (ex.message === PROPOSAL_EXPIRY_MESSAGE) {
@@ -158,6 +162,33 @@ export class WalletConnect {
       }
     }
   }
+
+  async connecthex(ctx: OnMessageContext) {
+    const {uri, approval} = await this.requestProposal();
+
+    const message = await ctx.reply(`Copy this connection link to use Wallet Connect with your MetaMask / Gnosis Safe / Timeless wallets:\n\n\`${uri}\` `, {parse_mode: 'Markdown'});
+
+    try {
+      const session = await approval();
+
+      sessionMap[ctx.from.id] = session.topic;
+
+      ctx.api.deleteMessage(ctx.chat.id, message.message_id);
+      ctx.reply('wallet connected: ' + getUserAddr(session));
+    } catch (ex) {
+      ctx.api.deleteMessage(ctx.chat.id, message.message_id);
+      if (ex instanceof Error) {
+        this.logger.error('error wc connect ' + ex.message)
+        if (ex.message === PROPOSAL_EXPIRY_MESSAGE) {
+          return;
+        }
+
+        ctx.reply('Error while connection');
+      }
+    }
+  }
+
+
 
   async send(ctx: OnMessageContext, addr: string, amount: string) {
     const signClient = await getSignClient();
@@ -177,10 +208,10 @@ export class WalletConnect {
       return
     }
 
-    if(ethers.utils.parseEther(amount).gt(ethers.utils.parseEther('100'))) {
-      ctx.reply('Deposit cannot exceed 100 ONE');
-      return
-    }
+    // if(ethers.utils.parseEther(amount).gt(ethers.utils.parseEther('100'))) {
+    //   ctx.reply('Deposit cannot exceed 100 ONE');
+    //   return
+    // }
 
     const ownerAdd = getUserAddr(session);
 

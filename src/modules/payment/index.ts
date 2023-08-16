@@ -301,10 +301,10 @@ export class BotPayments {
 
   public isSupportedEvent(ctx: OnMessageContext) {
     const { text = '' } = ctx.update.message;
-    return ['/credits', '/migrate'].includes(text)
+    return ['/secret', '/migrate'].includes(text)
   }
 
-  private getAccountId(ctx: OnMessageContext) {
+  public getAccountId(ctx: OnMessageContext) {
     const { chat, from } = ctx.update.message;
     const { id: userId } = from
     const { id: chatId, type } = chat
@@ -319,22 +319,19 @@ export class BotPayments {
     if(!this.isSupportedEvent(ctx)) {
       return false
     }
-
     const accountId = this.getAccountId(ctx)
     const account = this.getUserAccount(accountId);
-
     this.logger.info(`onEvent @${from.username}(${from.id}) in chat ${chat.id} (${chat.type}), accountId: ${accountId}, account address: ${account?.address}`)
 
     if(!account) {
       return false
     }
-    if (text === '/credits') {
+    if (text === '/secret') {
       try {
         const balance = await this.getAddressBalance(account.address);
         const balanceOne = this.toONE(balance, false);
         ctx.reply(
-          `
-      🤖 *Credits* 
+          `🤖 *Credits* 
       
 *ONE*: ${balanceOne.toFixed(2)} 
 
@@ -345,7 +342,7 @@ export class BotPayments {
         );
       } catch (e) {
         this.logger.error(e);
-        ctx.reply(`Error retrieving wallet balance`);
+        ctx.reply(`Error retrieving credits`);
       }
     } else if(text === '/migrate') {
       const amount = await this.migrateFunds(accountId)
@@ -353,9 +350,9 @@ export class BotPayments {
       const balanceOne  = this.toONE(balance, false)
       let replyText = ''
       if(amount.gt(0)) {
-        replyText = `Transferred ${this.toONE(amount, false).toFixed(2)} ONE from previous accounts to ${account.address}\n\nCurrent balance: ${balanceOne.toFixed(2)} ONE`
+        replyText = `Transferred ${this.toONE(amount, false).toFixed(2)} ONE from previous accounts to ${account.address}\n\nCurrent credits: ${balanceOne.toFixed(2)} ONE`
       } else {
-        replyText = `No funds were found on the balance of previous accounts\n\nCurrent balance: ${balanceOne.toFixed(2)} ONE`
+        replyText = `No funds were found in the credits of previous accounts\n\nCurrent credits: ${balanceOne.toFixed(2)} ONE`
       }
       ctx.reply(replyText, {
         parse_mode: "Markdown",

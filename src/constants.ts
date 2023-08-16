@@ -30,7 +30,7 @@ export const commandsHelpText = {
 
 /ask act like elon musk, expand our q4 roadmap "telegram ai bot"
 
-[.](https://t.me/harmony1bot?.%20act%20like%20mark%20zuckerberg%20instead) act like mark zuckerberg instead
+[/](https://t.me/harmony1bot?.%20act%20like%20mark%20zuckerberg%20instead) act like mark zuckerberg instead
 
 /image glimpses of a herd of wild elephants crossing a savanna
 
@@ -43,16 +43,22 @@ export const commandsHelpText = {
 Your credits: $CREDITS ONE tokens. Send to [$WALLET_ADDRESS](https://explorer.harmony.one/address/$WALLET_ADDRESS) for recharge.
 `,
   more: 
-  ` 
-/qr s.country/ai astronaut, exuberant, anime girl, smile, sky, colorful
+  `/qr s.country/ai astronaut, exuberant, anime girl, smile, sky, colorful
 
 /connect # Wallet Connect to MetaMask / Gnosis Safe / Timeless
 
 /send 0x742c4788CC47A94cf260abc474E2Fa45695a79Cd 42
 
-🧠 Web∞: CivitAI custom models, Character.AI celebrity chats, RunwayML video clips, HuggingFace embedding ControlNet, ElevenLabs speech clones, Zapier task automations, document or website queries.
+/chat32 # “Ask Me Anything” via OpenAI ChatGPT-4 with 32K context
 
-🌳 Web3: self-custody wallets, token swaps, cross-chain bridges, fiat onramps, collectible mints, price auctions, multi-signature safes, governance votes.
+/memo # Send voice messages (via microphone button on bottom right of Telegram chat window), or upload .mp4 files
+
+
+❤️‍🔥 [Join](https://xn--qv9h.s.country/p/dear-engineer-our-tech-lead-role) us to build [.country for bots](https://xn--qv9h.s.country/p/radically-fair-economy-for-1country)! [Coming SOON](https://xn--qv9h.s.country/p/generating-roadmap-as-ceo-vs-cto):
+
+🧠 Web∞: CivitAI custom models (low-rank adaptations, clothes & accessories, human poses, comics & brand characters, video-to-video transformations), Character.AI celebrity chats, RunwayML video clips, HuggingFace embedding ControlNet, Meta segment anything, ElevenLabs speech clones, Zapier task automations, document or website queries.
+
+🌳 Web3: self-custody wallets, token swaps, cross-chain bridges, fiat onramps, lending yields, collectible mints, price auctions, multi-signature safes, governance votes, portfolio management. 
 
 🐝 Web2: news curation, gated access, emoji tipping, collective moments.
 
