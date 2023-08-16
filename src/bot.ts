@@ -28,6 +28,9 @@ import { BotSchedule } from "./modules/schedule";
 import config from "./config";
 import { commandsHelpText } from "./constants";
 import { getONEPrice } from "./modules/1country/api/coingecko";
+import {creditsService} from "./database/services";
+import {ethers} from "ethers";
+import {AppDataSource} from "./database/datasource";
 
 const logger = pino({
   name: "bot",
@@ -241,6 +244,15 @@ const onCallback = async (ctx: OnCallBackQueryData) => {
 bot.command(["start","help","menu"], async (ctx) => {
   const accountId = payments.getAccountId(ctx as OnMessageContext)
   const account = payments.getUserAccount(accountId);
+
+  const demoAmount = ethers.utils.parseEther('100').toString();
+  try {
+    const credits = await creditsService.initAccount(accountId.toString(), demoAmount);
+    console.log('### credits', credits);
+  } catch (ex) {
+    console.log('### ex', ex);
+  }
+
   // const userWalletAddress =
   //   (await payments.getUserAccount(ctx.from?.id!)?.address) || "";
   if(!account) {
@@ -301,6 +313,8 @@ app.use(express.static("./public")); // Public directory, used in voice-memo bot
 app.listen(config.port, () => {
   logger.info(`Bot listening on port ${config.port}`);
   bot.start();
+
+  AppDataSource.initialize();
   // bot.start({
   //   allowed_updates: ["callback_query"], // Needs to be set for menu middleware, but bot doesn't work with current configuration.
   // });
