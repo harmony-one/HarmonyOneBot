@@ -162,8 +162,6 @@ Please add <URL> <PROMPT>
       return
     }
 
-    ctx.reply(`Generating...`);
-
     const messageText = message;
 
     const operation = async (retryAttempts: number) => {
@@ -193,7 +191,7 @@ Please add <URL> <PROMPT>
     let qrImgBuffer;
 
     try {
-      ctx.api.sendChatAction(ctx.chat?.id!,'upload_photo')
+      ctx.chatAction = "upload_photo";
       qrImgBuffer = await retryAsync(operation, 5, 100);
 
     } catch (ex) {
