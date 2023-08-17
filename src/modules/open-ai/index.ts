@@ -14,7 +14,7 @@ import { alterImg, imgGen, imgGenEnhanced, promptGen } from "./controller";
 import { Logger, pino } from "pino";
 import { appText } from "./utils/text";
 import { getONEPrice } from "../1country/api/coingecko";
-import {creditsService} from "../../database/services";
+import {chatService} from "../../database/services";
 
 export const SupportedCommands = {
   // chat: {
@@ -340,7 +340,7 @@ export class OpenAIBot {
         const accountId = this.payments.getAccountId(ctx as OnMessageContext);
         const account = await this.payments.getUserAccount(accountId);
         const addressBalance = await this.payments.getUserBalance(accountId);
-        const creditsBalance = await creditsService.getBalance(accountId.toString());
+        const creditsBalance = await chatService.getBalance(accountId);
         const balance = addressBalance.plus(creditsBalance);
         const balanceOne = await this.payments.toONE(balance, false).toFixed(2);
         if (

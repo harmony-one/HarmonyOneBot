@@ -106,5 +106,9 @@ export default {
   },
   db: {
     url: process.env.DATABASE_URL || ''
+  },
+  credits: {
+    maxChats: 10,
+    creditsAmount: '100',
   }
 };

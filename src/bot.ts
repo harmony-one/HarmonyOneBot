@@ -26,7 +26,7 @@ import { BotPayments } from "./modules/payment";
 import { BotSchedule } from "./modules/schedule";
 import config from "./config";
 import { commandsHelpText } from "./constants";
-import {creditsService} from "./database/services";
+import {chatService} from "./database/services";
 import {ethers} from "ethers";
 import {AppDataSource} from "./database/datasource";
 
@@ -101,6 +101,24 @@ const payments = new BotPayments();
 const schedule = new BotSchedule(bot);
 const openAiBot = new OpenAIBot(payments);
 const oneCountryBot = new OneCountryBot();
+
+bot.on('message:new_chat_members:me', (ctx) => {
+  const createChat = async () => {
+    const accountId = payments.getAccountId(ctx as OnMessageContext)
+
+    const chat = await chatService.getAccountById(accountId);
+
+    if (chat) {
+      return;
+    }
+
+    const tgUserId = ctx.message.from.id;
+
+    await chatService.initChat({tgUserId, accountId});
+  }
+
+  createChat();
+});
 
 const onMessage = async (ctx: OnMessageContext) => {
   if (qrCodeBot.isSupportedEvent(ctx)) {
@@ -243,18 +261,27 @@ bot.command(["start","help","menu"], async (ctx) => {
   const accountId = payments.getAccountId(ctx as OnMessageContext)
   const account = payments.getUserAccount(accountId);
 
+  let tgUserId = accountId;
+  if (chat.type === 'group') {
+    const members = await ctx.getChatAdministrators();
+
+    const creator = members.find((member) => member.status === 'creator')
+    if (creator) {
+      tgUserId = creator.user.id;
+    }
+  }
+
   try {
-    const creditsAccount = await creditsService.getAccountById(accountId.toString())
-    if(!creditsAccount) {
-      const amountInteger = '100'
-      const creditsAmount = ethers.utils.parseEther(amountInteger).toString();
-      await creditsService.initAccount(accountId.toString(), creditsAmount);
-      logger.info(`${amountInteger} credits transferred to accountId ${accountId} @${from.username} (${from.id}), chat ${chat.type} ${chat.id}`)
+    const chatRecord = await chatService.getAccountById(accountId)
+    if(!chatRecord) {
+      await chatService.initChat({accountId, tgUserId});
+      // logger.info(`credits transferred to accountId ${accountId} @${from.username} (${from.id}), chat ${chat.type} ${chat.id}`)
     } else {
       // await creditsService.setAmount(accountId.toString(), ethers.utils.parseEther('100').toString())
-      logger.info(`Credits account already initialized ${JSON.stringify(creditsAccount)}`)
+      logger.info(`Credits account already initialized ${JSON.stringify(chatRecord)}`)
     }
   } catch (e) {
+    console.log('### e', e);
     logger.error(`Cannot refill with credits: ${(e as Error).message}`)
   }
 
@@ -264,7 +291,7 @@ bot.command(["start","help","menu"], async (ctx) => {
     return false
   }
   const addressBalance = await payments.getAddressBalance(account.address);
-  const credits = await creditsService.getBalance(accountId.toString());
+  const credits = await chatService.getBalance(accountId);
   const balance = addressBalance.plus(credits)
   const balanceOne = payments.toONE(balance, false).toFixed(2);
   const startText = commandsHelpText.start
