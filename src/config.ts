@@ -104,4 +104,7 @@ export default {
   walletConnect: {
     projectId: process.env.WALLET_CONNECT_PROJECT_ID || "",
   },
+  db: {
+    url: process.env.DATABASE_URL || ''
+  }
 };

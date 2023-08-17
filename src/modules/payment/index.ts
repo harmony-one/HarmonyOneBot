@@ -4,7 +4,8 @@ import { Account } from "web3-core";
 import axios from "axios";
 import bn, { BigNumber } from "bignumber.js";
 import config from "../../config";
-import { OnCallBackQueryData, OnMessageContext } from "../types";
+import {creditsService} from "../../database/services";
+import { OnMessageContext } from "../types";
 
 interface CoinGeckoResponse {
   harmony: {
@@ -95,7 +96,8 @@ export class BotPayments {
   public async getUserBalance(accountId: number) {
     const account = this.getUserAccount(accountId);
     if (account) {
-      return await this.getAddressBalance(account.address);
+      const addressBalance = await this.getAddressBalance(account.address);
+      return addressBalance
     }
     return bn(0);
   }
@@ -226,42 +228,55 @@ export class BotPayments {
 
     this.logger.info(`Pay event @${from.username}(${from.id}) in chat ${chat.id} (${chat.type}), accountId: ${accountId}, account address: ${userAccount.address}`)
 
-    const amountONE = this.getPriceInONE(amountUSD);
+    let amountToPay = this.getPriceInONE(amountUSD);
     const fee = await this.getTransactionFee();
-    const userBalance = await this.getUserBalance(accountId);
-    const balanceDelta = userBalance.minus(amountONE.plus(fee));
+    amountToPay = amountToPay.plus(fee)
+    const balance = await this.getUserBalance(accountId);
+    const credits = await creditsService.getBalance(accountId.toString())
+    const balanceWithCredits = balance.plus(credits)
+    const balanceDelta = balanceWithCredits.minus(amountToPay);
 
-    this.logger.info(
-      `[@${from.username} ${from.id}] withdraw request, amount: ${amountUSD}$c (${amountONE.toFixed()} ONE), credits after withdraw: ${balanceDelta.toFixed()}`
-    );
+    this.logger.info(`[@${from.username}] credits: ${credits.toFixed()}, balance: ${balance.toFixed()}. to withdraw: ${amountToPay.toFixed()}, balance after: ${balanceDelta.toFixed()}`)
     if (balanceDelta.gte(0)) {
-      try {
-        const tx = await this.transferFunds(
-          userAccount,
-          this.hotWallet.address,
-          amountONE
-        );
-        this.lastPaymentTimestamp = Date.now();
-        this.logger.info(
-          `[${from.id} @${from.username}] withdraw successful, txHash: ${
-            tx.transactionHash
-          }, from: ${tx.from}, to: ${
-            tx.to
-          }, amount ONE: ${amountONE.toString()}`
-        );
+      if(amountToPay.gt(0) && credits.gt(0)) {
+        const creditsPayAmount = bn.min(amountToPay, credits)
+        await creditsService.withdrawAmount(accountId.toString(), creditsPayAmount.toFixed())
+        amountToPay = amountToPay.minus(creditsPayAmount)
+        this.logger.info(`[@${from.username}] paid from credits: ${creditsPayAmount.toFixed()}, left to pay: ${amountToPay.toFixed()}`)
+      }
+      if(amountToPay.gt(0)) {
+        try {
+          const tx = await this.transferFunds(
+            userAccount,
+            this.hotWallet.address,
+            amountToPay
+          );
+          this.lastPaymentTimestamp = Date.now();
+          this.logger.info(
+            `[${from.id} @${from.username}] withdraw successful, txHash: ${
+              tx.transactionHash
+            }, from: ${tx.from}, to: ${
+              tx.to
+            }, amount ONE: ${amountToPay.toString()}`
+          );
+          return true;
+        } catch (e) {
+          this.logger.error(
+            `[${from.id}] withdraw error: "${JSON.stringify(
+              (e as Error).message
+            )}"`
+          );
+          ctx.reply('Payment error, try again later', {
+            reply_to_message_id: message_id,
+          });
+        }
+      } else {
         return true;
-      } catch (e) {
-        this.logger.error(
-          `[${from.id}] withdraw error: "${JSON.stringify(
-            (e as Error).message
-          )}"`
-        );
-        ctx.reply(`Payment error (${from.username})`, {
-          reply_to_message_id: message_id,
-        });
       }
     } else {
-      const balance = await this.getAddressBalance(userAccount.address)
+      const addressBalance = await this.getAddressBalance(userAccount.address)
+      const creditsBalance = await creditsService.getBalance(accountId.toString())
+      const balance = addressBalance.plus(creditsBalance)
       const balanceOne  = this.toONE(balance, false).toFixed(2)
       ctx.reply(
         `Your credits: ${balanceOne} ONE tokens. To recharge, send to \`${userAccount.address}\`.`,
@@ -328,7 +343,9 @@ export class BotPayments {
     }
     if (text === '/credits') {
       try {
-        const balance = await this.getAddressBalance(account.address);
+        const freeCredits = await creditsService.getBalance(accountId.toString())
+        const addressBalance = await this.getAddressBalance(account.address);
+        const balance = addressBalance.plus(freeCredits)
         const balanceOne = this.toONE(balance, false);
         ctx.reply(
           `Your credits in ONE tokens: ${balanceOne.toFixed(2)}

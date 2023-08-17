@@ -7,7 +7,8 @@
     "build": "tsc",
     "start": "node dist/bot.js",
     "dev": "env-cmd ts-node-dev src/bot.ts",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "typeorm": "typeorm-ts-node-commonjs -d src/database/datasource.ts"
   },
   "repository": {
     "type": "git",
@@ -56,12 +57,15 @@
     "node-cron": "^3.0.2",
     "openai": "^3.3.0",
     "otpauth": "^9.1.3",
+    "pg": "^8.11.2",
     "pino": "^8.14.1",
     "pino-pretty": "^10.0.1",
     "qrcode": "^1.5.3",
+    "reflect-metadata": "^0.1.13",
     "retry": "^0.13.1",
     "sharp": "^0.32.1",
     "telegram": "^2.17.10",
+    "typeorm": "^0.3.17",
     "upng-js": "^2.1.0",
     "uuid": "^9.0.0",
     "web3": "1.10.0",
