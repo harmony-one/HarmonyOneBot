@@ -263,7 +263,9 @@ bot.command(["start","help","menu"], async (ctx) => {
   if(!account) {
     return false
   }
-  const balance = await payments.getAddressBalance(account.address);
+  const addressBalance = await payments.getAddressBalance(account.address);
+  const credits = await creditsService.getBalance(accountId.toString());
+  const balance = addressBalance.plus(credits)
   const balanceOne = payments.toONE(balance, false).toFixed(2);
   const startText = commandsHelpText.start
     .replaceAll("$CREDITS", balanceOne + "")

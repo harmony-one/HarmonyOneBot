@@ -40,17 +40,17 @@ export class CreditsService {
     })
   }
 
-  // public async setAmount(accountId: string, amount: string) {
-  //   const account = await this.getAccountById(accountId)
-  //   if(!account) {
-  //     throw new Error(`${accountId} Cannot find credits account`)
-  //   }
-  //   return creditsRepository.update({
-  //     accountId
-  //   }, {
-  //     amount
-  //   })
-  // }
+  public async setAmount(accountId: string, amount: string) {
+    const account = await this.getAccountById(accountId)
+    if(!account) {
+      throw new Error(`${accountId} Cannot find credits account`)
+    }
+    return creditsRepository.update({
+      accountId
+    }, {
+      amount
+    })
+  }
 
   public async getBalance(accountId: string) {
     const account = await this.getAccountById(accountId)
