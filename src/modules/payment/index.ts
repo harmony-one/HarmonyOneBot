@@ -272,7 +272,9 @@ export class BotPayments {
         }
       }
     } else {
-      const balance = await this.getAddressBalance(userAccount.address)
+      const addressBalance = await this.getAddressBalance(userAccount.address)
+      const creditsBalance = await creditsService.getBalance(accountId.toString())
+      const balance = addressBalance.plus(creditsBalance)
       const balanceOne  = this.toONE(balance, false).toFixed(2)
       ctx.reply(
         `Your credits: ${balanceOne} ONE tokens. To recharge, send to \`${userAccount.address}\`.`,
@@ -340,12 +342,12 @@ export class BotPayments {
     if (text === '/secret') {
       try {
         const freeCredits = await creditsService.getBalance(accountId.toString())
-        const freeCreditsValue = this.toONE(freeCredits, false);
-        const balance = await this.getAddressBalance(account.address);
+        const addressBalance = await this.getAddressBalance(account.address);
+        const balance = addressBalance.plus(freeCredits)
         const balanceOne = this.toONE(balance, false);
         ctx.reply(
           `🤖 *Credits* 
-${freeCredits.gt(0) ? `\n*Free credits:* ${freeCreditsValue.toFixed(2)}` : ''}
+
 *ONE*: ${balanceOne.toFixed(2)} 
 
 *Deposit Address*: \`${account.address}\``,
