@@ -2,9 +2,15 @@ import {AppDataSource} from "./datasource";
 import bn from "bignumber.js";
 import {User} from "./entities/User";
 import {Chat} from "./entities/Chat";
+import {ethers} from "ethers";
+import {chatService} from "./services";
+import config from "../config";
 
 const chatRepository = AppDataSource.getRepository(Chat)
 const userRepository = AppDataSource.getRepository(User)
+
+const MAX_CHAT_COUNT: number = config.credits.maxChats;
+const CREDITS_AMOUNT: string = config.credits.creditsAmount;
 
 export class ChatService {
   async create({tgUserId, accountId, creditAmount}: {tgUserId: number, accountId: number, creditAmount: string}) {
@@ -71,13 +77,23 @@ export class ChatService {
     return bn(0)
   }
 
-  public async initAccount({tgUserId, accountId, creditAmount}: {tgUserId: number, accountId: number, creditAmount: string}) {
+  public async initChat({tgUserId, accountId}: {tgUserId: number, accountId: number}) {
     const chat = await this.getAccountById(accountId);
 
     if (chat !== null) {
       return chat;
     }
 
+    const chatCount = await chatService.getCountCreatedChats({tgUserId});
+
+    const amountInteger = chatCount > MAX_CHAT_COUNT ? '0' : CREDITS_AMOUNT;
+    const creditAmount = ethers.utils.parseEther(amountInteger).toString();
+
     return this.create({tgUserId, accountId, creditAmount});
+  }
+
+  public async getCountCreatedChats({tgUserId}: {tgUserId: number}) {
+    const chatList = await chatRepository.findBy({owner: {tgUserId}});
+    return chatList.length
   }
 }

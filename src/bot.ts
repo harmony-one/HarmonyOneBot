@@ -102,6 +102,24 @@ const schedule = new BotSchedule(bot);
 const openAiBot = new OpenAIBot(payments);
 const oneCountryBot = new OneCountryBot();
 
+bot.on('message:new_chat_members:me', (ctx) => {
+  const createChat = async () => {
+    const accountId = payments.getAccountId(ctx as OnMessageContext)
+
+    const chat = await chatService.getAccountById(accountId);
+
+    if (chat) {
+      return;
+    }
+
+    const tgUserId = ctx.message.from.id;
+
+    await chatService.initChat({tgUserId, accountId});
+  }
+
+  createChat();
+});
+
 const onMessage = async (ctx: OnMessageContext) => {
   if (qrCodeBot.isSupportedEvent(ctx)) {
     const price = qrCodeBot.getEstimatedPrice(ctx);
@@ -254,15 +272,13 @@ bot.command(["start","help","menu"], async (ctx) => {
   }
 
   try {
-    const creditsAccount = await chatService.getAccountById(accountId)
-    if(!creditsAccount) {
-      const amountInteger = '100'
-      const creditAmount = ethers.utils.parseEther(amountInteger).toString();
-      await chatService.initAccount({accountId, creditAmount, tgUserId});
-      logger.info(`${amountInteger} credits transferred to accountId ${accountId} @${from.username} (${from.id}), chat ${chat.type} ${chat.id}`)
+    const chatRecord = await chatService.getAccountById(accountId)
+    if(!chatRecord) {
+      await chatService.initChat({accountId, tgUserId});
+      // logger.info(`credits transferred to accountId ${accountId} @${from.username} (${from.id}), chat ${chat.type} ${chat.id}`)
     } else {
       // await creditsService.setAmount(accountId.toString(), ethers.utils.parseEther('100').toString())
-      logger.info(`Credits account already initialized ${JSON.stringify(creditsAccount)}`)
+      logger.info(`Credits account already initialized ${JSON.stringify(chatRecord)}`)
     }
   } catch (e) {
     console.log('### e', e);

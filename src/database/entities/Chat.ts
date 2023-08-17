@@ -13,5 +13,5 @@ export class Chat {
   creditAmount!: string;
 
   @ManyToOne(() => User, (user) => user.chat, {nullable: false})
-  owner!: User
+  owner!: User // a user who invited the bot / group owner
 }
