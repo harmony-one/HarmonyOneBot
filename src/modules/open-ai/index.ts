@@ -402,6 +402,7 @@ export class OpenAIBot {
           //   parse_mode: "Markdown",
           // });
         }
+        ctx.chatAction = null  
       } else {
         ctx.reply("Bot disabled");
       }
