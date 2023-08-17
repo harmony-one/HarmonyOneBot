@@ -162,6 +162,7 @@ export const streamChatCompletion = async (
     };
     let completion = "";
     let msgId = 0;
+    let showStatus = false;
     return new Promise<string>(async (resolve, reject) => {
       const res = await openai.createChatCompletion(
         payload as CreateChatCompletionRequest,
@@ -176,6 +177,7 @@ export const streamChatCompletion = async (
         for (const line of lines) {
           const message = line.replace(/^data: /, "");
           if (message === "[DONE]") {
+            showStatus = false;
             if (!completion.endsWith(".")) {
               if (msgId === 0) {
                 msgId = (await ctx.reply(completion)).message_id;
@@ -201,6 +203,13 @@ export const streamChatCompletion = async (
                 ctx.api
                   .editMessageText(ctx.chat?.id!, msgId, completion)
                   .catch((e: any) => console.log(e));
+              }
+              if (!showStatus) {
+                await ctx.replyWithChatAction("typing");
+                showStatus = true;
+                setTimeout(async () => {
+                  showStatus = false;
+                }, 10000);
               }
             }
           } catch (error) {

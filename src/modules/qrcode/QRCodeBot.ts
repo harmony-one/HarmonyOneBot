@@ -162,7 +162,7 @@ Please add <URL> <PROMPT>
       return
     }
 
-    ctx.reply(`Generating...`);
+    // ctx.reply(`Generating...`);
 
     const messageText = message;
 

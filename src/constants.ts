@@ -37,7 +37,9 @@ export const commandsHelpText = {
 
 /help Bring back this message. Docs at harmony.one/bot.
   
-Your credits: $CREDITS ONE tokens. Send to [$WALLET_ADDRESS](https://explorer.harmony.one/address/$WALLET_ADDRESS) for recharge.
+Your credits in ONE tokens: $CREDITS
+
+Send to: \`$WALLET_ADDRESS\`
 `,
   more: 
   `/ explain like i am 5, what is a superconductor?
@@ -53,7 +55,7 @@ Your credits: $CREDITS ONE tokens. Send to [$WALLET_ADDRESS](https://explorer.ha
 
 /chat32 ("Ask Me Anything” via OpenAI ChatGPT-4 with 32K context)
 
-/memo (Send voice messages (via microphone button on bottom right of Telegram chat window), or upload .mp4 files)
+/memo (Send voice messages via microphone button on bottom right)
 
 
 ❤️‍🔥 [Join our team](https://xn--qv9h.s.country/p/dear-engineer-our-tech-lead-role) to build [.country for bots](https://xn--qv9h.s.country/p/radically-fair-economy-for-1country)! [Product roadmap](https://xn--qv9h.s.country/p/generating-roadmap-as-ceo-vs-cto):
