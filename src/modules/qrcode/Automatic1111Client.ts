@@ -8,7 +8,7 @@ type Img2ImgResponse = {
   info: string
 }
 
-const sdHttpClient = axios.create({baseURL: config.stableDiffusionHost, headers: {'Content-Type': 'application/json'}});
+const sdHttpClient = axios.create({baseURL: config.stableDiffusion.stableDiffusionHost, headers: {'Content-Type': 'application/json'}});
 
 export class Automatic1111Client {
   async img2img(config: Automatic1111Config) {

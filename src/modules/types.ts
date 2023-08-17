@@ -6,6 +6,9 @@ import {
   type Conversation,
   type ConversationFlavor,
 } from "@grammyjs/conversations";
+import {
+  AutoChatActionFlavor,
+} from "@grammyjs/auto-chat-action";
 export interface ImageGenSessionData {
   numImages: number;
   imgSize: string;
@@ -44,7 +47,7 @@ export interface BotSessionData {
 
 export type BotContext = Context &
   SessionFlavor<BotSessionData> &
-  ConversationFlavor;
+  ConversationFlavor & AutoChatActionFlavor;
 
 export type CustomContext<Q extends FilterQuery> = Filter<BotContext, Q>;
 export type OnMessageContext = CustomContext<"message">;

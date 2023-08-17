@@ -6,6 +6,10 @@ import {
   MemorySessionStorage,
   session,
 } from "grammy";
+import {
+  autoChatAction,
+  AutoChatActionFlavor,
+} from "@grammyjs/auto-chat-action";
 import { limit } from "@grammyjs/ratelimiter";
 import { pino } from "pino";
 
@@ -89,7 +93,7 @@ bot.use(
     storage: new MemorySessionStorage<BotSessionData>(),
   })
 );
-
+bot.use(autoChatAction());
 bot.use(mainMenu);
 
 const voiceMemo = new VoiceMemo();
