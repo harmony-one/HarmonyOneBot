@@ -193,6 +193,7 @@ Please add <URL> <PROMPT>
     let qrImgBuffer;
 
     try {
+      ctx.api.sendChatAction(ctx.chat?.id!,'upload_photo')
       qrImgBuffer = await retryAsync(operation, 5, 100);
 
     } catch (ex) {
