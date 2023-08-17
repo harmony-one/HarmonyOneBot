@@ -109,7 +109,7 @@ export class SDImagesBot {
             let idx = this.queue.findIndex(v => v === uuid);
 
             if (idx !== 0) {
-                ctx.reply(`${author} you are the ${idx + 1}/${this.queue.length}. Please wait about ${idx * 30} sec`);
+                ctx.reply(`You are ${idx + 1} of ${this.queue.length}. Please wait ~${idx * 30}seconds`);
             }
 
             // waiting queue
@@ -119,7 +119,7 @@ export class SDImagesBot {
                 idx = this.queue.findIndex(v => v === uuid);
             }
 
-            // ctx.reply(`${author} starting to generate your image`);
+            // ctx.reply(`Generating...`);
             ctx.api.sendChatAction(ctx.chat?.id!,'upload_photo')
             const imageBuffer = await this.sdNodeApi.generateImage(prompt);
 
@@ -161,7 +161,7 @@ export class SDImagesBot {
             let idx = this.queue.findIndex(v => v === uuid);
 
             if (idx !== 0) {
-                ctx.reply(`${author} you are the ${idx + 1}/${this.queue.length}. Please wait about ${idx * 30} sec`);
+                ctx.reply(`You are ${idx + 1} of ${this.queue.length}. Please wait ~${idx * 30}seconds`);
             }
 
             // waiting queue
