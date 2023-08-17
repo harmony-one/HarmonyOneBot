@@ -153,13 +153,15 @@ export class QRCodeBot {
     const command = this.parseQrCommand(message);
 
     if (command.error || !command.command || !command.url || !command.prompt) {
-      ctx.reply(`
-Please add <URL> <PROMPT>
-
-/qr h.country/ai Dramatic bonfire on a remote beach, captured at the magic hour with flames dancing against the twilight sky; using a shallow depth of field, a fast lens, and controlled exposure to emphasize the intricate patterns and textures of the fire, complemented by embers in the wind and the gentle glow reflecting on the ocean's edge, moody, intense, and alive.`, {
-        disable_web_page_preview: true,
-      });
-      return
+      command.url = 'https://s.country/ai';
+      command.prompt = 'astronaut, exuberant, anime girl, smile, sky, colorful'
+//       ctx.reply(`
+// Please add <URL> <PROMPT>
+//
+// /qr h.country/ai Dramatic bonfire on a remote beach, captured at the magic hour with flames dancing against the twilight sky; using a shallow depth of field, a fast lens, and controlled exposure to emphasize the intricate patterns and textures of the fire, complemented by embers in the wind and the gentle glow reflecting on the ocean's edge, moody, intense, and alive.`, {
+//         disable_web_page_preview: true,
+//       });
+//       return
     }
 
     // ctx.reply(`Generating...`);
