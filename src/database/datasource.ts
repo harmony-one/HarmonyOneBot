@@ -7,7 +7,7 @@ export const AppDataSource = new DataSource({
   type: "postgres",
   url: config.db.url,
   entities: [Credits],
-  synchronize: true,
+  synchronize: false,
   migrations: ['./src/database/migrations/**/*.ts'],
   logging: false,
 })

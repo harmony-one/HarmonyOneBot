@@ -230,10 +230,11 @@ export class BotPayments {
 
     let amountToPay = this.getPriceInONE(amountUSD);
     const fee = await this.getTransactionFee();
+    amountToPay = amountToPay.plus(fee)
     const balance = await this.getUserBalance(accountId);
     const credits = await creditsService.getBalance(accountId.toString())
     const balanceWithCredits = balance.plus(credits)
-    const balanceDelta = balanceWithCredits.minus(amountToPay.plus(fee));
+    const balanceDelta = balanceWithCredits.minus(amountToPay);
 
     this.logger.info(`[@${from.username}] credits: ${credits.toFixed()}, balance: ${balance.toFixed()}. to withdraw: ${amountToPay.toFixed()}, balance after: ${balanceDelta.toFixed()}`)
     if (balanceDelta.gte(0)) {
@@ -338,11 +339,13 @@ export class BotPayments {
     }
     if (text === '/secret') {
       try {
+        const freeCredits = await creditsService.getBalance(accountId.toString())
+        const freeCreditsValue = this.toONE(freeCredits, false);
         const balance = await this.getAddressBalance(account.address);
         const balanceOne = this.toONE(balance, false);
         ctx.reply(
           `🤖 *Credits* 
-      
+${freeCredits.gt(0) ? `\n*Free credits:* ${freeCreditsValue.toFixed(2)}` : ''}
 *ONE*: ${balanceOne.toFixed(2)} 
 
 *Deposit Address*: \`${account.address}\``,

@@ -238,7 +238,6 @@ const onCallback = async (ctx: OnCallBackQueryData) => {
   }
 };
 
-
 bot.command(["start","help","menu"], async (ctx) => {
   const { from, chat } = (ctx as OnMessageContext).update.message
   const accountId = payments.getAccountId(ctx as OnMessageContext)
@@ -252,7 +251,8 @@ bot.command(["start","help","menu"], async (ctx) => {
       await creditsService.initAccount(accountId.toString(), creditsAmount);
       logger.info(`${amountInteger} credits transferred to accountId ${accountId} @${from.username} (${from.id}), chat ${chat.type} ${chat.id}`)
     } else {
-      logger.info(`Credits account already initialized ${creditsAccount}`)
+      // await creditsService.setAmount(accountId.toString(), ethers.utils.parseEther('5').toString())
+      logger.info(`Credits account already initialized ${JSON.stringify(creditsAccount)}`)
     }
   } catch (e) {
     logger.error(`Cannot refill with credits: ${(e as Error).message}`)
