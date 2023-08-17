@@ -14,7 +14,7 @@ import { alterImg, imgGen, imgGenEnhanced, promptGen } from "./controller";
 import { Logger, pino } from "pino";
 import { appText } from "./utils/text";
 import { getONEPrice } from "../1country/api/coingecko";
-import {creditsService} from "../../database/services";
+import { creditsService } from "../../database/services";
 
 export const SupportedCommands = {
   // chat: {
@@ -332,81 +332,64 @@ export class OpenAIBot {
 
   async onChat(ctx: OnMessageContext | OnCallBackQueryData) {
     try {
-      const { prompt } = getCommandNamePrompt(ctx, SupportedCommands); // ctx.match;
+      const { prompt } = getCommandNamePrompt(ctx, SupportedCommands);
+      const { chatConversation, model } = ctx.session.openAi.chatGpt;
+      const accountId = this.payments.getAccountId(ctx as OnMessageContext);
+      const account = await this.payments.getUserAccount(accountId);
+      const [addressBalance, creditsBalance] = await Promise.all([
+        this.payments.getUserBalance(accountId),
+        creditsService.getBalance(accountId.toString()),
+      ]);
+      const balance = addressBalance.plus(creditsBalance);
+      const balanceOne = (await this.payments.toONE(balance, false)).toFixed(2);
 
-      if (ctx.session.openAi.chatGpt.isEnabled) {
-        this.logger.info("prompt:", prompt);
-        const chat = ctx.session.openAi.chatGpt.chatConversation;
-        const accountId = this.payments.getAccountId(ctx as OnMessageContext);
-        const account = await this.payments.getUserAccount(accountId);
-        const addressBalance = await this.payments.getUserBalance(accountId);
-        const creditsBalance = await creditsService.getBalance(accountId.toString());
-        const balance = addressBalance.plus(creditsBalance);
-        const balanceOne = await this.payments.toONE(balance, false).toFixed(2);
+      if (
+        +balanceOne > +config.openAi.chatGpt.minimumBalance ||
+        (await this.payments.isUserInWhitelist(ctx.from.id, ctx.from.username))
+      ) {
+        if (prompt === "") {
+          const msg =
+            chatConversation.length > 0
+              ? `${appText.gptLast}\n_${
+                  chatConversation[chatConversation.length - 1].content
+                }_`
+              : appText.introText;
+          await ctx.reply(msg, { parse_mode: "Markdown" });
+          return;
+        }
+
+        chatConversation.push({
+          role: "user",
+          content: `${this.hasPrefix(prompt) ? prompt.slice(1) : prompt}.`,
+        });
+
+        const payload = {
+          conversation: chatConversation!,
+          model: model || config.openAi.chatGpt.model,
+          ctx,
+        };
+
+        ctx.chatAction = "typing";
+        const price = await promptGen(payload);
+
         if (
-          +balanceOne > +config.openAi.chatGpt.minimumBalance ||
-          (await this.payments.isUserInWhitelist(
-            ctx.from.id,
-            ctx.from.username
-          ))
+          !(await this.payments.pay(ctx as OnMessageContext, price))
         ) {
-          if (prompt === "") {
-            const msg =
-              chat.length > 0
-                ? `${appText.gptLast}\n_${chat[chat.length - 1].content}_`
-                : appText.introText;
-            await ctx.reply(msg, {
-              parse_mode: "Markdown",
-            });
-            return;
-          }
-          //  else {
-          // if (chat.length === 0) {
-          //   await ctx.reply(appText.gptHelpText, {
-          //     parse_mode: "Markdown",
-          //   });
-          // }
-          // }
-          chat.push({
-            role: "user",
-            content: `${this.hasPrefix(prompt) ? prompt.slice(1) : prompt}.`,
-          });
-          const payload = {
-            conversation: chat!,
-            model:
-              ctx.session.openAi.chatGpt.model || config.openAi.chatGpt.model,
-            ctx,
-          };
-          ctx.api.sendChatAction(ctx.chat?.id!, "typing");
-          const response = await promptGen(payload);
-          const isPay = await this.payments.pay(
-            ctx as OnMessageContext,
-            response.price
-          );
-          if (!isPay) {
-            let balanceMessage = appText.notEnoughBalance
-              .replaceAll("$CREDITS", balanceOne)
-              .replaceAll("$WALLET_ADDRESS", account?.address || "");
-            ctx.reply(balanceMessage, {
-              parse_mode: "Markdown",
-            });
-          }
-        } else {
-          let balanceMessage = appText.notEnoughBalance
+          const balanceMessage = appText.notEnoughBalance
             .replaceAll("$CREDITS", balanceOne)
             .replaceAll("$WALLET_ADDRESS", account?.address || "");
-          ctx.reply(balanceMessage, {
-            parse_mode: "Markdown",
-          });
-          // ctx.reply(appText.notEnoughBalance, {
-          //   parse_mode: "Markdown",
-          // });
+          await ctx.reply(balanceMessage, { parse_mode: "Markdown" });
         }
+        ctx.chatAction = null;
       } else {
-        ctx.reply("Bot disabled");
+        const balanceMessage = appText.notEnoughBalance
+          .replaceAll("$CREDITS", balanceOne)
+          .replaceAll("$WALLET_ADDRESS", account?.address || "");
+        await ctx.reply(balanceMessage, { parse_mode: "Markdown" });
       }
-    } catch (e) {
-      ctx.reply("Error handling your request");
+    } catch (error) {
+      console.error(error);
+      await ctx.reply("Error handling your request");
     }
   }
 
@@ -427,10 +410,11 @@ export class OpenAIBot {
     ctx.session.openAi.chatGpt.chatConversation = [];
     const usage = ctx.session.openAi.chatGpt.usage;
     const totalPrice = ctx.session.openAi.chatGpt.price;
-    const onePrice = await getONEPrice(totalPrice);
-    // const onePrice = await this.payments.toONE(this.payments.getPriceInONE(totalPrice));
+    console.log((await getONEPrice(totalPrice)).price, 'ONE', this.payments.getPriceInONE(totalPrice).toString())
+    // const onePrice = await getONEPrice(totalPrice);
+    const onePrice = await this.payments.toONE(this.payments.getPriceInONE(totalPrice)).toFixed(2);
     ctx.reply(
-      `${appText.gptChatEnd} \n\n*${onePrice.price} ONE* Spent (${usage} tokens)`,
+      `${appText.gptChatEnd} \n\n*${onePrice} ONE* Spent (${usage} tokens)`,
       // `${appText.gptChatEnd} \n\n*${onePrice.toFixed()} ONE* Spent (${usage} tokens)`,
       {
         parse_mode: "Markdown",
