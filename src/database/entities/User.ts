@@ -6,7 +6,7 @@ export class User {
   @PrimaryGeneratedColumn()
   id!: number;
 
-  @Column({unique: true})
+  @Column({unique: true, type: "bigint"})
   tgUserId!: number;
 
   @OneToMany(() => Chat, (chat) => chat.owner, {nullable: false})

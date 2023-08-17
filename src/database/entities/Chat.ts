@@ -6,7 +6,7 @@ export class Chat {
   @PrimaryGeneratedColumn()
   id!: number;
 
-  @Column()
+  @Column({type: 'bigint'})
   accountId!: number; // chatId or tgUserId
 
   @Column()
