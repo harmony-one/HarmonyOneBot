@@ -19,20 +19,33 @@ export class CreditsService {
     })
   }
 
-  public async getBalance(accountId: string) {
-    try {
-      const account = await this.getAccountById(accountId)
-      if(account) {
-        return bn(account.amount)
-      }
-      return bn(0)
-    } catch (e) {
-      console.log(`Cannot get credits balance for account ${accountId}`, (e as Error).message)
-      return bn(0)
+  public async withdrawAmount(accountId: string, amount: string) {
+    const account = await this.getAccountById(accountId)
+    if(!account) {
+      throw new Error(`Cannot find credits account ${accountId}`)
     }
+    const newAmount = bn(account.amount).minus(bn(amount))
+
+    if(newAmount.lt(0)) {
+      throw new Error(`Insufficient credits: cannot withdraw ${amount} for account ${accountId}, current balance ${account.amount}`)
+    }
+
+    return creditsRepository.update({
+      accountId
+    }, {
+      amount: newAmount.toFixed()
+    })
   }
 
-  async initAccount(accountId: string, amount: string) {
+  public async getBalance(accountId: string) {
+    const account = await this.getAccountById(accountId)
+    if(account) {
+      return bn(account.amount)
+    }
+    return bn(0)
+  }
+
+  public async initAccount(accountId: string, amount: string) {
     const credit = await this.getAccountById(accountId);
 
     if (credit !== null) {
