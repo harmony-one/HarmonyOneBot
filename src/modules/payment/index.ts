@@ -270,6 +270,8 @@ export class BotPayments {
             reply_to_message_id: message_id,
           });
         }
+      } else {
+        return true;
       }
     } else {
       const addressBalance = await this.getAddressBalance(userAccount.address)

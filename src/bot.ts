@@ -251,7 +251,7 @@ bot.command(["start","help","menu"], async (ctx) => {
       await creditsService.initAccount(accountId.toString(), creditsAmount);
       logger.info(`${amountInteger} credits transferred to accountId ${accountId} @${from.username} (${from.id}), chat ${chat.type} ${chat.id}`)
     } else {
-      // await creditsService.setAmount(accountId.toString(), ethers.utils.parseEther('5').toString())
+      // await creditsService.setAmount(accountId.toString(), ethers.utils.parseEther('100').toString())
       logger.info(`Credits account already initialized ${JSON.stringify(creditsAccount)}`)
     }
   } catch (e) {
