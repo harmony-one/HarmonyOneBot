@@ -209,7 +209,7 @@ export class QRCodeBot {
 
 
     await ctx.replyWithPhoto(new InputFile(qrImgBuffer, `qr_code_${Date.now()}.png`), {
-      caption: messageText,
+      caption: `/qr ${command.url} ${command.prompt}`,
       reply_markup: regenButton,
     })
     this.logger.info('sent qr code');
