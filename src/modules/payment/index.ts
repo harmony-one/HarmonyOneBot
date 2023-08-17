@@ -4,7 +4,7 @@ import { Account } from "web3-core";
 import axios from "axios";
 import bn, { BigNumber } from "bignumber.js";
 import config from "../../config";
-import {creditsService} from "../../database/services";
+import {chatService} from "../../database/services";
 import { OnMessageContext } from "../types";
 
 interface CoinGeckoResponse {
@@ -232,7 +232,7 @@ export class BotPayments {
     const fee = await this.getTransactionFee();
     amountToPay = amountToPay.plus(fee)
     const balance = await this.getUserBalance(accountId);
-    const credits = await creditsService.getBalance(accountId.toString())
+    const credits = await chatService.getBalance(accountId)
     const balanceWithCredits = balance.plus(credits)
     const balanceDelta = balanceWithCredits.minus(amountToPay);
 
@@ -240,7 +240,7 @@ export class BotPayments {
     if (balanceDelta.gte(0)) {
       if(amountToPay.gt(0) && credits.gt(0)) {
         const creditsPayAmount = bn.min(amountToPay, credits)
-        await creditsService.withdrawAmount(accountId.toString(), creditsPayAmount.toFixed())
+        await chatService.withdrawAmount(accountId, creditsPayAmount.toFixed())
         amountToPay = amountToPay.minus(creditsPayAmount)
         this.logger.info(`[@${from.username}] paid from credits: ${creditsPayAmount.toFixed()}, left to pay: ${amountToPay.toFixed()}`)
       }
@@ -275,7 +275,7 @@ export class BotPayments {
       }
     } else {
       const addressBalance = await this.getAddressBalance(userAccount.address)
-      const creditsBalance = await creditsService.getBalance(accountId.toString())
+      const creditsBalance = await chatService.getBalance(accountId)
       const balance = addressBalance.plus(creditsBalance)
       const balanceOne  = this.toONE(balance, false).toFixed(2)
       ctx.reply(
@@ -343,7 +343,7 @@ export class BotPayments {
     }
     if (text === '/credits') {
       try {
-        const freeCredits = await creditsService.getBalance(accountId.toString())
+        const freeCredits = await chatService.getBalance(accountId)
         const addressBalance = await this.getAddressBalance(account.address);
         const balance = addressBalance.plus(freeCredits)
         const balanceOne = this.toONE(balance, false);

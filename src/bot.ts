@@ -26,7 +26,7 @@ import { BotPayments } from "./modules/payment";
 import { BotSchedule } from "./modules/schedule";
 import config from "./config";
 import { commandsHelpText } from "./constants";
-import {creditsService} from "./database/services";
+import {chatService} from "./database/services";
 import {ethers} from "ethers";
 import {AppDataSource} from "./database/datasource";
 
@@ -243,18 +243,29 @@ bot.command(["start","help","menu"], async (ctx) => {
   const accountId = payments.getAccountId(ctx as OnMessageContext)
   const account = payments.getUserAccount(accountId);
 
+  let tgUserId = accountId;
+  if (chat.type === 'group') {
+    const members = await ctx.getChatAdministrators();
+
+    const creator = members.find((member) => member.status === 'creator')
+    if (creator) {
+      tgUserId = creator.user.id;
+    }
+  }
+
   try {
-    const creditsAccount = await creditsService.getAccountById(accountId.toString())
+    const creditsAccount = await chatService.getAccountById(accountId)
     if(!creditsAccount) {
       const amountInteger = '100'
-      const creditsAmount = ethers.utils.parseEther(amountInteger).toString();
-      await creditsService.initAccount(accountId.toString(), creditsAmount);
+      const creditAmount = ethers.utils.parseEther(amountInteger).toString();
+      await chatService.initAccount({accountId, creditAmount, tgUserId});
       logger.info(`${amountInteger} credits transferred to accountId ${accountId} @${from.username} (${from.id}), chat ${chat.type} ${chat.id}`)
     } else {
       // await creditsService.setAmount(accountId.toString(), ethers.utils.parseEther('100').toString())
       logger.info(`Credits account already initialized ${JSON.stringify(creditsAccount)}`)
     }
   } catch (e) {
+    console.log('### e', e);
     logger.error(`Cannot refill with credits: ${(e as Error).message}`)
   }
 
@@ -264,7 +275,7 @@ bot.command(["start","help","menu"], async (ctx) => {
     return false
   }
   const addressBalance = await payments.getAddressBalance(account.address);
-  const credits = await creditsService.getBalance(accountId.toString());
+  const credits = await chatService.getBalance(accountId);
   const balance = addressBalance.plus(credits)
   const balanceOne = payments.toONE(balance, false).toFixed(2);
   const startText = commandsHelpText.start

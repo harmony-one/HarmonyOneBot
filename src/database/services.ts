@@ -1,3 +1,3 @@
-import {CreditsService} from "./credits.service";
+import {ChatService} from "./chat.service";
 
-export const creditsService = new CreditsService();
+export const chatService = new ChatService();
