@@ -162,6 +162,8 @@ Please add <URL> <PROMPT>
       return
     }
 
+    // ctx.reply(`Generating...`);
+
     const messageText = message;
 
     const operation = async (retryAttempts: number) => {

@@ -26,7 +26,7 @@ export enum MenuIds {
 // Your credits: $CREDITS ONE tokens. Send to $WALLET_ADDRESS for recharge.
 
 export const commandsHelpText = {
-  start: `Hello, I am ONE Bot from Harmony – for ALL your AI on Telegram 🧚‍♀️.
+  start: `Hello, I'm ONE Bot on Telegram from Harmony – for ALL your AI wishes 🧚‍♀️.
 
 /ask act like elon musk, expand our q4 roadmap "telegram ai bot"
 /ask act like mark zuckerberg instead

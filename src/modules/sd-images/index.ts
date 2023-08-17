@@ -81,7 +81,7 @@ export class SDImagesBot {
       this.onImagesCmd(ctx, refundCallback);
       return;
     }
-
+      
     // if (ctx.hasCommand(SupportedCommands.SHOWCASE)) {
     //     this.onShowcaseCmd(ctx);
     //     return;
