@@ -6,6 +6,10 @@ import {
   MemorySessionStorage,
   session,
 } from "grammy";
+import {
+  autoChatAction,
+  AutoChatActionFlavor,
+} from "@grammyjs/auto-chat-action";
 import { limit } from "@grammyjs/ratelimiter";
 import { pino } from "pino";
 
@@ -21,13 +25,14 @@ import { QRCodeBot } from "./modules/qrcode/QRCodeBot";
 import { SDImagesBot } from "./modules/sd-images";
 import { OpenAIBot } from "./modules/open-ai";
 import { OneCountryBot } from "./modules/1country";
-import { Wallet } from "./modules/wallet";
 import { WalletConnect } from "./modules/walletconnect";
 import { BotPayments } from "./modules/payment";
 import { BotSchedule } from "./modules/schedule";
 import config from "./config";
 import { commandsHelpText } from "./constants";
-import { getONEPrice } from "./modules/1country/api/coingecko";
+import {chatService} from "./database/services";
+import {ethers} from "ethers";
+import {AppDataSource} from "./database/datasource";
 
 const logger = pino({
   name: "bot",
@@ -88,7 +93,7 @@ bot.use(
     storage: new MemorySessionStorage<BotSessionData>(),
   })
 );
-
+bot.use(autoChatAction());
 bot.use(mainMenu);
 
 const voiceMemo = new VoiceMemo();
@@ -100,6 +105,24 @@ const payments = new BotPayments();
 const schedule = new BotSchedule(bot);
 const openAiBot = new OpenAIBot(payments);
 const oneCountryBot = new OneCountryBot();
+
+bot.on('message:new_chat_members:me', (ctx) => {
+  const createChat = async () => {
+    const accountId = payments.getAccountId(ctx as OnMessageContext)
+
+    const chat = await chatService.getAccountById(accountId);
+
+    if (chat) {
+      return;
+    }
+
+    const tgUserId = ctx.message.from.id;
+
+    await chatService.initChat({tgUserId, accountId});
+  }
+
+  createChat();
+});
 
 const onMessage = async (ctx: OnMessageContext) => {
   if (qrCodeBot.isSupportedEvent(ctx)) {
@@ -237,21 +260,48 @@ const onCallback = async (ctx: OnCallBackQueryData) => {
   }
 };
 
-
 bot.command(["start","help","menu"], async (ctx) => {
+  const { from, chat } = (ctx as OnMessageContext).update.message
   const accountId = payments.getAccountId(ctx as OnMessageContext)
   const account = payments.getUserAccount(accountId);
+
+  let tgUserId = accountId;
+  if (chat.type === 'group') {
+    const members = await ctx.getChatAdministrators();
+
+    const creator = members.find((member) => member.status === 'creator')
+    if (creator) {
+      tgUserId = creator.user.id;
+    }
+  }
+
+  try {
+    const chatRecord = await chatService.getAccountById(accountId)
+    if(!chatRecord) {
+      await chatService.initChat({accountId, tgUserId});
+      // logger.info(`credits transferred to accountId ${accountId} @${from.username} (${from.id}), chat ${chat.type} ${chat.id}`)
+    } else {
+      // await creditsService.setAmount(accountId.toString(), ethers.utils.parseEther('100').toString())
+      logger.info(`Credits account already initialized ${JSON.stringify(chatRecord)}`)
+    }
+  } catch (e) {
+    console.log('### e', e);
+    logger.error(`Cannot refill with credits: ${(e as Error).message}`)
+  }
+
   // const userWalletAddress =
   //   (await payments.getUserAccount(ctx.from?.id!)?.address) || "";
   if(!account) {
     return false
   }
-  const balance = await payments.getAddressBalance(account.address);
+  const addressBalance = await payments.getAddressBalance(account.address);
+  const credits = await chatService.getBalance(accountId);
+  const balance = addressBalance.plus(credits)
   const balanceOne = payments.toONE(balance, false).toFixed(2);
   const startText = commandsHelpText.start
     .replaceAll("$CREDITS", balanceOne + "")
     .replaceAll("$WALLET_ADDRESS", account.address);
-  
+
   await ctx.reply(startText, {
     parse_mode: "Markdown",
     reply_markup: mainMenu,
@@ -301,6 +351,8 @@ app.use(express.static("./public")); // Public directory, used in voice-memo bot
 app.listen(config.port, () => {
   logger.info(`Bot listening on port ${config.port}`);
   bot.start();
+
+  AppDataSource.initialize();
   // bot.start({
   //   allowed_updates: ["callback_query"], // Needs to be set for menu middleware, but bot doesn't work with current configuration.
   // });

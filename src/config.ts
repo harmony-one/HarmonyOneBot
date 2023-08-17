@@ -13,7 +13,11 @@ export default {
   comfyWsHost: process.env.COMFY_WS_HOST || "",
   comfyHost2: process.env.COMFY_HOST2 || "",
   comfyWsHost2: process.env.COMFY_WS_HOST2 || "",
-  stableDiffusionHost: process.env.SD_HOST || "",
+  stableDiffusion: {
+    stableDiffusionHost: process.env.SD_HOST || "",
+    imageDefaultMessage: 'glimpses of a herd of wild elephants crossing a savanna',
+    imagesDefaultMessage: 'vintage hot rod with custom flame paint job',
+  },
   qrBot: {
     checkReadable: Boolean(process.env.QRBOT_CHECK_READABLE) || false,
   },
@@ -104,4 +108,11 @@ export default {
   walletConnect: {
     projectId: process.env.WALLET_CONNECT_PROJECT_ID || "",
   },
+  db: {
+    url: process.env.DATABASE_URL || ''
+  },
+  credits: {
+    maxChats: 10,
+    creditsAmount: '100',
+  }
 };

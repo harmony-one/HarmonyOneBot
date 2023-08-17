@@ -176,6 +176,7 @@ export const streamChatCompletion = async (
         for (const line of lines) {
           const message = line.replace(/^data: /, "");
           if (message === "[DONE]") {
+            ctx.chatAction = null;
             if (!completion.endsWith(".")) {
               if (msgId === 0) {
                 msgId = (await ctx.reply(completion)).message_id;
@@ -202,6 +203,7 @@ export const streamChatCompletion = async (
                   .editMessageText(ctx.chat?.id!, msgId, completion)
                   .catch((e: any) => console.log(e));
               }
+              ctx.chatAction = 'typing'
             }
           } catch (error) {
             logger.error("Could not JSON parse stream message", message, error);

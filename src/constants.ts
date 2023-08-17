@@ -26,35 +26,39 @@ export enum MenuIds {
 // Your credits: $CREDITS ONE tokens. Send to $WALLET_ADDRESS for recharge.
 
 export const commandsHelpText = {
-  start: `Hello, I am @harmony1bot, ONE Bot from Harmony AI 🧚‍♀️.
+  start: `Hello, I'm ONE Bot on Telegram from Harmony – for ALL your AI wishes 🧚‍♀️.
 
 /ask act like elon musk, expand our q4 roadmap "telegram ai bot"
-
-[/](https://t.me/harmony1bot?.%20act%20like%20mark%20zuckerberg%20instead) act like mark zuckerberg instead
+/ask act like mark zuckerberg instead
 
 /image glimpses of a herd of wild elephants crossing a savanna
 
-/images vintage hot rod with custom flame paint job
-
 /more Summarizing voice messages, artistic QR code, ChatGPT 32K, DALL-E, Wallet Connect, send tokens, sign transactions.
 
-/help This tutorial. Docs at harmony.one/bot.
+/help Bring back this message. Docs at harmony.one/bot.
   
-Your credits: $CREDITS ONE tokens. Send to [$WALLET_ADDRESS](https://explorer.harmony.one/address/$WALLET_ADDRESS) for recharge.
+Your credits in ONE tokens: $CREDITS
+
+Send to: \`$WALLET_ADDRESS\`
 `,
   more: 
-  `/qr s.country/ai astronaut, exuberant, anime girl, smile, sky, colorful
+  `/ explain like i am 5, what is a superconductor?
 
-/connect # Wallet Connect to MetaMask / Gnosis Safe / Timeless
+/images vintage hot rod with custom flame paint job
 
+/qr s.country/ai astronaut, exuberant, anime girl, smile, sky, colorful
+
+/connect (Wallet Connect to MetaMask / Gnosis Safe / Timeless)
+
+/send TARGET-WALLET-ADDRESS ONE-TOKEN-AMOUNT
 /send 0x742c4788CC47A94cf260abc474E2Fa45695a79Cd 42
 
-/chat32 # “Ask Me Anything” via OpenAI ChatGPT-4 with 32K context
+/chat32 ("Ask Me Anything” via OpenAI ChatGPT-4 with 32K context)
 
-/memo # Send voice messages (via microphone button on bottom right of Telegram chat window), or upload .mp4 files
+/memo (Send voice messages via microphone button on bottom right)
 
 
-❤️‍🔥 [Join](https://xn--qv9h.s.country/p/dear-engineer-our-tech-lead-role) us to build [.country for bots](https://xn--qv9h.s.country/p/radically-fair-economy-for-1country)! [Coming SOON](https://xn--qv9h.s.country/p/generating-roadmap-as-ceo-vs-cto):
+❤️‍🔥 [Join our team](https://xn--qv9h.s.country/p/dear-engineer-our-tech-lead-role) to build [.country for bots](https://xn--qv9h.s.country/p/radically-fair-economy-for-1country)! [Product roadmap](https://xn--qv9h.s.country/p/generating-roadmap-as-ceo-vs-cto):
 
 [🧠 Web∞](https://xn--qv9h.s.country/p/learning-machine-cryptography): CivitAI custom models (low-rank adaptations, clothes & accessories, human poses, comics & brand characters, video-to-video transformations), Character.AI celebrity chats, RunwayML video clips, HuggingFace embedding ControlNet, Meta segment anything, ElevenLabs speech clones, Zapier task automations, document or website queries.
 
@@ -78,7 +82,7 @@ export const menuText = {
     menuName: `💬 /ask ChatGPT4`,
     helpText: `*ask me anything*
         
-\`/ask what is one intersting historical fact about technological development in the 2000s?\`
+\`/ask act like elon musk, expand our q4 roadmap "telegram ai bot"\`
 `,
   },
   imageMenu: {
@@ -86,7 +90,7 @@ export const menuText = {
     backButton: "⬅️ Back",
     helpText: `*make an image*
         
-\`/image ancient, mysterious temple in a mountain range, surrounded by misty clouds and tall peaks
+\`/image glimpses of a herd of wild elephants crossing a savanna
 \`
   `,
   },
