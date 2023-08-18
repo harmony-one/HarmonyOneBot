@@ -33,14 +33,17 @@ export const commandsHelpText = {
 
 /image glimpses of a herd of wild elephants crossing a savanna
 
-/more Summarizing voice messages, artistic QR code, ChatGPT 32K, DALL-E, Wallet Connect, send tokens, sign transactions.
+/more Summarize voice messages, artistic QR code, ChatGPT 32K, DALL-E, Wallet Connect, send tokens, sign transactions...
 
-/help Bring back this message. Docs at harmony.one/bot.
+/help Show this message. Docs at harmony.one/bot.
   
-Your credits: $CREDITS ONE tokens. Send to [$WALLET_ADDRESS](https://explorer.harmony.one/address/$WALLET_ADDRESS) for recharge.
+Your credits in ONE tokens: $CREDITS
+
+Send to: \`$WALLET_ADDRESS\`
 `,
   more: 
   `/ explain like i am 5, what is a superconductor?
+. explain like i have a phd, what is category theory?
 
 /images vintage hot rod with custom flame paint job
 
@@ -53,10 +56,10 @@ Your credits: $CREDITS ONE tokens. Send to [$WALLET_ADDRESS](https://explorer.ha
 
 /chat32 ("Ask Me Anything” via OpenAI ChatGPT-4 with 32K context)
 
-/memo (Send voice messages (via microphone button on bottom right of Telegram chat window), or upload .mp4 files)
+/memo (Send voice messages via microphone button on bottom right)
 
 
-❤️‍🔥 [Join our team](https://xn--qv9h.s.country/p/dear-engineer-our-tech-lead-role) to build [.country for bots](https://xn--qv9h.s.country/p/radically-fair-economy-for-1country)! [Product roadmap](https://xn--qv9h.s.country/p/generating-roadmap-as-ceo-vs-cto):
+❤️‍🔥 [Join our team](https://xn--qv9h.s.country/p/dear-engineer-our-tech-lead-role) to build [AI ∩ Crypto](https://xn--qv9h.s.country/p/radically-fair-economy-for-1country)! [Product roadmap](https://xn--qv9h.s.country/p/generating-roadmap-as-ceo-vs-cto):
 
 [🧠 Web∞](https://xn--qv9h.s.country/p/learning-machine-cryptography): CivitAI custom models (low-rank adaptations, clothes & accessories, human poses, comics & brand characters, video-to-video transformations), Character.AI celebrity chats, RunwayML video clips, HuggingFace embedding ControlNet, Meta segment anything, ElevenLabs speech clones, Zapier task automations, document or website queries.
 

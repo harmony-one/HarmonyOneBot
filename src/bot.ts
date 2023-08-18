@@ -6,10 +6,7 @@ import {
   MemorySessionStorage,
   session,
 } from "grammy";
-import {
-  autoChatAction,
-  AutoChatActionFlavor,
-} from "@grammyjs/auto-chat-action";
+import { autoChatAction } from "@grammyjs/auto-chat-action";
 import { limit } from "@grammyjs/ratelimiter";
 import { pino } from "pino";
 
@@ -30,8 +27,7 @@ import { BotPayments } from "./modules/payment";
 import { BotSchedule } from "./modules/schedule";
 import config from "./config";
 import { commandsHelpText } from "./constants";
-import {creditsService} from "./database/services";
-import {ethers} from "ethers";
+import {chatService} from "./database/services";
 import {AppDataSource} from "./database/datasource";
 
 const logger = pino({
@@ -99,14 +95,61 @@ bot.use(mainMenu);
 const voiceMemo = new VoiceMemo();
 const qrCodeBot = new QRCodeBot();
 const sdImagesBot = new SDImagesBot();
-// const wallet = new Wallet();
 const walletConnect = new WalletConnect();
 const payments = new BotPayments();
 const schedule = new BotSchedule(bot);
 const openAiBot = new OpenAIBot(payments);
 const oneCountryBot = new OneCountryBot();
 
+bot.on('message:new_chat_members:me', (ctx) => {
+  const createChat = async () => {
+    const accountId = payments.getAccountId(ctx as OnMessageContext)
+
+    const chat = await chatService.getAccountById(accountId);
+
+    if (chat) {
+      return;
+    }
+
+    const tgUserId = ctx.message.from.id;
+
+    await chatService.initChat({tgUserId, accountId});
+  }
+
+  createChat();
+});
+
+const assignFreeCredits = async (ctx: OnMessageContext) => {
+  const { chat } = ctx.update.message
+
+  const accountId = payments.getAccountId(ctx as OnMessageContext)
+  let tgUserId = accountId;
+
+  const isCreditsAssigned = await chatService.isCreditsAssigned(accountId)
+  if(isCreditsAssigned) {
+    return true
+  }
+
+  try {
+    if (chat.type === 'group') {
+      const members = await ctx.getChatAdministrators();
+      const creator = members.find((member) => member.status === 'creator')
+      if (creator) {
+        tgUserId = creator.user.id;
+      }
+    }
+
+    await chatService.initChat({accountId, tgUserId});
+    // logger.info(`credits transferred to accountId ${accountId} chat ${chat.type} ${chat.id}`)
+  } catch (e) {
+    logger.error(`Cannot check account ${accountId} credits: ${(e as Error).message}`)
+  }
+  return true
+}
+
 const onMessage = async (ctx: OnMessageContext) => {
+  await assignFreeCredits(ctx)
+
   if (qrCodeBot.isSupportedEvent(ctx)) {
     const price = qrCodeBot.getEstimatedPrice(ctx);
     const isPaid = await payments.pay(ctx, price);
@@ -192,10 +235,6 @@ const onMessage = async (ctx: OnMessageContext) => {
       return;
     }
   }
-  // if (wallet.isSupportedEvent(ctx)) {
-  //   wallet.onEvent(ctx);
-  //   return;
-  // }
 
   if (walletConnect.isSupportedEvent(ctx)) {
     walletConnect.onEvent(ctx);
@@ -243,32 +282,17 @@ const onCallback = async (ctx: OnCallBackQueryData) => {
 };
 
 bot.command(["start","help","menu"], async (ctx) => {
-  const { from, chat } = (ctx as OnMessageContext).update.message
   const accountId = payments.getAccountId(ctx as OnMessageContext)
   const account = payments.getUserAccount(accountId);
 
-  try {
-    const creditsAccount = await creditsService.getAccountById(accountId.toString())
-    if(!creditsAccount) {
-      const amountInteger = '100'
-      const creditsAmount = ethers.utils.parseEther(amountInteger).toString();
-      await creditsService.initAccount(accountId.toString(), creditsAmount);
-      logger.info(`${amountInteger} credits transferred to accountId ${accountId} @${from.username} (${from.id}), chat ${chat.type} ${chat.id}`)
-    } else {
-      // await creditsService.setAmount(accountId.toString(), ethers.utils.parseEther('100').toString())
-      logger.info(`Credits account already initialized ${JSON.stringify(creditsAccount)}`)
-    }
-  } catch (e) {
-    logger.error(`Cannot refill with credits: ${(e as Error).message}`)
-  }
+  await assignFreeCredits(ctx as OnMessageContext)
 
-  // const userWalletAddress =
-  //   (await payments.getUserAccount(ctx.from?.id!)?.address) || "";
   if(!account) {
     return false
   }
+
   const addressBalance = await payments.getAddressBalance(account.address);
-  const credits = await creditsService.getBalance(accountId.toString());
+  const credits = await chatService.getBalance(accountId);
   const balance = addressBalance.plus(credits)
   const balanceOne = payments.toONE(balance, false).toFixed(2);
   const startText = commandsHelpText.start
@@ -288,6 +312,20 @@ bot.command("more", async (ctx) => {
     disable_web_page_preview: true,
   });
 });
+
+bot.command('terms', (ctx) => {
+  ctx.reply('this is terms', {
+    parse_mode: "Markdown",
+    disable_web_page_preview: true,
+  })
+})
+
+bot.command('support', (ctx) => {
+  ctx.reply('this is support', {
+    parse_mode: "Markdown",
+    disable_web_page_preview: true,
+  })
+})
 
 // bot.command("menu", async (ctx) => {
 //   await ctx.reply(menuText.mainMenu.helpText, {

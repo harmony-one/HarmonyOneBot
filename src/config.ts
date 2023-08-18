@@ -112,6 +112,10 @@ export default {
     projectId: process.env.WALLET_CONNECT_PROJECT_ID || "",
   },
   db: {
-    url: process.env.DATABASE_URL || "",
+    url: process.env.DATABASE_URL || ''
   },
+  credits: {
+    maxChats: 10,
+    creditsAmount: '100',
+  }
 };

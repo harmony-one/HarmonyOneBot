@@ -15,6 +15,7 @@ import { Logger, pino } from "pino";
 import { appText } from "./utils/text";
 import { getONEPrice } from "../1country/api/coingecko";
 import { creditsService } from "../../database/services";
+import { chatService } from "../../database/services";
 
 export const SupportedCommands = {
   // chat: {
@@ -78,10 +79,7 @@ export class OpenAIBot {
     );
     const hasRepply = this.isSupportedImageReply(ctx);
     const hasGroupPrefix = this.hasPrefix(ctx.message?.text || "");
-    if (
-      hasGroupPrefix &&
-      ctx.session.openAi.chatGpt.chatConversation.length > 0
-    ) {
+    if (hasGroupPrefix) {
       return true;
     }
     return hasCommand || hasRepply;
@@ -342,7 +340,6 @@ export class OpenAIBot {
       );
       const balance = addressBalance.plus(creditsBalance);
       const balanceOne = (await this.payments.toONE(balance, false)).toFixed(2);
-
       if (
         +balanceOne > +config.openAi.chatGpt.minimumBalance ||
         (await this.payments.isUserInWhitelist(ctx.from.id, ctx.from.username))
@@ -369,7 +366,6 @@ export class OpenAIBot {
           ctx,
         };
 
-        ctx.chatAction = "typing";
         const price = await promptGen(payload);
         if (!(await this.payments.pay(ctx as OnMessageContext, price))) {
           const balanceMessage = appText.notEnoughBalance
