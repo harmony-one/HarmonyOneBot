@@ -5,6 +5,7 @@ import {Chat} from "./entities/Chat";
 import {ethers} from "ethers";
 import {chatService} from "./services";
 import config from "../config";
+import { LRUCache } from 'lru-cache'
 
 const chatRepository = AppDataSource.getRepository(Chat)
 const userRepository = AppDataSource.getRepository(User)
@@ -13,6 +14,10 @@ const MAX_CHAT_COUNT: number = config.credits.maxChats;
 const CREDITS_AMOUNT: string = config.credits.creditsAmount;
 
 export class ChatService {
+  creditsAssignedCache = new LRUCache<number, boolean>({
+    max: 1000, ttl: 24 * 60 * 60 * 1000
+  })
+
   async create({tgUserId, accountId, creditAmount}: {tgUserId: number, accountId: number, creditAmount: string}) {
     let user = await userRepository.findOneBy({tgUserId: tgUserId});
 
@@ -34,6 +39,18 @@ export class ChatService {
     return chatRepository.findOneBy({
       accountId
     })
+  }
+
+  public async isCreditsAssigned(accountId: number) {
+    const cachedValue = this.creditsAssignedCache.get(accountId)
+    if(cachedValue) {
+      return true
+    }
+    const account = await this.getAccountById(accountId)
+    if(account) {
+      this.creditsAssignedCache.set(accountId, true)
+    }
+    return Boolean(account)
   }
 
   public async withdrawAmount(accountId: number, amount: string) {
