@@ -38,8 +38,8 @@ export const SupportedCommands = {
     groupParams: "=0",
     privateParams: "=0",
   },
-  genImg: {
-    name: "genImg",
+  dalle: {
+    name: "dalle",
     groupParams: ">1",
     privateParams: ">1",
   },
@@ -164,7 +164,7 @@ export class OpenAIBot {
     // ) {
     //   return 0;
     // }
-    if (ctx.hasCommand(SupportedCommands.genImg.name)) {
+    if (ctx.hasCommand(SupportedCommands.dalle.name)) {
       const imageNumber = ctx.session.openAi.imageGen.numImages;
       const imageSize = ctx.session.openAi.imageGen.imgSize;
       const model = getDalleModel(imageSize);
@@ -233,7 +233,7 @@ export class OpenAIBot {
       return;
     }
 
-    if (ctx.hasCommand(SupportedCommands.genImg.name)) {
+    if (ctx.hasCommand(SupportedCommands.dalle.name)) {
       this.onGenImgCmd(ctx);
       return;
     }
