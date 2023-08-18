@@ -198,12 +198,12 @@ export const streamChatCompletion = async (
             if (parsed.choices[0].delta.content === ".") {
               if (msgId === 0) {
                 msgId = (await ctx.reply(completion)).message_id;
+                ctx.chatAction = 'typing'
               } else {
                 ctx.api
                   .editMessageText(ctx.chat?.id!, msgId, completion)
                   .catch((e: any) => console.log(e));
               }
-              ctx.chatAction = 'typing'
             }
           } catch (error) {
             logger.error("Could not JSON parse stream message", message, error);
