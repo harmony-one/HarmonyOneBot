@@ -177,7 +177,7 @@ export const streamChatCompletion = async (
           const message = line.replace(/^data: /, "");
           if (message === "[DONE]") {
             ctx.chatAction = null;
-            completion = completion.replaceAll("...", "");
+            completion = completion.replaceAll("..", "");
             if (!completion.endsWith(".")) {
               if (msgId === 0) {
                 msgId = (await ctx.reply(completion)).message_id;
@@ -200,8 +200,8 @@ export const streamChatCompletion = async (
                 msgId = (await ctx.reply(completion)).message_id;
                 ctx.chatAction = "typing";
               } else {
-                completion = completion.replaceAll("...", "");
-                completion += "...";
+                completion = completion.replaceAll("..", "");
+                completion += "..";
                 ctx.api
                   .editMessageText(ctx.chat?.id!, msgId, completion)
                   .catch((e: any) => console.log(e));
