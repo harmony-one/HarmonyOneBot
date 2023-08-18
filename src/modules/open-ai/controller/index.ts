@@ -132,17 +132,14 @@ export const promptGen = async (data: ChatGptPayload) => {
         promptTokens,
         completionTokens
       ) * config.openAi.chatGpt.priceAdjustment;
+      logger.info(`"${prompt}" | tokens: ${promptTokens + completionTokens} | ${modelPrice.name} | price: ${price}`)
       conversation.push({ content: completion, role: "system" });
       ctx.session.openAi.chatGpt.usage += promptTokens + completionTokens;
       ctx.session.openAi.chatGpt.price += price;
       ctx.session.openAi.chatGpt.chatConversation = [...conversation!];
-      return {
-        price 
-      }
+      return price 
     }
-    return {
-      price: 0
-    }
+    return 0
   } catch (e) {
     logger.error("promptGen Error", e);
     throw "There was an error while generating the image";

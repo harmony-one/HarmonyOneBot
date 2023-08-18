@@ -199,6 +199,7 @@ export class QRCodeBot {
       qrImgBuffer = await retryAsync(operation, 5, 100);
 
     } catch (ex) {
+      ctx.chatAction = null;
       this.logger.error(`ex ${ex}`);
       ctx.reply("Internal error")
       throw new Error('Internal error');
