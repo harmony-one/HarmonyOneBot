@@ -120,7 +120,7 @@ bot.on('message:new_chat_members:me', (ctx) => {
 });
 
 const assignFreeCredits = async (ctx: OnMessageContext) => {
-  const { chat, text } = ctx.update.message
+  const { chat } = ctx.update.message
 
   const accountId = payments.getAccountId(ctx as OnMessageContext)
   let tgUserId = accountId;
@@ -131,7 +131,7 @@ const assignFreeCredits = async (ctx: OnMessageContext) => {
   }
 
   try {
-    if (chat.type === 'group' || text === '/test') {
+    if (chat.type === 'group') {
       const members = await ctx.getChatAdministrators();
       const creator = members.find((member) => member.status === 'creator')
       if (creator) {
