@@ -23,6 +23,16 @@ export const SupportedCommands = {
     groupParams: ">0",
     privateParams: ">0",
   },
+  gpt4: {
+    name: "gpt4",
+    groupParams: ">0",
+    privateParams: ">0",
+  },
+  gpt: {
+    name: "gpt",
+    groupParams: ">0",
+    privateParams: ">0",
+  },
   last: {
     name: "last",
     groupParams: "=0",
@@ -209,6 +219,16 @@ export class OpenAIBot {
     // }
 
     if (ctx.hasCommand(SupportedCommands.ask.name)) {
+      await this.onChat(ctx);
+      return;
+    }
+
+    if (ctx.hasCommand(SupportedCommands.gpt4.name)) {
+      await this.onChat(ctx);
+      return;
+    }
+
+    if (ctx.hasCommand(SupportedCommands.gpt.name)) {
       await this.onChat(ctx);
       return;
     }
