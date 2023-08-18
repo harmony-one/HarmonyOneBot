@@ -44,7 +44,7 @@ const logger = pino({
 export const imgGen = async (data: ImageGenPayload) => {
   const { chatId, prompt, numImages, imgSize } = data;
   try {
-    bot.api.sendMessage(chatId, "generating the output...");
+    // bot.api.sendMessage(chatId, "generating the output...");
     const imgs = await postGenerateImg(prompt, numImages, imgSize);
     imgs.map((img: any) => {
       bot.api.sendPhoto(chatId, img.url);
@@ -70,7 +70,7 @@ export const imgGenEnhanced = async (data: ImageGenPayload) => {
         `The following description was added to your prompt: ${upgratedPrompt}`
       );
     }
-    bot.api.sendMessage(chatId, "generating the output...");
+    // bot.api.sendMessage(chatId, "generating the output...");
     const imgs = await postGenerateImg(
       upgratedPrompt || prompt,
       numImages,
