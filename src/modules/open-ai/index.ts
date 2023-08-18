@@ -4,17 +4,13 @@ import { BotPayments } from "../payment";
 import { OnMessageContext, OnCallBackQueryData } from "../types";
 import {
   getChatModel,
-  getChatModelPrice,
   getDalleModel,
   getDalleModelPrice,
-  getTokenNumber,
-  streamChatCompletion,
 } from "./api/openAi";
 import { alterImg, imgGen, imgGenEnhanced, promptGen } from "./controller";
 import { Logger, pino } from "pino";
 import { appText } from "./utils/text";
-import { getONEPrice } from "../1country/api/coingecko";
-import {chatService} from "../../database/services";
+import { chatService } from "../../database/services";
 
 export const SupportedCommands = {
   // chat: {
@@ -83,19 +79,6 @@ export class OpenAIBot {
     }
     return hasCommand || hasRepply;
   }
-
-  // public isSupportedEvent(
-  //   ctx: OnMessageContext | OnCallBackQueryData
-  // ): boolean {
-  //   const hasCommand = ctx.hasCommand(Object.values(SupportedCommands));
-  //   const hasRepply = this.isSupportedImageReply(ctx);
-
-  //   if (hasCommand && !ctx.match) {
-  //     ctx.reply("Error: Missing prompt");
-  //     return false;
-  //   }
-  //   return hasCommand || hasRepply;
-  // }
 
   public isValidCommand(ctx: OnMessageContext | OnCallBackQueryData): boolean {
     const { commandName, prompt } = getCommandNamePrompt(
@@ -329,82 +312,58 @@ export class OpenAIBot {
 
   async onChat(ctx: OnMessageContext | OnCallBackQueryData) {
     try {
-      const { prompt } = getCommandNamePrompt(ctx, SupportedCommands); // ctx.match;
+      const { prompt } = getCommandNamePrompt(ctx, SupportedCommands);
+      const { chatConversation, model } = ctx.session.openAi.chatGpt;
+      const accountId = this.payments.getAccountId(ctx as OnMessageContext);
+      const account = await this.payments.getUserAccount(accountId);
+      const addressBalance = await this.payments.getUserBalance(accountId);
+      const creditsBalance = await chatService.getBalance(accountId);
+      const balance = addressBalance.plus(creditsBalance);
+      const balanceOne = (await this.payments.toONE(balance, false)).toFixed(2);
+      if (
+        +balanceOne > +config.openAi.chatGpt.minimumBalance ||
+        (await this.payments.isUserInWhitelist(ctx.from.id, ctx.from.username))
+      ) {
+        if (prompt === "") {
+          const msg =
+            chatConversation.length > 0
+              ? `${appText.gptLast}\n_${
+                  chatConversation[chatConversation.length - 1].content
+                }_`
+              : appText.introText;
+          await ctx.reply(msg, { parse_mode: "Markdown" });
+          return;
+        }
 
-      if (ctx.session.openAi.chatGpt.isEnabled) {
-        this.logger.info("prompt:", prompt);
-        const chat = ctx.session.openAi.chatGpt.chatConversation;
-        const accountId = this.payments.getAccountId(ctx as OnMessageContext);
-        const account = await this.payments.getUserAccount(accountId);
-        const addressBalance = await this.payments.getUserBalance(accountId);
-        const creditsBalance = await chatService.getBalance(accountId);
-        const balance = addressBalance.plus(creditsBalance);
-        const balanceOne = await this.payments.toONE(balance, false).toFixed(2);
-        if (
-          +balanceOne > +config.openAi.chatGpt.minimumBalance ||
-          (await this.payments.isUserInWhitelist(
-            ctx.from.id,
-            ctx.from.username
-          ))
-        ) {
-          if (prompt === "") {
-            const msg =
-              chat.length > 0
-                ? `${appText.gptLast}\n_${chat[chat.length - 1].content}_`
-                : appText.introText;
-            await ctx.reply(msg, {
-              parse_mode: "Markdown",
-            });
-            return;
-          }
-          //  else {
-          // if (chat.length === 0) {
-          //   await ctx.reply(appText.gptHelpText, {
-          //     parse_mode: "Markdown",
-          //   });
-          // }
-          // }
-          chat.push({
-            role: "user",
-            content: `${this.hasPrefix(prompt) ? prompt.slice(1) : prompt}.`,
-          });
-          const payload = {
-            conversation: chat!,
-            model:
-              ctx.session.openAi.chatGpt.model || config.openAi.chatGpt.model,
-            ctx,
-          };
-          ctx.api.sendChatAction(ctx.chat?.id!, "typing");
-          const response = await promptGen(payload);
-          const isPay = await this.payments.pay(
-            ctx as OnMessageContext,
-            response.price
-          );
-          if (!isPay) {
-            let balanceMessage = appText.notEnoughBalance
-              .replaceAll("$CREDITS", balanceOne)
-              .replaceAll("$WALLET_ADDRESS", account?.address || "");
-            ctx.reply(balanceMessage, {
-              parse_mode: "Markdown",
-            });
-          }
-        } else {
-          let balanceMessage = appText.notEnoughBalance
+        chatConversation.push({
+          role: "user",
+          content: `${this.hasPrefix(prompt) ? prompt.slice(1) : prompt}.`,
+        });
+
+        const payload = {
+          conversation: chatConversation!,
+          model: model || config.openAi.chatGpt.model,
+          ctx,
+        };
+
+        const price = await promptGen(payload);
+        if (!(await this.payments.pay(ctx as OnMessageContext, price))) {
+          const balanceMessage = appText.notEnoughBalance
             .replaceAll("$CREDITS", balanceOne)
             .replaceAll("$WALLET_ADDRESS", account?.address || "");
-          ctx.reply(balanceMessage, {
-            parse_mode: "Markdown",
-          });
-          // ctx.reply(appText.notEnoughBalance, {
-          //   parse_mode: "Markdown",
-          // });
+          await ctx.reply(balanceMessage, { parse_mode: "Markdown" });
         }
-        ctx.chatAction = null  
+        ctx.chatAction = null;
       } else {
-        ctx.reply("Bot disabled");
+        const balanceMessage = appText.notEnoughBalance
+          .replaceAll("$CREDITS", balanceOne)
+          .replaceAll("$WALLET_ADDRESS", account?.address || "");
+        await ctx.reply(balanceMessage, { parse_mode: "Markdown" });
       }
-    } catch (e) {
-      ctx.reply("Error handling your request");
+    } catch (error: any) {
+      ctx.chatAction = null;
+      this.logger.error(error.toString());
+      await ctx.reply("Error handling your request");
     }
   }
 
@@ -425,15 +384,16 @@ export class OpenAIBot {
     ctx.session.openAi.chatGpt.chatConversation = [];
     const usage = ctx.session.openAi.chatGpt.usage;
     const totalPrice = ctx.session.openAi.chatGpt.price;
-    const onePrice = await getONEPrice(totalPrice);
-    // const onePrice = await this.payments.toONE(this.payments.getPriceInONE(totalPrice));
+    const onePrice = this.payments
+      .getPriceInONE(totalPrice)
+      .dividedBy(10 ** 18)
+      .toFixed(2);
     ctx.reply(
-      `${appText.gptChatEnd} \n\n*${onePrice.price} ONE* Spent (${usage} tokens)`,
-      // `${appText.gptChatEnd} \n\n*${onePrice.toFixed()} ONE* Spent (${usage} tokens)`,
+      `${appText.gptChatEnd} \n\n*${onePrice} ONE* Spent (${usage} tokens)`,
       {
         parse_mode: "Markdown",
       }
-    ); //(${totalPrice.toFixed(2)}¢ )`);
+    );
     ctx.session.openAi.chatGpt.usage = 0;
     ctx.session.openAi.chatGpt.price = 0;
   }

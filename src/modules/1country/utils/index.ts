@@ -6,7 +6,7 @@ export const formatONEAmount = (num: number | string) => {
   const twoDecimalsFormatter = new Intl.NumberFormat("en-US", {
     minimumFractionDigits: 0,
     //@ts-ignore
-    maximumFractionDigits: num < 1 ? 2 : 0,
+    maximumFractionDigits: num < 100 ? 2 : 0,
   });
 
   return twoDecimalsFormatter.format(Number(num));

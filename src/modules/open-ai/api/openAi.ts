@@ -186,8 +186,8 @@ export const streamChatCompletion = async (
                   .catch((e: any) => console.log(e));
               }
             }
-            resolve(completion); // Resolve the promise with the completion variable
-            return; // Stream finished
+            resolve(completion); 
+            return;
           }
           try {
             const parsed = JSON.parse(message);

@@ -15,8 +15,9 @@ export default {
   comfyWsHost2: process.env.COMFY_WS_HOST2 || "",
   stableDiffusion: {
     stableDiffusionHost: process.env.SD_HOST || "",
-    imageDefaultMessage: 'glimpses of a herd of wild elephants crossing a savanna',
-    imagesDefaultMessage: 'vintage hot rod with custom flame paint job',
+    imageDefaultMessage:
+      "glimpses of a herd of wild elephants crossing a savanna",
+    imagesDefaultMessage: "vintage hot rod with custom flame paint job",
   },
   qrBot: {
     checkReadable: Boolean(process.env.QRBOT_CHECK_READABLE) || false,
@@ -44,14 +45,16 @@ export default {
     chatGpt: {
       priceAdjustment: process.env.PRICE_ADJUSTMENT
         ? parseInt(process.env.PRICE_ADJUSTMENT)
-        : 1.5,
+        : 2,
       isEnabled: Boolean(parseInt(process.env.CHAT_GPT_ENABLED || "1")),
       //hard coded gpt-4
       model: "gpt-4", // process.env.OPENAI_MODEL ||
       chatPrefix: process.env.GROUP_PREFIX
         ? process.env.GROUP_PREFIX.split(",")
         : ["?", ">"],
-      minimumBalance: process.env.MIN_BALANCE ? parseInt(process.env.MIN_BALANCE) : 0
+      minimumBalance: process.env.MIN_BALANCE
+        ? parseInt(process.env.MIN_BALANCE)
+        : 0,
     },
   },
   country: {
@@ -88,7 +91,7 @@ export default {
   payment: {
     isEnabled: Boolean(parseInt(process.env.PAYMENT_IS_ENABLED || "1")),
     secret: process.env.PAYMENT_SECRET || "",
-    prevSecretKeys: (process.env.PAYMENT_PREVIOUS_SECRET_KEYS || "").split(','),
+    prevSecretKeys: (process.env.PAYMENT_PREVIOUS_SECRET_KEYS || "").split(","),
     holderAddress:
       process.env.PAYMENT_HOLDER_ADDRESS ||
       "0x9EE59D58606997AAFd2F6Ba46EC64402829f9b6C",
