@@ -336,10 +336,10 @@ export class OpenAIBot {
       const { chatConversation, model } = ctx.session.openAi.chatGpt;
       const accountId = this.payments.getAccountId(ctx as OnMessageContext);
       const account = await this.payments.getUserAccount(accountId);
-      const [addressBalance, creditsBalance] = await Promise.all([
-        this.payments.getUserBalance(accountId),
-        creditsService.getBalance(accountId.toString()),
-      ]);
+      const addressBalance = await this.payments.getUserBalance(accountId);
+      const creditsBalance = await creditsService.getBalance(
+        accountId.toString()
+      );
       const balance = addressBalance.plus(creditsBalance);
       const balanceOne = (await this.payments.toONE(balance, false)).toFixed(2);
 
@@ -371,10 +371,7 @@ export class OpenAIBot {
 
         ctx.chatAction = "typing";
         const price = await promptGen(payload);
-
-        if (
-          !(await this.payments.pay(ctx as OnMessageContext, price))
-        ) {
+        if (!(await this.payments.pay(ctx as OnMessageContext, price))) {
           const balanceMessage = appText.notEnoughBalance
             .replaceAll("$CREDITS", balanceOne)
             .replaceAll("$WALLET_ADDRESS", account?.address || "");
@@ -387,8 +384,8 @@ export class OpenAIBot {
           .replaceAll("$WALLET_ADDRESS", account?.address || "");
         await ctx.reply(balanceMessage, { parse_mode: "Markdown" });
       }
-    } catch (error) {
-      console.error(error);
+    } catch (error: any) {
+      this.logger.error(error.toString());
       await ctx.reply("Error handling your request");
     }
   }
@@ -410,16 +407,16 @@ export class OpenAIBot {
     ctx.session.openAi.chatGpt.chatConversation = [];
     const usage = ctx.session.openAi.chatGpt.usage;
     const totalPrice = ctx.session.openAi.chatGpt.price;
-    console.log((await getONEPrice(totalPrice)).price, 'ONE', this.payments.getPriceInONE(totalPrice).toString())
-    // const onePrice = await getONEPrice(totalPrice);
-    const onePrice = await this.payments.toONE(this.payments.getPriceInONE(totalPrice)).toFixed(2);
+    const onePrice = this.payments
+      .getPriceInONE(totalPrice)
+      .dividedBy(10 ** 18)
+      .toFixed(2);
     ctx.reply(
       `${appText.gptChatEnd} \n\n*${onePrice} ONE* Spent (${usage} tokens)`,
-      // `${appText.gptChatEnd} \n\n*${onePrice.toFixed()} ONE* Spent (${usage} tokens)`,
       {
         parse_mode: "Markdown",
       }
-    ); //(${totalPrice.toFixed(2)}¢ )`);
+    );
     ctx.session.openAi.chatGpt.usage = 0;
     ctx.session.openAi.chatGpt.price = 0;
   }
