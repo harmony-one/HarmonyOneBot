@@ -6,10 +6,7 @@ import {
   MemorySessionStorage,
   session,
 } from "grammy";
-import {
-  autoChatAction,
-  AutoChatActionFlavor,
-} from "@grammyjs/auto-chat-action";
+import { autoChatAction } from "@grammyjs/auto-chat-action";
 import { limit } from "@grammyjs/ratelimiter";
 import { pino } from "pino";
 
@@ -31,7 +28,6 @@ import { BotSchedule } from "./modules/schedule";
 import config from "./config";
 import { commandsHelpText } from "./constants";
 import {chatService} from "./database/services";
-import {ethers} from "ethers";
 import {AppDataSource} from "./database/datasource";
 
 const logger = pino({
@@ -99,7 +95,6 @@ bot.use(mainMenu);
 const voiceMemo = new VoiceMemo();
 const qrCodeBot = new QRCodeBot();
 const sdImagesBot = new SDImagesBot();
-// const wallet = new Wallet();
 const walletConnect = new WalletConnect();
 const payments = new BotPayments();
 const schedule = new BotSchedule(bot);
@@ -124,7 +119,37 @@ bot.on('message:new_chat_members:me', (ctx) => {
   createChat();
 });
 
+const assignFreeCredits = async (ctx: OnMessageContext) => {
+  const { chat, text } = ctx.update.message
+
+  const accountId = payments.getAccountId(ctx as OnMessageContext)
+  let tgUserId = accountId;
+
+  const isCreditsAssigned = await chatService.isCreditsAssigned(accountId)
+  if(isCreditsAssigned) {
+    return true
+  }
+
+  try {
+    if (chat.type === 'group' || text === '/test') {
+      const members = await ctx.getChatAdministrators();
+      const creator = members.find((member) => member.status === 'creator')
+      if (creator) {
+        tgUserId = creator.user.id;
+      }
+    }
+
+    await chatService.initChat({accountId, tgUserId});
+    // logger.info(`credits transferred to accountId ${accountId} chat ${chat.type} ${chat.id}`)
+  } catch (e) {
+    logger.error(`Cannot check account ${accountId} credits: ${(e as Error).message}`)
+  }
+  return true
+}
+
 const onMessage = async (ctx: OnMessageContext) => {
+  await assignFreeCredits(ctx)
+
   if (qrCodeBot.isSupportedEvent(ctx)) {
     const price = qrCodeBot.getEstimatedPrice(ctx);
     const isPaid = await payments.pay(ctx, price);
@@ -210,10 +235,6 @@ const onMessage = async (ctx: OnMessageContext) => {
       return;
     }
   }
-  // if (wallet.isSupportedEvent(ctx)) {
-  //   wallet.onEvent(ctx);
-  //   return;
-  // }
 
   if (walletConnect.isSupportedEvent(ctx)) {
     walletConnect.onEvent(ctx);
@@ -261,39 +282,15 @@ const onCallback = async (ctx: OnCallBackQueryData) => {
 };
 
 bot.command(["start","help","menu"], async (ctx) => {
-  const { from, chat } = (ctx as OnMessageContext).update.message
   const accountId = payments.getAccountId(ctx as OnMessageContext)
   const account = payments.getUserAccount(accountId);
 
-  let tgUserId = accountId;
-  if (chat.type === 'group') {
-    const members = await ctx.getChatAdministrators();
+  await assignFreeCredits(ctx as OnMessageContext)
 
-    const creator = members.find((member) => member.status === 'creator')
-    if (creator) {
-      tgUserId = creator.user.id;
-    }
-  }
-
-  try {
-    const chatRecord = await chatService.getAccountById(accountId)
-    if(!chatRecord) {
-      await chatService.initChat({accountId, tgUserId});
-      // logger.info(`credits transferred to accountId ${accountId} @${from.username} (${from.id}), chat ${chat.type} ${chat.id}`)
-    } else {
-      // await creditsService.setAmount(accountId.toString(), ethers.utils.parseEther('100').toString())
-      logger.info(`Credits account already initialized ${JSON.stringify(chatRecord)}`)
-    }
-  } catch (e) {
-    console.log('### e', e);
-    logger.error(`Cannot refill with credits: ${(e as Error).message}`)
-  }
-
-  // const userWalletAddress =
-  //   (await payments.getUserAccount(ctx.from?.id!)?.address) || "";
   if(!account) {
     return false
   }
+
   const addressBalance = await payments.getAddressBalance(account.address);
   const credits = await chatService.getBalance(accountId);
   const balance = addressBalance.plus(credits)
