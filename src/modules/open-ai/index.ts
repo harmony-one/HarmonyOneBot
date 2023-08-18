@@ -78,10 +78,7 @@ export class OpenAIBot {
     );
     const hasRepply = this.isSupportedImageReply(ctx);
     const hasGroupPrefix = this.hasPrefix(ctx.message?.text || "");
-    if (
-      hasGroupPrefix &&
-      ctx.session.openAi.chatGpt.chatConversation.length > 0
-    ) {
+    if (hasGroupPrefix) {
       return true;
     }
     return hasCommand || hasRepply;
@@ -402,6 +399,7 @@ export class OpenAIBot {
           //   parse_mode: "Markdown",
           // });
         }
+        ctx.chatAction = null  
       } else {
         ctx.reply("Bot disabled");
       }
