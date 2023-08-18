@@ -4,17 +4,12 @@ import { BotPayments } from "../payment";
 import { OnMessageContext, OnCallBackQueryData } from "../types";
 import {
   getChatModel,
-  getChatModelPrice,
   getDalleModel,
   getDalleModelPrice,
-  getTokenNumber,
-  streamChatCompletion,
 } from "./api/openAi";
 import { alterImg, imgGen, imgGenEnhanced, promptGen } from "./controller";
 import { Logger, pino } from "pino";
 import { appText } from "./utils/text";
-import { getONEPrice } from "../1country/api/coingecko";
-import { creditsService } from "../../database/services";
 import { chatService } from "../../database/services";
 
 export const SupportedCommands = {
@@ -84,19 +79,6 @@ export class OpenAIBot {
     }
     return hasCommand || hasRepply;
   }
-
-  // public isSupportedEvent(
-  //   ctx: OnMessageContext | OnCallBackQueryData
-  // ): boolean {
-  //   const hasCommand = ctx.hasCommand(Object.values(SupportedCommands));
-  //   const hasRepply = this.isSupportedImageReply(ctx);
-
-  //   if (hasCommand && !ctx.match) {
-  //     ctx.reply("Error: Missing prompt");
-  //     return false;
-  //   }
-  //   return hasCommand || hasRepply;
-  // }
 
   public isValidCommand(ctx: OnMessageContext | OnCallBackQueryData): boolean {
     const { commandName, prompt } = getCommandNamePrompt(
@@ -335,9 +317,7 @@ export class OpenAIBot {
       const accountId = this.payments.getAccountId(ctx as OnMessageContext);
       const account = await this.payments.getUserAccount(accountId);
       const addressBalance = await this.payments.getUserBalance(accountId);
-      const creditsBalance = await creditsService.getBalance(
-        accountId.toString()
-      );
+      const creditsBalance = await chatService.getBalance(accountId);
       const balance = addressBalance.plus(creditsBalance);
       const balanceOne = (await this.payments.toONE(balance, false)).toFixed(2);
       if (
@@ -381,6 +361,7 @@ export class OpenAIBot {
         await ctx.reply(balanceMessage, { parse_mode: "Markdown" });
       }
     } catch (error: any) {
+      ctx.chatAction = null;
       this.logger.error(error.toString());
       await ctx.reply("Error handling your request");
     }

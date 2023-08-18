@@ -226,6 +226,8 @@ export class SDImagesBot {
       //         .row()
       // });
     } catch (e: any) {
+      ctx.chatAction = null;
+
       console.log(e);
       this.queue = this.queue.filter((v) => v !== uuid);
 
@@ -275,6 +277,7 @@ export class SDImagesBot {
         caption: `/image ${session.prompt}`,
       });
     } catch (e: any) {
+      ctx.chatAction = null;
       console.log(e);
       ctx.reply(`Error: something went wrong...`);
 
@@ -293,11 +296,12 @@ export class SDImagesBot {
       const prompt = showcasePrompts[this.showcaseCount++];
 
       const imageBuffer = await this.sdNodeApi.generateImage(prompt);
-
+      ctx.chatAction = 'upload_photo'
       await ctx.replyWithPhoto(new InputFile(imageBuffer));
 
       await ctx.reply(`/image ${prompt}`);
     } catch (e: any) {
+      ctx.chatAction = null;
       console.log(e);
       await ctx.reply(`Error: something went wrong...`);
 
