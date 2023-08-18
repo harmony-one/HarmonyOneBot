@@ -316,6 +316,20 @@ bot.command("more", async (ctx) => {
   });
 });
 
+bot.command('terms', (ctx) => {
+  ctx.reply('this is terms', {
+    parse_mode: "Markdown",
+    disable_web_page_preview: true,
+  })
+})
+
+bot.command('support', (ctx) => {
+  ctx.reply('this is support', {
+    parse_mode: "Markdown",
+    disable_web_page_preview: true,
+  })
+})
+
 // bot.command("menu", async (ctx) => {
 //   await ctx.reply(menuText.mainMenu.helpText, {
 //     parse_mode: "Markdown",
