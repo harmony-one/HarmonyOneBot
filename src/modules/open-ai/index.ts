@@ -39,7 +39,7 @@ export const SupportedCommands = {
     privateParams: "=0",
   },
   dalle: {
-    name: "dalle",
+    name: "DALLE",
     groupParams: ">1",
     privateParams: ">1",
   },
@@ -82,12 +82,12 @@ export class OpenAIBot {
     const hasCommand = ctx.hasCommand(
       Object.values(SupportedCommands).map((command) => command.name)
     );
-    const hasRepply = this.isSupportedImageReply(ctx);
+    const hasReply = this.isSupportedImageReply(ctx);
     const hasGroupPrefix = this.hasPrefix(ctx.message?.text || "");
     if (hasGroupPrefix) {
       return true;
     }
-    return hasCommand || hasRepply;
+    return hasCommand || hasReply;
   }
 
   public isValidCommand(ctx: OnMessageContext | OnCallBackQueryData): boolean {
@@ -270,6 +270,7 @@ export class OpenAIBot {
   onGenImgCmd = async (ctx: OnMessageContext | OnCallBackQueryData) => {
     if (ctx.session.openAi.imageGen.isEnabled) {
       const prompt = ctx.match;
+      console.log(prompt);
       if (!prompt) {
         ctx.reply("Error: Missing prompt");
         return;

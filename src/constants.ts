@@ -35,7 +35,7 @@ export const commandsHelpText = {
 
 /more Summarize voice messages, artistic QR code, ChatGPT 32K, DALL-E, Wallet Connect, send tokens, sign transactions...
 
-/help Show this message. Docs at harmony.one/bot.
+/help Show this message. Join user group 1.country/bot-love or read docs at harmony.one/bot.
   
 Your credits in ONE tokens: $CREDITS
 
@@ -103,6 +103,9 @@ export const menuText = {
 };
 
 
+export const NEGATIVE_PROMPT = {
+  image: "(KHFB, AuroraNegative),(Worst Quality, Low Quality:1.4), ugly, tiling, poorly drawn hands, poorly drawn feet, poorly drawn face, out of frame, extra limbs, disfigured, deformed, body out of frame, bad anatomy, watermark, signature, cut off, low contrast, underexposed, overexposed, bad art, beginner, amateur, distorted face, blurry, draft, grainy, boobs, penis, nudity, mohammad, prophet mohammad, sex, porn, sexual"
+}
 
 // 0x742c4788CC47A94cf260abc474E2Fa45695a79Cd
 
