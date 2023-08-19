@@ -26,7 +26,7 @@ import { WalletConnect } from "./modules/walletconnect";
 import { BotPayments } from "./modules/payment";
 import { BotSchedule } from "./modules/schedule";
 import config from "./config";
-import { commandsHelpText, TERMS, SUPPORT, FEEDBACK } from "./constants";
+import { commandsHelpText, TERMS, SUPPORT, FEEDBACK, LOVE } from "./constants";
 import {chatService} from "./database/services";
 import {AppDataSource} from "./database/datasource";
 import { text } from "stream/consumers";
@@ -330,6 +330,13 @@ bot.command('support', (ctx) => {
 
 bot.command('feedback', (ctx) => {
   ctx.reply(FEEDBACK.text, {
+    parse_mode: "Markdown",
+    disable_web_page_preview: true,
+  })
+})
+
+bot.command('love', (ctx) => {
+  ctx.reply(LOVE.text, {
     parse_mode: "Markdown",
     disable_web_page_preview: true,
   })

@@ -148,6 +148,10 @@ export const SUPPORT = {
 export const FEEDBACK = {
   text: `Please reach out to @theofandrich to share feedback.`
 }
+
+export const LOVE = {
+  text: `What is Love?`
+}
 // 0x742c4788CC47A94cf260abc474E2Fa45695a79Cd
 
 // /images vintage hot rod with custom flame paint job

@@ -409,12 +409,12 @@ export class OpenAIBot {
       .getPriceInONE(totalPrice)
       .dividedBy(10 ** 18)
       .toFixed(2);
-    ctx.reply(
-      `${appText.gptChatEnd} \n\n*${onePrice} ONE* Spent (${usage} tokens)`,
-      {
-        parse_mode: "Markdown",
-      }
-    );
+    // ctx.reply(
+    //   `${appText.gptChatEnd} \n\n*${onePrice} ONE* Spent (${usage} tokens)`,
+    //   {
+    //     parse_mode: "Markdown",
+    //   }
+    // );
     ctx.session.openAi.chatGpt.usage = 0;
     ctx.session.openAi.chatGpt.price = 0;
   }
