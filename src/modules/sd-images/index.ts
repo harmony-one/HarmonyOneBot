@@ -123,9 +123,7 @@ export class SDImagesBot {
 
       if (idx !== 0) {
         ctx.reply(
-          `You are ${idx + 1}/${
-            this.queue.length
-          }, wait about ${idx * 30} seconds`
+          `You are #${idx + 1} in line, wait ~${idx * 30 + 15} seconds`
         );
       }
 
@@ -180,9 +178,7 @@ export class SDImagesBot {
 
       if (idx !== 0) {
         ctx.reply(
-          `You are ${idx + 1}/${
-            this.queue.length
-          }, wait about ${idx * 30} seconds`
+          `You are #${idx + 1} in line, wait ~${idx * 30 + 15} seconds`
         );
       }
 

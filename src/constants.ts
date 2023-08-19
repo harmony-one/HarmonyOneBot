@@ -35,7 +35,7 @@ export const commandsHelpText = {
 
 /more Summarize voice messages, artistic QR code, ChatGPT 32K, DALL-E, Wallet Connect, send tokens, sign transactions...
 
-/help Show this message. Docs at harmony.one/bot.
+/help Show this message. Join user group 1.country/bot-love or read docs at harmony.one/bot.
   
 Your credits in ONE tokens: $CREDITS
 
@@ -103,7 +103,51 @@ export const menuText = {
 };
 
 
+export const NEGATIVE_PROMPT = {
+  image: "(KHFB, AuroraNegative),(Worst Quality, Low Quality:1.4), ugly, tiling, poorly drawn hands, poorly drawn feet, poorly drawn face, out of frame, extra limbs, disfigured, deformed, body out of frame, bad anatomy, watermark, signature, cut off, low contrast, underexposed, overexposed, bad art, beginner, amateur, distorted face, blurry, draft, grainy, boobs, penis, nudity, mohammad, prophet mohammad, sex, porn, sexual"
+}
 
+export const TERMS = {
+  text: `1. Overview
+Welcome to our Telegram Bot. The following Terms of Service ("Terms") outline your rights and responsibilities when using our Bot ("Service"), which is owned and operated by Harmony ONE. By engaging with our Service, you are accepting and agreeing to abide by these Terms.
+  
+2. Usage License
+We grant you a limited, non-exclusive, non-sublicensable, non-transferable, and revocable license to use our Service, as long as you remain in compliance with these Terms.
+
+3. Expected Behavior
+While using our Service, you commit to:
+• Refrain from spamming.
+• Not engage in illegal activities.
+• Respect the rights of others.
+• Avoid actions that could harm or disrupt the functionality of the Service.
+
+4. Your Content
+You maintain ownership rights over any content you share via our Bot. Yet, when you post, you provide us a global, royalty-free, non-exclusive license to use, adapt, modify, circulate, reproduce, and showcase that content.
+
+5. Privacy Considerations
+Your privacy is important. Our collection and treatment of personal data in relation to the Service are detailed in our Privacy Policy.
+
+6. Updates to These Terms
+We might update these Terms occasionally. When we do, we'll revise the date at the start of the Terms. If you continue using our Service after an update, it means you accept and agree to the changes.
+
+7. Termination Rights
+We reserve the right to suspend or terminate your access to our Service without warning, particularly if you do not comply with our Terms.
+
+8. Addressing Disagreements
+Should any disagreement arise from these Terms or the Service, it will be addressed based on the laws of [Your Jurisdiction], disregarding any conflicting legal principles.
+
+9. Reach Out to Us
+Questions or concerns regarding these Terms? We're here to help. Please get in touch at @theofandrich.
+  `
+}
+
+export const SUPPORT = {
+  text: `Please reach out to @theofandrich for support.`
+}
+
+export const FEEDBACK = {
+  text: `Please reach out to @theofandrich to share feedback.`
+}
 // 0x742c4788CC47A94cf260abc474E2Fa45695a79Cd
 
 // /images vintage hot rod with custom flame paint job

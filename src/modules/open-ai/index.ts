@@ -38,8 +38,8 @@ export const SupportedCommands = {
     groupParams: "=0",
     privateParams: "=0",
   },
-  genImg: {
-    name: "genImg",
+  dalle: {
+    name: "DALLE",
     groupParams: ">1",
     privateParams: ">1",
   },
@@ -49,7 +49,7 @@ export const SupportedCommands = {
     privateParams: ">1",
   },
   end: {
-    name: "end",
+    name: "stop",
     groupParams: "=0",
     privateParams: "=0",
   },
@@ -82,12 +82,12 @@ export class OpenAIBot {
     const hasCommand = ctx.hasCommand(
       Object.values(SupportedCommands).map((command) => command.name)
     );
-    const hasRepply = this.isSupportedImageReply(ctx);
+    const hasReply = this.isSupportedImageReply(ctx);
     const hasGroupPrefix = this.hasPrefix(ctx.message?.text || "");
     if (hasGroupPrefix) {
       return true;
     }
-    return hasCommand || hasRepply;
+    return hasCommand || hasReply;
   }
 
   public isValidCommand(ctx: OnMessageContext | OnCallBackQueryData): boolean {
@@ -164,7 +164,7 @@ export class OpenAIBot {
     // ) {
     //   return 0;
     // }
-    if (ctx.hasCommand(SupportedCommands.genImg.name)) {
+    if (ctx.hasCommand(SupportedCommands.dalle.name)) {
       const imageNumber = ctx.session.openAi.imageGen.numImages;
       const imageSize = ctx.session.openAi.imageGen.imgSize;
       const model = getDalleModel(imageSize);
@@ -233,7 +233,7 @@ export class OpenAIBot {
       return;
     }
 
-    if (ctx.hasCommand(SupportedCommands.genImg.name)) {
+    if (ctx.hasCommand(SupportedCommands.dalle.name)) {
       this.onGenImgCmd(ctx);
       return;
     }
@@ -270,6 +270,7 @@ export class OpenAIBot {
   onGenImgCmd = async (ctx: OnMessageContext | OnCallBackQueryData) => {
     if (ctx.session.openAi.imageGen.isEnabled) {
       const prompt = ctx.match;
+      console.log(prompt);
       if (!prompt) {
         ctx.reply("Error: Missing prompt");
         return;

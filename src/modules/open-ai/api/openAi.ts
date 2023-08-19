@@ -177,16 +177,16 @@ export const streamChatCompletion = async (
           const message = line.replace(/^data: /, "");
           if (message === "[DONE]") {
             ctx.chatAction = null;
+            completion = completion.replaceAll("..", "");
             if (!completion.endsWith(".")) {
               if (msgId === 0) {
                 msgId = (await ctx.reply(completion)).message_id;
-              } else {
-                await ctx.api
-                  .editMessageText(ctx.chat?.id!, msgId, completion)
-                  .catch((e: any) => console.log(e));
               }
             }
-            resolve(completion); 
+            await ctx.api
+              .editMessageText(ctx.chat?.id!, msgId, completion)
+              .catch((e: any) => console.log(e));
+            resolve(completion);
             return;
           }
           try {
@@ -198,8 +198,10 @@ export const streamChatCompletion = async (
             if (parsed.choices[0].delta.content === ".") {
               if (msgId === 0) {
                 msgId = (await ctx.reply(completion)).message_id;
-                ctx.chatAction = 'typing'
+                ctx.chatAction = "typing";
               } else {
+                completion = completion.replaceAll("..", "");
+                completion += "..";
                 ctx.api
                   .editMessageText(ctx.chat?.id!, msgId, completion)
                   .catch((e: any) => console.log(e));
