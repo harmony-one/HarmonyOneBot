@@ -26,9 +26,10 @@ import { WalletConnect } from "./modules/walletconnect";
 import { BotPayments } from "./modules/payment";
 import { BotSchedule } from "./modules/schedule";
 import config from "./config";
-import { commandsHelpText } from "./constants";
+import { commandsHelpText, TERMS, SUPPORT, FEEDBACK } from "./constants";
 import {chatService} from "./database/services";
 import {AppDataSource} from "./database/datasource";
+import { text } from "stream/consumers";
 
 const logger = pino({
   name: "bot",
@@ -314,14 +315,21 @@ bot.command("more", async (ctx) => {
 });
 
 bot.command('terms', (ctx) => {
-  ctx.reply('this is terms', {
+  ctx.reply(TERMS.text, {
     parse_mode: "Markdown",
     disable_web_page_preview: true,
   })
 })
 
 bot.command('support', (ctx) => {
-  ctx.reply('this is support', {
+  ctx.reply(SUPPORT.text, {
+    parse_mode: "Markdown",
+    disable_web_page_preview: true,
+  })
+})
+
+bot.command('feedback', (ctx) => {
+  ctx.reply(FEEDBACK.text, {
     parse_mode: "Markdown",
     disable_web_page_preview: true,
   })

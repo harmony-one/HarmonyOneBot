@@ -49,7 +49,7 @@ export const SupportedCommands = {
     privateParams: ">1",
   },
   end: {
-    name: "end",
+    name: "stop",
     groupParams: "=0",
     privateParams: "=0",
   },
