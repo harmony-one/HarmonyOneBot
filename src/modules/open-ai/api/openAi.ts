@@ -161,7 +161,15 @@ export const streamChatCompletion = async (
       stream: true,
     };
     let completion = "";
-    let msgId = 0;
+    let msgId = (
+      await ctx.reply(
+        `_${ctx.session.openAi.chatGpt.model.toLocaleUpperCase()}_`,
+        {
+          parse_mode: "Markdown",
+        }
+      )
+    ).message_id;
+    ctx.chatAction = "typing";
     return new Promise<string>(async (resolve, reject) => {
       const res = await openai.createChatCompletion(
         payload as CreateChatCompletionRequest,
@@ -181,11 +189,17 @@ export const streamChatCompletion = async (
             if (!completion.endsWith(".")) {
               if (msgId === 0) {
                 msgId = (await ctx.reply(completion)).message_id;
+                resolve(completion);
+                return;
               }
             }
             await ctx.api
               .editMessageText(ctx.chat?.id!, msgId, completion)
               .catch((e: any) => console.log(e));
+            const msgIdEnd = (await ctx.reply('_done_', {
+              parse_mode: "Markdown",
+            })).message_id;
+            ctx.api.deleteMessage(ctx.chat?.id!,msgIdEnd)
             resolve(completion);
             return;
           }
@@ -197,8 +211,8 @@ export const streamChatCompletion = async (
                 : "";
             if (parsed.choices[0].delta.content === ".") {
               if (msgId === 0) {
-                msgId = (await ctx.reply(completion)).message_id;
-                ctx.chatAction = "typing";
+                // msgId = (await ctx.reply(completion)).message_id;
+                // ctx.chatAction = "typing";
               } else {
                 completion = completion.replaceAll("..", "");
                 completion += "..";
