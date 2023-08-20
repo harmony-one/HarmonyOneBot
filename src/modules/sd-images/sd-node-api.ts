@@ -1,5 +1,6 @@
 // import sdwebui, { Client, SamplingMethod } from 'node-sd-webui'
-import { Client } from './sd-node-client'
+import { Client, MODELS_CONFIG, MODEL_TYPE } from './sd-node-client'
+import config from "../../config";
 
 const NEGATIVE_PROMPT = 'ugly, deformed, watermark';
 
@@ -10,14 +11,16 @@ export class SDNodeApi {
     this.client = new Client()
   }
 
-  generateImage = async (prompt: string) => {
+  generateImage = async (prompt: string, modelType: MODEL_TYPE) => {
     const { images } = await this.client.txt2img({
       prompt,
       negativePrompt: NEGATIVE_PROMPT,
-      width: 1024,
-      height: 1024,
-      steps: 30,
+      width: 512,
+      height: 512,
+      steps: 25,
       batchSize: 1,
+      cfgScale: 8,
+      model: MODELS_CONFIG[modelType].path
     })
 
     return images[0]; // Buffer.from(images[0], 'base64');
@@ -27,11 +30,11 @@ export class SDNodeApi {
     const { images } = await this.client.txt2img({
       prompt,
       negativePrompt: NEGATIVE_PROMPT,
-      width: 1024,
-      height: 1024,
-      steps: 30,
+      width: 512,
+      height: 512,
+      steps: 25,
       batchSize: 1,
-      cfgScale: 7,
+      cfgScale: 10,
       seed
     })
 
@@ -39,16 +42,34 @@ export class SDNodeApi {
   }
 
   generateImagesPreviews = async (prompt: string) => {
-    const res = await this.client.txt2img({
+    const params = {
       prompt,
       negativePrompt: NEGATIVE_PROMPT,
-      width: 1024,
-      height: 1024,
+      width: 512,
+      height: 512,
       steps: 15,
-      batchSize: 4,
+      batchSize: 1,
       cfgScale: 10,
-    })
+      model: MODELS_CONFIG.deliberate_v2.path
+    };
 
-    return res;
+    const serverConfig = {
+      host: config.comfyHost2,
+      wsHost: config.comfyWsHost2
+    };
+
+    const res = await Promise.all([
+      this.client.txt2img(params, serverConfig),
+      this.client.txt2img(params, serverConfig),
+      this.client.txt2img(params, serverConfig),
+      this.client.txt2img(params, serverConfig)
+    ]);
+
+    return {
+      images: res.map(r => r.images[0]),
+      parameters: {},
+      all_seeds: res.map(r => r.all_seeds[0]),
+      info: ''
+    };
   }
 }

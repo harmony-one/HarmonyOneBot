@@ -25,8 +25,8 @@ export function buildImgPrompt(options: Txt2ImgOptions & { clientId: string }) {
             },
             5: {
                 inputs: {
-                    width: 1024,
-                    height: 1024,
+                    width: options.width || 1024,
+                    height: options.height || 1024,
                     batch_size: options.batchSize || 1,
                 },
                 class_type: "EmptyLatentImage",
@@ -136,7 +136,7 @@ export function buildImgPrompt(options: Txt2ImgOptions & { clientId: string }) {
                                 { name: "LATENT", type: "LATENT", links: [2], slot_index: 0 },
                             ],
                             properties: { "Node name for S&R": "EmptyLatentImage" },
-                            widgets_values: [1024, 1024, 1],
+                            widgets_values: [options.width || 1024, options.height || 1024, 1],
                         },
                         {
                             id: 9,
