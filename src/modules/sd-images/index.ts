@@ -161,6 +161,7 @@ export class SDImagesBot {
           .text(MODELS_CONFIG.majicmixRealistic_betterV2V25.name, `${newSession.id}_${MODELS_CONFIG.majicmixRealistic_betterV2V25.id}`)
           .text(MODELS_CONFIG.revAnimated_v122.name, `${newSession.id}_${MODELS_CONFIG.revAnimated_v122.id}`)
           .row()
+          .text(MODELS_CONFIG.animePastelDream_softBakedVae.name, `${newSession.id}_${MODELS_CONFIG.animePastelDream_softBakedVae.id}`)
           .text(MODELS_CONFIG["v1-5-pruned-emaonly"].name, `${newSession.id}_${MODELS_CONFIG["v1-5-pruned-emaonly"].id}`)
           .row()
       });

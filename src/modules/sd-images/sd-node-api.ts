@@ -2,7 +2,7 @@
 import { Client, MODELS_CONFIG, MODEL_TYPE } from './sd-node-client'
 import config from "../../config";
 
-const NEGATIVE_PROMPT = 'ugly, deformed, watermark';
+const NEGATIVE_PROMPT = '(deformed, distorted, disfigured:1.3), poorly drawn, bad anatomy, wrong anatomy, extra limb, missing limb, floating limbs, (mutated hands and fingers:1.4), disconnected limbs, mutation, mutated, ugly, disgusting, blurry, amputation';
 
 export class SDNodeApi {
   client: Client;

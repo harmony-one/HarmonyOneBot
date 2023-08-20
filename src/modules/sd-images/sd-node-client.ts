@@ -47,7 +47,8 @@ export type MODEL_TYPE =
     "dreamshaper_8" |
     "majicmixRealistic_betterV2V25" |
     "revAnimated_v122" |
-    "v1-5-pruned-emaonly";
+    "v1-5-pruned-emaonly" |
+    "animePastelDream_softBakedVae";
 
 // export enum MODELS {
 //     // "XL_BASE_1.0" = "sd_xl_base_1.0.safetensors",
@@ -79,6 +80,11 @@ export const MODELS_CONFIG: Record<MODEL_TYPE, { path: string, name: string, id:
         name: "v1-5-pruned-emaonly",
         id: 'm5',
     },
+    "animePastelDream_softBakedVae": {
+        path: "animePastelDream_softBakedVae.safetensors",
+        name: "animePastelDream_softBakedVae",
+        id: "m6"
+    }
 }
 
 export const MODELS_CONFIGS = [
@@ -106,6 +112,11 @@ export const MODELS_CONFIGS = [
         path: "v1-5-pruned-emaonly.safetensors",
         name: "v1-5-pruned-emaonly",
         id: 'm5',
+    },
+    {
+        path: "animePastelDream_softBakedVae.safetensors",
+        name: "animePastelDream_softBakedVae",
+        id: "m6"
     }]
 
 const getRandomSeed = () => Math.round(Math.random() * 1e15);
