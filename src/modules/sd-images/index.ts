@@ -395,7 +395,7 @@ export class SDImagesBot {
         );
 
         await ctx.replyWithPhoto(new InputFile(imageBuffer), {
-          caption: `/image ${session.prompt}`,
+          caption: `/image seed=${session.all_seeds[+params - 1]} ${session.prompt}`,
         });
       }
     } catch (e: any) {

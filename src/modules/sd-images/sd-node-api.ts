@@ -17,7 +17,7 @@ export class SDNodeApi {
       negativePrompt: NEGATIVE_PROMPT,
       width: 512,
       height: 512,
-      steps: 25,
+      steps: 30,
       batchSize: 1,
       cfgScale: 8,
       model: MODELS_CONFIG[modelType].path
@@ -32,7 +32,7 @@ export class SDNodeApi {
       negativePrompt: NEGATIVE_PROMPT,
       width: 512,
       height: 512,
-      steps: 25,
+      steps: 30,
       batchSize: 1,
       cfgScale: 10,
       seed
