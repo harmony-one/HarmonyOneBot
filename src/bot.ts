@@ -30,6 +30,7 @@ import { commandsHelpText, TERMS, SUPPORT, FEEDBACK, LOVE } from "./constants";
 import {chatService} from "./database/services";
 import {AppDataSource} from "./database/datasource";
 import { text } from "stream/consumers";
+import { autoRetry } from "@grammyjs/auto-retry";
 
 const logger = pino({
   name: "bot",
@@ -42,6 +43,7 @@ const logger = pino({
 });
 
 export const bot = new Bot<BotContext>(config.telegramBotAuthToken);
+bot.api.config.use(autoRetry());
 
 bot.use(
   limit({
