@@ -35,7 +35,7 @@ export const commandsHelpText = {
 
 /more Summarize voice messages, artistic QR code, ChatGPT 32K, DALL-E, Wallet Connect, send tokens, sign transactions...
 
-/help Show this message. Join user group 1.country/bot-love or read docs at harmony.one/bot.
+/help Show this message. Join user group @onebotlove or read docs at harmony.one/bot.
   
 Your credits in ONE tokens: $CREDITS
 
