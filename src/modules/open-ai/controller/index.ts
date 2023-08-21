@@ -122,15 +122,15 @@ export const promptGen = async (data: ChatGptPayload) => {
   const { conversation, ctx, model } = data;
   try {
     let msgId = (await ctx.reply("...")).message_id;
-    ctx.chatAction = 'typing'
+    ctx.chatAction = "typing";
     const completion = await streamChatCompletion(
       conversation!,
       ctx,
       model,
       msgId,
-      false
+      true // telegram messages has a char limit
     );
-    ctx.chatAction = null
+    ctx.chatAction = null;
     if (completion) {
       const prompt = conversation[conversation.length - 1].content;
       const promptTokens = getTokenNumber(prompt);
@@ -152,8 +152,8 @@ export const promptGen = async (data: ChatGptPayload) => {
     }
     return 0;
   } catch (e: any) {
-    ctx.chatAction = null
-    logger.error(`promptGen Error ${e.toString()}`);
+    ctx.chatAction = null;
+    logger.error(`promptGen Error: ${e.toString()}`);
     throw e;
   }
 };

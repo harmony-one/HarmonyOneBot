@@ -290,7 +290,6 @@ export class OpenAIBot {
   onGenImgCmd = async (ctx: OnMessageContext | OnCallBackQueryData) => {
     if (ctx.session.openAi.imageGen.isEnabled) {
       let prompt = ctx.match;
-      console.log(prompt);
       if (!prompt) {
         prompt = config.openAi.dalle.defaultPrompt
         // ctx.reply("Error: Missing prompt");

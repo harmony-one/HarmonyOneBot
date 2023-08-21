@@ -81,8 +81,7 @@ export class BotPayments {
   }
 
   public toONE(amount: BigNumber, roundCeil = true) {
-    console.log(amount, amount.toFixed())
-    const value = this.web3.utils.fromWei(amount.toFixed(0), 'ether')
+    const value = this.web3.utils.fromWei(amount.toFixed(), 'ether')
     if(roundCeil) {
       return Math.ceil(+value)
     }
@@ -347,7 +346,6 @@ export class BotPayments {
         const freeCredits = await chatService.getBalance(accountId)
         const addressBalance = await this.getAddressBalance(account.address);
         const balance = addressBalance.plus(freeCredits)
-        console.log('balance',balance)
         const balanceOne = this.toONE(balance, false);
         ctx.reply(
           `Your credits in ONE tokens: ${balanceOne.toFixed(2)}

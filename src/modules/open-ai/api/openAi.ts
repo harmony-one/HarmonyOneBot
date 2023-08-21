@@ -62,7 +62,7 @@ export async function alterGeneratedImg(
   filePath: string,
   ctx: OnMessageContext | OnCallBackQueryData,
   numImages?: number,
-  imgSize?: string,
+  imgSize?: string
 ) {
   try {
     const imageData = await getImage(filePath);
@@ -98,7 +98,7 @@ export async function alterGeneratedImg(
       return response.data.data;
     } else {
       ctx.reply(imageData.error);
-      return null
+      return null;
     }
   } catch (error: any) {
     throw error;
@@ -153,66 +153,55 @@ export const streamChatCompletion = async (
   try {
     const payload = {
       model: model,
-      max_tokens: 800,
-      // limitTokens
-      //   ? config.openAi.dalle.completions.maxTokens
-      //   : undefined,
+      max_tokens: limitTokens
+        ? config.openAi.dalle.completions.maxTokens
+        : undefined,
       temperature: config.openAi.dalle.completions.temperature,
       messages: conversation,
       stream: true,
     };
     let completion = "";
-    // let msgId = (
-    //   await ctx.reply(
-    //     `_${ctx.session.openAi.chatGpt.model.toLocaleUpperCase()}_`,
-    //     {
-    //       parse_mode: "Markdown",
-    //     }
-    //   )
-    // ).message_id;
-    // ctx.chatAction = "typing";
     return new Promise<string>(async (resolve, reject) => {
-      const res = await openai.createChatCompletion(
-        payload as CreateChatCompletionRequest,
-        { responseType: "stream" }
-      );
-      let wordCount = 0;
-      //@ts-ignore
-      res.data.on("data", async (data: any) => {
-        const lines = data
-          .toString()
-          .split("\n")
-          .filter((line: string) => line.trim() !== "");
-        for (const line of lines) {
-          const message = line.replace(/^data: /, "");
-          if (message === "[DONE]") {
-            // ctx.chatAction = null;
-            completion = completion.replaceAll("..", "");
-            if (!completion.endsWith(".")) {
-              if (msgId === 0) {
-                msgId = (await ctx.reply(completion)).message_id;
-                resolve(completion);
-                return;
+      try {
+        const res = await openai.createChatCompletion(
+          payload as CreateChatCompletionRequest,
+          { responseType: "stream" }
+        );
+        let wordCount = 0;
+        //@ts-ignore
+        res.data.on("data", async (data: any) => {
+          const lines = data
+            .toString()
+            .split("\n")
+            .filter((line: string) => line.trim() !== "");
+          for (const line of lines) {
+            const message = line.replace(/^data: /, "");
+            if (message === "[DONE]") {
+              completion = completion.replaceAll("..", "");
+              if (!completion.endsWith(".")) {
+                if (msgId === 0) {
+                  msgId = (await ctx.reply(completion)).message_id;
+                  resolve(completion);
+                  return;
+                }
               }
+              await ctx.api
+                .editMessageText(ctx.chat?.id!, msgId, completion)
+                .catch((e: any) => console.log(e));
+              // const msgIdEnd = (
+              //   await ctx.reply(`_done_`, {
+              //     // with ${ctx.session.openAi.chatGpt.model.toLocaleUpperCase()}
+              //     parse_mode: "Markdown",
+              //   })
+              // ).message_id;
+              // ctx.api.deleteMessage(ctx.chat?.id!, msgId); // msgIdEnd);
+              // ctx.reply(completion);
+              resolve(completion);
+              return;
             }
-            await ctx.api
-              .editMessageText(ctx.chat?.id!, msgId, completion)
-              .catch((e: any) => console.log(e));
-            // const msgIdEnd = (
-            //   await ctx.reply(`_done_`, {
-            //     // with ${ctx.session.openAi.chatGpt.model.toLocaleUpperCase()}
-            //     parse_mode: "Markdown",
-            //   })
-            // ).message_id;
-            // ctx.api.deleteMessage(ctx.chat?.id!, msgId); // msgIdEnd);
-            // ctx.reply(completion);
-            resolve(completion);
-            return;
-          }
-          try {
+
             wordCount++;
             const parsed = JSON.parse(message);
-            // console.log(parsed.choices[0].delta.content, wordCount)
             completion +=
               parsed.choices[0].delta.content !== undefined
                 ? parsed.choices[0].delta.content
@@ -230,16 +219,18 @@ export const streamChatCompletion = async (
                   .catch((e: any) => console.log(e));
               }
             }
-          } catch (error) {
-            logger.error("Could not JSON parse stream message", message, error);
-            reject(`An error occurred during OpenAI request: ${error}`);
           }
-        }
-      });
+        });
+      } catch (error) {
+        reject(
+          `streamChatCompletion: An error occurred during OpenAI request: ${error}`
+        );
+      }
     });
   } catch (error: any) {
-    logger.error("Could not JSON parse stream message", error);
-    return Promise.reject(`An error occurred during OpenAI request: ${error}`);
+    return Promise.reject(
+      `streamChatCompletion: An error occurred during OpenAI request: ${error}`
+    );
   }
 };
 
