@@ -165,3 +165,7 @@ export const LOVE = {
 
 // *EVENTS*
 // The bot will produce a summary audio transcript when uploading a voice message.
+
+export const PROMPTS = {
+  qrNegativePrompt: '(KHFB, AuroraNegative),(Worst Quality, Low Quality:1.4), ugly, tiling, poorly drawn hands, poorly drawn feet, poorly drawn face, out of frame, extra limbs, disfigured, deformed, body out of frame, bad anatomy, watermark, signature, cut off, low contrast, underexposed, overexposed, bad art, beginner, amateur, distorted face, blurry, draft, grainy'
+}
