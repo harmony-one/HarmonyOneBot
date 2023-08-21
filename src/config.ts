@@ -26,15 +26,15 @@ export default {
     ? parseInt(process.env.SESSION_TIMEOUT)
     : 48, // in hours
   openAi: {
+    maxTokens:
+      (process.env.OPENAI_MAX_TOKENS &&
+        parseInt(process.env.OPENAI_MAX_TOKENS)) ||
+      800, // telegram messages has a char limit
     dalle: {
       isEnabled: Boolean(parseInt(process.env.IMAGE_GEN_ENABLED || "1")),
       telegramFileUrl: "https://api.telegram.org/file/bot",
       completions: {
         model: process.env.OPENAI_MODEL || "text-davinci-003",
-        maxTokens:
-          (process.env.OPENAI_MAX_TOKENS &&
-            parseInt(process.env.OPENAI_MAX_TOKENS)) ||
-          800, // telegram messages has a char limit
         temperature:
           (process.env.OPENAI_TEMPERATURE &&
             parseInt(process.env.OPENAI_TEMPERATURE)) ||

@@ -114,7 +114,7 @@ export async function chatCompilation(
     const payload = {
       model: model,
       max_tokens: limitTokens
-        ? config.openAi.dalle.completions.maxTokens
+        ? config.openAi.maxTokens
         : undefined,
       temperature: config.openAi.dalle.completions.temperature,
       messages: conversation,
@@ -154,7 +154,7 @@ export const streamChatCompletion = async (
     const payload = {
       model: model,
       max_tokens: limitTokens
-        ? config.openAi.dalle.completions.maxTokens
+        ? config.openAi.maxTokens
         : undefined,
       temperature: config.openAi.dalle.completions.temperature,
       messages: conversation,
