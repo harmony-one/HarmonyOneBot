@@ -11,6 +11,7 @@ import { alterImg, imgGen, imgGenEnhanced, promptGen } from "./controller";
 import { Logger, pino } from "pino";
 import { appText } from "./utils/text";
 import { chatService } from "../../database/services";
+import { ChatGPTModelsEnum } from "./types";
 
 export const SupportedCommands = {
   // chat: {
@@ -20,6 +21,11 @@ export const SupportedCommands = {
   // },
   ask: {
     name: "ask",
+    groupParams: ">0",
+    privateParams: ">0",
+  },
+  ask35: {
+    name: "ask35",
     groupParams: ">0",
     privateParams: ">0",
   },
@@ -224,6 +230,13 @@ export class OpenAIBot {
     // }
 
     if (ctx.hasCommand(SupportedCommands.ask.name)) {
+      ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_4
+      await this.onChat(ctx);
+      return;
+    }
+
+    if (ctx.hasCommand(SupportedCommands.ask35.name)) {
+      ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_35_TURBO
       await this.onChat(ctx);
       return;
     }
@@ -361,7 +374,9 @@ export class OpenAIBot {
           await ctx.reply(msg, { parse_mode: "Markdown" });
           return;
         }
-
+        // if (chatConversation.length === 0) {
+        //   ctx.reply(`_Using model ${ctx.session.openAi.chatGpt.model}_`,{ parse_mode: "Markdown" })
+        // }
         chatConversation.push({
           role: "user",
           content: `${this.hasPrefix(prompt) ? prompt.slice(1) : prompt}.`,
@@ -389,7 +404,7 @@ export class OpenAIBot {
       }
     } catch (error: any) {
       ctx.chatAction = null;
-      this.logger.error(error.toString());
+      this.logger.error(`onChat: ${error.toString()}`);
       await ctx.reply("Error handling your request");
     }
   }

@@ -140,8 +140,8 @@ export const promptGen = async (data: ChatGptPayload) => {
       return price 
     }
     return 0
-  } catch (e) {
-    logger.error("promptGen Error", e);
-    throw "There was an error while generating the image";
+  } catch (e: any) {
+    logger.error(`promptGen Error ${e.toString()}`);
+    throw e;
   }
 };
