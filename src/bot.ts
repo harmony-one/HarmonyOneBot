@@ -51,7 +51,8 @@ bot.use(
 
     // This is called when the limit is exceeded.
     onLimitExceeded: async (ctx) => {
-      await ctx.reply("");
+      logger.error('message limit Exceeded');
+      // await ctx.reply("");
     },
 
     // Note that the key should be a number in string format such as "123456789".
