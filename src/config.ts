@@ -116,6 +116,9 @@ export default {
   },
   credits: {
     maxChats: 10,
+    maxChatsWhitelist: (process.env.CREDITS_CHATS_WHITELIST || "stephentse")
+      .split(",")
+      .map((item) => item.toString().toLowerCase()),
     creditsAmount: '100',
   }
 };
