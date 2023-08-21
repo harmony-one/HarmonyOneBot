@@ -35,11 +35,16 @@ export const SupportedCommands = {
   },
   last: {
     name: "last",
-    groupParams: "=0",
-    privateParams: "=0",
+    groupParams: ">0",
+    privateParams: ">0",
   },
   dalle: {
     name: "DALLE",
+    groupParams: ">1",
+    privateParams: ">1",
+  },
+  dalleLC: {
+    name: "dalle",
     groupParams: ">1",
     privateParams: ">1",
   },
@@ -50,8 +55,8 @@ export const SupportedCommands = {
   },
   end: {
     name: "stop",
-    groupParams: "=0",
-    privateParams: "=0",
+    groupParams: ">0",
+    privateParams: ">0",
   },
 };
 
@@ -164,7 +169,7 @@ export class OpenAIBot {
     // ) {
     //   return 0;
     // }
-    if (ctx.hasCommand(SupportedCommands.dalle.name)) {
+    if (ctx.hasCommand(SupportedCommands.dalle.name) || ctx.hasCommand(SupportedCommands.dalleLC.name)) {
       const imageNumber = ctx.session.openAi.imageGen.numImages;
       const imageSize = ctx.session.openAi.imageGen.imgSize;
       const model = getDalleModel(imageSize);
@@ -233,7 +238,7 @@ export class OpenAIBot {
       return;
     }
 
-    if (ctx.hasCommand(SupportedCommands.dalle.name)) {
+    if (ctx.hasCommand(SupportedCommands.dalle.name) || ctx.hasCommand(SupportedCommands.dalleLC.name)) {
       this.onGenImgCmd(ctx);
       return;
     }
@@ -275,6 +280,7 @@ export class OpenAIBot {
         ctx.reply("Error: Missing prompt");
         return;
       }
+      ctx.chatAction = 'upload_photo'
       const payload = {
         chatId: ctx.chat?.id!,
         prompt: ctx.match as string,
@@ -402,6 +408,7 @@ export class OpenAIBot {
   }
 
   async onEnd(ctx: OnMessageContext | OnCallBackQueryData) {
+    this.logger.info('/stop command')
     ctx.session.openAi.chatGpt.chatConversation = [];
     const usage = ctx.session.openAi.chatGpt.usage;
     const totalPrice = ctx.session.openAi.chatGpt.price;
@@ -415,6 +422,7 @@ export class OpenAIBot {
     //     parse_mode: "Markdown",
     //   }
     // );
+
     ctx.session.openAi.chatGpt.usage = 0;
     ctx.session.openAi.chatGpt.price = 0;
   }
