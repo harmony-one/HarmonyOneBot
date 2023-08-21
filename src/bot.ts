@@ -90,7 +90,7 @@ bot.use(
     initial: createInitialSessionData,
     storage: enhanceStorage<BotSessionData>({
       storage: new MemorySessionStorage<Enhance<BotSessionData>>(),
-      millisecondsToLive: 48 * 60 * 60 * 1000, //48 hours
+      millisecondsToLive: config.sessionTimeout * 60 * 60 * 1000, //48 hours
     }),
   })
 );
@@ -204,13 +204,6 @@ const onMessage = async (ctx: OnMessageContext) => {
     if (ctx.session.openAi.imageGen.isEnabled) {
       if (openAiBot.isValidCommand(ctx)) {
         const price = openAiBot.getEstimatedPrice(ctx);
-        // const priceONE = await getONEPrice(price);
-        // if (price > 0) {
-        //   priceONE.price &&
-        //     (await ctx.reply(
-        //       `Processing withdraw for ${priceONE.price} ONE...`
-        //     )); //${price.toFixed(2)}¢...`);
-        // }
         const isPaid = await payments.pay(ctx, price);
         if (isPaid) {
           return openAiBot
