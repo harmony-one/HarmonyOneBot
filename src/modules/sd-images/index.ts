@@ -5,7 +5,7 @@ import { OnMessageContext, OnCallBackQueryData } from "../types";
 import { sleep, uuidv4 } from "./utils";
 import { showcasePrompts } from "./showcase";
 import { AbortController, AbortSignal } from "grammy/out/shim.node";
-import { MODELS_CONFIG, MODELS_CONFIGS, MODEL_TYPE } from "./sd-node-client";
+import { MODELS_CONFIGS, getModelByParam } from "./models-config";
 
 enum SupportedCommands {
   IMAGE = "image",
@@ -152,18 +152,26 @@ export class SDImagesBot {
 
       this.sessions.push(newSession);
 
+      const buttonsPerRow = 2;
+      let rowCount = buttonsPerRow;
+      const keyboard = new InlineKeyboard();
+
+      for (let i = 0; i < MODELS_CONFIGS.length; i++) {
+        keyboard.text(MODELS_CONFIGS[i].name, `${newSession.id}_${MODELS_CONFIGS[i].hash}`);
+
+        rowCount--;
+
+        if(!rowCount) {
+          keyboard.row();
+          rowCount = buttonsPerRow;
+        }  
+      }
+
+      keyboard.row();
+
       await ctx.reply("Please choose model for image generation", {
         parse_mode: "HTML",
-        reply_markup: new InlineKeyboard()
-          .text(MODELS_CONFIG.deliberate_v2.name, `${newSession.id}_${MODELS_CONFIG.deliberate_v2.id}`)
-          .text(MODELS_CONFIG.dreamshaper_8.name, `${newSession.id}_${MODELS_CONFIG.dreamshaper_8.id}`)
-          .row()
-          .text(MODELS_CONFIG.majicmixRealistic_betterV2V25.name, `${newSession.id}_${MODELS_CONFIG.majicmixRealistic_betterV2V25.id}`)
-          .text(MODELS_CONFIG.revAnimated_v122.name, `${newSession.id}_${MODELS_CONFIG.revAnimated_v122.id}`)
-          .row()
-          .text(MODELS_CONFIG.animePastelDream_softBakedVae.name, `${newSession.id}_${MODELS_CONFIG.animePastelDream_softBakedVae.id}`)
-          .text(MODELS_CONFIG["v1-5-pruned-emaonly"].name, `${newSession.id}_${MODELS_CONFIG["v1-5-pruned-emaonly"].id}`)
-          .row()
+        reply_markup: keyboard
       });
     } catch (e: any) {
       console.log(e);
@@ -368,7 +376,7 @@ export class SDImagesBot {
       }
 
       if (isNaN(Number(params))) {
-        const model = MODELS_CONFIGS.find(m => m.id === params);
+        const model = getModelByParam(params);
 
         if (!model) {
           console.log("wrong model");
@@ -381,7 +389,7 @@ export class SDImagesBot {
         // ctx.reply(`${author} starting to generate your image ${imageNumber} in high quality`);
         const imageBuffer = await this.sdNodeApi.generateImage(
           session.prompt,
-          model.name as MODEL_TYPE
+          model.id
         );
 
         await ctx.replyWithPhoto(new InputFile(imageBuffer), {

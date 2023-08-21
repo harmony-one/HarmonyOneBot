@@ -2,7 +2,7 @@ import { ComfyClient } from '../qrcode/comfy/ComfyClient';
 import config from "../../config";
 import { sleep, waitingExecute } from './utils';
 import { buildImgPrompt } from './text_to_img_config';
-import { type } from 'os';
+import { MODELS_CONFIGS } from './models-config';
 
 export type Txt2ImgOptions = {
     hires?: {
@@ -42,83 +42,6 @@ export type Txt2ImgResponse = {
     info: string
 }
 
-export type MODEL_TYPE =
-    "deliberate_v2" |
-    "dreamshaper_8" |
-    "majicmixRealistic_betterV2V25" |
-    "revAnimated_v122" |
-    "v1-5-pruned-emaonly" |
-    "animePastelDream_softBakedVae";
-
-// export enum MODELS {
-//     // "XL_BASE_1.0" = "sd_xl_base_1.0.safetensors",
-// }
-
-export const MODELS_CONFIG: Record<MODEL_TYPE, { path: string, name: string, id: string }> = {
-    "deliberate_v2": {
-        path: "deliberate_v2.safetensors",
-        name: "deliberate_v2",
-        id: 'm1',
-    },
-    "dreamshaper_8": {
-        path: "dreamshaper_8.safetensors",
-        name: "dreamshaper_8",
-        id: 'm2',
-    },
-    "majicmixRealistic_betterV2V25": {
-        path: "majicmixRealistic_betterV2V25.safetensors",
-        name: "majicmixRealistic_betterV2V25",
-        id: 'm3',
-    },
-    "revAnimated_v122": {
-        path: "revAnimated_v122.safetensors",
-        name: "revAnimated_v122",
-        id: 'm4',
-    },
-    "v1-5-pruned-emaonly": {
-        path: "v1-5-pruned-emaonly.safetensors",
-        name: "v1-5-pruned-emaonly",
-        id: 'm5',
-    },
-    "animePastelDream_softBakedVae": {
-        path: "animePastelDream_softBakedVae.safetensors",
-        name: "animePastelDream_softBakedVae",
-        id: "m6"
-    }
-}
-
-export const MODELS_CONFIGS = [
-    {
-        path: "deliberate_v2.safetensors",
-        name: "deliberate_v2",
-        id: 'm1',
-    },
-    {
-        path: "dreamshaper_8.safetensors",
-        name: "dreamshaper_8",
-        id: 'm2',
-    },
-    {
-        path: "majicmixRealistic_betterV2V25.safetensors",
-        name: "majicmixRealistic_betterV2V25",
-        id: 'm3',
-    },
-    {
-        path: "revAnimated_v122.safetensors",
-        name: "revAnimated_v122",
-        id: 'm4',
-    },
-    {
-        path: "v1-5-pruned-emaonly.safetensors",
-        name: "v1-5-pruned-emaonly",
-        id: 'm5',
-    },
-    {
-        path: "animePastelDream_softBakedVae.safetensors",
-        name: "animePastelDream_softBakedVae",
-        id: "m6"
-    }]
-
 const getRandomSeed = () => Math.round(Math.random() * 1e15);
 
 export class Client {
@@ -146,7 +69,7 @@ export class Client {
             const prompt = buildImgPrompt({
                 seed,
                 clientId: comfyClient.clientId,
-                model: MODELS_CONFIG.deliberate_v2.path,
+                model: MODELS_CONFIGS[0].path,
                 ...options,
             });
 
