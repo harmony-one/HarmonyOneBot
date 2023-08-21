@@ -153,9 +153,10 @@ export const streamChatCompletion = async (
   try {
     const payload = {
       model: model,
-      max_tokens: limitTokens
-        ? config.openAi.imageGen.completions.maxTokens
-        : undefined,
+      max_tokens: 800,
+      // limitTokens
+      //   ? config.openAi.imageGen.completions.maxTokens
+      //   : undefined,
       temperature: config.openAi.imageGen.completions.temperature,
       messages: conversation,
       stream: true,
@@ -175,7 +176,7 @@ export const streamChatCompletion = async (
         payload as CreateChatCompletionRequest,
         { responseType: "stream" }
       );
-      let wordCount = 0
+      let wordCount = 0;
       //@ts-ignore
       res.data.on("data", async (data: any) => {
         const lines = data
@@ -197,15 +198,19 @@ export const streamChatCompletion = async (
             await ctx.api
               .editMessageText(ctx.chat?.id!, msgId, completion)
               .catch((e: any) => console.log(e));
-            const msgIdEnd = (await ctx.reply(`_done with ${ctx.session.openAi.chatGpt.model.toLocaleUpperCase()}_`, {
-              parse_mode: "Markdown",
-            })).message_id;
-            ctx.api.deleteMessage(ctx.chat?.id!,msgIdEnd)
+            // const msgIdEnd = (
+            //   await ctx.reply(`_done_`, {
+            //     // with ${ctx.session.openAi.chatGpt.model.toLocaleUpperCase()}
+            //     parse_mode: "Markdown",
+            //   })
+            // ).message_id;
+            ctx.api.deleteMessage(ctx.chat?.id!, msgId); // msgIdEnd);
+            ctx.reply(completion);
             resolve(completion);
             return;
           }
           try {
-            wordCount++
+            wordCount++;
             const parsed = JSON.parse(message);
             // console.log(parsed.choices[0].delta.content, wordCount)
             completion +=
@@ -216,10 +221,10 @@ export const streamChatCompletion = async (
               if (msgId === 0) {
                 // msgId = (await ctx.reply(completion)).message_id;
                 // ctx.chatAction = "typing";
-              } else if (wordCount > 15) {
+              } else if (wordCount > 30) {
                 completion = completion.replaceAll("..", "");
                 completion += "..";
-                wordCount = 0
+                wordCount = 0;
                 ctx.api
                   .editMessageText(ctx.chat?.id!, msgId, completion)
                   .catch((e: any) => console.log(e));
