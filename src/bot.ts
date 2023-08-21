@@ -46,7 +46,7 @@ export const bot = new Bot<BotContext>(config.telegramBotAuthToken);
 bot.use(
   limit({
     // Allow only 1 message to be handled every 0.5 seconds.
-    timeFrame: 100,
+    timeFrame: 300,
     limit: 1,
 
     // This is called when the limit is exceeded.
@@ -257,7 +257,7 @@ const onMessage = async (ctx: OnMessageContext) => {
   // onlfy for private chats
   if (ctx.update.message.chat && ctx.chat.type === "private") {
     ctx.reply(
-      `Command not supported.\n\nWrite */help* to view available commands`,
+      `Command not supported!\n\nUse */help* to view available commands`,
       {
         parse_mode: "Markdown",
       }
