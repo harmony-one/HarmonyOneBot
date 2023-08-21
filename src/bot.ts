@@ -209,7 +209,7 @@ const onMessage = async (ctx: OnMessageContext) => {
         }
         return;
       } else {
-        ctx.reply("Error: Missing prompt");
+        // ctx.reply("Error: Missing prompt");
         return;
       }
     } else {
@@ -232,7 +232,7 @@ const onMessage = async (ctx: OnMessageContext) => {
       }
       return;
     } else {
-      ctx.reply("Error: Missing prompt");
+      // ctx.reply("Error: Missing prompt");
       return;
     }
   }
