@@ -41,7 +41,6 @@ export interface OneCountryData {
 }
 export interface BotSessionData {
   oneCountry: OneCountryData;
-  qrMargin: number;
   openAi: OpenAiSessionData;
 }
 

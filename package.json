@@ -40,6 +40,7 @@
   },
   "dependencies": {
     "@grammyjs/auto-chat-action": "^0.1.1",
+    "@grammyjs/auto-retry": "^1.1.1",
     "@grammyjs/conversations": "^1.1.2",
     "@grammyjs/menu": "^1.2.1",
     "@grammyjs/ratelimiter": "^1.2.0",

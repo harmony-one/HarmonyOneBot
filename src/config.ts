@@ -22,21 +22,26 @@ export default {
   qrBot: {
     checkReadable: Boolean(process.env.QRBOT_CHECK_READABLE) || false,
   },
+  sessionTimeout: process.env.SESSION_TIMEOUT
+    ? parseInt(process.env.SESSION_TIMEOUT)
+    : 48, // in hours
   openAi: {
-    imageGen: {
+    maxTokens:
+      (process.env.OPENAI_MAX_TOKENS &&
+        parseInt(process.env.OPENAI_MAX_TOKENS)) ||
+      800, // telegram messages has a char limit
+    dalle: {
       isEnabled: Boolean(parseInt(process.env.IMAGE_GEN_ENABLED || "1")),
       telegramFileUrl: "https://api.telegram.org/file/bot",
       completions: {
         model: process.env.OPENAI_MODEL || "text-davinci-003",
-        maxTokens:
-          (process.env.OPENAI_MAX_TOKENS &&
-            parseInt(process.env.OPENAI_MAX_TOKENS)) ||
-          140,
         temperature:
           (process.env.OPENAI_TEMPERATURE &&
             parseInt(process.env.OPENAI_TEMPERATURE)) ||
           0.8,
       },
+      defaultPrompt:
+        "beautiful waterfall in a lush jungle, with sunlight shining through the trees",
       sessionDefault: {
         numImages: 1,
         imgSize: "1024x1024",
@@ -112,13 +117,13 @@ export default {
     projectId: process.env.WALLET_CONNECT_PROJECT_ID || "",
   },
   db: {
-    url: process.env.DATABASE_URL || ''
+    url: process.env.DATABASE_URL || "",
   },
   credits: {
     maxChats: 10,
     maxChatsWhitelist: (process.env.CREDITS_CHATS_WHITELIST || "stephentse")
       .split(",")
       .map((item) => item.toString().toLowerCase()),
-    creditsAmount: '100',
-  }
+    creditsAmount: "100",
+  },
 };
