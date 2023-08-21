@@ -257,7 +257,7 @@ const onMessage = async (ctx: OnMessageContext) => {
   // onlfy for private chats
   if (ctx.update.message.chat && ctx.chat.type === "private") {
     ctx.reply(
-      `Command not supported.\n\nWrite */help* to view available commands`,
+      `Command not supported!\n\nUse */help* to view available commands`,
       {
         parse_mode: "Markdown",
       }
