@@ -75,7 +75,7 @@ export class Client {
 
             const r = await comfyClient.queuePrompt(prompt);
 
-            const promptResult = await waitingExecute(() => comfyClient.waitingPromptExecution(r.prompt_id), 1000 * 120);
+            const promptResult = await waitingExecute(() => comfyClient.waitingPromptExecution(r.prompt_id), 1000 * 180);
 
             const history = await comfyClient.history(r.prompt_id);
 

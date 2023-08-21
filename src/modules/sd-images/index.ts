@@ -103,12 +103,29 @@ export class SDImagesBot {
     ctx.reply("### unsupported command");
   }
 
+  waitingQueue = async (uuid: string, ctx: OnMessageContext | OnCallBackQueryData,) => {
+    this.queue.push(uuid);
+
+    let idx = this.queue.findIndex((v) => v === uuid);
+
+    if (idx !== 0) {
+      ctx.reply(
+        `You are ${idx + 1}/${this.queue.length
+        }, wait about ${idx * 30} seconds`
+      );
+    }
+
+    // waiting queue
+    while (idx !== 0) {
+      await sleep(3000 * this.queue.findIndex((v) => v === uuid));
+      idx = this.queue.findIndex((v) => v === uuid);
+    }
+  }
+
   onImageCmd = async (
     ctx: OnMessageContext | OnCallBackQueryData,
     refundCallback: (reason?: string) => void
   ) => {
-    const uuid = uuidv4();
-
     // /qr s.country/ai astronaut, exuberant, anime girl, smile, sky, colorful
     try {
       const prompt: any = ctx.match
@@ -124,22 +141,25 @@ export class SDImagesBot {
         return;
       }
       ctx.chatAction = "upload_photo";
-      // this.queue.push(uuid);
 
-      // let idx = this.queue.findIndex((v) => v === uuid);
+      let modelParam = '';
+      let promptParam: any;
 
-      // if (idx !== 0) {
-      //   ctx.reply(
-      //     `You are ${idx + 1}/${this.queue.length
-      //     }, wait about ${idx * 30} seconds`
-      //   );
-      // }
+      try {
+        [modelParam, ...promptParam] = prompt.split('--model=')[1].split(' ');
+        promptParam = promptParam.join(' ');
+      } catch (e) { }
 
-      // // waiting queue
-      // while (idx !== 0) {
-      //   await sleep(3000 * this.queue.findIndex((v) => v === uuid));
-      //   idx = this.queue.findIndex((v) => v === uuid);
-      // }
+      if (modelParam && promptParam) {
+        this.generateImage(
+          ctx,
+          refundCallback,
+          promptParam,
+          modelParam
+        );
+
+        return;
+      }
 
       const newSession: ISession = {
         id: uuidv4(),
@@ -161,10 +181,10 @@ export class SDImagesBot {
 
         rowCount--;
 
-        if(!rowCount) {
+        if (!rowCount) {
           keyboard.row();
           rowCount = buttonsPerRow;
-        }  
+        }
       }
 
       keyboard.row();
@@ -175,14 +195,9 @@ export class SDImagesBot {
       });
     } catch (e: any) {
       console.log(e);
-      this.queue = this.queue.filter((v) => v !== uuid);
-
       ctx.reply(`Error: something went wrong...`);
-
       refundCallback(e);
     }
-
-    this.queue = this.queue.filter((v) => v !== uuid);
   };
 
   // onImageCmd = async (
@@ -326,12 +341,48 @@ export class SDImagesBot {
     this.queue = this.queue.filter((v) => v !== uuid);
   };
 
+  generateImage = async (
+    ctx: OnMessageContext | OnCallBackQueryData,
+    refundCallback: (reason?: string) => void,
+    prompt: string,
+    modelId: string
+  ) => {
+    const uuid = uuidv4();
+
+    try {
+      const model = getModelByParam(modelId);
+
+      if(!model) {
+        ctx.reply(`Error: Wrong model... Refunding payments`);
+        refundCallback();
+        return;
+      }
+
+      await this.waitingQueue(uuid, ctx);
+
+      ctx.chatAction = "upload_photo";
+
+      const imageBuffer = await this.sdNodeApi.generateImage(
+        prompt,
+        model.id
+      );
+
+      await ctx.replyWithPhoto(new InputFile(imageBuffer), {
+        caption: `/image --model=${model.shortName} ${prompt}`,
+      });
+    } catch (e) {
+      console.error(e);
+      ctx.reply(`Error: something went wrong... Refunding payments`);
+      refundCallback();
+    }
+
+    this.queue = this.queue.filter((v) => v !== uuid);
+  }
+
   async onImgSelected(
     ctx: OnMessageContext | OnCallBackQueryData,
     refundCallback: (reason?: string) => void
   ): Promise<any> {
-    const uuid = uuidv4();
-
     try {
       const authorObj = await ctx.getAuthor();
       const author = `@${authorObj.user.username}`;
@@ -358,53 +409,29 @@ export class SDImagesBot {
         return;
       }
 
-      this.queue.push(uuid);
-
-      let idx = this.queue.findIndex((v) => v === uuid);
-
-      if (idx !== 0) {
-        ctx.reply(
-          `You are ${idx + 1}/${this.queue.length
-          }, wait about ${idx * 30} seconds`
-        );
-      }
-
-      // waiting queue
-      while (idx !== 0) {
-        await sleep(3000 * this.queue.findIndex((v) => v === uuid));
-        idx = this.queue.findIndex((v) => v === uuid);
-      }
-
       if (isNaN(Number(params))) {
         const model = getModelByParam(params);
 
         if (!model) {
           console.log("wrong model");
           refundCallback("Wrong callbackQuery");
-          this.queue = this.queue.filter((v) => v !== uuid);
           return;
         }
 
-        ctx.chatAction = "upload_photo";
-        // ctx.reply(`${author} starting to generate your image ${imageNumber} in high quality`);
-        const imageBuffer = await this.sdNodeApi.generateImage(
+        this.generateImage(
+          ctx,
+          refundCallback,
           session.prompt,
-          model.id
+          model.shortName
         );
-
-        await ctx.replyWithPhoto(new InputFile(imageBuffer), {
-          caption: `/image ${model.name} ${session.prompt}`,
-        });
       } else {
-        ctx.chatAction = "upload_photo";
-        // ctx.reply(`${author} starting to generate your image ${imageNumber} in high quality`);
         const imageBuffer = await this.sdNodeApi.generateImageFull(
           session.prompt,
           +session.all_seeds[+params - 1]
         );
 
         await ctx.replyWithPhoto(new InputFile(imageBuffer), {
-          caption: `/image seed=${session.all_seeds[+params - 1]} ${session.prompt}`,
+          caption: `/image --seed=${session.all_seeds[+params - 1]} ${session.prompt}`,
         });
       }
     } catch (e: any) {
@@ -413,8 +440,6 @@ export class SDImagesBot {
 
       refundCallback(e.message);
     }
-
-    this.queue = this.queue.filter((v) => v !== uuid);
   }
 
   onShowcaseCmd = async (ctx: OnMessageContext | OnCallBackQueryData) => {
