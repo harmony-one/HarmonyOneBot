@@ -170,7 +170,7 @@ export const streamChatCompletion = async (
         }
       )
     ).message_id;
-    ctx.chatAction = "typing";
+    // ctx.chatAction = "typing";
     return new Promise<string>(async (resolve, reject) => {
       const res = await openai.createChatCompletion(
         payload as CreateChatCompletionRequest,
@@ -204,8 +204,8 @@ export const streamChatCompletion = async (
             //     parse_mode: "Markdown",
             //   })
             // ).message_id;
-            ctx.api.deleteMessage(ctx.chat?.id!, msgId); // msgIdEnd);
-            ctx.reply(completion);
+            // ctx.api.deleteMessage(ctx.chat?.id!, msgId); // msgIdEnd);
+            // ctx.reply(completion);
             resolve(completion);
             return;
           }
@@ -221,7 +221,7 @@ export const streamChatCompletion = async (
               if (msgId === 0) {
                 // msgId = (await ctx.reply(completion)).message_id;
                 // ctx.chatAction = "typing";
-              } else if (wordCount > 30) {
+              } else if (wordCount > 20) {
                 completion = completion.replaceAll("..", "");
                 completion += "..";
                 wordCount = 0;

@@ -352,7 +352,7 @@ export class BotPayments {
         ctx.reply(
           `Your credits in ONE tokens: ${balanceOne.toFixed(2)}
 
-Send to: \`${account.address}\``,
+To recharge: \`${account.address}\``,
           {
             parse_mode: "Markdown",
           }
