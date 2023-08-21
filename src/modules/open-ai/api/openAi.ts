@@ -164,7 +164,7 @@ export const streamChatCompletion = async (
     let completion = "";
     let msgId = (
       await ctx.reply(
-        `_${ctx.session.openAi.chatGpt.model.toLocaleUpperCase()}_`,
+        `...`,
         {
           parse_mode: "Markdown",
         }
