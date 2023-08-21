@@ -113,8 +113,9 @@ bot.on('message:new_chat_members:me', (ctx) => {
     }
 
     const tgUserId = ctx.message.from.id;
+    const tgUsername = ctx.message.from.username || '';
 
-    await chatService.initChat({tgUserId, accountId});
+    await chatService.initChat({tgUserId, accountId, tgUsername});
   }
 
   createChat();
@@ -125,6 +126,7 @@ const assignFreeCredits = async (ctx: OnMessageContext) => {
 
   const accountId = payments.getAccountId(ctx as OnMessageContext)
   let tgUserId = accountId;
+  let tgUsername = ''
 
   const isCreditsAssigned = await chatService.isCreditsAssigned(accountId)
   if(isCreditsAssigned) {
@@ -137,10 +139,11 @@ const assignFreeCredits = async (ctx: OnMessageContext) => {
       const creator = members.find((member) => member.status === 'creator')
       if (creator) {
         tgUserId = creator.user.id;
+        tgUsername = creator.user.username || ''
       }
     }
 
-    await chatService.initChat({accountId, tgUserId});
+    await chatService.initChat({accountId, tgUserId, tgUsername});
     // logger.info(`credits transferred to accountId ${accountId} chat ${chat.type} ${chat.id}`)
   } catch (e) {
     logger.error(`Cannot check account ${accountId} credits: ${(e as Error).message}`)

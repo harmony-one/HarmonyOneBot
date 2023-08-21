@@ -94,7 +94,7 @@ export class ChatService {
     return bn(0)
   }
 
-  public async initChat({tgUserId, accountId}: {tgUserId: number, accountId: number}) {
+  public async initChat({tgUserId, accountId, tgUsername = ''}: {tgUserId: number, accountId: number, tgUsername?: string}) {
     const chat = await this.getAccountById(accountId);
 
     if (chat !== null) {
@@ -103,7 +103,12 @@ export class ChatService {
 
     const chatCount = await chatService.getCountCreatedChats({tgUserId});
 
-    const amountInteger = chatCount > MAX_CHAT_COUNT ? '0' : CREDITS_AMOUNT;
+    const { maxChatsWhitelist } = config.credits
+    const maxChatsCount = maxChatsWhitelist.includes(tgUsername) || maxChatsWhitelist.includes(tgUserId.toString())
+      ? Infinity
+      : MAX_CHAT_COUNT
+
+    const amountInteger = chatCount > maxChatsCount ? '0' : CREDITS_AMOUNT;
     const creditAmount = ethers.utils.parseEther(amountInteger).toString();
 
     return this.create({tgUserId, accountId, creditAmount});
