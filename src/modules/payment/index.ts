@@ -73,11 +73,11 @@ export class BotPayments {
     }
   }
 
-  public getPriceInONE(usdAmount: number) {
+  public getPriceInONE(centsUsd: number) {
     const amount = this.ONERate
-      ? usdAmount / 100 / this.ONERate
+      ? centsUsd / 100 / this.ONERate
       : 0;
-    return bn(amount).multipliedBy(10**18)
+    return bn(Math.round(amount * 10**18))
   }
 
   public toONE(amount: BigNumber, roundCeil = true) {

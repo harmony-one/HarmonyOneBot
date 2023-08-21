@@ -17,24 +17,37 @@ export interface MetricsDaily {
 
 const { explorerRestApiUrl: apiUrl, explorerRestApiKey: apiKey } = config.schedule
 
-export const getFeeStats = async () => {
-  const { explorerRestApiUrl: apiUrl, explorerRestApiKey: apiKey } = config.schedule
-
-  const daysCount = 7
-  const requestUrl = `${apiUrl}/v0/metrics?type=total_fee&limit=${daysCount}`
-  const { data: metrics } = await axios.get<MetricsDaily[]>(requestUrl, {
+const getDailyMetrics = async (type: string, limit: number) => {
+  const feesUrl = `${apiUrl}/v0/metrics?type=${type}&limit=${limit}`
+  const { data } = await axios.get<MetricsDaily[]>(feesUrl, {
     headers: {
       'X-API-KEY': apiKey
     }
   })
+  return data
+}
 
-  const feeTotal = metrics.reduce((acc, item) => {
-    acc += Number(item.value)
-    return acc
-  }, 0)
+export const getFeeStats = async () => {
+  const metrics = await getDailyMetrics('total_fee', 14)
 
-  const value = +metrics[0].value
-  const average = feeTotal / daysCount
+  let feesWeek1 = 0, feesWeek2 = 0
+
+  metrics.forEach((item, index) => {
+    const value = +item.value
+    if(index < 7) {
+      feesWeek1 += value
+    } else if(index < 14) {
+      feesWeek2 += value
+    }
+  })
+
+  // const walletsValue = wallets.reduce((acc, item) => {
+  //   acc += Number(item.value)
+  //   return acc
+  // }, 0)
+
+  const value = feesWeek1
+  const average = (feesWeek1 + feesWeek2) / 2
   let change = getPercentDiff(average, value).toFixed(1)
   if(+change > 0) {
     change = `+${change}`
