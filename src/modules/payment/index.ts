@@ -6,6 +6,7 @@ import bn, { BigNumber } from "bignumber.js";
 import config from "../../config";
 import {chatService} from "../../database/services";
 import { OnMessageContext } from "../types";
+import { LRUCache } from 'lru-cache'
 
 interface CoinGeckoResponse {
   harmony: {
@@ -21,6 +22,10 @@ export class BotPayments {
   private ONERate: number = 0;
   private rpcURL: string = "https://api.harmony.one";
   private lastPaymentTimestamp = 0;
+  private noncePending = new LRUCache<string, number>({
+    max: 1000,
+    ttl: 30 * 1000
+  })
 
   constructor() {
     this.web3 = new Web3(this.rpcURL);
@@ -112,22 +117,41 @@ export class BotPayments {
     addressTo: string,
     amount: BigNumber
   ) {
-    const web3 = new Web3(this.rpcURL);
-    web3.eth.accounts.wallet.add(accountFrom);
+    try {
+      const web3 = new Web3(this.rpcURL);
+      web3.eth.accounts.wallet.add(accountFrom);
 
-    const gasPrice = await web3.eth.getGasPrice();
-    const txBody = {
-      from: accountFrom.address,
-      to: addressTo,
-      value: web3.utils.toHex(amount.toFixed()),
-    };
-    const gasLimit = await web3.eth.estimateGas(txBody);
-    const tx = await web3.eth.sendTransaction({
-      ...txBody,
-      gasPrice,
-      gas: web3.utils.toHex(gasLimit),
-    });
-    return tx;
+      const gasPrice = await web3.eth.getGasPrice();
+
+      let nonce = undefined
+      const nonceCache = this.noncePending.get(accountFrom.address)
+      if(nonceCache) {
+        nonce = nonceCache + 1
+      } else {
+        nonce = await web3.eth.getTransactionCount(accountFrom.address, 'pending') + 1
+      }
+      this.noncePending.set(accountFrom.address, nonce)
+
+      const txBody = {
+        from: accountFrom.address,
+        to: addressTo,
+        value: web3.utils.toHex(amount.toFixed()),
+        nonce
+      };
+      const gasLimit = await web3.eth.estimateGas(txBody);
+      const tx = await web3.eth.sendTransaction({
+        ...txBody,
+        gasPrice,
+        gas: web3.utils.toHex(gasLimit),
+      });
+      return tx;
+    } catch (e) {
+      const message = (e as Error).message || ''
+      if(message && message.includes('replacement transaction underpriced')) {
+      } else {
+        throw new Error(message)
+      }
+    }
   }
 
   public isUserInWhitelist(userId: number | string, username = "") {
@@ -197,11 +221,13 @@ export class BotPayments {
           userAccount.address,
           amountONE.minus(fee)
         );
-        this.logger.info(
-          `[${userId} @${username}] refund successful, from: ${tx.from}, to: ${
-            tx.to
-          }, amount ONE: ${amountONE.toFixed()}, txHash: ${tx.transactionHash}`
-        );
+        if(tx) {
+          this.logger.info(
+            `[${userId} @${username}] refund successful, from: ${tx.from}, to: ${
+              tx.to
+            }, amount ONE: ${amountONE.toFixed()}, txHash: ${tx.transactionHash}`
+          );
+        }
         return true;
       } catch (e) {
         this.logger.error(
@@ -252,13 +278,15 @@ export class BotPayments {
             amountToPay
           );
           this.lastPaymentTimestamp = Date.now();
-          this.logger.info(
-            `[${from.id} @${from.username}] withdraw successful, txHash: ${
-              tx.transactionHash
-            }, from: ${tx.from}, to: ${
-              tx.to
-            }, amount ONE: ${amountToPay.toString()}`
-          );
+          if(tx) {
+            this.logger.info(
+              `[${from.id} @${from.username}] withdraw successful, txHash: ${
+                tx.transactionHash
+              }, from: ${tx.from}, to: ${
+                tx.to
+              }, amount ONE: ${amountToPay.toString()}`
+            );
+          }
           return true;
         } catch (e) {
           this.logger.error(

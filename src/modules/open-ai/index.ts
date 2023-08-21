@@ -241,12 +241,12 @@ export class OpenAIBot {
     }
 
     if (ctx.hasCommand(SupportedCommands.gpt4.name)) {
-      await this.onChat(ctx);
+      this.onChat(ctx);
       return;
     }
 
     if (ctx.hasCommand(SupportedCommands.gpt.name)) {
-      await this.onChat(ctx);
+      this.onChat(ctx);
       return;
     }
 
