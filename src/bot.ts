@@ -362,6 +362,7 @@ bot.catch((err) => {
   if (e instanceof GrammyError) {
     console.log(e)
     logger.error("Error in request:", e.description);
+    logger.error(`Error in message: ${JSON.stringify(ctx.message)}`)
   } else if (e instanceof HttpError) {
     logger.error("Could not contact Telegram:", e);
   } else {
