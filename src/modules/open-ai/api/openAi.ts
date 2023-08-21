@@ -8,7 +8,6 @@ import { encode } from "gpt-tokenizer";
 
 import config from "../../../config";
 import { deleteFile, getImage } from "../utils/file";
-import { bot } from "../../../bot";
 import {
   ChatCompletion,
   ChatConversation,
@@ -61,13 +60,13 @@ export async function alterGeneratedImg(
   chatId: number,
   prompt: string,
   filePath: string,
+  ctx: OnMessageContext | OnCallBackQueryData,
   numImages?: number,
-  imgSize?: string
+  imgSize?: string,
 ) {
   try {
     const imageData = await getImage(filePath);
     if (!imageData.error) {
-      bot.api.sendMessage(chatId, "validating image... ");
       let response;
       const size = imgSize
         ? imgSize
@@ -95,11 +94,11 @@ export async function alterGeneratedImg(
           size
         );
       }
-      bot.api.sendMessage(chatId, "Generating...");
       deleteFile(imageData.fileName!);
       return response.data.data;
     } else {
-      bot.api.sendMessage(chatId, imageData.error);
+      ctx.reply(imageData.error);
+      return null
     }
   } catch (error: any) {
     throw error;

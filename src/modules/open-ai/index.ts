@@ -303,7 +303,7 @@ export class OpenAIBot {
         numImages: await ctx.session.openAi.imageGen.numImages, // lazy load
         imgSize: await ctx.session.openAi.imageGen.imgSize, // lazy load
       };
-      await imgGen(payload);
+      await imgGen(payload,ctx);
     } else {
       ctx.reply("Bot disabled");
     }
@@ -323,7 +323,7 @@ export class OpenAIBot {
         imgSize: await ctx.session.openAi.imageGen.imgSize,
       };
       ctx.reply("generating improved prompt...");
-      await imgGenEnhanced(payload);
+      await imgGenEnhanced(payload,ctx);
     } else {
       ctx.reply("Bot disabled");
     }
@@ -345,7 +345,7 @@ export class OpenAIBot {
           imgSize: await ctx.session.openAi.imageGen.imgSize,
           filePath: filePath,
         };
-        await alterImg(payload);
+        await alterImg(payload,ctx);
       }
     } catch (e: any) {
       this.logger.error(e);
