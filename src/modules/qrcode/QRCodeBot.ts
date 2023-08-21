@@ -12,8 +12,6 @@ import pino, {Logger} from "pino";
 
 enum SupportedCommands {
   QR = 'qr',
-  QR2 = 'qr2',
-  QR_MARGIN = 'qrMargin',
 }
 
 enum Callbacks {
@@ -36,12 +34,6 @@ export class QRCodeBot {
     })
 
   }
-
-  // public init() {
-  //   this.bot.command('qr', (ctx) => this.onQr(ctx, 'img2img'));
-  //   this.bot.command('qr2', (ctx) => this.onQr(ctx, 'txt2img'));
-  //   this.bot.command('qrMargin', (ctx) => this.onQrMargin(ctx))
-  // }
 
   public getEstimatedPrice(ctx: any) {
     return 1; //  1.5;
@@ -82,22 +74,10 @@ export class QRCodeBot {
         if (cmd.command === SupportedCommands.QR) {
           return this.onQr(ctx, msg, 'img2img');
         }
-
-        if (cmd.command === SupportedCommands.QR2) {
-          return this.onQr(ctx, msg, 'txt2img');
-        }
       }
 
       if (ctx.hasCommand(SupportedCommands.QR)) {
         return this.onQr(ctx, ctx.message.text, 'img2img');
-      }
-
-      if (ctx.hasCommand(SupportedCommands.QR2)) {
-        return this.onQr(ctx, ctx.message.text, 'txt2img');
-      }
-
-      if (ctx.hasCommand(SupportedCommands.QR_MARGIN)){
-        return this.onQrMargin(ctx);
       }
     } catch (ex) {
       if (ex instanceof Error) {
@@ -135,18 +115,6 @@ export class QRCodeBot {
     }
   }
 
-  private async onQrMargin(ctx: OnMessageContext) {
-    const [_, value] = (ctx.message?.text || '').split(' ')
-
-    const margin = parseInt(value, 10);
-
-    if (!isNaN(margin)) {
-      ctx.session.qrMargin = margin;
-    }
-    await ctx.reply('qrMargin: ' + ctx.session.qrMargin);
-    return true;
-  }
-
   private async onQr(ctx: OnMessageContext | OnCallBackQueryData, message: string, method: 'txt2img' | 'img2img') {
     this.logger.info('generate qr');
 
@@ -178,7 +146,7 @@ export class QRCodeBot {
         prompt: command.prompt,
       };
 
-      const qrImgBuffer = await this.genQRCode2(props);
+      const qrImgBuffer = await this.genQRCodeByComfyUI(props);
 
       if (!qrImgBuffer) {
         throw new Error('internal error');
@@ -237,7 +205,7 @@ export class QRCodeBot {
     return  sdClient.img2img({...automatic1111DefaultConfig.img2img, ...sdConfig});
   }
 
-  private async genQRCode2({qrUrl, qrMargin, prompt, method}: {qrUrl: string, qrMargin: number, prompt: string, method: 'img2img' | 'txt2img'}) {
+  private async genQRCodeByComfyUI({qrUrl, qrMargin, prompt, method}: {qrUrl: string, qrMargin: number, prompt: string, method: 'img2img' | 'txt2img'}) {
     const qrImgBuffer = await createQRCode({url: normalizeUrl(qrUrl), width: 680, margin: qrMargin });
     const extendedPrompt = prompt + ', ' + automatic1111DefaultConfig.additionalPrompt;
     const negativePrompt = automatic1111DefaultConfig.defaultNegativePrompt;

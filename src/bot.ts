@@ -82,7 +82,6 @@ function createInitialSessionData(): BotSessionData {
     oneCountry: {
       lastDomain: "",
     },
-    qrMargin: 1,
   };
 }
 
