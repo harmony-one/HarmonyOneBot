@@ -2,11 +2,7 @@ import config from "../../config";
 import { getCommandNamePrompt } from "../1country/utils";
 import { BotPayments } from "../payment";
 import { OnMessageContext, OnCallBackQueryData } from "../types";
-import {
-  getChatModel,
-  getDalleModel,
-  getDalleModelPrice,
-} from "./api/openAi";
+import { getChatModel, getDalleModel, getDalleModelPrice } from "./api/openAi";
 import { alterImg, imgGen, imgGenEnhanced, promptGen } from "./controller";
 import { Logger, pino } from "pino";
 import { appText } from "./utils/text";
@@ -46,13 +42,13 @@ export const SupportedCommands = {
   },
   dalle: {
     name: "DALLE",
-    groupParams: ">1",
-    privateParams: ">1",
+    groupParams: ">0",
+    privateParams: ">0",
   },
   dalleLC: {
     name: "dalle",
-    groupParams: ">1",
-    privateParams: ">1",
+    groupParams: ">0",
+    privateParams: ">0",
   },
   genImgEn: {
     name: "genImgEn",
@@ -82,7 +78,7 @@ export class OpenAIBot {
       },
     });
     this.payments = payments;
-    if (!config.openAi.imageGen.isEnabled) {
+    if (!config.openAi.dalle.isEnabled) {
       this.logger.warn("DALL·E 2 Image Bot is disabled in config");
     }
   }
@@ -175,7 +171,10 @@ export class OpenAIBot {
     // ) {
     //   return 0;
     // }
-    if (ctx.hasCommand(SupportedCommands.dalle.name) || ctx.hasCommand(SupportedCommands.dalleLC.name)) {
+    if (
+      ctx.hasCommand(SupportedCommands.dalle.name) ||
+      ctx.hasCommand(SupportedCommands.dalleLC.name)
+    ) {
       const imageNumber = ctx.session.openAi.imageGen.numImages;
       const imageSize = ctx.session.openAi.imageGen.imgSize;
       const model = getDalleModel(imageSize);
@@ -230,14 +229,14 @@ export class OpenAIBot {
     // }
 
     if (ctx.hasCommand(SupportedCommands.ask.name)) {
-      ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_4
-      this.onChat(ctx);
+      ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_4;
+      await this.onChat(ctx);
       return;
     }
 
     if (ctx.hasCommand(SupportedCommands.ask35.name)) {
-      ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_35_TURBO
-      this.onChat(ctx);
+      ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_35_TURBO;
+      await this.onChat(ctx);
       return;
     }
 
@@ -251,7 +250,10 @@ export class OpenAIBot {
       return;
     }
 
-    if (ctx.hasCommand(SupportedCommands.dalle.name) || ctx.hasCommand(SupportedCommands.dalleLC.name)) {
+    if (
+      ctx.hasCommand(SupportedCommands.dalle.name) ||
+      ctx.hasCommand(SupportedCommands.dalleLC.name)
+    ) {
       this.onGenImgCmd(ctx);
       return;
     }
@@ -287,20 +289,20 @@ export class OpenAIBot {
 
   onGenImgCmd = async (ctx: OnMessageContext | OnCallBackQueryData) => {
     if (ctx.session.openAi.imageGen.isEnabled) {
-      const prompt = ctx.match;
-      console.log(prompt);
+      let prompt = ctx.match;
       if (!prompt) {
-        ctx.reply("Error: Missing prompt");
-        return;
+        prompt = config.openAi.dalle.defaultPrompt
+        // ctx.reply("Error: Missing prompt");
+        // return;
       }
-      ctx.chatAction = 'upload_photo'
+      ctx.chatAction = "upload_photo";
       const payload = {
         chatId: ctx.chat?.id!,
-        prompt: ctx.match as string,
+        prompt: prompt as string,
         numImages: await ctx.session.openAi.imageGen.numImages, // lazy load
         imgSize: await ctx.session.openAi.imageGen.imgSize, // lazy load
       };
-      await imgGen(payload);
+      await imgGen(payload,ctx);
     } else {
       ctx.reply("Bot disabled");
     }
@@ -320,7 +322,7 @@ export class OpenAIBot {
         imgSize: await ctx.session.openAi.imageGen.imgSize,
       };
       ctx.reply("generating improved prompt...");
-      await imgGenEnhanced(payload);
+      await imgGenEnhanced(payload,ctx);
     } else {
       ctx.reply("Bot disabled");
     }
@@ -334,7 +336,7 @@ export class OpenAIBot {
         const prompt = ctx.message?.caption || ctx.message?.text;
         const file_id = photo?.pop()?.file_id; // with pop() get full image quality
         const file = await ctx.api.getFile(file_id!);
-        const filePath = `${config.openAi.imageGen.telegramFileUrl}${config.telegramBotAuthToken}/${file.file_path}`;
+        const filePath = `${config.openAi.dalle.telegramFileUrl}${config.telegramBotAuthToken}/${file.file_path}`;
         const payload = {
           chatId: ctx.chat?.id!,
           prompt: prompt as string,
@@ -342,7 +344,7 @@ export class OpenAIBot {
           imgSize: await ctx.session.openAi.imageGen.imgSize,
           filePath: filePath,
         };
-        await alterImg(payload);
+        await alterImg(payload,ctx);
       }
     } catch (e: any) {
       this.logger.error(e);
@@ -423,21 +425,8 @@ export class OpenAIBot {
   }
 
   async onEnd(ctx: OnMessageContext | OnCallBackQueryData) {
-    this.logger.info('/stop command')
+    this.logger.info("/stop command");
     ctx.session.openAi.chatGpt.chatConversation = [];
-    const usage = ctx.session.openAi.chatGpt.usage;
-    const totalPrice = ctx.session.openAi.chatGpt.price;
-    const onePrice = this.payments
-      .getPriceInONE(totalPrice)
-      .dividedBy(10 ** 18)
-      .toFixed(2);
-    // ctx.reply(
-    //   `${appText.gptChatEnd} \n\n*${onePrice} ONE* Spent (${usage} tokens)`,
-    //   {
-    //     parse_mode: "Markdown",
-    //   }
-    // );
-
     ctx.session.openAi.chatGpt.usage = 0;
     ctx.session.openAi.chatGpt.price = 0;
   }

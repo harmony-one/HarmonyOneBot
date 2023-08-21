@@ -1,9 +1,11 @@
 import express from "express";
 import {
   Bot,
+  Enhance,
   GrammyError,
   HttpError,
   MemorySessionStorage,
+  enhanceStorage,
   session,
 } from "grammy";
 import { autoChatAction } from "@grammyjs/auto-chat-action";
@@ -27,9 +29,8 @@ import { BotPayments } from "./modules/payment";
 import { BotSchedule } from "./modules/schedule";
 import config from "./config";
 import { commandsHelpText, TERMS, SUPPORT, FEEDBACK, LOVE } from "./constants";
-import {chatService} from "./database/services";
-import {AppDataSource} from "./database/datasource";
-import { text } from "stream/consumers";
+import { chatService } from "./database/services";
+import { AppDataSource } from "./database/datasource";
 
 const logger = pino({
   name: "bot",
@@ -66,9 +67,9 @@ function createInitialSessionData(): BotSessionData {
   return {
     openAi: {
       imageGen: {
-        numImages: config.openAi.imageGen.sessionDefault.numImages,
-        imgSize: config.openAi.imageGen.sessionDefault.imgSize,
-        isEnabled: config.openAi.imageGen.isEnabled,
+        numImages: config.openAi.dalle.sessionDefault.numImages,
+        imgSize: config.openAi.dalle.sessionDefault.imgSize,
+        isEnabled: config.openAi.dalle.isEnabled,
       },
       chatGpt: {
         model: config.openAi.chatGpt.model,
@@ -88,7 +89,10 @@ function createInitialSessionData(): BotSessionData {
 bot.use(
   session({
     initial: createInitialSessionData,
-    storage: new MemorySessionStorage<BotSessionData>(),
+    storage: enhanceStorage<BotSessionData>({
+      storage: new MemorySessionStorage<Enhance<BotSessionData>>(),
+      millisecondsToLive: config.sessionTimeout * 60 * 60 * 1000, //48 hours
+    }),
   })
 );
 bot.use(autoChatAction());
@@ -103,9 +107,9 @@ const schedule = new BotSchedule(bot);
 const openAiBot = new OpenAIBot(payments);
 const oneCountryBot = new OneCountryBot();
 
-bot.on('message:new_chat_members:me', (ctx) => {
+bot.on("message:new_chat_members:me", (ctx) => {
   const createChat = async () => {
-    const accountId = payments.getAccountId(ctx as OnMessageContext)
+    const accountId = payments.getAccountId(ctx as OnMessageContext);
 
     const chat = await chatService.getAccountById(accountId);
 
@@ -114,46 +118,48 @@ bot.on('message:new_chat_members:me', (ctx) => {
     }
 
     const tgUserId = ctx.message.from.id;
-    const tgUsername = ctx.message.from.username || '';
+    const tgUsername = ctx.message.from.username || "";
 
-    await chatService.initChat({tgUserId, accountId, tgUsername});
-  }
+    await chatService.initChat({ tgUserId, accountId, tgUsername });
+  };
 
   createChat();
 });
 
 const assignFreeCredits = async (ctx: OnMessageContext) => {
-  const { chat } = ctx.update.message
+  const { chat } = ctx.update.message;
 
-  const accountId = payments.getAccountId(ctx as OnMessageContext)
+  const accountId = payments.getAccountId(ctx as OnMessageContext);
   let tgUserId = accountId;
-  let tgUsername = ''
+  let tgUsername = "";
 
-  const isCreditsAssigned = await chatService.isCreditsAssigned(accountId)
-  if(isCreditsAssigned) {
-    return true
+  const isCreditsAssigned = await chatService.isCreditsAssigned(accountId);
+  if (isCreditsAssigned) {
+    return true;
   }
 
   try {
-    if (chat.type === 'group') {
+    if (chat.type === "group") {
       const members = await ctx.getChatAdministrators();
-      const creator = members.find((member) => member.status === 'creator')
+      const creator = members.find((member) => member.status === "creator");
       if (creator) {
         tgUserId = creator.user.id;
-        tgUsername = creator.user.username || ''
+        tgUsername = creator.user.username || "";
       }
     }
 
-    await chatService.initChat({accountId, tgUserId, tgUsername});
+    await chatService.initChat({ accountId, tgUserId, tgUsername });
     // logger.info(`credits transferred to accountId ${accountId} chat ${chat.type} ${chat.id}`)
   } catch (e) {
-    logger.error(`Cannot check account ${accountId} credits: ${(e as Error).message}`)
+    logger.error(
+      `Cannot check account ${accountId} credits: ${(e as Error).message}`
+    );
   }
-  return true
-}
+  return true;
+};
 
 const onMessage = async (ctx: OnMessageContext) => {
-  await assignFreeCredits(ctx)
+  await assignFreeCredits(ctx);
 
   if (qrCodeBot.isSupportedEvent(ctx)) {
     const price = qrCodeBot.getEstimatedPrice(ctx);
@@ -162,7 +168,8 @@ const onMessage = async (ctx: OnMessageContext) => {
       qrCodeBot
         .onEvent(ctx, (reason?: string) => {
           payments.refundPayment(reason, ctx, price);
-        }).catch((e) => {
+        })
+        .catch((e) => {
           payments.refundPayment(e.message || "Unknown error", ctx, price);
         });
 
@@ -182,7 +189,7 @@ const onMessage = async (ctx: OnMessageContext) => {
         });
       return;
     }
-    return
+    return;
   }
   if (voiceMemo.isSupportedEvent(ctx)) {
     const price = voiceMemo.getEstimatedPrice(ctx);
@@ -192,19 +199,12 @@ const onMessage = async (ctx: OnMessageContext) => {
         payments.refundPayment(e.message || "Unknown error", ctx, price);
       });
     }
-    return
+    return;
   }
   if (openAiBot.isSupportedEvent(ctx)) {
     if (ctx.session.openAi.imageGen.isEnabled) {
       if (openAiBot.isValidCommand(ctx)) {
         const price = openAiBot.getEstimatedPrice(ctx);
-        // const priceONE = await getONEPrice(price);
-        // if (price > 0) {
-        //   priceONE.price &&
-        //     (await ctx.reply(
-        //       `Processing withdraw for ${priceONE.price} ONE...`
-        //     )); //${price.toFixed(2)}¢...`);
-        // }
         const isPaid = await payments.pay(ctx, price);
         if (isPaid) {
           return openAiBot
@@ -286,19 +286,19 @@ const onCallback = async (ctx: OnCallBackQueryData) => {
   }
 };
 
-bot.command(["start","help","menu"], async (ctx) => {
-  const accountId = payments.getAccountId(ctx as OnMessageContext)
+bot.command(["start", "help", "menu"], async (ctx) => {
+  const accountId = payments.getAccountId(ctx as OnMessageContext);
   const account = payments.getUserAccount(accountId);
 
-  await assignFreeCredits(ctx as OnMessageContext)
+  await assignFreeCredits(ctx as OnMessageContext);
 
-  if(!account) {
-    return false
+  if (!account) {
+    return false;
   }
 
   const addressBalance = await payments.getAddressBalance(account.address);
   const credits = await chatService.getBalance(accountId);
-  const balance = addressBalance.plus(credits)
+  const balance = addressBalance.plus(credits);
   const balanceOne = payments.toONE(balance, false).toFixed(2);
   const startText = commandsHelpText.start
     .replaceAll("$CREDITS", balanceOne + "")
@@ -318,33 +318,33 @@ bot.command("more", async (ctx) => {
   });
 });
 
-bot.command('terms', (ctx) => {
+bot.command("terms", (ctx) => {
   ctx.reply(TERMS.text, {
     parse_mode: "Markdown",
     disable_web_page_preview: true,
-  })
-})
+  });
+});
 
-bot.command('support', (ctx) => {
+bot.command("support", (ctx) => {
   ctx.reply(SUPPORT.text, {
     parse_mode: "Markdown",
     disable_web_page_preview: true,
-  })
-})
+  });
+});
 
-bot.command('feedback', (ctx) => {
+bot.command("feedback", (ctx) => {
   ctx.reply(FEEDBACK.text, {
     parse_mode: "Markdown",
     disable_web_page_preview: true,
-  })
-})
+  });
+});
 
-bot.command('love', (ctx) => {
+bot.command("love", (ctx) => {
   ctx.reply(LOVE.text, {
     parse_mode: "Markdown",
     disable_web_page_preview: true,
-  })
-})
+  });
+});
 
 // bot.command("menu", async (ctx) => {
 //   await ctx.reply(menuText.mainMenu.helpText, {
@@ -361,7 +361,7 @@ bot.catch((err) => {
   logger.error(`Error while handling update ${ctx.update.update_id}:`);
   const e = err.error;
   if (e instanceof GrammyError) {
-    console.log(e)
+    console.log(e);
     logger.error("Error in request:", e.description);
     logger.error(`Error in message: ${JSON.stringify(ctx.message)}`)
   } else if (e instanceof HttpError) {
