@@ -162,14 +162,6 @@ export const streamChatCompletion = async (
       stream: true,
     };
     let completion = "";
-    // let msgId = (
-    //   await ctx.reply(
-    //     `_${ctx.session.openAi.chatGpt.model.toLocaleUpperCase()}_`,
-    //     {
-    //       parse_mode: "Markdown",
-    //     }
-    //   )
-    // ).message_id;
     // ctx.chatAction = "typing";
     return new Promise<string>(async (resolve, reject) => {
       const res = await openai.createChatCompletion(

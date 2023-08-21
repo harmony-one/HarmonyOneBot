@@ -47,12 +47,13 @@ export const bot = new Bot<BotContext>(config.telegramBotAuthToken);
 bot.use(
   limit({
     // Allow only 1 message to be handled every 0.5 seconds.
-    timeFrame: 100,
+    timeFrame: 1000,
     limit: 1,
 
     // This is called when the limit is exceeded.
     onLimitExceeded: async (ctx) => {
-      await ctx.reply("");
+      logger.error('message limit Exceeded');
+      // await ctx.reply("");
     },
 
     // Note that the key should be a number in string format such as "123456789".
@@ -257,7 +258,7 @@ const onMessage = async (ctx: OnMessageContext) => {
   // onlfy for private chats
   if (ctx.update.message.chat && ctx.chat.type === "private") {
     ctx.reply(
-      `Command not supported.\n\nWrite */help* to view available commands`,
+      `Command not supported!\n\nUse */help* to view available commands`,
       {
         parse_mode: "Markdown",
       }
@@ -362,6 +363,7 @@ bot.catch((err) => {
   if (e instanceof GrammyError) {
     console.log(e);
     logger.error("Error in request:", e.description);
+    logger.error(`Error in message: ${JSON.stringify(ctx.message)}`)
   } else if (e instanceof HttpError) {
     logger.error("Could not contact Telegram:", e);
   } else {

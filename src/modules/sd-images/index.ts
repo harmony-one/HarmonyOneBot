@@ -81,7 +81,7 @@ export class SDImagesBot {
       this.onImagesCmd(ctx, refundCallback);
       return;
     }
-      
+
     // if (ctx.hasCommand(SupportedCommands.SHOWCASE)) {
     //     this.onShowcaseCmd(ctx);
     //     return;
@@ -142,7 +142,7 @@ export class SDImagesBot {
     } catch (e: any) {
       console.log(e);
       this.queue = this.queue.filter((v) => v !== uuid);
-
+      ctx.chatAction = null;
       ctx.reply(`Error: something went wrong...`);
 
       refundCallback(e);
@@ -226,7 +226,7 @@ export class SDImagesBot {
 
       console.log(e);
       this.queue = this.queue.filter((v) => v !== uuid);
-
+      ctx.chatAction = null;
       ctx.reply(`Error: something went wrong...`);
 
       refundCallback(e.message);
@@ -292,7 +292,7 @@ export class SDImagesBot {
       const prompt = showcasePrompts[this.showcaseCount++];
 
       const imageBuffer = await this.sdNodeApi.generateImage(prompt);
-      ctx.chatAction = 'upload_photo'
+      ctx.chatAction = "upload_photo";
       await ctx.replyWithPhoto(new InputFile(imageBuffer));
 
       await ctx.reply(`/image ${prompt}`);
@@ -300,7 +300,6 @@ export class SDImagesBot {
       ctx.chatAction = null;
       console.log(e);
       await ctx.reply(`Error: something went wrong...`);
-
       // throw new Error(e?.message);
     }
   };
