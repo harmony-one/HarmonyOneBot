@@ -198,7 +198,7 @@ export const streamChatCompletion = async (
             if (parsed.choices[0].delta.content === ".") {
               if (msgId === 0) {
                 msgId = (await ctx.reply(completion)).message_id;
-                ctx.chatAction = "typing";
+                // ctx.chatAction = "typing";
               } else {
                 completion = completion.replaceAll("..", "");
                 completion += "..";
