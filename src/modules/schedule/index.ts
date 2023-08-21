@@ -43,6 +43,9 @@ export class BotSchedule {
     try {
       this.logger.info(`Start preparing stats`)
 
+      const networkFeeStats = await getFeeStats()
+      const networkFeesReport = `*${networkFeeStats.value}* ONE (${networkFeeStats.change}%)`
+
       let bridgeStatsReport = this.cache.get('bridge_report') || ''
       this.logger.info(`Bridge stats report from cache: "${bridgeStatsReport}"`)
       if(refetchData || !bridgeStatsReport) {
@@ -50,9 +53,6 @@ export class BotSchedule {
         bridgeStatsReport =  `*${bridgeStats.value}* USD (${bridgeStats.change}%)`
         this.cache.set('bridge_report', bridgeStatsReport)
       }
-
-      const networkFeeStats = await getFeeStats()
-      const networkFeesReport = `*${networkFeeStats.value}* ONE (${networkFeeStats.change}%)`
 
       const botFees = await getBotFeeStats(this.holderAddress)
       const botFeesReport = `*${botFees.value}* ONE (${botFees.change}%)`
