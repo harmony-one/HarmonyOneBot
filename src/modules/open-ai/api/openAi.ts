@@ -47,8 +47,8 @@ export async function postGenerateImg(
   try {
     const payload = {
       prompt: prompt,
-      n: numImgs ? numImgs : config.openAi.imageGen.sessionDefault.numImages,
-      size: imgSize ? imgSize : config.openAi.imageGen.sessionDefault.imgSize,
+      n: numImgs ? numImgs : config.openAi.dalle.sessionDefault.numImages,
+      size: imgSize ? imgSize : config.openAi.dalle.sessionDefault.imgSize,
     };
     const response = await openai.createImage(payload as CreateImageRequest);
     return response.data.data;
@@ -71,11 +71,11 @@ export async function alterGeneratedImg(
       let response;
       const size = imgSize
         ? imgSize
-        : config.openAi.imageGen.sessionDefault.imgSize;
+        : config.openAi.dalle.sessionDefault.imgSize;
       if (isNaN(+prompt)) {
         const n = numImages
           ? numImages
-          : config.openAi.imageGen.sessionDefault.numImages;
+          : config.openAi.dalle.sessionDefault.numImages;
 
         response = await openai.createImageEdit(
           imageData.file,
@@ -87,7 +87,7 @@ export async function alterGeneratedImg(
       } else {
         const size = imgSize
           ? imgSize
-          : config.openAi.imageGen.sessionDefault.imgSize;
+          : config.openAi.dalle.sessionDefault.imgSize;
         const n = parseInt(prompt);
         response = await openai.createImageVariation(
           imageData.file,
@@ -115,9 +115,9 @@ export async function chatCompilation(
     const payload = {
       model: model,
       max_tokens: limitTokens
-        ? config.openAi.imageGen.completions.maxTokens
+        ? config.openAi.dalle.completions.maxTokens
         : undefined,
-      temperature: config.openAi.imageGen.completions.temperature,
+      temperature: config.openAi.dalle.completions.temperature,
       messages: conversation,
     };
     const response = await openai.createChatCompletion(
@@ -148,6 +148,7 @@ export const streamChatCompletion = async (
   conversation: ChatConversation[],
   ctx: OnMessageContext | OnCallBackQueryData,
   model = config.openAi.chatGpt.model,
+  msgId: number,
   limitTokens = true
 ): Promise<string> => {
   try {
@@ -155,21 +156,21 @@ export const streamChatCompletion = async (
       model: model,
       max_tokens: 800,
       // limitTokens
-      //   ? config.openAi.imageGen.completions.maxTokens
+      //   ? config.openAi.dalle.completions.maxTokens
       //   : undefined,
-      temperature: config.openAi.imageGen.completions.temperature,
+      temperature: config.openAi.dalle.completions.temperature,
       messages: conversation,
       stream: true,
     };
     let completion = "";
-    let msgId = (
-      await ctx.reply(
-        `_${ctx.session.openAi.chatGpt.model.toLocaleUpperCase()}_`,
-        {
-          parse_mode: "Markdown",
-        }
-      )
-    ).message_id;
+    // let msgId = (
+    //   await ctx.reply(
+    //     `_${ctx.session.openAi.chatGpt.model.toLocaleUpperCase()}_`,
+    //     {
+    //       parse_mode: "Markdown",
+    //     }
+    //   )
+    // ).message_id;
     // ctx.chatAction = "typing";
     return new Promise<string>(async (resolve, reject) => {
       const res = await openai.createChatCompletion(
@@ -186,7 +187,7 @@ export const streamChatCompletion = async (
         for (const line of lines) {
           const message = line.replace(/^data: /, "");
           if (message === "[DONE]") {
-            ctx.chatAction = null;
+            // ctx.chatAction = null;
             completion = completion.replaceAll("..", "");
             if (!completion.endsWith(".")) {
               if (msgId === 0) {

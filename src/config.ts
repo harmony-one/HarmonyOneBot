@@ -23,7 +23,7 @@ export default {
     checkReadable: Boolean(process.env.QRBOT_CHECK_READABLE) || false,
   },
   openAi: {
-    imageGen: {
+    dalle: {
       isEnabled: Boolean(parseInt(process.env.IMAGE_GEN_ENABLED || "1")),
       telegramFileUrl: "https://api.telegram.org/file/bot",
       completions: {
@@ -37,6 +37,7 @@ export default {
             parseInt(process.env.OPENAI_TEMPERATURE)) ||
           0.8,
       },
+      defaultPrompt: 'beautiful waterfall in a lush jungle, with sunlight shining through the trees',
       sessionDefault: {
         numImages: 1,
         imgSize: "1024x1024",

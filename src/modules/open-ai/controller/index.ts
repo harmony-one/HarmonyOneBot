@@ -41,7 +41,7 @@ const logger = pino({
   },
 });
 
-export const imgGen = async (data: ImageGenPayload) => {
+export const imgGen = async (data: ImageGenPayload, ctx?: any) => {
   const { chatId, prompt, numImages, imgSize } = data;
   try {
     // bot.api.sendMessage(chatId, "generating the output...");
@@ -50,8 +50,8 @@ export const imgGen = async (data: ImageGenPayload) => {
       bot.api.sendPhoto(chatId, img.url);
     });
     return true;
-  } catch (e) {
-    logger.error("/gen Error", e);
+  } catch (e: any) {
+    logger.error("/gen Error", e.toString());
     bot.api.sendMessage(
       chatId,
       "There was an error while generating the image"
@@ -115,12 +115,18 @@ export const alterImg = async (data: ImageGenPayload) => {
 export const promptGen = async (data: ChatGptPayload) => {
   const { conversation, ctx, model } = data;
   try {
+    let msgId = (
+      await ctx.reply('...')
+    ).message_id;
+    // ctx.chatAction = 'typing'
     const completion = await streamChatCompletion(
       conversation!,
       ctx,
       model,
+      msgId,
       false
     );
+    // ctx.chatAction = null
     if (completion) {
       const prompt = conversation[conversation.length - 1].content;
       const promptTokens = getTokenNumber(prompt);
