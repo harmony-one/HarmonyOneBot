@@ -104,7 +104,7 @@ export const menuText = {
 
 
 export const NEGATIVE_PROMPT = {
-  image: "(KHFB, AuroraNegative),(Worst Quality, Low Quality:1.4), ugly, tiling, poorly drawn hands, poorly drawn feet, poorly drawn face, out of frame, extra limbs, disfigured, deformed, body out of frame, bad anatomy, watermark, signature, cut off, low contrast, underexposed, overexposed, bad art, beginner, amateur, distorted face, blurry, draft, grainy, boobs, penis, nudity, mohammad, prophet mohammad, sex, porn, sexual"
+  negative: "(KHFB, AuroraNegative),(Worst Quality, Low Quality:1.4), ugly, tiling, poorly drawn hands, poorly drawn feet, poorly drawn face, out of frame, extra limbs, disfigured, deformed, body out of frame, bad anatomy, watermark, signature, cut off, low contrast, underexposed, overexposed, bad art, beginner, amateur, distorted face, blurry, draft, grainy, boobs, penis, nudity, mohammad, prophet mohammad, sex, porn, sexual"
 }
 
 export const TERMS = {
@@ -147,6 +147,10 @@ export const SUPPORT = {
 
 export const FEEDBACK = {
   text: `Please reach out to @theofandrich to share feedback.`
+}
+
+export const LOVE = {
+  text: `What is Love?`
 }
 // 0x742c4788CC47A94cf260abc474E2Fa45695a79Cd
 

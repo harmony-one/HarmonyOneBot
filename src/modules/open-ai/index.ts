@@ -11,6 +11,7 @@ import { alterImg, imgGen, imgGenEnhanced, promptGen } from "./controller";
 import { Logger, pino } from "pino";
 import { appText } from "./utils/text";
 import { chatService } from "../../database/services";
+import { ChatGPTModelsEnum } from "./types";
 
 export const SupportedCommands = {
   // chat: {
@@ -20,6 +21,11 @@ export const SupportedCommands = {
   // },
   ask: {
     name: "ask",
+    groupParams: ">0",
+    privateParams: ">0",
+  },
+  ask35: {
+    name: "ask35",
     groupParams: ">0",
     privateParams: ">0",
   },
@@ -35,11 +41,16 @@ export const SupportedCommands = {
   },
   last: {
     name: "last",
-    groupParams: "=0",
-    privateParams: "=0",
+    groupParams: ">0",
+    privateParams: ">0",
   },
   dalle: {
     name: "DALLE",
+    groupParams: ">1",
+    privateParams: ">1",
+  },
+  dalleLC: {
+    name: "dalle",
     groupParams: ">1",
     privateParams: ">1",
   },
@@ -50,8 +61,8 @@ export const SupportedCommands = {
   },
   end: {
     name: "stop",
-    groupParams: "=0",
-    privateParams: "=0",
+    groupParams: ">0",
+    privateParams: ">0",
   },
 };
 
@@ -164,7 +175,7 @@ export class OpenAIBot {
     // ) {
     //   return 0;
     // }
-    if (ctx.hasCommand(SupportedCommands.dalle.name)) {
+    if (ctx.hasCommand(SupportedCommands.dalle.name) || ctx.hasCommand(SupportedCommands.dalleLC.name)) {
       const imageNumber = ctx.session.openAi.imageGen.numImages;
       const imageSize = ctx.session.openAi.imageGen.imgSize;
       const model = getDalleModel(imageSize);
@@ -219,6 +230,13 @@ export class OpenAIBot {
     // }
 
     if (ctx.hasCommand(SupportedCommands.ask.name)) {
+      ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_4
+      await this.onChat(ctx);
+      return;
+    }
+
+    if (ctx.hasCommand(SupportedCommands.ask35.name)) {
+      ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_35_TURBO
       await this.onChat(ctx);
       return;
     }
@@ -233,7 +251,7 @@ export class OpenAIBot {
       return;
     }
 
-    if (ctx.hasCommand(SupportedCommands.dalle.name)) {
+    if (ctx.hasCommand(SupportedCommands.dalle.name) || ctx.hasCommand(SupportedCommands.dalleLC.name)) {
       this.onGenImgCmd(ctx);
       return;
     }
@@ -275,6 +293,7 @@ export class OpenAIBot {
         ctx.reply("Error: Missing prompt");
         return;
       }
+      ctx.chatAction = 'upload_photo'
       const payload = {
         chatId: ctx.chat?.id!,
         prompt: ctx.match as string,
@@ -355,7 +374,9 @@ export class OpenAIBot {
           await ctx.reply(msg, { parse_mode: "Markdown" });
           return;
         }
-
+        // if (chatConversation.length === 0) {
+        //   ctx.reply(`_Using model ${ctx.session.openAi.chatGpt.model}_`,{ parse_mode: "Markdown" })
+        // }
         chatConversation.push({
           role: "user",
           content: `${this.hasPrefix(prompt) ? prompt.slice(1) : prompt}.`,
@@ -383,7 +404,7 @@ export class OpenAIBot {
       }
     } catch (error: any) {
       ctx.chatAction = null;
-      this.logger.error(error.toString());
+      this.logger.error(`onChat: ${error.toString()}`);
       await ctx.reply("Error handling your request");
     }
   }
@@ -402,6 +423,7 @@ export class OpenAIBot {
   }
 
   async onEnd(ctx: OnMessageContext | OnCallBackQueryData) {
+    this.logger.info('/stop command')
     ctx.session.openAi.chatGpt.chatConversation = [];
     const usage = ctx.session.openAi.chatGpt.usage;
     const totalPrice = ctx.session.openAi.chatGpt.price;
@@ -409,12 +431,13 @@ export class OpenAIBot {
       .getPriceInONE(totalPrice)
       .dividedBy(10 ** 18)
       .toFixed(2);
-    ctx.reply(
-      `${appText.gptChatEnd} \n\n*${onePrice} ONE* Spent (${usage} tokens)`,
-      {
-        parse_mode: "Markdown",
-      }
-    );
+    // ctx.reply(
+    //   `${appText.gptChatEnd} \n\n*${onePrice} ONE* Spent (${usage} tokens)`,
+    //   {
+    //     parse_mode: "Markdown",
+    //   }
+    // );
+
     ctx.session.openAi.chatGpt.usage = 0;
     ctx.session.openAi.chatGpt.price = 0;
   }

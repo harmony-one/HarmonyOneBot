@@ -73,14 +73,15 @@ export class BotPayments {
     }
   }
 
-  public getPriceInONE(usdAmount: number) {
+  public getPriceInONE(centsUsd: number) {
     const amount = this.ONERate
-      ? usdAmount / 100 / this.ONERate
+      ? centsUsd / 100 / this.ONERate
       : 0;
-    return bn(amount).multipliedBy(10**18)
+    return bn(Math.round(amount * 10**18))
   }
 
   public toONE(amount: BigNumber, roundCeil = true) {
+    console.log(amount, amount.toFixed())
     const value = this.web3.utils.fromWei(amount.toFixed(), 'ether')
     if(roundCeil) {
       return Math.ceil(+value)
@@ -346,11 +347,12 @@ export class BotPayments {
         const freeCredits = await chatService.getBalance(accountId)
         const addressBalance = await this.getAddressBalance(account.address);
         const balance = addressBalance.plus(freeCredits)
+        console.log('balance',balance)
         const balanceOne = this.toONE(balance, false);
         ctx.reply(
           `Your credits in ONE tokens: ${balanceOne.toFixed(2)}
 
-Send to: \`${account.address}\``,
+To recharge: \`${account.address}\``,
           {
             parse_mode: "Markdown",
           }

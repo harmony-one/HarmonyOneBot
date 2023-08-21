@@ -26,7 +26,7 @@ import { WalletConnect } from "./modules/walletconnect";
 import { BotPayments } from "./modules/payment";
 import { BotSchedule } from "./modules/schedule";
 import config from "./config";
-import { commandsHelpText, TERMS, SUPPORT, FEEDBACK } from "./constants";
+import { commandsHelpText, TERMS, SUPPORT, FEEDBACK, LOVE } from "./constants";
 import {chatService} from "./database/services";
 import {AppDataSource} from "./database/datasource";
 import { text } from "stream/consumers";
@@ -113,8 +113,9 @@ bot.on('message:new_chat_members:me', (ctx) => {
     }
 
     const tgUserId = ctx.message.from.id;
+    const tgUsername = ctx.message.from.username || '';
 
-    await chatService.initChat({tgUserId, accountId});
+    await chatService.initChat({tgUserId, accountId, tgUsername});
   }
 
   createChat();
@@ -125,6 +126,7 @@ const assignFreeCredits = async (ctx: OnMessageContext) => {
 
   const accountId = payments.getAccountId(ctx as OnMessageContext)
   let tgUserId = accountId;
+  let tgUsername = ''
 
   const isCreditsAssigned = await chatService.isCreditsAssigned(accountId)
   if(isCreditsAssigned) {
@@ -137,10 +139,11 @@ const assignFreeCredits = async (ctx: OnMessageContext) => {
       const creator = members.find((member) => member.status === 'creator')
       if (creator) {
         tgUserId = creator.user.id;
+        tgUsername = creator.user.username || ''
       }
     }
 
-    await chatService.initChat({accountId, tgUserId});
+    await chatService.initChat({accountId, tgUserId, tgUsername});
     // logger.info(`credits transferred to accountId ${accountId} chat ${chat.type} ${chat.id}`)
   } catch (e) {
     logger.error(`Cannot check account ${accountId} credits: ${(e as Error).message}`)
@@ -209,7 +212,7 @@ const onMessage = async (ctx: OnMessageContext) => {
         }
         return;
       } else {
-        ctx.reply("Error: Missing prompt");
+        // ctx.reply("Error: Missing prompt");
         return;
       }
     } else {
@@ -232,7 +235,7 @@ const onMessage = async (ctx: OnMessageContext) => {
       }
       return;
     } else {
-      ctx.reply("Error: Missing prompt");
+      // ctx.reply("Error: Missing prompt");
       return;
     }
   }
@@ -335,6 +338,13 @@ bot.command('feedback', (ctx) => {
   })
 })
 
+bot.command('love', (ctx) => {
+  ctx.reply(LOVE.text, {
+    parse_mode: "Markdown",
+    disable_web_page_preview: true,
+  })
+})
+
 // bot.command("menu", async (ctx) => {
 //   await ctx.reply(menuText.mainMenu.helpText, {
 //     parse_mode: "Markdown",
@@ -350,6 +360,7 @@ bot.catch((err) => {
   logger.error(`Error while handling update ${ctx.update.update_id}:`);
   const e = err.error;
   if (e instanceof GrammyError) {
+    console.log(e)
     logger.error("Error in request:", e.description);
   } else if (e instanceof HttpError) {
     logger.error("Could not contact Telegram:", e);
