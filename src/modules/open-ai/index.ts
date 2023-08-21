@@ -231,23 +231,23 @@ export class OpenAIBot {
 
     if (ctx.hasCommand(SupportedCommands.ask.name)) {
       ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_4
-      await this.onChat(ctx);
+      this.onChat(ctx);
       return;
     }
 
     if (ctx.hasCommand(SupportedCommands.ask35.name)) {
       ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_35_TURBO
-      await this.onChat(ctx);
+      this.onChat(ctx);
       return;
     }
 
     if (ctx.hasCommand(SupportedCommands.gpt4.name)) {
-      await this.onChat(ctx);
+      this.onChat(ctx);
       return;
     }
 
     if (ctx.hasCommand(SupportedCommands.gpt.name)) {
-      await this.onChat(ctx);
+      this.onChat(ctx);
       return;
     }
 
