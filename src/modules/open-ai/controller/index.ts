@@ -1,5 +1,4 @@
 import { pino } from "pino";
-import { bot } from "../../../bot";
 import {
   ChatConversation,
   OnCallBackQueryData,
@@ -41,32 +40,35 @@ const logger = pino({
   },
 });
 
-export const imgGen = async (data: ImageGenPayload) => {
+export const imgGen = async (
+  data: ImageGenPayload,
+  ctx: OnMessageContext | OnCallBackQueryData
+) => {
   const { chatId, prompt, numImages, imgSize } = data;
   try {
-    // bot.api.sendMessage(chatId, "generating the output...");
     const imgs = await postGenerateImg(prompt, numImages, imgSize);
-    imgs.map((img: any) => {
-      bot.api.sendPhoto(chatId, img.url);
+    imgs.map(async (img: any) => {
+      await ctx.replyWithPhoto(img.url, {
+        caption: `/DALLE ${prompt}`,
+      });
     });
     return true;
-  } catch (e) {
-    logger.error("/gen Error", e);
-    bot.api.sendMessage(
-      chatId,
-      "There was an error while generating the image"
-    );
+  } catch (e: any) {
+    logger.error("/gen Error", e.toString());
+    ctx.reply("There was an error while generating the image");
     return false;
   }
 };
 
-export const imgGenEnhanced = async (data: ImageGenPayload) => {
+export const imgGenEnhanced = async (
+  data: ImageGenPayload,
+  ctx: OnMessageContext | OnCallBackQueryData
+) => {
   const { chatId, prompt, numImages, imgSize, model } = data;
   try {
     const upgratedPrompt = await improvePrompt(prompt, model!);
     if (upgratedPrompt) {
-      bot.api.sendMessage(
-        chatId,
+      ctx.reply(
         `The following description was added to your prompt: ${upgratedPrompt}`
       );
     }
@@ -76,38 +78,42 @@ export const imgGenEnhanced = async (data: ImageGenPayload) => {
       numImages,
       imgSize
     );
-    imgs.map((img: any) => {
-      bot.api.sendPhoto(chatId, img.url);
+    imgs.map(async (img: any) => {
+      await ctx.replyWithPhoto(img.url, {
+        caption: `/DALLE ${upgratedPrompt || prompt}`,
+      });
     });
     return true;
   } catch (e) {
-    bot.api.sendMessage(
-      chatId,
-      `There was an error while generating the image: ${e}`
-    );
+    ctx.reply(`There was an error while generating the image: ${e}`);
     return false;
   }
 };
 
-export const alterImg = async (data: ImageGenPayload) => {
+export const alterImg = async (
+  data: ImageGenPayload,
+  ctx: OnMessageContext | OnCallBackQueryData
+) => {
   const { chatId, prompt, numImages, imgSize, filePath } = data;
   try {
+    ctx.chatAction = "upload_photo";
     const imgs = await alterGeneratedImg(
       chatId,
       prompt!,
       filePath!,
+      ctx,
       numImages!,
       imgSize!
     );
-    imgs!.map((img: any) => {
-      bot.api.sendPhoto(chatId, img.url);
-    });
+    if (imgs) {
+      imgs!.map(async (img: any) => {
+        ctx.replyWithPhoto(img.url);
+      });
+    }
+    ctx.chatAction = null;
   } catch (e) {
     logger.error("alterImg Error", e);
-    bot.api.sendMessage(
-      chatId,
-      "There was an error while generating the image"
-    );
+    ctx.reply("There was an error while generating the image");
     return false;
   }
 };
@@ -115,33 +121,39 @@ export const alterImg = async (data: ImageGenPayload) => {
 export const promptGen = async (data: ChatGptPayload) => {
   const { conversation, ctx, model } = data;
   try {
+    let msgId = (await ctx.reply("...")).message_id;
+    ctx.chatAction = "typing";
     const completion = await streamChatCompletion(
       conversation!,
       ctx,
       model,
-      false
+      msgId,
+      true // telegram messages has a char limit
     );
+    ctx.chatAction = null;
     if (completion) {
       const prompt = conversation[conversation.length - 1].content;
       const promptTokens = getTokenNumber(prompt);
       const completionTokens = getTokenNumber(completion);
       const modelPrice = getChatModel(model);
-      const price = getChatModelPrice(
-        modelPrice,
-        true,
-        promptTokens,
-        completionTokens
-      ) * config.openAi.chatGpt.priceAdjustment;
-      logger.info(`"${prompt}" | tokens: ${promptTokens + completionTokens} | ${modelPrice.name} | price: ${price}`)
+      const price =
+        getChatModelPrice(modelPrice, true, promptTokens, completionTokens) *
+        config.openAi.chatGpt.priceAdjustment;
+      logger.info(
+        `"${prompt}" | tokens: ${promptTokens + completionTokens} | ${
+          modelPrice.name
+        } | price: ${price}`
+      );
       conversation.push({ content: completion, role: "system" });
       ctx.session.openAi.chatGpt.usage += promptTokens + completionTokens;
       ctx.session.openAi.chatGpt.price += price;
       ctx.session.openAi.chatGpt.chatConversation = [...conversation!];
-      return price 
+      return price;
     }
-    return 0
+    return 0;
   } catch (e: any) {
-    logger.error(`promptGen Error ${e.toString()}`);
+    ctx.chatAction = null;
+    logger.error(`promptGen Error: ${e.toString()}`);
     throw e;
   }
 };
