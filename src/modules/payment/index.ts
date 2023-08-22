@@ -147,7 +147,14 @@ export class BotPayments {
       return tx;
     } catch (e) {
       const message = (e as Error).message || ''
-      if(message && message.includes('replacement transaction underpriced')) {
+      if(message &&
+        (message.includes('replacement transaction underpriced')
+          || message.includes('was not mined within')
+          || message.includes('Failed to check for transaction receipt')
+        )
+      ) {
+        // skip this error
+        this.logger.warn(`Skip error: ${message}`)
       } else {
         throw new Error(message)
       }
