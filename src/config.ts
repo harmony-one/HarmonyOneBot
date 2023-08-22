@@ -52,6 +52,7 @@ export default {
         ? parseInt(process.env.PRICE_ADJUSTMENT)
         : 2,
       isEnabled: Boolean(parseInt(process.env.CHAT_GPT_ENABLED || "1")),
+      isTypingEnabled: Boolean(parseInt(process.env.TYPING_STATUS_ENABLED || "1")),
       //hard coded gpt-4
       model: "gpt-4", // process.env.OPENAI_MODEL ||
       chatPrefix: process.env.GROUP_PREFIX
