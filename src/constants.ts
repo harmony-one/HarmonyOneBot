@@ -103,7 +103,7 @@ export const menuText = {
 };
 
 export const MEMO = {
-  text: `Send voice recording (.m4a) to receive transcript and summary`
+  text: `Send voice messages via microphone button on bottom right`
 }
 
 
