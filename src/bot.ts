@@ -395,7 +395,9 @@ app.use(express.static("./public")); // Public directory, used in voice-memo bot
 
 app.listen(config.port, () => {
   logger.info(`Bot listening on port ${config.port}`);
-  bot.start();
+  bot.start({
+    drop_pending_updates: true
+  });
 
   AppDataSource.initialize();
   // bot.start({

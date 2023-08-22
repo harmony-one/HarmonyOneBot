@@ -163,90 +163,25 @@ export const streamChatCompletion = async (
           stream: true,
         });
         let wordCount = 0;
+        
         for await (const part of stream) {
-          console.log(part.choices[0]?.delta?.content || '');
-          completion += part.choices[0]?.delta?.content
-          if (part.choices[0]?.delta?.content === ".") {
-            if (msgId === 0) {
-              // msgId = (await ctx.reply(completion)).message_id;
-              // ctx.chatAction = "typing";
-            } else if (wordCount > 20) {
+          wordCount++;
+          const chunck = part.choices[0]?.delta?.content ? part.choices[0]?.delta?.content : ''
+          //console.log(chunck || '');
+          completion += chunck
+          if (chunck === "." && wordCount > 20) {
               completion = completion.replaceAll("..", "");
               completion += "..";
               wordCount = 0;
               ctx.api
                 .editMessageText(ctx.chat?.id!, msgId, completion)
                 .catch((e: any) => console.log(e));
-            }
           }
         }
-
-        // const res = await openai.chat.completions.create(
-        //   payload as OpenAI.Chat.CompletionCreateParamsNonStreaming,
-        //   { responseType: "stream" }
-        // );
-        // let wordCount = 0;
-        //@ts-ignore
-        // res.data.on("data", async (data: any) => {
-        //   const lines = data
-        //     .toString()
-        //     .split("\n")
-        //     .filter((line: string) => line.trim() !== "");
-        //   for (const line of lines) {
-        //     const message = line.replace(/^data: /, "");
-        //     if (message === "[DONE]") {
-        //       completion = completion.replaceAll("..", "");
-        //       if (!completion.endsWith(".")) {
-        //         if (msgId === 0) {
-        //           msgId = (await ctx.reply(completion)).message_id;
-        //           resolve(completion);
-        //           return;
-        //         }
-        //       }
-        //       await ctx.api
-        //         .editMessageText(ctx.chat?.id!, msgId, completion)
-        //         .catch((e: any) => console.log(e));
-        //       // const msgIdEnd = (
-        //       //   await ctx.reply(`_done_`, {
-        //       //     // with ${ctx.session.openAi.chatGpt.model.toLocaleUpperCase()}
-        //       //     parse_mode: "Markdown",
-        //       //   })
-        //       // ).message_id;
-        //       // ctx.api.deleteMessage(ctx.chat?.id!, msgId); // msgIdEnd);
-        //       // ctx.reply(completion);
-        //       resolve(completion);
-        //       return;
-        //     }
-        //     wordCount++;
-        //     try {
-        //       const parsed = JSON.parse(message);
-        //       completion +=
-        //         parsed.choices[0].delta.content !== undefined
-        //           ? parsed.choices[0].delta.content
-        //           : "";
-        //       if (parsed.choices[0].delta.content === ".") {
-        //         if (msgId === 0) {
-        //           // msgId = (await ctx.reply(completion)).message_id;
-        //           // ctx.chatAction = "typing";
-        //         } else if (wordCount > 20) {
-        //           completion = completion.replaceAll("..", "");
-        //           completion += "..";
-        //           wordCount = 0;
-        //           ctx.api
-        //             .editMessageText(ctx.chat?.id!, msgId, completion)
-        //             .catch((e: any) => console.log(e));
-        //         }
-        //       }
-        //     } catch (error) {
-        //       logger.error(
-        //         "Could not JSON parse stream message",
-        //         message,
-        //         error
-        //       );
-        //       // reject(`An error occurred during OpenAI request: ${error}`);
-        //     }
-        //   }
-        // });
+        completion = completion.replaceAll("..", "");
+        ctx.api
+        .editMessageText(ctx.chat?.id!, msgId, completion)
+        .catch((e: any) => console.log(e));
       } catch (error) {
         reject(
           `streamChatCompletion: An error occurred during OpenAI request: ${error}`
