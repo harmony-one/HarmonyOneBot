@@ -230,19 +230,19 @@ export class OpenAIBot {
     // }
 
     if (ctx.message!.text === "/ask harmony.one/dear") {
-      await ctx.reply(askTemplates.dear);
+      ctx.reply(askTemplates.dear);
       return;
     }
 
     if (ctx.hasCommand(SupportedCommands.ask.name)) {
       ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_4;
-      await this.onChat(ctx);
+      this.onChat(ctx);
       return;
     }
 
     if (ctx.hasCommand(SupportedCommands.ask35.name)) {
       ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_35_TURBO;
-      await this.onChat(ctx);
+      this.onChat(ctx);
       return;
     }
 

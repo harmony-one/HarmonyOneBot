@@ -51,15 +51,14 @@ bot.api.config.use(autoRetry());
 
 bot.use(
   limit({
-    // Allow only 20 message to be handled every 1 minute.
-    timeFrame: 60000,
-    limit: 20,
+    // Allow only 3 message to be handled every 3 seconds.
+    timeFrame: 3000,
+    limit: 3,
 
     // This is called when the limit is exceeded.
     onLimitExceeded: async (ctx) => {
       // await ctx.reply("Please refrain from sending too many requests")
       logger.error(`@${ctx.from?.username} has exceeded the message limit`);
-      logger.error(`onLimitExceeded: ${ctx.message?.text}`)
       // await ctx.reply("");
     },
 
@@ -395,7 +394,9 @@ app.use(express.static("./public")); // Public directory, used in voice-memo bot
 
 app.listen(config.port, () => {
   logger.info(`Bot listening on port ${config.port}`);
-  bot.start();
+  bot.start({
+    drop_pending_updates: true
+  });
 
   AppDataSource.initialize();
   // bot.start({
