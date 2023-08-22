@@ -1,8 +1,9 @@
-import { ComfyClient } from '../qrcode/comfy/ComfyClient';
-import config from "../../config";
-import { sleep, waitingExecute } from './utils';
+import { ComfyClient } from '../../qrcode/comfy/ComfyClient';
+import config from "../../../config";
+import { sleep } from '../utils';
 import { buildImgPrompt } from './text_to_img_config';
 import { MODELS_CONFIGS } from './models-config';
+import { waitingExecute } from './helpers';
 
 export type Txt2ImgOptions = {
     hires?: {
@@ -48,7 +49,7 @@ export class Client {
     constructor() { }
 
     txt2img = async (options: Txt2ImgOptions, serverConfig?: { host: string, wsHost: string }): Promise<Txt2ImgResponse> => {
-        console.log('txt2img', options);
+        // console.log('txt2img', options);
 
         const comfyClient = new ComfyClient({
             host: config.comfyHost,

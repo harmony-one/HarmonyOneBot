@@ -15,7 +15,8 @@ export default {
   comfyWsHost2: process.env.COMFY_WS_HOST2 || "",
   stableDiffusion: {
     stableDiffusionHost: process.env.SD_HOST || "",
-    imageDefaultMessage: 'glimpses of a herd of wild elephants crossing a savanna',
+    // imageDefaultMessage: 'glimpses of a herd of wild elephants crossing a savanna',
+    imageDefaultMessage: 'a young woman, street, laughing, ponytails, dramatic, complex background, cinematic',
     imagesDefaultMessage: 'vintage hot rod with custom flame paint job',
   },
   qrBot: {
