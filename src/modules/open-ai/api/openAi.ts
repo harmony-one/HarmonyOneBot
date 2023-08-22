@@ -147,13 +147,6 @@ export const streamChatCompletion = async (
   limitTokens = true
 ): Promise<string> => {
   try {
-    const payload = {
-      model: model,
-      max_tokens: limitTokens ? config.openAi.maxTokens : undefined,
-      temperature: config.openAi.dalle.completions.temperature,
-      messages: conversation,
-      stream: true,
-    };
     let completion = "";
     return new Promise<string>(async (resolve, reject) => {
       try {
@@ -161,7 +154,9 @@ export const streamChatCompletion = async (
           model: model,
           messages:
             conversation as OpenAI.Chat.Completions.CreateChatCompletionRequestMessage[],
-          stream: true,
+          stream: true, 
+          max_tokens: limitTokens ? config.openAi.maxTokens : undefined,
+          temperature: config.openAi.dalle.completions.temperature,
         });
         let wordCount = 0;
 

@@ -90,7 +90,7 @@ export class OpenAIBot {
     const hasCommand = ctx.hasCommand(
       Object.values(SupportedCommands).map((command) => command.name)
     );
-    const hasReply = this.isSupportedImageReply(ctx);
+    const hasReply = false //this.isSupportedImageReply(ctx);
     const hasGroupPrefix = this.hasPrefix(ctx.message?.text || "");
     if (hasGroupPrefix) {
       return true;
@@ -241,7 +241,7 @@ export class OpenAIBot {
     }
 
     if (ctx.hasCommand(SupportedCommands.ask35.name)) {
-      ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_35_TURBO;
+      ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_35_TURBO_16K;
       await this.onChat(ctx);
       return;
     }
