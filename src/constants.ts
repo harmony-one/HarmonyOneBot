@@ -102,6 +102,10 @@ export const menuText = {
   },
 };
 
+export const MEMO = {
+  text: `Send voice recording (.m4a) to receive transcript and summary`
+}
+
 
 export const NEGATIVE_PROMPT = {
   negative: "(KHFB, AuroraNegative),(Worst Quality, Low Quality:1.4), ugly, tiling, poorly drawn hands, poorly drawn feet, poorly drawn face, out of frame, extra limbs, disfigured, deformed, body out of frame, bad anatomy, watermark, signature, cut off, low contrast, underexposed, overexposed, bad art, beginner, amateur, distorted face, blurry, draft, grainy, boobs, penis, nudity, mohammad, prophet mohammad, sex, porn, sexual"
