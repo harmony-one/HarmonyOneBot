@@ -51,7 +51,7 @@ bot.api.config.use(autoRetry());
 
 bot.use(
   limit({
-    // Allow only 1 message to be handled every 0.5 seconds.
+    // Allow only 3 message to be handled every 3 seconds.
     timeFrame: 3000,
     limit: 3,
 
@@ -59,7 +59,6 @@ bot.use(
     onLimitExceeded: async (ctx) => {
       // await ctx.reply("Please refrain from sending too many requests")
       logger.error(`@${ctx.from?.username} has exceeded the message limit`);
-      logger.error(`onLimitExceeded: ${ctx.message?.text}`)
       // await ctx.reply("");
     },
 
