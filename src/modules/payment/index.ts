@@ -150,6 +150,7 @@ export class BotPayments {
       if(message &&
         (message.includes('replacement transaction underpriced')
           || message.includes('was not mined within')
+          || message.includes('Failed to check for transaction receipt')
         )
       ) {
         // skip this error
