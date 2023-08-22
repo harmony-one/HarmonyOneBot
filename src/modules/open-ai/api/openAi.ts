@@ -113,9 +113,7 @@ export async function chatCompilation(
   try {
     const payload = {
       model: model,
-      max_tokens: limitTokens
-        ? config.openAi.maxTokens
-        : undefined,
+      max_tokens: limitTokens ? config.openAi.maxTokens : undefined,
       temperature: config.openAi.dalle.completions.temperature,
       messages: conversation,
     };
@@ -153,9 +151,7 @@ export const streamChatCompletion = async (
   try {
     const payload = {
       model: model,
-      max_tokens: limitTokens
-        ? config.openAi.maxTokens
-        : undefined,
+      max_tokens: limitTokens ? config.openAi.maxTokens : undefined,
       temperature: config.openAi.dalle.completions.temperature,
       messages: conversation,
       stream: true,
@@ -199,25 +195,33 @@ export const streamChatCompletion = async (
               resolve(completion);
               return;
             }
-
             wordCount++;
-            const parsed = JSON.parse(message);
-            completion +=
-              parsed.choices[0].delta.content !== undefined
-                ? parsed.choices[0].delta.content
-                : "";
-            if (parsed.choices[0].delta.content === ".") {
-              if (msgId === 0) {
-                // msgId = (await ctx.reply(completion)).message_id;
-                // ctx.chatAction = "typing";
-              } else if (wordCount > 20) {
-                completion = completion.replaceAll("..", "");
-                completion += "..";
-                wordCount = 0;
-                ctx.api
-                  .editMessageText(ctx.chat?.id!, msgId, completion)
-                  .catch((e: any) => console.log(e));
+            try {
+              const parsed = JSON.parse(message);
+              completion +=
+                parsed.choices[0].delta.content !== undefined
+                  ? parsed.choices[0].delta.content
+                  : "";
+              if (parsed.choices[0].delta.content === ".") {
+                if (msgId === 0) {
+                  // msgId = (await ctx.reply(completion)).message_id;
+                  // ctx.chatAction = "typing";
+                } else if (wordCount > 20) {
+                  completion = completion.replaceAll("..", "");
+                  completion += "..";
+                  wordCount = 0;
+                  ctx.api
+                    .editMessageText(ctx.chat?.id!, msgId, completion)
+                    .catch((e: any) => console.log(e));
+                }
               }
+            } catch (error) {
+              logger.error(
+                "Could not JSON parse stream message",
+                message,
+                error
+              );
+              // reject(`An error occurred during OpenAI request: ${error}`);
             }
           }
         });

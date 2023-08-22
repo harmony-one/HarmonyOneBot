@@ -59,6 +59,7 @@ bot.use(
     onLimitExceeded: async (ctx) => {
       // await ctx.reply("Please refrain from sending too many requests")
       logger.error(`@${ctx.from?.username} has exceeded the message limit`);
+      logger.error(`onLimitExceeded: ${ctx.message?.text}`)
       // await ctx.reply("");
     },
 
@@ -373,7 +374,7 @@ bot.catch((err) => {
   logger.error(`Error while handling update ${ctx.update.update_id}:`);
   const e = err.error;
   if (e instanceof GrammyError) {
-    console.log(e);
+    console.log('GrammyERROR:', e);
     logger.error("Error in request:", e.description);
     logger.error(`Error in message: ${JSON.stringify(ctx.message)}`)
   } else if (e instanceof HttpError) {

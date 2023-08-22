@@ -133,7 +133,6 @@ export const promptGen = async (data: ChatGptPayload) => {
       msgId,
       true // telegram messages has a char limit
     );
-    ctx.chatAction = null;
     if (completion) {
       const prompt = conversation[conversation.length - 1].content;
       const promptTokens = getTokenNumber(prompt);
@@ -143,9 +142,9 @@ export const promptGen = async (data: ChatGptPayload) => {
         getChatModelPrice(modelPrice, true, promptTokens, completionTokens) *
         config.openAi.chatGpt.priceAdjustment;
       logger.info(
-        `"${prompt}" | tokens: ${promptTokens + completionTokens} | ${
+        `streamChatCompletion result = tokens: ${promptTokens + completionTokens} | ${
           modelPrice.name
-        } | price: ${price}`
+        } | price: ${price}¢`
       );
       conversation.push({ content: completion, role: "system" });
       ctx.session.openAi.chatGpt.usage += promptTokens + completionTokens;
