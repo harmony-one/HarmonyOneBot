@@ -7,8 +7,8 @@ import {
 import {
   improvePrompt,
   postGenerateImg,
-  alterGeneratedImg,
-  streamChatCompletion,
+  // alterGeneratedImg,
+  // streamChatCompletion,
   getTokenNumber,
   getChatModel,
   getChatModelPrice,
@@ -97,19 +97,19 @@ export const alterImg = async (
   const { chatId, prompt, numImages, imgSize, filePath } = data;
   try {
     ctx.chatAction = "upload_photo";
-    const imgs = await alterGeneratedImg(
-      chatId,
-      prompt!,
-      filePath!,
-      ctx,
-      numImages!,
-      imgSize!
-    );
-    if (imgs) {
-      imgs!.map(async (img: any) => {
-        ctx.replyWithPhoto(img.url);
-      });
-    }
+    // const imgs = await alterGeneratedImg(
+    //   chatId,
+    //   prompt!,
+    //   filePath!,
+    //   ctx,
+    //   numImages!,
+    //   imgSize!
+    // );
+    // if (imgs) {
+    //   imgs!.map(async (img: any) => {
+    //     ctx.replyWithPhoto(img.url);
+    //   });
+    // }
     ctx.chatAction = null;
   } catch (e) {
     logger.error("alterImg Error", e);
@@ -126,32 +126,32 @@ export const promptGen = async (data: ChatGptPayload) => {
     if (isTypingEnabled) {
       ctx.chatAction = "typing";
     }
-    const completion = await streamChatCompletion(
-      conversation!,
-      ctx,
-      model,
-      msgId,
-      true // telegram messages has a char limit
-    );
-    if (completion) {
-      const prompt = conversation[conversation.length - 1].content;
-      const promptTokens = getTokenNumber(prompt);
-      const completionTokens = getTokenNumber(completion);
-      const modelPrice = getChatModel(model);
-      const price =
-        getChatModelPrice(modelPrice, true, promptTokens, completionTokens) *
-        config.openAi.chatGpt.priceAdjustment;
-      logger.info(
-        `streamChatCompletion result = tokens: ${promptTokens + completionTokens} | ${
-          modelPrice.name
-        } | price: ${price}¢`
-      );
-      conversation.push({ content: completion, role: "system" });
-      ctx.session.openAi.chatGpt.usage += promptTokens + completionTokens;
-      ctx.session.openAi.chatGpt.price += price;
-      ctx.session.openAi.chatGpt.chatConversation = [...conversation!];
-      return price;
-    }
+    // const completion = await streamChatCompletion(
+    //   conversation!,
+    //   ctx,
+    //   model,
+    //   msgId,
+    //   true // telegram messages has a char limit
+    // );
+    // if (completion) {
+    //   const prompt = conversation[conversation.length - 1].content;
+    //   const promptTokens = getTokenNumber(prompt);
+    //   const completionTokens = getTokenNumber(completion);
+    //   const modelPrice = getChatModel(model);
+    //   const price =
+    //     getChatModelPrice(modelPrice, true, promptTokens, completionTokens) *
+    //     config.openAi.chatGpt.priceAdjustment;
+    //   logger.info(
+    //     `streamChatCompletion result = tokens: ${promptTokens + completionTokens} | ${
+    //       modelPrice.name
+    //     } | price: ${price}¢`
+    //   );
+    //   conversation.push({ content: completion, role: "system" });
+    //   ctx.session.openAi.chatGpt.usage += promptTokens + completionTokens;
+    //   ctx.session.openAi.chatGpt.price += price;
+    //   ctx.session.openAi.chatGpt.chatConversation = [...conversation!];
+    //   return price;
+    // }
     return 0;
   } catch (e: any) {
     ctx.chatAction = null;
