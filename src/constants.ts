@@ -41,7 +41,7 @@ Your credits in ONE tokens: $CREDITS
 
 Send to: \`$WALLET_ADDRESS\`
 `,
-  more: 
+  more:
   `/ explain like i am 5, what is a superconductor?
 . explain like i have a phd, what is category theory?
 
@@ -168,4 +168,28 @@ export const LOVE = {
 
 export const PROMPTS = {
   qrNegativePrompt: '(KHFB, AuroraNegative),(Worst Quality, Low Quality:1.4), ugly, tiling, poorly drawn hands, poorly drawn feet, poorly drawn face, out of frame, extra limbs, disfigured, deformed, body out of frame, bad anatomy, watermark, signature, cut off, low contrast, underexposed, overexposed, bad art, beginner, amateur, distorted face, blurry, draft, grainy'
+}
+
+export const askTemplates = {
+  dear: `
+  Dear Engineer, Our Tech Lead Role in 🌲 Palo Alto… is open! As Harmony’s founder, I’d like to tell you below about the project, your role, and what we are looking for from you.
+
+Ideally you specialize in performance, security and systems – with 3 years of working experience, a degree in computer science, and regular practice of open-source development. You may have built a kernel, a compiler, or a database from scratch before; you enjoy Hacker News, functional idioms, and productivity tools every day.
+
+This “Tech Lead” role is full-time, permanent, onsite in our Palo Alto headquarters in California. The compensation, with a base salary and vesting equity, may range from $160K to $210K. We offer full benefits but not a working visa. You should live within a 30-minute commute to work in office every day; you must love the long work hours and the chaotic grind of startups over years.
+
+We have 6 full-time teammates in office, 15 more across Europe and Asia. You will be working directly with the leadership team of myself, Casey, and Aaron. I lead the team in platform vision, market strategy, and product roadmap. Casey leads in protocol research, network system, and developer community. Aaron leads in backend architecture, product design, and user applications.
+
+You may start with our current initiatives on AI bots, Telegram wallets, domain auctions… then explore our broader roadmap of decentralized protocols, financial products, or cryptographic primitives. Harmony’s mission is “to scale trust and create radically fair economy”. Our next milestones include crypto payments for AI models and products on Telegram, social wallets without separate passwords or devices, and sustainable collectible auctions for .country domains.
+
+Harmony is among the first proof-of-stake, sharding blockchains. Our 2-second transaction finality is one of the fastest; our 1000-slot validator network is one of the most diverse. The project started 5 years ago – launching the network and the ONE token in 2019, staking and delegation in 2020, DeFi and NFT in 2021, DAO and ZK Proofs in 2022, and now Web3 domains and AI bots in 2023. Harmony is venture-backed with its network utility tokens available on crypto exchanges and its treasury of more than 3 years of runway.
+
+You will be challenged to launch features within the first few weeks, and soon to lead a team of 2 to 4 engineers. You will develop an open blockchain of hundreds of network nodes with hundreds of millions of assets. You will pioneer how applying generative models, low-rank adaptation and edge-device inference will bring productivity as well as entertainment to millions of users. You will be an industry leader, engaging in public forums or with our developer ecosystem, not only for your technical expertise but also your empathetic value.
+
+Our backends, written in Go, run on Amazon and other clouds. Our middlewares, written in Solidity, deploy as Ethereum smart contracts. Our frontends, written in Javascript, deploy as React applications. As our commitment to open development and community blockchain, we share all code as public repos on Github and we share development meetings as public videos on YouTube.
+
+You will first have a full-hour interview each with Li, Kushagra and myself in office. Li leads on operations, while Kushagra advises and consults on human resources. You will send in advance your past sample work of a full-page writing and a 100-line code snippet. You will join our lunch to chat with other teammates. The next steps are technical interviews with Aaron and Casey on Zoom, another day of onsite sessions, and finally a 2-day paid joint-work session. The decision and the offer usually come within 24 hours. Your employment may start within a week, ideally before October 15th.
+
+Apply now on harmony.one/lever? You may learn more from the long posts “ONE Bot on Telegram for AI” and “Radically Fair for 1.country” on my Substack blog.s.country. Feel free to contact me anytime via s@harmony.one or Telegram @stephentse. 
+`
 }
