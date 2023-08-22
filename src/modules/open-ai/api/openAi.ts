@@ -17,10 +17,8 @@ import {
   DalleGPTModels,
 } from "../types";
 
-
-
 const openai = new OpenAI({
-  apiKey: config.openAiKey
+  apiKey: config.openAiKey,
 });
 
 const logger = pino({
@@ -44,7 +42,9 @@ export async function postGenerateImg(
       n: numImgs ? numImgs : config.openAi.dalle.sessionDefault.numImages,
       size: imgSize ? imgSize : config.openAi.dalle.sessionDefault.imgSize,
     };
-    const response = await openai.images.generate(payload as OpenAI.Images.ImageGenerateParams);
+    const response = await openai.images.generate(
+      payload as OpenAI.Images.ImageGenerateParams
+    );
     return response.data;
   } catch (error) {
     throw error;
@@ -89,7 +89,7 @@ export async function postGenerateImg(
 //           size
 
 //         }
-  
+
 //         );
 //       }
 //       deleteFile(imageData.fileName!);
@@ -159,29 +159,32 @@ export const streamChatCompletion = async (
       try {
         const stream = await openai.chat.completions.create({
           model: model,
-          messages: conversation as OpenAI.Chat.Completions.CreateChatCompletionRequestMessage[],
+          messages:
+            conversation as OpenAI.Chat.Completions.CreateChatCompletionRequestMessage[],
           stream: true,
         });
         let wordCount = 0;
-        
+
         for await (const part of stream) {
           wordCount++;
-          const chunck = part.choices[0]?.delta?.content ? part.choices[0]?.delta?.content : ''
-          //console.log(chunck || '');
-          completion += chunck
-          if (chunck === "." && wordCount > 20) {
-              completion = completion.replaceAll("..", "");
-              completion += "..";
-              wordCount = 0;
-              ctx.api
-                .editMessageText(ctx.chat?.id!, msgId, completion)
-                .catch((e: any) => console.log(e));
+          const chunck = part.choices[0]?.delta?.content
+            ? part.choices[0]?.delta?.content
+            : "";
+          completion += chunck;
+          if (chunck === "." && wordCount > 100) {
+            completion = completion.replaceAll("..", "");
+            completion += "..";
+            wordCount = 0;
+            ctx.api
+              .editMessageText(ctx.chat?.id!, msgId, completion)
+              .catch((e: any) => console.log(e));
           }
         }
         completion = completion.replaceAll("..", "");
         ctx.api
-        .editMessageText(ctx.chat?.id!, msgId, completion)
-        .catch((e: any) => console.log(e));
+          .editMessageText(ctx.chat?.id!, msgId, completion)
+          .catch((e: any) => console.log(e));
+        resolve(completion);
       } catch (error) {
         reject(
           `streamChatCompletion: An error occurred during OpenAI request: ${error}`

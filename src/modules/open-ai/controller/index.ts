@@ -133,7 +133,9 @@ export const promptGen = async (data: ChatGptPayload) => {
       msgId,
       true // telegram messages has a char limit
     );
-    ctx.chatAction = null;
+    if (isTypingEnabled) {
+      ctx.chatAction = null;
+    }
     if (completion) {
       const prompt = conversation[conversation.length - 1].content;
       const promptTokens = getTokenNumber(prompt);

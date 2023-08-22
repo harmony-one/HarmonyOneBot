@@ -406,7 +406,6 @@ export class OpenAIBot {
           }`
         );
         const price = await promptGen(payload);
-        console.log("PRICE",  price)
         if (!(await this.payments.pay(ctx as OnMessageContext, price))) {
           const balanceMessage = appText.notEnoughBalance
             .replaceAll("$CREDITS", balanceOne)
