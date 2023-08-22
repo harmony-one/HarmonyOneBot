@@ -139,102 +139,126 @@ export async function chatCompilation(
   }
 }
 
-// export const streamChatCompletion = async (
-//   conversation: ChatConversation[],
-//   ctx: OnMessageContext | OnCallBackQueryData,
-//   model = config.openAi.chatGpt.model,
-//   msgId: number,
-//   limitTokens = true
-// ): Promise<string> => {
-//   try {
-//     const payload = {
-//       model: model,
-//       max_tokens: limitTokens ? config.openAi.maxTokens : undefined,
-//       temperature: config.openAi.dalle.completions.temperature,
-//       messages: conversation,
-//       stream: true,
-//     };
-//     let completion = "";
-//     return new Promise<string>(async (resolve, reject) => {
-//       try {
-//         const res = await openai.chat.completions.create(
-//           payload as OpenAI.Chat.CompletionCreateParamsNonStreaming,
-//           { responseType: "stream" }
-//         );
-//         let wordCount = 0;
-//         //@ts-ignore
-//         res.data.on("data", async (data: any) => {
-//           const lines = data
-//             .toString()
-//             .split("\n")
-//             .filter((line: string) => line.trim() !== "");
-//           for (const line of lines) {
-//             const message = line.replace(/^data: /, "");
-//             if (message === "[DONE]") {
-//               completion = completion.replaceAll("..", "");
-//               if (!completion.endsWith(".")) {
-//                 if (msgId === 0) {
-//                   msgId = (await ctx.reply(completion)).message_id;
-//                   resolve(completion);
-//                   return;
-//                 }
-//               }
-//               await ctx.api
-//                 .editMessageText(ctx.chat?.id!, msgId, completion)
-//                 .catch((e: any) => console.log(e));
-//               // const msgIdEnd = (
-//               //   await ctx.reply(`_done_`, {
-//               //     // with ${ctx.session.openAi.chatGpt.model.toLocaleUpperCase()}
-//               //     parse_mode: "Markdown",
-//               //   })
-//               // ).message_id;
-//               // ctx.api.deleteMessage(ctx.chat?.id!, msgId); // msgIdEnd);
-//               // ctx.reply(completion);
-//               resolve(completion);
-//               return;
-//             }
-//             wordCount++;
-//             try {
-//               const parsed = JSON.parse(message);
-//               completion +=
-//                 parsed.choices[0].delta.content !== undefined
-//                   ? parsed.choices[0].delta.content
-//                   : "";
-//               if (parsed.choices[0].delta.content === ".") {
-//                 if (msgId === 0) {
-//                   // msgId = (await ctx.reply(completion)).message_id;
-//                   // ctx.chatAction = "typing";
-//                 } else if (wordCount > 20) {
-//                   completion = completion.replaceAll("..", "");
-//                   completion += "..";
-//                   wordCount = 0;
-//                   ctx.api
-//                     .editMessageText(ctx.chat?.id!, msgId, completion)
-//                     .catch((e: any) => console.log(e));
-//                 }
-//               }
-//             } catch (error) {
-//               logger.error(
-//                 "Could not JSON parse stream message",
-//                 message,
-//                 error
-//               );
-//               // reject(`An error occurred during OpenAI request: ${error}`);
-//             }
-//           }
-//         });
-//       } catch (error) {
-//         reject(
-//           `streamChatCompletion: An error occurred during OpenAI request: ${error}`
-//         );
-//       }
-//     });
-//   } catch (error: any) {
-//     return Promise.reject(
-//       `streamChatCompletion: An error occurred during OpenAI request: ${error}`
-//     );
-//   }
-// };
+export const streamChatCompletion = async (
+  conversation: ChatConversation[],
+  ctx: OnMessageContext | OnCallBackQueryData,
+  model = config.openAi.chatGpt.model,
+  msgId: number,
+  limitTokens = true
+): Promise<string> => {
+  try {
+    const payload = {
+      model: model,
+      max_tokens: limitTokens ? config.openAi.maxTokens : undefined,
+      temperature: config.openAi.dalle.completions.temperature,
+      messages: conversation,
+      stream: true,
+    };
+    let completion = "";
+    return new Promise<string>(async (resolve, reject) => {
+      try {
+        const stream = await openai.chat.completions.create({
+          model: model,
+          messages: conversation as OpenAI.Chat.Completions.CreateChatCompletionRequestMessage[],
+          stream: true,
+        });
+        let wordCount = 0;
+        for await (const part of stream) {
+          console.log(part.choices[0]?.delta?.content || '');
+          completion += part.choices[0]?.delta?.content
+          if (part.choices[0]?.delta?.content === ".") {
+            if (msgId === 0) {
+              // msgId = (await ctx.reply(completion)).message_id;
+              // ctx.chatAction = "typing";
+            } else if (wordCount > 20) {
+              completion = completion.replaceAll("..", "");
+              completion += "..";
+              wordCount = 0;
+              ctx.api
+                .editMessageText(ctx.chat?.id!, msgId, completion)
+                .catch((e: any) => console.log(e));
+            }
+          }
+        }
+
+        // const res = await openai.chat.completions.create(
+        //   payload as OpenAI.Chat.CompletionCreateParamsNonStreaming,
+        //   { responseType: "stream" }
+        // );
+        // let wordCount = 0;
+        //@ts-ignore
+        // res.data.on("data", async (data: any) => {
+        //   const lines = data
+        //     .toString()
+        //     .split("\n")
+        //     .filter((line: string) => line.trim() !== "");
+        //   for (const line of lines) {
+        //     const message = line.replace(/^data: /, "");
+        //     if (message === "[DONE]") {
+        //       completion = completion.replaceAll("..", "");
+        //       if (!completion.endsWith(".")) {
+        //         if (msgId === 0) {
+        //           msgId = (await ctx.reply(completion)).message_id;
+        //           resolve(completion);
+        //           return;
+        //         }
+        //       }
+        //       await ctx.api
+        //         .editMessageText(ctx.chat?.id!, msgId, completion)
+        //         .catch((e: any) => console.log(e));
+        //       // const msgIdEnd = (
+        //       //   await ctx.reply(`_done_`, {
+        //       //     // with ${ctx.session.openAi.chatGpt.model.toLocaleUpperCase()}
+        //       //     parse_mode: "Markdown",
+        //       //   })
+        //       // ).message_id;
+        //       // ctx.api.deleteMessage(ctx.chat?.id!, msgId); // msgIdEnd);
+        //       // ctx.reply(completion);
+        //       resolve(completion);
+        //       return;
+        //     }
+        //     wordCount++;
+        //     try {
+        //       const parsed = JSON.parse(message);
+        //       completion +=
+        //         parsed.choices[0].delta.content !== undefined
+        //           ? parsed.choices[0].delta.content
+        //           : "";
+        //       if (parsed.choices[0].delta.content === ".") {
+        //         if (msgId === 0) {
+        //           // msgId = (await ctx.reply(completion)).message_id;
+        //           // ctx.chatAction = "typing";
+        //         } else if (wordCount > 20) {
+        //           completion = completion.replaceAll("..", "");
+        //           completion += "..";
+        //           wordCount = 0;
+        //           ctx.api
+        //             .editMessageText(ctx.chat?.id!, msgId, completion)
+        //             .catch((e: any) => console.log(e));
+        //         }
+        //       }
+        //     } catch (error) {
+        //       logger.error(
+        //         "Could not JSON parse stream message",
+        //         message,
+        //         error
+        //       );
+        //       // reject(`An error occurred during OpenAI request: ${error}`);
+        //     }
+        //   }
+        // });
+      } catch (error) {
+        reject(
+          `streamChatCompletion: An error occurred during OpenAI request: ${error}`
+        );
+      }
+    });
+  } catch (error: any) {
+    return Promise.reject(
+      `streamChatCompletion: An error occurred during OpenAI request: ${error}`
+    );
+  }
+};
 
 export async function improvePrompt(promptText: string, model: string) {
   const prompt = `Improve this picture description using max 100 words and don't add additional text to the image: ${promptText} `;
