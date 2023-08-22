@@ -121,9 +121,9 @@ export class SDImagesBot {
 
       let idx = this.queue.findIndex((v) => v === uuid);
 
-      if (idx !== 0) {
+      if (idx >= 0) {
         ctx.reply(
-          `You are #${idx + 1} in line, wait ~${idx * 30 + 15} seconds`
+          `You are #${idx + 1} in line, wait ~${idx * 30 + 30} seconds`
         );
       }
 
