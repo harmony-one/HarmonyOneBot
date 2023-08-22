@@ -8,7 +8,7 @@ import { Logger, pino } from "pino";
 import { appText } from "./utils/text";
 import { chatService } from "../../database/services";
 import { ChatGPTModelsEnum } from "./types";
-import {askTemplates} from "../../constants";
+import { askTemplates } from "../../constants";
 
 export const SupportedCommands = {
   // chat: {
@@ -229,9 +229,9 @@ export class OpenAIBot {
     //   return;
     // }
 
-    if(ctx.message!.text === '/ask harmony.one/dear') {
-      await ctx.reply(askTemplates.dear)
-      return
+    if (ctx.message!.text === "/ask harmony.one/dear") {
+      await ctx.reply(askTemplates.dear);
+      return;
     }
 
     if (ctx.hasCommand(SupportedCommands.ask.name)) {
@@ -297,7 +297,7 @@ export class OpenAIBot {
     if (ctx.session.openAi.imageGen.isEnabled) {
       let prompt = ctx.match;
       if (!prompt) {
-        prompt = config.openAi.dalle.defaultPrompt
+        prompt = config.openAi.dalle.defaultPrompt;
         // ctx.reply("Error: Missing prompt");
         // return;
       }
@@ -308,7 +308,7 @@ export class OpenAIBot {
         numImages: await ctx.session.openAi.imageGen.numImages, // lazy load
         imgSize: await ctx.session.openAi.imageGen.imgSize, // lazy load
       };
-      await imgGen(payload,ctx);
+      await imgGen(payload, ctx);
     } else {
       ctx.reply("Bot disabled");
     }
@@ -328,7 +328,7 @@ export class OpenAIBot {
         imgSize: await ctx.session.openAi.imageGen.imgSize,
       };
       ctx.reply("generating improved prompt...");
-      await imgGenEnhanced(payload,ctx);
+      await imgGenEnhanced(payload, ctx);
     } else {
       ctx.reply("Bot disabled");
     }
@@ -350,7 +350,7 @@ export class OpenAIBot {
           imgSize: await ctx.session.openAi.imageGen.imgSize,
           filePath: filePath,
         };
-        await alterImg(payload,ctx);
+        await alterImg(payload, ctx);
       }
     } catch (e: any) {
       this.logger.error(e);
@@ -360,7 +360,10 @@ export class OpenAIBot {
 
   async onChat(ctx: OnMessageContext | OnCallBackQueryData) {
     try {
-      const { prompt } = getCommandNamePrompt(ctx, SupportedCommands);
+      const { prompt, commandName } = getCommandNamePrompt(
+        ctx,
+        SupportedCommands
+      );
       const { chatConversation, model } = ctx.session.openAi.chatGpt;
       const accountId = this.payments.getAccountId(ctx as OnMessageContext);
       const account = await this.payments.getUserAccount(accountId);
@@ -395,7 +398,13 @@ export class OpenAIBot {
           model: model || config.openAi.chatGpt.model,
           ctx,
         };
-
+        this.logger.info(
+          `onChat: ${
+            commandName
+              ? commandName
+              : "(Used prefix/alias) " + prompt.slice(0, 1)
+          }`
+        );
         const price = await promptGen(payload);
         if (!(await this.payments.pay(ctx as OnMessageContext, price))) {
           const balanceMessage = appText.notEnoughBalance

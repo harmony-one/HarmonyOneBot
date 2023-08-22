@@ -28,7 +28,7 @@ import { WalletConnect } from "./modules/walletconnect";
 import { BotPayments } from "./modules/payment";
 import { BotSchedule } from "./modules/schedule";
 import config from "./config";
-import { commandsHelpText, TERMS, SUPPORT, FEEDBACK, LOVE } from "./constants";
+import { commandsHelpText, TERMS, SUPPORT, FEEDBACK, LOVE, MEMO } from "./constants";
 
 import {chatService} from "./database/services";
 import {AppDataSource} from "./database/datasource";
@@ -51,14 +51,15 @@ bot.api.config.use(autoRetry());
 
 bot.use(
   limit({
-    // Allow only 1 message to be handled every 0.5 seconds.
-    timeFrame: 3000,
-    limit: 3,
+    // Allow only 20 message to be handled every 1 minute.
+    timeFrame: 60000,
+    limit: 20,
 
     // This is called when the limit is exceeded.
     onLimitExceeded: async (ctx) => {
       // await ctx.reply("Please refrain from sending too many requests")
       logger.error(`@${ctx.from?.username} has exceeded the message limit`);
+      logger.error(`onLimitExceeded: ${ctx.message?.text}`)
       // await ctx.reply("");
     },
 
@@ -263,7 +264,7 @@ const onMessage = async (ctx: OnMessageContext) => {
   // onlfy for private chats
   if (ctx.update.message.chat && ctx.chat.type === "private") {
     ctx.reply(
-      `Command not supported!\n\nUse */help* to view available commands`,
+      `Unsupported, type */help* for commands.`,
       {
         parse_mode: "Markdown",
       }
@@ -351,6 +352,13 @@ bot.command("love", (ctx) => {
   });
 });
 
+bot.command("memo", (ctx) => {
+  ctx.reply(MEMO.text, {
+    parse_mode: "Markdown",
+    disable_web_page_preview: true,
+  });
+});
+
 // bot.command("menu", async (ctx) => {
 //   await ctx.reply(menuText.mainMenu.helpText, {
 //     parse_mode: "Markdown",
@@ -366,7 +374,7 @@ bot.catch((err) => {
   logger.error(`Error while handling update ${ctx.update.update_id}:`);
   const e = err.error;
   if (e instanceof GrammyError) {
-    console.log(e);
+    console.log('GrammyERROR:', e);
     logger.error("Error in request:", e.description);
     logger.error(`Error in message: ${JSON.stringify(ctx.message)}`)
   } else if (e instanceof HttpError) {
