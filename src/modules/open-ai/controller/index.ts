@@ -122,7 +122,10 @@ export const promptGen = async (data: ChatGptPayload) => {
   const { conversation, ctx, model } = data;
   try {
     let msgId = (await ctx.reply("...")).message_id;
-    ctx.chatAction = "typing";
+    const isTypingEnabled = config.openAi.chatGpt.isTypingEnabled
+    if (isTypingEnabled) {
+      ctx.chatAction = "typing";
+    }
     const completion = await streamChatCompletion(
       conversation!,
       ctx,
