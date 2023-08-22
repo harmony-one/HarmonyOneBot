@@ -59,7 +59,6 @@ bot.use(
     onLimitExceeded: async (ctx) => {
       // await ctx.reply("Please refrain from sending too many requests")
       logger.error(`@${ctx.from?.username} has exceeded the message limit`);
-      logger.error(`onLimitExceeded: ${ctx.message?.text}`)
       // await ctx.reply("");
     },
 
