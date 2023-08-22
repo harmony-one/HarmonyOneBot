@@ -51,9 +51,9 @@ bot.api.config.use(autoRetry());
 
 bot.use(
   limit({
-    // Allow only 20 message to be handled every 1 minute.
-    timeFrame: 60000,
-    limit: 20,
+    // Allow only 3 message to be handled every 3 seconds.
+    timeFrame: 3000,
+    limit: 3,
 
     // This is called when the limit is exceeded.
     onLimitExceeded: async (ctx) => {
