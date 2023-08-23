@@ -150,7 +150,7 @@ export const streamChatCompletion = async (
 ): Promise<string> => {
   try {
     let completion = "";
-    const wordCountBetween = config.openAi.chatGpt.wordCountBetween
+    const wordCountMinimum = config.openAi.chatGpt.wordCountBetween
     return new Promise<string>(async (resolve, reject) => {
       try {
         const stream = await openai.chat.completions.create({
@@ -183,7 +183,7 @@ export const streamChatCompletion = async (
           //     }
           //   );
           // }
-          if (chunck === "." && wordCount > wordCountBetween) {
+          if (chunck === "." && wordCount > wordCountMinimum) {
             completion = completion.replaceAll("..", "");
             completion += "..";
             wordCount = 0;
