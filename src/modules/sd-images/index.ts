@@ -68,18 +68,17 @@ export class SDImagesBot {
   ) {
     if (!this.isSupportedEvent(ctx)) {
       console.log(`### unsupported command ${ctx.message?.text}`);
-      ctx.reply("### unsupported command");
-      return refundCallback("Unsupported command");
+      refundCallback("Unsupported command");
+      await ctx.reply("### unsupported command");
+      return;
     }
 
     if (ctx.hasCommand(SupportedCommands.IMAGE)) {
-      this.onImageCmd(ctx, refundCallback);
-      return;
+      return this.onImageCmd(ctx, refundCallback);
     }
 
     if (ctx.hasCommand(SupportedCommands.IMAGES)) {
-      this.onImagesCmd(ctx, refundCallback);
-      return;
+      return this.onImagesCmd(ctx, refundCallback);
     }
 
     // if (ctx.hasCommand(SupportedCommands.SHOWCASE)) {
@@ -88,12 +87,11 @@ export class SDImagesBot {
     // }
 
     if (this.isSupportedCallbackQuery(ctx)) {
-      this.onImgSelected(ctx, refundCallback);
-      return;
+      return this.onImgSelected(ctx, refundCallback);
     }
 
     console.log(`### unsupported command`);
-    ctx.reply("### unsupported command");
+    await ctx.reply("### unsupported command");
   }
 
   onImageCmd = async (
@@ -112,8 +110,8 @@ export class SDImagesBot {
       const author = `@${authorObj.user.username}`;
 
       if (!prompt) {
-        ctx.reply(`${author} please add prompt to your message`);
         refundCallback("Wrong prompts");
+        await ctx.reply(`${author} please add prompt to your message`);
         return;
       }
       ctx.chatAction = "upload_photo";
@@ -122,7 +120,7 @@ export class SDImagesBot {
       let idx = this.queue.findIndex((v) => v === uuid);
 
       if (idx >= 0) {
-        ctx.reply(
+        await ctx.reply(
           `You are #${idx + 1} in line, wait ~${idx * 30 + 30} seconds`
         );
       }
@@ -143,9 +141,8 @@ export class SDImagesBot {
       console.log(e);
       this.queue = this.queue.filter((v) => v !== uuid);
       ctx.chatAction = null;
-      ctx.reply(`Error: something went wrong...`);
-
       refundCallback(e);
+      await ctx.reply(`Error: something went wrong...`);
     }
 
     this.queue = this.queue.filter((v) => v !== uuid);
@@ -166,9 +163,8 @@ export class SDImagesBot {
       const author = `@${authorObj.user.username}`;
 
       if (!prompt) {
-        ctx.reply(`${author} please add prompt to your message`);
-
         refundCallback("Wrong prompts");
+        await ctx.reply(`${author} please add prompt to your message`);
         return;
       }
       ctx.chatAction = "upload_photo";
@@ -177,7 +173,7 @@ export class SDImagesBot {
       let idx = this.queue.findIndex((v) => v === uuid);
 
       if (idx >= 0) {
-        ctx.reply(
+        await ctx.reply(
           `You are #${idx + 1} in line, wait ~${idx * 30 + 30} seconds`
         );
       }
@@ -227,9 +223,8 @@ export class SDImagesBot {
       console.log(e);
       this.queue = this.queue.filter((v) => v !== uuid);
       ctx.chatAction = null;
-      ctx.reply(`Error: something went wrong...`);
-
       refundCallback(e.message);
+      await ctx.reply(`Error: something went wrong...`);
     }
 
     this.queue = this.queue.filter((v) => v !== uuid);
@@ -275,9 +270,8 @@ export class SDImagesBot {
     } catch (e: any) {
       ctx.chatAction = null;
       console.log(e);
-      ctx.reply(`Error: something went wrong...`);
-
       refundCallback(e.message);
+      await ctx.reply(`Error: something went wrong...`);
     }
   }
 
