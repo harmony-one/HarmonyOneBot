@@ -17,10 +17,9 @@ import {
   DalleGPTModel,
   DalleGPTModels,
 } from "../types";
-import { sleep } from "../../sd-images/utils";
 
 const openai = new OpenAI({
-  apiKey: config.openAiKey,
+  apiKey: config.openAiKey + "sdfdsfsfsd",
 });
 
 const logger = pino({
@@ -174,55 +173,46 @@ export const streamChatCompletion = async (
             wordCount = 0;
             ctx.api
               .editMessageText(ctx.chat?.id!, msgId, completion)
-              .catch(async (e: any) => {
-                if (e instanceof GrammyError) {
-                  if (e.error_code === 429) {
-                    reject(e);
-                  } else {
-                    const errorMessage = `${e.error_code} - ${e.description}`;
-                    logger.error(errorMessage);
-                  }
-                } else {
-                  logger.error(e);
-                }
-              });
+              .catch(async (e: any) =>  reject(e))
           }
         }
         completion = completion.replaceAll("..", "");
         ctx.api
           .editMessageText(ctx.chat?.id!, msgId, completion)
-          .catch((e: any) => {
-            if (e instanceof GrammyError) {
-              if (e.error_code === 429) {
-                reject(e);
-              } else {
-                const errorMessage = `${e.error_code} - ${e.description}`;
-                logger.error(errorMessage);
-              }
-            } else {
-              logger.error(e);
-            }
-          });
+          .catch((e: any) => reject(e))
+          //   if (e instanceof GrammyError) {
+          //     if (e.error_code === 429) {
+
+          //     } else {
+          //       const errorMessage = `${e.error_code} - ${e.description}`;
+          //       logger.error(errorMessage);
+          //     }
+          //   } else {
+          //     logger.error(e);
+          //   }
+          // });
         resolve(completion);
       } catch (e) {
-        if (e instanceof GrammyError) {
-          if (e.error_code === 429) {
-            reject(e);
-          } else {
-            const errorMessage = `${e.error_code} - ${e.description}`;
-            logger.error(errorMessage);
-          }
-        } else {
-          reject(
-            `streamChatCompletion: An error occurred during OpenAI request: ${e}`
-          );
-        }
+        reject(e);
+
+        // if (e instanceof GrammyError) {
+        //   if (e.error_code === 429) {
+
+        //   } else {
+        //     const errorMessage = `${e.error_code} - ${e.description}`;
+        //     logger.error(errorMessage);
+        //   }
+        // } else {
+        //   reject(
+        //     `streamChatCompletion: An error occurred during OpenAI request: ${e}`
+        //   );
+        // }
       }
     });
   } catch (error: any) {
-    return Promise.reject(
-      `streamChatCompletion: An error occurred during OpenAI request: ${error}`
-    );
+    return Promise.reject(error)
+      // `streamChatCompletion: An error occurred during OpenAI request: ${error}`
+    // );
   }
 };
 
