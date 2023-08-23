@@ -29,6 +29,7 @@ import { BotPayments } from "./modules/payment";
 import { BotSchedule } from "./modules/schedule";
 import config from "./config";
 import { commandsHelpText, TERMS, SUPPORT, FEEDBACK, LOVE } from "./constants";
+import prometheusRegister from './metrics/prometheus'
 
 import {chatService} from "./database/services";
 import {AppDataSource} from "./database/datasource";
@@ -418,4 +419,10 @@ app.listen(config.port, () => {
 app.get('/health', (req, res) =>{
   res.send('OK').end()
 })
+
+app.get('/metrics', async (req, res) =>{
+  res.setHeader('Content-Type', prometheusRegister.contentType);
+  res.send(await prometheusRegister.metrics());
+})
+
 
