@@ -463,7 +463,17 @@ export class OpenAIBot {
         }
       } else {
         this.logger.error(`onChat: ${e.toString()}`);
-        await ctx.reply("Error handling your request");
+        await ctx.reply("Error handling your request").catch((e) => {
+          if (e instanceof GrammyError) {
+            this.logger.error(
+              `Error when sending message "Error handling your request" - ${e.error_code} - ${e.description}`
+            );
+          } else {
+            this.logger.error(
+              `Error when sending message "Error handling your request", ${e.toString()} `
+            );
+          }
+        });
       }
     }
   }
