@@ -364,7 +364,13 @@ export class OpenAIBot {
 
   async onChat(ctx: OnMessageContext | OnCallBackQueryData) {
     if (this.botSuspended) {
-      ctx.reply("The bot is suspended");
+      ctx.reply("The bot is suspended").catch((e) => {
+        if (e instanceof GrammyError) {
+          this.logger.error(
+            `Error when sending message "The bot is suspended" - ${e.error_code} - ${e.description}`
+          );
+        }
+      });
       return;
     }
     try {
