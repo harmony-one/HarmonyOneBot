@@ -7,6 +7,12 @@ import {BotContext, OnMessageContext} from "../types";
 import {getFeeStats} from "./explorerApi";
 import {getBotFeeStats} from "./harmonyApi";
 import {getBridgeStats} from "./bridgeAPI";
+import {statsService} from "../../database/services";
+
+enum SupportedCommands {
+  BOT_STATS = 'botstats',
+  STATS = 'stats'
+}
 
 export class BotSchedule {
   private readonly holderAddress = config.payment.holderAddress
@@ -54,8 +60,7 @@ export class BotSchedule {
         this.cache.set('bridge_report', bridgeStatsReport)
       }
 
-      const botFees = await getBotFeeStats(this.holderAddress)
-      const botFeesReport = `*${botFees.value}* ONE (${botFees.change}%)`
+      const botFeesReport = await this.getBotFeeReport(this.holderAddress);
 
       const reportMessage =
         `\nNetwork fees (7-day growth): ${networkFeesReport}` +
@@ -106,14 +111,31 @@ export class BotSchedule {
   }
 
   public isSupportedEvent(ctx: OnMessageContext) {
-    const { text = '' } = ctx.update.message
-    return config.schedule.isEnabled && text?.toLowerCase() === '/botstats'
+    return ctx.hasCommand(Object.values(SupportedCommands));
+  }
+
+  public async getBotFeeReport(address: string): Promise<string> {
+    const botFees = await getBotFeeStats(this.holderAddress)
+    return `*${botFees.value}* ONE (${botFees.change}%)`
+  }
+
+  public async generateReport() {
+    const [botFeesReport, dau, mau] = await Promise.all([
+      this.getBotFeeReport(this.holderAddress),
+      statsService.getDAU(),
+      statsService.getMAU(),
+    ])
+
+    const report = `\nBot fees: ${botFeesReport}` +
+      `\nDaily Active Users: ${dau}` +
+      `\nMonthly Active Users: ${mau}`
+    return report;
   }
 
   public async onEvent(ctx: OnMessageContext) {
-    const { message_id, text = ''} = ctx.update.message
+    const { message_id } = ctx.update.message
 
-    if(text.toLowerCase() === '/botstats') {
+    if(ctx.hasCommand(SupportedCommands.BOT_STATS)) {
       const report = await this.prepareMetricsUpdate()
       if(report) {
         await ctx.reply(report, {
@@ -121,6 +143,14 @@ export class BotSchedule {
           parse_mode: "Markdown",
         });
       }
+    }
+
+    if (ctx.hasCommand(SupportedCommands.STATS)) {
+      const report = await this.generateReport()
+      ctx.reply(report, {
+        reply_to_message_id: message_id,
+        parse_mode: "Markdown",
+      });
     }
   }
 }

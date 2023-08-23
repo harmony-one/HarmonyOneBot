@@ -31,7 +31,7 @@ import config from "./config";
 import { commandsHelpText, TERMS, SUPPORT, FEEDBACK, LOVE } from "./constants";
 import prometheusRegister from './metrics/prometheus'
 
-import {chatService} from "./database/services";
+import {chatService, statsService} from "./database/services";
 import {AppDataSource} from "./database/datasource";
 import { text } from "stream/consumers";
 import { autoRetry } from "@grammyjs/auto-retry";
@@ -164,6 +164,20 @@ const assignFreeCredits = async (ctx: OnMessageContext) => {
   }
   return true;
 };
+
+bot.use((ctx, next) => {
+  const entities = ctx.entities();
+
+  for (let i = 0; i < entities.length; i++) {
+    const entity = entities[i];
+    if (entity.type === 'bot_command' && ctx.message) {
+      const tgUserId = ctx.message.from.id;
+      statsService.addCommandStat({tgUserId, command: entity.text.replace('/', ''), rawMessage: ''})
+    }
+  }
+
+  return next();
+})
 
 const onMessage = async (ctx: OnMessageContext) => {
   try {
