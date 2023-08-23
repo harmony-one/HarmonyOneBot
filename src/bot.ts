@@ -35,6 +35,7 @@ import {chatService} from "./database/services";
 import {AppDataSource} from "./database/datasource";
 import { text } from "stream/consumers";
 import { autoRetry } from "@grammyjs/auto-retry";
+import {run} from "@grammyjs/runner";
 
 
 const logger = pino({
@@ -113,8 +114,8 @@ const schedule = new BotSchedule(bot);
 const openAiBot = new OpenAIBot(payments);
 const oneCountryBot = new OneCountryBot();
 
-bot.on("message:new_chat_members:me", (ctx) => {
-  const createChat = async () => {
+bot.on("message:new_chat_members:me", async (ctx) => {
+  try {
     const accountId = payments.getAccountId(ctx as OnMessageContext);
 
     const chat = await chatService.getAccountById(accountId);
@@ -127,9 +128,9 @@ bot.on("message:new_chat_members:me", (ctx) => {
     const tgUsername = ctx.message.from.username || "";
 
     await chatService.initChat({ tgUserId, accountId, tgUsername });
-  };
-
-  createChat();
+  } catch (err) {
+    logger.info(`Create chat error ${err}`);
+  }
 });
 
 const assignFreeCredits = async (ctx: OnMessageContext) => {
@@ -172,7 +173,7 @@ const onMessage = async (ctx: OnMessageContext) => {
       const price = qrCodeBot.getEstimatedPrice(ctx);
       const isPaid = await payments.pay(ctx, price);
       if (isPaid) {
-        qrCodeBot
+        await qrCodeBot
             .onEvent(ctx, (reason?: string) => {
               payments.refundPayment(reason, ctx, price);
             })
@@ -187,7 +188,7 @@ const onMessage = async (ctx: OnMessageContext) => {
       const price = sdImagesBot.getEstimatedPrice(ctx);
       const isPaid = await payments.pay(ctx, price);
       if (isPaid) {
-        sdImagesBot
+        await sdImagesBot
             .onEvent(ctx, (reason?: string) => {
               payments.refundPayment(reason, ctx, price);
             })
@@ -202,7 +203,7 @@ const onMessage = async (ctx: OnMessageContext) => {
       const price = voiceMemo.getEstimatedPrice(ctx);
       const isPaid = await payments.pay(ctx, price);
       if (isPaid) {
-        voiceMemo.onEvent(ctx).catch((e) => {
+       await voiceMemo.onEvent(ctx).catch((e) => {
           payments.refundPayment(e.message || "Unknown error", ctx, price);
         });
       }
@@ -236,7 +237,7 @@ const onMessage = async (ctx: OnMessageContext) => {
         // }
         const isPaid = await payments.pay(ctx, price);
         if (isPaid) {
-          oneCountryBot
+          await oneCountryBot
               .onEvent(ctx)
               .catch((e) => payments.refundPayment(e, ctx, price));
           return;
@@ -249,22 +250,22 @@ const onMessage = async (ctx: OnMessageContext) => {
     }
 
     if (walletConnect.isSupportedEvent(ctx)) {
-      walletConnect.onEvent(ctx);
+      await walletConnect.onEvent(ctx);
       return;
     }
     if (payments.isSupportedEvent(ctx)) {
-      payments.onEvent(ctx);
+      await payments.onEvent(ctx);
       return;
     }
     if (schedule.isSupportedEvent(ctx)) {
-      schedule.onEvent(ctx);
+      await schedule.onEvent(ctx);
       return;
     }
     // if (ctx.update.message.text && ctx.update.message.text.startsWith("/", 0)) {
     //  const command = ctx.update.message.text.split(' ')[0].slice(1)
     // onlfy for private chats
     if (ctx.update.message.chat && ctx.chat.type === "private") {
-      ctx.reply(
+      await ctx.reply(
           `Unsupported, type */help* for commands.`,
           {
             parse_mode: "Markdown",
@@ -283,14 +284,14 @@ const onMessage = async (ctx: OnMessageContext) => {
 const onCallback = async (ctx: OnCallBackQueryData) => {
   try {
     if (qrCodeBot.isSupportedEvent(ctx)) {
-      qrCodeBot.onEvent(ctx, (reason) => {
+      await qrCodeBot.onEvent(ctx, (reason) => {
         logger.error(`qr generate error: ${reason}`);
       });
       return;
     }
 
     if (sdImagesBot.isSupportedEvent(ctx)) {
-      sdImagesBot.onEvent(ctx, (e) => {
+      await sdImagesBot.onEvent(ctx, (e) => {
         console.log(e, "// TODO refund payment");
       });
       return;
@@ -326,35 +327,35 @@ bot.command(["start", "help", "menu"], async (ctx) => {
 });
 
 bot.command("more", async (ctx) => {
-  ctx.reply(commandsHelpText.more, {
+  return ctx.reply(commandsHelpText.more, {
     parse_mode: "Markdown",
     disable_web_page_preview: true,
   });
 });
 
 bot.command("terms", (ctx) => {
-  ctx.reply(TERMS.text, {
+  return ctx.reply(TERMS.text, {
     parse_mode: "Markdown",
     disable_web_page_preview: true,
   });
 });
 
 bot.command("support", (ctx) => {
-  ctx.reply(SUPPORT.text, {
+  return ctx.reply(SUPPORT.text, {
     parse_mode: "Markdown",
     disable_web_page_preview: true,
   });
 });
 
 bot.command("feedback", (ctx) => {
-  ctx.reply(FEEDBACK.text, {
+  return ctx.reply(FEEDBACK.text, {
     parse_mode: "Markdown",
     disable_web_page_preview: true,
   });
 });
 
 bot.command("love", (ctx) => {
-  ctx.reply(LOVE.text, {
+  return ctx.reply(LOVE.text, {
     parse_mode: "Markdown",
     disable_web_page_preview: true,
   });
@@ -376,12 +377,6 @@ bot.command("love", (ctx) => {
 
 bot.on("message", onMessage);
 bot.on("callback_query:data", onCallback);
-
-bot.start({
-  drop_pending_updates: true,
-});
-
-AppDataSource.initialize();
 
 bot.catch((err) => {
   const ctx = err.ctx;
@@ -409,7 +404,7 @@ const app = express();
 app.use(express.json());
 app.use(express.static("./public")); // Public directory, used in voice-memo bot
 
-app.listen(config.port, () => {
+const httpServer = app.listen(config.port, () => {
   logger.info(`Bot listening on port ${config.port}`);
   // bot.start({
   //   allowed_updates: ["callback_query"], // Needs to be set for menu middleware, but bot doesn't work with current configuration.
@@ -425,4 +420,16 @@ app.get('/metrics', async (req, res) =>{
   res.send(await prometheusRegister.metrics());
 })
 
+const runner = run(bot);
+
+// Stopping the bot when the Node.js process
+// is about to be terminated
+const stopRunner = () => {
+  httpServer.close();
+  return runner.isRunning() && runner.stop();
+}
+process.once("SIGINT", stopRunner);
+process.once("SIGTERM", stopRunner);
+
+AppDataSource.initialize();
 
