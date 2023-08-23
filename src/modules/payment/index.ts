@@ -127,18 +127,17 @@ export class BotPayments {
       let nonce = undefined
       const nonceCache = this.noncePending.get(accountFrom.address)
       if(nonceCache) {
-        nonce = nonceCache
+        nonce = nonceCache + 1
       } else {
         nonce = await web3.eth.getTransactionCount(accountFrom.address)
       }
-      nonce += 1
       this.noncePending.set(accountFrom.address, nonce)
 
       const txBody = {
         from: accountFrom.address,
         to: addressTo,
         value: web3.utils.toHex(amount.toFixed()),
-        // nonce
+        nonce
       };
       const gasLimit = await web3.eth.estimateGas(txBody);
       const tx = await web3.eth.sendTransaction({
@@ -271,7 +270,7 @@ export class BotPayments {
     const balanceWithCredits = balance.plus(credits)
     const balanceDelta = balanceWithCredits.minus(amountToPay);
 
-    this.logger.info(`[@${from.username}] credits: ${credits.toFixed()}, balance: ${balance.toFixed()}. to withdraw: ${amountToPay.toFixed()}, balance after: ${balanceDelta.toFixed()}`)
+    this.logger.info(`[@${from.username}] credits: ${credits.toFixed()}, ONE balance: ${balance.toFixed()}, to withdraw: ${amountToPay.toFixed()}, balance after: ${balanceDelta.toFixed()}`)
     if (balanceDelta.gte(0)) {
       if(amountToPay.gt(0) && credits.gt(0)) {
         const creditsPayAmount = bn.min(amountToPay, credits)
