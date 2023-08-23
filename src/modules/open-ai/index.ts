@@ -1,6 +1,4 @@
-import {
-  GrammyError,
-} from "grammy";
+import { GrammyError } from "grammy";
 import { getCommandNamePrompt } from "../1country/utils";
 import { BotPayments } from "../payment";
 import { OnMessageContext, OnCallBackQueryData } from "../types";
@@ -71,7 +69,7 @@ export const SupportedCommands = {
 export class OpenAIBot {
   private logger: Logger;
   private payments: BotPayments;
-  private botSuspended: boolean
+  private botSuspended: boolean;
 
   constructor(payments: BotPayments) {
     this.logger = pino({
@@ -83,7 +81,7 @@ export class OpenAIBot {
         },
       },
     });
-    this.botSuspended = false
+    this.botSuspended = false;
     this.payments = payments;
     if (!config.openAi.dalle.isEnabled) {
       this.logger.warn("DALL·E 2 Image Bot is disabled in config");
@@ -96,7 +94,7 @@ export class OpenAIBot {
     const hasCommand = ctx.hasCommand(
       Object.values(SupportedCommands).map((command) => command.name)
     );
-    const hasReply = false //this.isSupportedImageReply(ctx);
+    const hasReply = false; //this.isSupportedImageReply(ctx);
     const hasGroupPrefix = this.hasPrefix(ctx.message?.text || "");
     if (hasGroupPrefix) {
       return true;
@@ -366,8 +364,8 @@ export class OpenAIBot {
 
   async onChat(ctx: OnMessageContext | OnCallBackQueryData) {
     if (this.botSuspended) {
-      ctx.reply('The bot is suspended')
-      return
+      ctx.reply("The bot is suspended");
+      return;
     }
     try {
       const { prompt, commandName } = getCommandNamePrompt(
@@ -402,7 +400,6 @@ export class OpenAIBot {
           role: "user",
           content: `${this.hasPrefix(prompt) ? prompt.slice(1) : prompt}.`,
         });
-
         const payload = {
           conversation: chatConversation!,
           model: model || config.openAi.chatGpt.model,
@@ -433,15 +430,30 @@ export class OpenAIBot {
       ctx.chatAction = null;
       if (e instanceof GrammyError) {
         if (e.error_code === 429) {
-          this.botSuspended = true
-          const retryAfter = e.parameters.retry_after ? 
-            (e.parameters.retry_after < 60 ? 60 : e.parameters.retry_after * 2) : 60
-          const errorMessage = `${e.error_code} - ${e.description}`
-          ctx.session.openAi.chatGpt.chatConversation.pop() //deletes lastt prompt
-          ctx.reply(`${ctx.from.username ? ctx.from.username : ''} Bot has reached limit, wait ${retryAfter} seconds`)
-          await sleep(retryAfter * 1000)
-          this.botSuspended = false
-          this.logger.error(errorMessage)
+          this.botSuspended = true;
+          const retryAfter = e.parameters.retry_after
+            ? e.parameters.retry_after < 60
+              ? 60
+              : e.parameters.retry_after * 2
+            : 60;
+          const errorMessage = `${e.error_code} - ${e.description}`;
+          ctx
+            .reply(
+              `${
+                ctx.from.username ? ctx.from.username : ""
+              } Bot has reached limit, wait ${retryAfter} seconds`
+            )
+            .catch((e) => {
+              if (e instanceof GrammyError) {
+                this.logger.error(
+                  `Error when sending message "Bot has reached limit, wait ${retryAfter} seconds" - ${e.error_code} - ${e.description}`
+                );
+              }
+            });
+          ctx.session.openAi.chatGpt.chatConversation.pop(); //deletes lastt prompt
+          await sleep(retryAfter * 1000);
+          this.botSuspended = false;
+          this.logger.error(errorMessage);
         }
       } else {
         this.logger.error(`onChat: ${e.toString()}`);
