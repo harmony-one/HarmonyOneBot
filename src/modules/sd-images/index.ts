@@ -79,6 +79,15 @@ export class SDImagesBot extends SDImagesBotBase {
         );
         return;
 
+      case COMMAND.CONSTRUCTOR:
+        this.onConstructorCmd(
+          ctx,
+          refundCallback,
+          operation.prompt,
+          operation.model
+        );
+        return;
+
       case COMMAND.HELP:
         await ctx.reply('Stable Diffusion Models: \n');
 
@@ -215,4 +224,53 @@ export class SDImagesBot extends SDImagesBotBase {
       refundCallback(e.message);
     }
   }
+
+  onConstructorCmd = async (
+    ctx: OnMessageContext | OnCallBackQueryData,
+    refundCallback: (reason?: string) => void,
+    prompt: string,
+    model: IModel
+  ) => {
+    try {
+      const authorObj = await ctx.getAuthor();
+      const author = `@${authorObj.user.username}`;
+
+      const newSession: ISession = {
+        id: uuidv4(),
+        author,
+        prompt: String(prompt),
+        all_seeds: [],
+        model,
+        command: COMMAND.CONSTRUCTOR
+      };
+
+      this.sessions.push(newSession);
+
+      const buttonsPerRow = 2;
+      let rowCount = buttonsPerRow;
+      const keyboard = new InlineKeyboard();
+
+      for (let i = 0; i < MODELS_CONFIGS.length; i++) {
+        keyboard.text(MODELS_CONFIGS[i].name, `${newSession.id}_${MODELS_CONFIGS[i].hash}`);
+
+        rowCount--;
+
+        if (!rowCount) {
+          keyboard.row();
+          rowCount = buttonsPerRow;
+        }
+      }
+
+      keyboard.row();
+
+      await ctx.reply(prompt, {
+        parse_mode: "HTML",
+        reply_markup: keyboard
+      });
+    } catch (e: any) {
+      console.log(e);
+      ctx.reply(`Error: something went wrong...`);
+      refundCallback(e);
+    }
+  };
 }

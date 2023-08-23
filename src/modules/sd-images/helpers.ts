@@ -57,7 +57,7 @@ const parsePrompts = (fullText: string): { modelId: string, prompt: string } => 
         console.log('Warning: sd images parse prompts', e);
     }
 
-    console.log({ modelId, prompt });
+    // console.log({ modelId, prompt });
 
     return { modelId, prompt };
 }
@@ -84,6 +84,10 @@ export const parseCtx = (ctx: Context): IOperation | false => {
 
         if (ctx.hasCommand('images')) {
             command = COMMAND.TEXT_TO_IMAGES;
+        }
+
+        if (ctx.hasCommand('all')) {
+            command = COMMAND.CONSTRUCTOR;
         }
 
         if (ctx.hasCommand('SD')) {
