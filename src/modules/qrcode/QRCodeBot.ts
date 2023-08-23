@@ -45,7 +45,7 @@ export class QRCodeBot {
 
   public async onEvent(ctx: OnMessageContext | OnCallBackQueryData, refundCallback: RefundCallback) {
     if (!this.isSupportedEvent(ctx)) {
-      ctx.reply(`Unsupported command: ${ctx.message?.text}`);
+      await ctx.reply(`Unsupported command: ${ctx.message?.text}`)
       return refundCallback('Unsupported command')
     }
 
@@ -60,14 +60,14 @@ export class QRCodeBot {
         const msg = ctx.callbackQuery.message?.text || ctx.callbackQuery.message?.caption || '';
 
         if (!msg) {
-          ctx.reply('Error: message is too old');
+          await ctx.reply('Error: message is too old');
           return refundCallback('Error: message is too old')
         }
 
         const cmd = this.parseQrCommand(msg);
 
         if (cmd.error || !cmd.command || !cmd.url || !cmd.prompt) {
-          ctx.reply('Message haven\'t contain command: ' + msg);
+          await ctx.reply('Message haven\'t contain command: ' + msg);
           return refundCallback('Message haven\'t contain command: ')
         }
 
@@ -89,7 +89,7 @@ export class QRCodeBot {
       return refundCallback('Unknown error');
     }
 
-    ctx.reply('Unsupported command');
+    await ctx.reply('Unsupported command');
     this.logger.info('Unsupported command');
     return refundCallback('Unsupported command');
   }
@@ -169,7 +169,7 @@ export class QRCodeBot {
     } catch (ex) {
       ctx.chatAction = null;
       this.logger.error(`ex ${ex}`);
-      ctx.reply("Internal error")
+      await ctx.reply("Internal error")
       throw new Error('Internal error');
     }
 
