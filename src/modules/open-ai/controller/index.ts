@@ -1,5 +1,4 @@
 import { pino } from "pino";
-import { GrammyError } from "grammy";
 import {
   ChatConversation,
   OnCallBackQueryData,
@@ -54,15 +53,7 @@ export const imgGen = async (
           caption: `/DALLE ${prompt}`,
         })
         .catch((e) => {
-          if (e instanceof GrammyError) {
-            logger.error(
-              `Error when sending message "Error handling your request" - ${e.error_code} - ${e.description}`
-            );
-          } else {
-            logger.error(
-              `Error when sending message "Error handling your request", ${e.toString()} `
-            );
-          }
+          throw e;
         });
     });
     return true;
@@ -84,15 +75,7 @@ export const imgGenEnhanced = async (
           `The following description was added to your prompt: ${upgratedPrompt}`
         )
         .catch((e) => {
-          if (e instanceof GrammyError) {
-            logger.error(
-              `Error when sending message "Error handling your request" - ${e.error_code} - ${e.description}`
-            );
-          } else {
-            logger.error(
-              `Error when sending message "Error handling your request", ${e.toString()} `
-            );
-          }
+          throw e;
         });
     }
     // bot.api.sendMessage(chatId, "generating the output...");
@@ -107,15 +90,7 @@ export const imgGenEnhanced = async (
           caption: `/DALLE ${upgratedPrompt || prompt}`,
         })
         .catch((e) => {
-          if (e instanceof GrammyError) {
-            logger.error(
-              `Error when sending message "Error handling your request" - ${e.error_code} - ${e.description}`
-            );
-          } else {
-            logger.error(
-              `Error when sending message "Error handling your request", ${e.toString()} `
-            );
-          }
+          throw e;
         });
     });
     return true;
@@ -142,15 +117,7 @@ export const alterImg = async (
     if (imgs) {
       imgs!.map(async (img: any) => {
         ctx.replyWithPhoto(img.url).catch((e) => {
-          if (e instanceof GrammyError) {
-            logger.error(
-              `Error when sending message "Error handling your request" - ${e.error_code} - ${e.description}`
-            );
-          } else {
-            logger.error(
-              `Error when sending message "Error handling your request", ${e.toString()} `
-            );
-          }
+          throw e;
         });
       });
     }

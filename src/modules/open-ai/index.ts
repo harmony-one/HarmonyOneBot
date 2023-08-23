@@ -235,7 +235,7 @@ export class OpenAIBot {
     // }
 
     if (ctx.message!.text === "/ask harmony.one/dear") {
-      ctx.reply(askTemplates.dear).catch((e) => this.onError(ctx, e));
+      await ctx.reply(askTemplates.dear).catch((e) => this.onError(ctx, e));
       return;
     }
 
@@ -381,7 +381,7 @@ export class OpenAIBot {
 
   async onChat(ctx: OnMessageContext | OnCallBackQueryData) {
     if (this.botSuspended) {
-      ctx.reply("The bot is suspended").catch((e) => this.onError(ctx, e));
+      await ctx.reply("The bot is suspended").catch((e) => this.onError(ctx, e));
       return;
     }
     try {
@@ -457,13 +457,13 @@ export class OpenAIBot {
   async onLast(ctx: OnMessageContext | OnCallBackQueryData) {
     if (ctx.session.openAi.chatGpt.chatConversation.length > 0) {
       const chat = ctx.session.openAi.chatGpt.chatConversation;
-      ctx
+      await ctx
         .reply(`${appText.gptLast}\n_${chat[chat.length - 1].content}_`, {
           parse_mode: "Markdown",
         })
         .catch((e) => this.onError(ctx, e));
     } else {
-      ctx
+      await ctx
         .reply(`To start a conversation please write */ask*`, {
           parse_mode: "Markdown",
         })
@@ -471,6 +471,14 @@ export class OpenAIBot {
     }
   }
 
+
+  async onEnd(ctx: OnMessageContext | OnCallBackQueryData) {
+    this.logger.info("/stop command");
+    ctx.session.openAi.chatGpt.chatConversation = [];
+    ctx.session.openAi.chatGpt.usage = 0;
+    ctx.session.openAi.chatGpt.price = 0;
+  }
+  
   async onError(
     ctx: OnMessageContext | OnCallBackQueryData,
     e: any,
@@ -493,7 +501,7 @@ export class OpenAIBot {
         const method = e.method;
         const errorMessage = `On method "${method}" | ${e.error_code} - ${e.description}`;
         this.logger.error(errorMessage);
-        ctx
+        await ctx
           .reply(
             `${
               ctx.from.username ? ctx.from.username : ""
@@ -501,18 +509,16 @@ export class OpenAIBot {
           )
           .catch((e) => this.onError(ctx, e, retryCount - 1));
         if (method === "editMessageText") {
-          //deletes last prompt
-          ctx.session.openAi.chatGpt.chatConversation.pop();
+          ctx.session.openAi.chatGpt.chatConversation.pop();  //deletes last prompt
         }
-        // wait retryAfter seconds to enable bot
-        await sleep(retryAfter * 1000);
+        await sleep(retryAfter * 1000); // wait retryAfter seconds to enable bot
         this.botSuspended = false;
       }
     } else if (e instanceof OpenAI.APIError) {
       // 429	RateLimitError
       // e.status = 400 || e.code = BadRequestError
       this.logger.error(`OPENAI Error ${e.status}(${e.code}) - ${e.message}`);
-      ctx
+      await ctx
         .reply(`Error accessing OpenAI (ChatGPT). Please try later`)
         .catch((e) => this.onError(ctx, e, retryCount - 1));
     } else {
@@ -521,12 +527,5 @@ export class OpenAIBot {
         .reply(msg ? msg : "Error handling your request")
         .catch((e) => this.onError(ctx, e, retryCount - 1));
     }
-  }
-
-  async onEnd(ctx: OnMessageContext | OnCallBackQueryData) {
-    this.logger.info("/stop command");
-    ctx.session.openAi.chatGpt.chatConversation = [];
-    ctx.session.openAi.chatGpt.usage = 0;
-    ctx.session.openAi.chatGpt.price = 0;
   }
 }
