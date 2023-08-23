@@ -442,7 +442,7 @@ To recharge: \`${account.address}\``,
 
   private async runIntervalCheck() {
     try {
-      if (Date.now() - this.lastPaymentTimestamp > 10 * 60 * 1000) {
+      if (Date.now() - this.lastPaymentTimestamp > 30 * 1000) {
         await this.withdrawHotWalletFunds();
       }
     } catch (e) {
@@ -451,9 +451,9 @@ To recharge: \`${account.address}\``,
           this.hotWallet.address
         } to holder address ${this.holderAddress} :"${(e as Error).message}"`
       );
-      await this.sleep(1000 * 60 * 10);
+      await this.sleep(1000 * 10);
     } finally {
-      await this.sleep(1000 * 60);
+      await this.sleep(1000 * 30);
       this.runIntervalCheck();
     }
   }
