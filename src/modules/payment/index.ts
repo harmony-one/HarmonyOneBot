@@ -288,6 +288,7 @@ export class BotPayments {
           );
           this.lastPaymentTimestamp = Date.now();
           if(tx) {
+            usdFeeCounter.inc(amountUSD)
             oneTokenFeeCounter.inc(amountToPay.toNumber())
             this.logger.info(
               `[${from.id} @${from.username}] withdraw successful, txHash: ${
@@ -307,8 +308,9 @@ export class BotPayments {
             reply_to_message_id: message_id,
           });
         }
+      } else {
+        usdFeeCounter.inc(amountUSD)
       }
-      usdFeeCounter.inc(amountUSD)
       return true
     } else {
       const addressBalance = await this.getAddressBalance(userAccount.address)
