@@ -83,7 +83,17 @@ export async function alterGeneratedImg(
       deleteFile(imageData.fileName!);
       return response?.data;
     } else {
-      ctx.reply(imageData.error);
+      ctx.reply(imageData.error).catch((e) => {
+        if (e instanceof GrammyError) {
+          logger.error(
+            `Error when sending message "Error handling your request" - ${e.error_code} - ${e.description}`
+          );
+        } else {
+          logger.error(
+            `Error when sending message "Error handling your request", ${e.toString()} `
+          );
+        }
+      });
       return null;
     }
   } catch (error: any) {
