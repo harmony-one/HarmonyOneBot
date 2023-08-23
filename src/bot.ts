@@ -164,130 +164,138 @@ const assignFreeCredits = async (ctx: OnMessageContext) => {
 };
 
 const onMessage = async (ctx: OnMessageContext) => {
-  await assignFreeCredits(ctx);
+  try {
+    await assignFreeCredits(ctx);
 
-  if (qrCodeBot.isSupportedEvent(ctx)) {
-    const price = qrCodeBot.getEstimatedPrice(ctx);
-    const isPaid = await payments.pay(ctx, price);
-    if (isPaid) {
-      qrCodeBot
-        .onEvent(ctx, (reason?: string) => {
-          payments.refundPayment(reason, ctx, price);
-        })
-        .catch((e) => {
-          payments.refundPayment(e.message || "Unknown error", ctx, price);
-        });
+    if (qrCodeBot.isSupportedEvent(ctx)) {
+      const price = qrCodeBot.getEstimatedPrice(ctx);
+      const isPaid = await payments.pay(ctx, price);
+      if (isPaid) {
+        qrCodeBot
+            .onEvent(ctx, (reason?: string) => {
+              payments.refundPayment(reason, ctx, price);
+            })
+            .catch((e) => {
+              payments.refundPayment(e.message || "Unknown error", ctx, price);
+            });
 
+        return;
+      }
+    }
+    if (sdImagesBot.isSupportedEvent(ctx)) {
+      const price = sdImagesBot.getEstimatedPrice(ctx);
+      const isPaid = await payments.pay(ctx, price);
+      if (isPaid) {
+        sdImagesBot
+            .onEvent(ctx, (reason?: string) => {
+              payments.refundPayment(reason, ctx, price);
+            })
+            .catch((e) => {
+              payments.refundPayment(e.message || "Unknown error", ctx, price);
+            });
+        return;
+      }
       return;
     }
-  }
-  if (sdImagesBot.isSupportedEvent(ctx)) {
-    const price = sdImagesBot.getEstimatedPrice(ctx);
-    const isPaid = await payments.pay(ctx, price);
-    if (isPaid) {
-      sdImagesBot
-        .onEvent(ctx, (reason?: string) => {
-          payments.refundPayment(reason, ctx, price);
-        })
-        .catch((e) => {
+    if (voiceMemo.isSupportedEvent(ctx)) {
+      const price = voiceMemo.getEstimatedPrice(ctx);
+      const isPaid = await payments.pay(ctx, price);
+      if (isPaid) {
+        voiceMemo.onEvent(ctx).catch((e) => {
           payments.refundPayment(e.message || "Unknown error", ctx, price);
         });
+      }
       return;
     }
-    return;
-  }
-  if (voiceMemo.isSupportedEvent(ctx)) {
-    const price = voiceMemo.getEstimatedPrice(ctx);
-    const isPaid = await payments.pay(ctx, price);
-    if (isPaid) {
-      voiceMemo.onEvent(ctx).catch((e) => {
-        payments.refundPayment(e.message || "Unknown error", ctx, price);
-      });
+    if (openAiBot.isSupportedEvent(ctx)) {
+      if (ctx.session.openAi.imageGen.isEnabled) {
+        if (openAiBot.isValidCommand(ctx)) {
+          const price = openAiBot.getEstimatedPrice(ctx);
+          const isPaid = await payments.pay(ctx, price);
+          if (isPaid) {
+            return openAiBot
+                .onEvent(ctx)
+                .catch((e) => payments.refundPayment(e, ctx, price));
+          }
+          return;
+        } else {
+          // ctx.reply("Error: Missing prompt");
+          return;
+        }
+      } else {
+        ctx.reply("Bot disabled");
+        return;
+      }
     }
-    return;
-  }
-  if (openAiBot.isSupportedEvent(ctx)) {
-    if (ctx.session.openAi.imageGen.isEnabled) {
-      if (openAiBot.isValidCommand(ctx)) {
-        const price = openAiBot.getEstimatedPrice(ctx);
+    if (oneCountryBot.isSupportedEvent(ctx)) {
+      if (oneCountryBot.isValidCommand(ctx)) {
+        const price = oneCountryBot.getEstimatedPrice(ctx);
+        // if (price > 0) {
+        //   await ctx.reply(`Processing withdraw for ${price.toFixed(2)}¢...`);
+        // }
         const isPaid = await payments.pay(ctx, price);
         if (isPaid) {
-          return openAiBot
-            .onEvent(ctx)
-            .catch((e) => payments.refundPayment(e, ctx, price));
+          oneCountryBot
+              .onEvent(ctx)
+              .catch((e) => payments.refundPayment(e, ctx, price));
+          return;
         }
         return;
       } else {
         // ctx.reply("Error: Missing prompt");
         return;
       }
-    } else {
-      ctx.reply("Bot disabled");
-      return;
     }
-  }
-  if (oneCountryBot.isSupportedEvent(ctx)) {
-    if (oneCountryBot.isValidCommand(ctx)) {
-      const price = oneCountryBot.getEstimatedPrice(ctx);
-      // if (price > 0) {
-      //   await ctx.reply(`Processing withdraw for ${price.toFixed(2)}¢...`);
-      // }
-      const isPaid = await payments.pay(ctx, price);
-      if (isPaid) {
-        oneCountryBot
-          .onEvent(ctx)
-          .catch((e) => payments.refundPayment(e, ctx, price));
-        return;
-      }
-      return;
-    } else {
-      // ctx.reply("Error: Missing prompt");
-      return;
-    }
-  }
 
-  if (walletConnect.isSupportedEvent(ctx)) {
-    walletConnect.onEvent(ctx);
-    return;
-  }
-  if (payments.isSupportedEvent(ctx)) {
-    payments.onEvent(ctx);
-    return;
-  }
-  if (schedule.isSupportedEvent(ctx)) {
-    schedule.onEvent(ctx);
-    return;
-  }
-  // if (ctx.update.message.text && ctx.update.message.text.startsWith("/", 0)) {
-  //  const command = ctx.update.message.text.split(' ')[0].slice(1)
-  // onlfy for private chats
-  if (ctx.update.message.chat && ctx.chat.type === "private") {
-    ctx.reply(
-      `Unsupported, type */help* for commands.`,
-      {
-        parse_mode: "Markdown",
-      }
-    );
-    return;
-  }
-  if (ctx.update.message.chat) {
-    logger.info(`Received message in chat id: ${ctx.update.message.chat.id}`);
+    if (walletConnect.isSupportedEvent(ctx)) {
+      walletConnect.onEvent(ctx);
+      return;
+    }
+    if (payments.isSupportedEvent(ctx)) {
+      payments.onEvent(ctx);
+      return;
+    }
+    if (schedule.isSupportedEvent(ctx)) {
+      schedule.onEvent(ctx);
+      return;
+    }
+    // if (ctx.update.message.text && ctx.update.message.text.startsWith("/", 0)) {
+    //  const command = ctx.update.message.text.split(' ')[0].slice(1)
+    // onlfy for private chats
+    if (ctx.update.message.chat && ctx.chat.type === "private") {
+      ctx.reply(
+          `Unsupported, type */help* for commands.`,
+          {
+            parse_mode: "Markdown",
+          }
+      );
+      return;
+    }
+    if (ctx.update.message.chat) {
+      logger.info(`Received message in chat id: ${ctx.update.message.chat.id}`);
+    }
+  }catch(ex: any){
+    console.error('onMessage error', ex)
   }
 };
 
 const onCallback = async (ctx: OnCallBackQueryData) => {
-  if (qrCodeBot.isSupportedEvent(ctx)) {
-    qrCodeBot.onEvent(ctx, (reason) => {
-      logger.error(`qr generate error: ${reason}`);
-    });
-    return;
-  }
+  try {
+    if (qrCodeBot.isSupportedEvent(ctx)) {
+      qrCodeBot.onEvent(ctx, (reason) => {
+        logger.error(`qr generate error: ${reason}`);
+      });
+      return;
+    }
 
-  if (sdImagesBot.isSupportedEvent(ctx)) {
-    sdImagesBot.onEvent(ctx, (e) => {
-      console.log(e, "// TODO refund payment");
-    });
-    return;
+    if (sdImagesBot.isSupportedEvent(ctx)) {
+      sdImagesBot.onEvent(ctx, (e) => {
+        console.log(e, "// TODO refund payment");
+      });
+      return;
+    }
+  }catch(ex: any){
+    console.error('onMessage error', ex)
   }
 };
 
@@ -368,6 +376,12 @@ bot.command("love", (ctx) => {
 bot.on("message", onMessage);
 bot.on("callback_query:data", onCallback);
 
+bot.start({
+  drop_pending_updates: true,
+});
+
+AppDataSource.initialize();
+
 bot.catch((err) => {
   const ctx = err.ctx;
   logger.error(`Error while handling update ${ctx.update.update_id}:`);
@@ -380,7 +394,9 @@ bot.catch((err) => {
     logger.error("Could not contact Telegram:", e);
   } else {
     logger.error("Unknown error:", e);
+    console.error('global error others', err)
   }
+  console.error('global error', err)
 });
 
 bot.errorBoundary((error) => {
@@ -394,12 +410,12 @@ app.use(express.static("./public")); // Public directory, used in voice-memo bot
 
 app.listen(config.port, () => {
   logger.info(`Bot listening on port ${config.port}`);
-  bot.start({
-    drop_pending_updates: true
-  });
-
-  AppDataSource.initialize();
   // bot.start({
   //   allowed_updates: ["callback_query"], // Needs to be set for menu middleware, but bot doesn't work with current configuration.
   // });
 });
+
+app.get('/health', (req, res) =>{
+  res.send('OK').end()
+})
+
