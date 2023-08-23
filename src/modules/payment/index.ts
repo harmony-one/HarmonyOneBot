@@ -7,6 +7,7 @@ import config from "../../config";
 import {chatService} from "../../database/services";
 import { OnMessageContext } from "../types";
 import { LRUCache } from 'lru-cache'
+import {creditsFeeCounter, oneTokenFeeCounter, usdFeeCounter} from "../../metrics/prometheus";
 
 interface CoinGeckoResponse {
   harmony: {
@@ -126,17 +127,18 @@ export class BotPayments {
       let nonce = undefined
       const nonceCache = this.noncePending.get(accountFrom.address)
       if(nonceCache) {
-        nonce = nonceCache + 1
+        nonce = nonceCache
       } else {
-        nonce = await web3.eth.getTransactionCount(accountFrom.address, 'pending') + 1
+        nonce = await web3.eth.getTransactionCount(accountFrom.address)
       }
+      nonce += 1
       this.noncePending.set(accountFrom.address, nonce)
 
       const txBody = {
         from: accountFrom.address,
         to: addressTo,
         value: web3.utils.toHex(amount.toFixed()),
-        nonce
+        // nonce
       };
       const gasLimit = await web3.eth.estimateGas(txBody);
       const tx = await web3.eth.sendTransaction({
@@ -275,6 +277,7 @@ export class BotPayments {
         const creditsPayAmount = bn.min(amountToPay, credits)
         await chatService.withdrawAmount(accountId, creditsPayAmount.toFixed())
         amountToPay = amountToPay.minus(creditsPayAmount)
+        creditsFeeCounter.inc(creditsPayAmount.toNumber())
         this.logger.info(`[@${from.username}] paid from credits: ${creditsPayAmount.toFixed()}, left to pay: ${amountToPay.toFixed()}`)
       }
       if(amountToPay.gt(0)) {
@@ -286,6 +289,7 @@ export class BotPayments {
           );
           this.lastPaymentTimestamp = Date.now();
           if(tx) {
+            oneTokenFeeCounter.inc(amountToPay.toNumber())
             this.logger.info(
               `[${from.id} @${from.username}] withdraw successful, txHash: ${
                 tx.transactionHash
@@ -294,7 +298,6 @@ export class BotPayments {
               }, amount ONE: ${amountToPay.toString()}`
             );
           }
-          return true;
         } catch (e) {
           this.logger.error(
             `[${from.id}] withdraw error: "${JSON.stringify(
@@ -305,9 +308,9 @@ export class BotPayments {
             reply_to_message_id: message_id,
           });
         }
-      } else {
-        return true;
       }
+      usdFeeCounter.inc(amountUSD)
+      return true
     } else {
       const addressBalance = await this.getAddressBalance(userAccount.address)
       const creditsBalance = await chatService.getBalance(accountId)
