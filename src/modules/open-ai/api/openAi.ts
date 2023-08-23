@@ -53,57 +53,43 @@ export async function postGenerateImg(
   }
 }
 
-// export async function alterGeneratedImg(
-//   chatId: number,
-//   prompt: string,
-//   filePath: string,
-//   ctx: OnMessageContext | OnCallBackQueryData,
-//   numImages?: number,
-//   imgSize?: string
-// ) {
-//   try {
-//     const imageData = await getImage(filePath);
-//     if (!imageData.error) {
-//       let response;
-//       const size = imgSize
-//         ? imgSize
-//         : config.openAi.dalle.sessionDefault.imgSize;
-//       if (isNaN(+prompt)) {
-//         const n = numImages
-//           ? numImages
-//           : config.openAi.dalle.sessionDefault.numImages;
-
-//         // response = await openai.images.edit(
-//         //   imageData.file,
-//         //   prompt,
-//         //   undefined,
-//         //   n,
-//         //   size
-//         // );
-//       } else {
-//         const size = imgSize
-//           ? imgSize
-//           : config.openAi.dalle.sessionDefault.imgSize;
-//         const n = parseInt(prompt);
-//         response = await openai.images.createVariation({
-//           image: imageData.file,
-//           n > 10 ? 1 : n,
-//           size
-
-//         }
-
-//         );
-//       }
-//       deleteFile(imageData.fileName!);
-//       return response?.data;
-//     } else {
-//       ctx.reply(imageData.error);
-//       return null;
-//     }
-//   } catch (error: any) {
-//     throw error;
-//   }
-// }
+export async function alterGeneratedImg(
+  chatId: number,
+  prompt: string,
+  filePath: string,
+  ctx: OnMessageContext | OnCallBackQueryData,
+  numImages?: number,
+  imgSize?: string
+) {
+  try {
+    const imageData = await getImage(filePath);
+    if (!imageData.error) {
+      let response;
+      const size = imgSize
+        ? imgSize
+        : config.openAi.dalle.sessionDefault.imgSize;
+      if (!isNaN(+prompt)) {
+        const size = imgSize
+          ? imgSize
+          : config.openAi.dalle.sessionDefault.imgSize;
+        const n = parseInt(prompt);
+        const payLoad: OpenAI.Images.ImageCreateVariationParams = {
+          image: imageData.file as any,
+          n: n > 10 ? 1 : n,
+          // size
+        };
+        response = await openai.images.createVariation(payLoad);
+      }
+      deleteFile(imageData.fileName!);
+      return response?.data;
+    } else {
+      ctx.reply(imageData.error);
+      return null;
+    }
+  } catch (error: any) {
+    throw error;
+  }
+}
 
 export async function chatCompilation(
   conversation: ChatConversation[],
@@ -150,7 +136,7 @@ export const streamChatCompletion = async (
 ): Promise<string> => {
   try {
     let completion = "";
-    const wordCountMinimum = config.openAi.chatGpt.wordCountBetween
+    const wordCountMinimum = config.openAi.chatGpt.wordCountBetween;
     return new Promise<string>(async (resolve, reject) => {
       try {
         const stream = await openai.chat.completions.create({
@@ -169,19 +155,8 @@ export const streamChatCompletion = async (
             ? part.choices[0]?.delta?.content
             : "";
           completion += chunck;
-          // if (chunck === "3") {
-          //   throw new GrammyError(
-          //     "GrammyError: Call to 'sendMessage' failed! (429: Too Many Requests: retry after 33)",
-          //     {
-          //       ok: false,
-          //       error_code: 429,
-          //       description: "Too Many Requests: retry after 36",
-          //     } as any,
-          //     "editMessageText",
-          //     {
-          //       parameters: { retry_after: 36 },
-          //     }
-          //   );
+          // if (chunck === '3') {
+          //   throw getGrammy429Error()
           // }
           if (chunck === "." && wordCount > wordCountMinimum) {
             completion = completion.replaceAll("..", "");
@@ -297,3 +272,18 @@ export const getDalleModelPrice = (
   }
   return price;
 };
+
+function getGrammy429Error() {
+  return new GrammyError(
+    "GrammyError: Call to 'sendMessage' failed! (429: Too Many Requests: retry after 33)",
+    {
+      ok: false,
+      error_code: 429,
+      description: "Too Many Requests: retry after 33",
+    } as any,
+    "editMessageText",
+    {
+      parameters: { retry_after: 33 },
+    }
+  );
+}

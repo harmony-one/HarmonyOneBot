@@ -1,10 +1,12 @@
 import { GrammyError } from "grammy";
+import OpenAI from "openai";
+import { Logger, pino } from "pino";
+
 import { getCommandNamePrompt } from "../1country/utils";
 import { BotPayments } from "../payment";
 import { OnMessageContext, OnCallBackQueryData } from "../types";
 import { getChatModel, getDalleModel, getDalleModelPrice } from "./api/openAi";
 import { alterImg, imgGen, imgGenEnhanced, promptGen } from "./controller";
-import { Logger, pino } from "pino";
 import { appText } from "./utils/text";
 import { chatService } from "../../database/services";
 import { ChatGPTModelsEnum } from "./types";
@@ -94,7 +96,7 @@ export class OpenAIBot {
     const hasCommand = ctx.hasCommand(
       Object.values(SupportedCommands).map((command) => command.name)
     );
-    const hasReply = false; //this.isSupportedImageReply(ctx);
+    const hasReply = this.isSupportedImageReply(ctx);
     const hasGroupPrefix = this.hasPrefix(ctx.message?.text || "");
     if (hasGroupPrefix) {
       return true;
@@ -170,12 +172,6 @@ export class OpenAIBot {
     if (!prompts) {
       return 0;
     }
-    // if (
-    //   ctx.chat.type !== "private" &&
-    //   ctx.session.openAi.chatGpt.chatConversation.length > 0
-    // ) {
-    //   return 0;
-    // }
     if (
       ctx.hasCommand(SupportedCommands.dalle.name) ||
       ctx.hasCommand(SupportedCommands.dalleLC.name)
@@ -299,23 +295,31 @@ export class OpenAIBot {
   }
 
   onGenImgCmd = async (ctx: OnMessageContext | OnCallBackQueryData) => {
-    if (ctx.session.openAi.imageGen.isEnabled) {
-      let prompt = ctx.match;
-      if (!prompt) {
-        prompt = config.openAi.dalle.defaultPrompt;
-        // ctx.reply("Error: Missing prompt");
-        // return;
+    try {
+      if (ctx.session.openAi.imageGen.isEnabled) {
+        let prompt = ctx.match;
+        if (!prompt) {
+          prompt = config.openAi.dalle.defaultPrompt;
+          // ctx.reply("Error: Missing prompt");
+          // return;
+        }
+        ctx.chatAction = "upload_photo";
+        const payload = {
+          chatId: ctx.chat?.id!,
+          prompt: prompt as string,
+          numImages: await ctx.session.openAi.imageGen.numImages, // lazy load
+          imgSize: await ctx.session.openAi.imageGen.imgSize, // lazy load
+        };
+        await imgGen(payload, ctx);
+      } else {
+        ctx.reply("Bot disabled");
       }
-      ctx.chatAction = "upload_photo";
-      const payload = {
-        chatId: ctx.chat?.id!,
-        prompt: prompt as string,
-        numImages: await ctx.session.openAi.imageGen.numImages, // lazy load
-        imgSize: await ctx.session.openAi.imageGen.imgSize, // lazy load
-      };
-      await imgGen(payload, ctx);
-    } else {
-      ctx.reply("Bot disabled");
+    } catch (e) {
+      if (e instanceof OpenAI.APIError) {
+        console.log(e.code, e.error, e.cause);
+      }
+      this.logger.error("alterImg Error", e);
+      ctx.reply("There was an error while generating the image");
     }
   };
 
