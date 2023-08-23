@@ -62,6 +62,7 @@
     "pg": "^8.11.2",
     "pino": "^8.14.1",
     "pino-pretty": "^10.0.1",
+    "prom-client": "^14.2.0",
     "qrcode": "^1.5.3",
     "reflect-metadata": "^0.1.13",
     "retry": "^0.13.1",
