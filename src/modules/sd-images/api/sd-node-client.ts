@@ -49,8 +49,6 @@ export class Client {
     constructor() { }
 
     txt2img = async (options: Txt2ImgOptions, serverConfig?: { host: string, wsHost: string }): Promise<Txt2ImgResponse> => {
-        // console.log('txt2img', options);
-
         const comfyClient = new ComfyClient({
             host: config.comfyHost,
             wsHost: config.comfyWsHost,
@@ -68,10 +66,9 @@ export class Client {
             const seed = options.seed || getRandomSeed();
 
             const prompt = buildImgPrompt({
+                ...options,
                 seed,
                 clientId: comfyClient.clientId,
-                model: MODELS_CONFIGS[0].path,
-                ...options,
             });
 
             const r = await comfyClient.queuePrompt(prompt);

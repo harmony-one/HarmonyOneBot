@@ -6,7 +6,7 @@ import { InlineKeyboard, InputFile } from "grammy";
 export class SDImagesBotBase {
     sdNodeApi: SDNodeApi;
 
-    private queue: string[] = [];
+    queue: string[] = [];
 
     constructor() {
         this.sdNodeApi = new SDNodeApi();
@@ -35,7 +35,8 @@ export class SDImagesBotBase {
         ctx: OnMessageContext | OnCallBackQueryData,
         refundCallback: (reason?: string) => void,
         prompt: string,
-        model: IModel
+        model: IModel,
+        seed?: number
     ) => {
         const uuid = uuidv4();
 
@@ -46,7 +47,8 @@ export class SDImagesBotBase {
 
             const imageBuffer = await this.sdNodeApi.generateImage(
                 prompt,
-                model.id
+                model,
+                seed
             );
 
             await ctx.replyWithPhoto(new InputFile(imageBuffer), {
