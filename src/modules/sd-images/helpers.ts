@@ -16,7 +16,7 @@ export interface IOperation {
 }
 
 const removeSpaceFromBegin = (text: string) => {
-    if(!text) return '';
+    if (!text) return '';
 
     let idx = 0;
 
@@ -35,7 +35,7 @@ const parsePrompts = (fullText: string): { modelId: string, prompt: string } => 
 
     if (text.startsWith('/') || text.startsWith(',')) {
         const startIdx = text.indexOf(' ');
-        text = startIdx > -1 ? text.slice(startIdx) : config.stableDiffusion.imageDefaultMessage;
+        text = startIdx > -1 ? text.slice(startIdx) : '';
     }
 
     try {
@@ -45,7 +45,7 @@ const parsePrompts = (fullText: string): { modelId: string, prompt: string } => 
         if (startIdx > -1) {
             prompt = text.split('');
             const modelParamStr = prompt.splice(startIdx, endIdx - startIdx);
-            
+
             prompt = prompt.join('');
             prompt = removeSpaceFromBegin(prompt);
 
@@ -57,7 +57,7 @@ const parsePrompts = (fullText: string): { modelId: string, prompt: string } => 
         console.log('Warning: sd images parse prompts', e);
     }
 
-    // console.log({ modelId, prompt });
+    console.log({ modelId, prompt });
 
     return { modelId, prompt };
 }
@@ -70,35 +70,24 @@ export const parseCtx = (ctx: Context): IOperation | false => {
             return false;
         }
 
-        const {
+        let {
             modelId,
-            prompt = config.stableDiffusion.imageDefaultMessage
+            prompt
         } = parsePrompts(ctx.message?.text);
 
-        const model = getModelByParam(modelId) || MODELS_CONFIGS[0];
+        let model = getModelByParam(modelId);
+        let command;
 
         if (ctx.hasCommand('image')) {
-            return {
-                command: COMMAND.TEXT_TO_IMAGE,
-                prompt,
-                model
-            }
+            command = COMMAND.TEXT_TO_IMAGE;
         }
 
         if (ctx.hasCommand('images')) {
-            return {
-                command: COMMAND.TEXT_TO_IMAGES,
-                prompt,
-                model
-            }
+            command = COMMAND.TEXT_TO_IMAGES;
         }
 
         if (ctx.hasCommand('SD')) {
-            return {
-                command: COMMAND.HELP,
-                prompt,
-                model
-            }
+            command = COMMAND.HELP;
         }
 
         const startWithCmdSymbol = !!ctx.message?.text?.startsWith('/');
@@ -108,21 +97,30 @@ export const parseCtx = (ctx: Context): IOperation | false => {
             const modelFromCmd = getModelByParam(cmd);
 
             if (modelFromCmd) {
-                return {
-                    command: COMMAND.TEXT_TO_IMAGE,
-                    prompt,
-                    model: modelFromCmd
-                }
+                command = COMMAND.TEXT_TO_IMAGE;
+                model = modelFromCmd;
             }
         }
 
         const startWithSpecialSymbol = !!ctx.message?.text?.startsWith(',');
 
         if (startWithSpecialSymbol) {
+            command = COMMAND.TEXT_TO_IMAGE;
+        }
+
+        if (!model) {
+            model = MODELS_CONFIGS[0];
+        }
+
+        if (!prompt) {
+            prompt = model.defaultPrompt;
+        }
+
+        if (command) {
             return {
-                command: COMMAND.TEXT_TO_IMAGE,
-                prompt,
-                model
+                command,
+                model,
+                prompt
             }
         }
     } catch (e) {
