@@ -63,13 +63,11 @@ export class WalletConnect {
 
 
     if (ctx.hasCommand(SupportedCommands.CONNECT)) {
-      this.connect(ctx);
-      return;
+      return this.connect(ctx);
     }
 
     if (ctx.hasCommand(SupportedCommands.CONNECT_HEX)) {
-      this.connecthex(ctx)
-      return;
+      return this.connecthex(ctx)
     }
 
     if (ctx.hasCommand(SupportedCommands.POOLS)) {
@@ -78,7 +76,7 @@ export class WalletConnect {
         `${config.walletc.webAppUrl}/pools`,
       );
 
-      ctx.reply('Swap Pools Info', {
+      await ctx.reply('Swap Pools Info', {
         reply_markup: keyboard,
       });
       return;
@@ -88,17 +86,15 @@ export class WalletConnect {
     if (ctx.hasCommand(SupportedCommands.SEND) && text) {
       const [, to = "", amount = ""] = text.split(" ");
       if (to.startsWith("0x") && +amount) {
-        this.send(ctx, to, amount);
-        return;
+        return this.send(ctx, to, amount);
       }
     }
 
     if (ctx.hasCommand(SupportedCommands.GET)) {
-      this.getBalance(ctx);
-      return;
+      return this.getBalance(ctx);
     }
 
-    ctx.reply('Unsupported command');
+    await ctx.reply('Unsupported command');
   }
 
   async requestProposal() {
@@ -166,17 +162,17 @@ export class WalletConnect {
 
       sessionMap[ctx.from.id] = session.topic;
 
-      ctx.api.deleteMessage(ctx.chat.id, message.message_id);
+      await ctx.api.deleteMessage(ctx.chat.id, message.message_id);
       // ctx.reply('wallet connected: ' + getUserAddr(session));
     } catch (ex) {
-      ctx.api.deleteMessage(ctx.chat.id, message.message_id);
+      await ctx.api.deleteMessage(ctx.chat.id, message.message_id);
       if (ex instanceof Error) {
         this.logger.error('error wc connect ' + ex.message)
         if (ex.message === PROPOSAL_EXPIRY_MESSAGE) {
           return;
         }
 
-        ctx.reply('Error while connection');
+        await ctx.reply('Error while connection');
       } else {
         this.logger.error('error wc connect ' + ex)
       }
@@ -190,14 +186,14 @@ export class WalletConnect {
     const sessionId = sessionMap[userId];
 
     if (!sessionId) {
-      ctx.reply('Link wallet with /connect');
+      await ctx.reply('Link wallet with /connect');
       return
     }
 
     const session = signClient.session.get(sessionId);
 
     if (!session) {
-      ctx.reply('Link wallet with /connect');
+      await ctx.reply('Link wallet with /connect');
       return
     }
 
@@ -241,14 +237,14 @@ export class WalletConnect {
       const sessionId = sessionMap[userId];
 
       if (!sessionId) {
-        ctx.reply('Link wallet with /connect');
+        await ctx.reply('Link wallet with /connect');
         return
       }
 
       const session = signClient.session.get(sessionId);
 
       if (!session) {
-        ctx.reply('Link wallet with /connect');
+        await ctx.reply('Link wallet with /connect');
         return
       }
 
@@ -264,11 +260,11 @@ export class WalletConnect {
 
 *USDT*: 0 USDT       
 `
-      ctx.reply(message, {
+      await ctx.reply(message, {
         parse_mode: "Markdown",
       })
     } catch (ex) {
-      ctx.reply('Unknown error');
+      await ctx.reply('Unknown error');
     }
   }
 }
