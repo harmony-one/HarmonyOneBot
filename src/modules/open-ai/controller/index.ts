@@ -7,7 +7,7 @@ import {
 import {
   improvePrompt,
   postGenerateImg,
-  // alterGeneratedImg,
+  alterGeneratedImg,
   streamChatCompletion,
   getTokenNumber,
   getChatModel,
@@ -97,24 +97,22 @@ export const alterImg = async (
   const { chatId, prompt, numImages, imgSize, filePath } = data;
   try {
     ctx.chatAction = "upload_photo";
-    // const imgs = await alterGeneratedImg(
-    //   chatId,
-    //   prompt!,
-    //   filePath!,
-    //   ctx,
-    //   numImages!,
-    //   imgSize!
-    // );
-    // if (imgs) {
-    //   imgs!.map(async (img: any) => {
-    //     ctx.replyWithPhoto(img.url);
-    //   });
-    // }
+    const imgs = await alterGeneratedImg(
+      chatId,
+      prompt!,
+      filePath!,
+      ctx,
+      numImages!,
+      imgSize!
+    );
+    if (imgs) {
+      imgs!.map(async (img: any) => {
+        ctx.replyWithPhoto(img.url);
+      });
+    }
     ctx.chatAction = null;
   } catch (e) {
-    logger.error("alterImg Error", e);
-    ctx.reply("There was an error while generating the image");
-    return false;
+    throw(e)
   }
 };
 
