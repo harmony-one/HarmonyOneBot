@@ -1,14 +1,18 @@
-import config from "../../config";
+import { GrammyError } from "grammy";
+import OpenAI from "openai";
+import { Logger, pino } from "pino";
+
 import { getCommandNamePrompt } from "../1country/utils";
 import { BotPayments } from "../payment";
 import { OnMessageContext, OnCallBackQueryData } from "../types";
 import { getChatModel, getDalleModel, getDalleModelPrice } from "./api/openAi";
 import { alterImg, imgGen, imgGenEnhanced, promptGen } from "./controller";
-import { Logger, pino } from "pino";
 import { appText } from "./utils/text";
 import { chatService } from "../../database/services";
 import { ChatGPTModelsEnum } from "./types";
 import { askTemplates } from "../../constants";
+import config from "../../config";
+import { sleep } from "../sd-images/utils";
 
 export const SupportedCommands = {
   // chat: {
@@ -67,6 +71,7 @@ export const SupportedCommands = {
 export class OpenAIBot {
   private logger: Logger;
   private payments: BotPayments;
+  private botSuspended: boolean;
 
   constructor(payments: BotPayments) {
     this.logger = pino({
@@ -78,6 +83,7 @@ export class OpenAIBot {
         },
       },
     });
+    this.botSuspended = false;
     this.payments = payments;
     if (!config.openAi.dalle.isEnabled) {
       this.logger.warn("DALL·E 2 Image Bot is disabled in config");
@@ -166,12 +172,6 @@ export class OpenAIBot {
     if (!prompts) {
       return 0;
     }
-    // if (
-    //   ctx.chat.type !== "private" &&
-    //   ctx.session.openAi.chatGpt.chatConversation.length > 0
-    // ) {
-    //   return 0;
-    // }
     if (
       ctx.hasCommand(SupportedCommands.dalle.name) ||
       ctx.hasCommand(SupportedCommands.dalleLC.name)
@@ -230,18 +230,29 @@ export class OpenAIBot {
     // }
 
     if (ctx.message!.text === "/ask harmony.one/dear") {
-      ctx.reply(askTemplates.dear);
+      ctx.reply(askTemplates.dear).catch((e) => {
+        if (e instanceof GrammyError) {
+          this.logger.error(
+            `Error when sending message "Error handling your request" - ${e.error_code} - ${e.description}`
+          );
+        } else {
+          this.logger.error(
+            `Error when sending message "Error handling your request", ${e.toString()} `
+          );
+        }
+      });
       return;
     }
 
     if (ctx.hasCommand(SupportedCommands.ask.name)) {
       ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_4;
+      // ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_35_TURBO;
       this.onChat(ctx);
       return;
     }
 
     if (ctx.hasCommand(SupportedCommands.ask35.name)) {
-      ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_35_TURBO;
+      ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_35_TURBO_16K;
       this.onChat(ctx);
       return;
     }
@@ -290,27 +301,63 @@ export class OpenAIBot {
     }
 
     this.logger.warn(`### unsupported command`);
-    ctx.reply("### unsupported command");
+    ctx.reply("### unsupported command").catch((e) => {
+      if (e instanceof GrammyError) {
+        this.logger.error(
+          `Error when sending message "Error handling your request" - ${e.error_code} - ${e.description}`
+        );
+      } else {
+        this.logger.error(
+          `Error when sending message "Error handling your request", ${e.toString()} `
+        );
+      }
+    });
   }
 
   onGenImgCmd = async (ctx: OnMessageContext | OnCallBackQueryData) => {
-    if (ctx.session.openAi.imageGen.isEnabled) {
-      let prompt = ctx.match;
-      if (!prompt) {
-        prompt = config.openAi.dalle.defaultPrompt;
-        // ctx.reply("Error: Missing prompt");
-        // return;
+    try {
+      if (ctx.session.openAi.imageGen.isEnabled) {
+        let prompt = ctx.match;
+        if (!prompt) {
+          prompt = config.openAi.dalle.defaultPrompt;
+        }
+        ctx.chatAction = "upload_photo";
+        const payload = {
+          chatId: ctx.chat?.id!,
+          prompt: prompt as string,
+          numImages: await ctx.session.openAi.imageGen.numImages, // lazy load
+          imgSize: await ctx.session.openAi.imageGen.imgSize, // lazy load
+        };
+        await imgGen(payload, ctx);
+      } else {
+        ctx.reply("Bot disabled").catch((e) => {
+          if (e instanceof GrammyError) {
+            this.logger.error(
+              `Error when sending message "Error handling your request" - ${e.error_code} - ${e.description}`
+            );
+          } else {
+            this.logger.error(
+              `Error when sending message "Error handling your request", ${e.toString()} `
+            );
+          }
+        });
       }
-      ctx.chatAction = "upload_photo";
-      const payload = {
-        chatId: ctx.chat?.id!,
-        prompt: prompt as string,
-        numImages: await ctx.session.openAi.imageGen.numImages, // lazy load
-        imgSize: await ctx.session.openAi.imageGen.imgSize, // lazy load
-      };
-      await imgGen(payload, ctx);
-    } else {
-      ctx.reply("Bot disabled");
+    } catch (e) {
+      if (e instanceof OpenAI.APIError) {
+        console.log(e.code, e.error, e.cause);
+      }
+      this.logger.error("alterImg Error", e);
+      ctx.reply("There was an error while generating the image").catch((e) => {
+        if (e instanceof GrammyError) {
+          this.logger.error(
+            `Error when sending message "Error handling your request" - ${e.error_code} - ${e.description}`
+          );
+        } else {
+          this.logger.error(
+            `Error when sending message "Error handling your request", ${e.toString()} `
+          );
+        }
+      });
     }
   };
 
@@ -318,7 +365,17 @@ export class OpenAIBot {
     if (ctx.session.openAi.imageGen.isEnabled) {
       const prompt = ctx.match;
       if (!prompt) {
-        ctx.reply("Error: Missing prompt");
+        ctx.reply("Error: Missing prompt").catch((e) => {
+          if (e instanceof GrammyError) {
+            this.logger.error(
+              `Error when sending message "Error handling your request" - ${e.error_code} - ${e.description}`
+            );
+          } else {
+            this.logger.error(
+              `Error when sending message "Error handling your request", ${e.toString()} `
+            );
+          }
+        });
         return;
       }
       const payload = {
@@ -327,10 +384,30 @@ export class OpenAIBot {
         numImages: await ctx.session.openAi.imageGen.numImages,
         imgSize: await ctx.session.openAi.imageGen.imgSize,
       };
-      ctx.reply("generating improved prompt...");
+      ctx.reply("generating improved prompt...").catch((e) => {
+        if (e instanceof GrammyError) {
+          this.logger.error(
+            `Error when sending message "Error handling your request" - ${e.error_code} - ${e.description}`
+          );
+        } else {
+          this.logger.error(
+            `Error when sending message "Error handling your request", ${e.toString()} `
+          );
+        }
+      });
       await imgGenEnhanced(payload, ctx);
     } else {
-      ctx.reply("Bot disabled");
+      ctx.reply("Bot disabled").catch((e) => {
+        if (e instanceof GrammyError) {
+          this.logger.error(
+            `Error when sending message "Error handling your request" - ${e.error_code} - ${e.description}`
+          );
+        } else {
+          this.logger.error(
+            `Error when sending message "Error handling your request", ${e.toString()} `
+          );
+        }
+      });
     }
   };
 
@@ -354,11 +431,31 @@ export class OpenAIBot {
       }
     } catch (e: any) {
       this.logger.error(e);
-      ctx.reply("An error occurred while generating the AI edit");
+      ctx.reply("An error occurred while generating the AI edit").catch((e) => {
+        if (e instanceof GrammyError) {
+          this.logger.error(
+            `Error when sending message "Error handling your request" - ${e.error_code} - ${e.description}`
+          );
+        } else {
+          this.logger.error(
+            `Error when sending message "Error handling your request", ${e.toString()} `
+          );
+        }
+      });
     }
   };
 
   async onChat(ctx: OnMessageContext | OnCallBackQueryData) {
+    if (this.botSuspended) {
+      ctx.reply("The bot is suspended").catch((e) => {
+        if (e instanceof GrammyError) {
+          this.logger.error(
+            `Error when sending message "The bot is suspended" - ${e.error_code} - ${e.description}`
+          );
+        }
+      });
+      return;
+    }
     try {
       const { prompt, commandName } = getCommandNamePrompt(
         ctx,
@@ -382,7 +479,17 @@ export class OpenAIBot {
                   chatConversation[chatConversation.length - 1].content
                 }_`
               : appText.introText;
-          await ctx.reply(msg, { parse_mode: "Markdown" });
+          await ctx.reply(msg, { parse_mode: "Markdown" }).catch((e) => {
+            if (e instanceof GrammyError) {
+              this.logger.error(
+                `Error when sending message "Error handling your request" - ${e.error_code} - ${e.description}`
+              );
+            } else {
+              this.logger.error(
+                `Error when sending message "Error handling your request", ${e.toString()} `
+              );
+            }
+          });
           return;
         }
         // if (chatConversation.length === 0) {
@@ -392,7 +499,6 @@ export class OpenAIBot {
           role: "user",
           content: `${this.hasPrefix(prompt) ? prompt.slice(1) : prompt}.`,
         });
-
         const payload = {
           conversation: chatConversation!,
           model: model || config.openAi.chatGpt.model,
@@ -410,32 +516,119 @@ export class OpenAIBot {
           const balanceMessage = appText.notEnoughBalance
             .replaceAll("$CREDITS", balanceOne)
             .replaceAll("$WALLET_ADDRESS", account?.address || "");
-          await ctx.reply(balanceMessage, { parse_mode: "Markdown" });
+          await ctx
+            .reply(balanceMessage, { parse_mode: "Markdown" })
+            .catch((e) => {
+              if (e instanceof GrammyError) {
+                this.logger.error(
+                  `Error when sending message "Error handling your request" - ${e.error_code} - ${e.description}`
+                );
+              } else {
+                this.logger.error(
+                  `Error when sending message "Error handling your request", ${e.toString()} `
+                );
+              }
+            });
         }
         ctx.chatAction = null;
       } else {
         const balanceMessage = appText.notEnoughBalance
           .replaceAll("$CREDITS", balanceOne)
           .replaceAll("$WALLET_ADDRESS", account?.address || "");
-        await ctx.reply(balanceMessage, { parse_mode: "Markdown" });
+        await ctx
+          .reply(balanceMessage, { parse_mode: "Markdown" })
+          .catch((e) => {
+            if (e instanceof GrammyError) {
+              this.logger.error(
+                `Error when sending message "Error handling your request" - ${e.error_code} - ${e.description}`
+              );
+            } else {
+              this.logger.error(
+                `Error when sending message "Error handling your request", ${e.toString()} `
+              );
+            }
+          });
       }
-    } catch (error: any) {
+    } catch (e: any) {
       ctx.chatAction = null;
-      this.logger.error(`onChat: ${error.toString()}`);
-      await ctx.reply("Error handling your request");
+      if (e instanceof GrammyError) {
+        if (e.error_code === 429) {
+          this.botSuspended = true;
+          const retryAfter = e.parameters.retry_after
+            ? e.parameters.retry_after < 60
+              ? 60
+              : e.parameters.retry_after * 2
+            : 60;
+          const errorMessage = `${e.error_code} - ${e.description}`;
+          ctx
+            .reply(
+              `${
+                ctx.from.username ? ctx.from.username : ""
+              } Bot has reached limit, wait ${retryAfter} seconds`
+            )
+            .catch((e) => {
+              if (e instanceof GrammyError) {
+                this.logger.error(
+                  `Error when sending message "Bot has reached limit, wait ${retryAfter} seconds" - ${e.error_code} - ${e.description}`
+                );
+              }
+            });
+          ctx.session.openAi.chatGpt.chatConversation.pop(); //deletes lastt prompt
+          await sleep(retryAfter * 1000);
+          this.botSuspended = false;
+          this.logger.error(errorMessage);
+        }
+      } else {
+        this.logger.error(`onChat: ${e.toString()}`);
+        await ctx.reply("Error handling your request").catch((e) => {
+          if (e instanceof GrammyError) {
+            this.logger.error(
+              `Error when sending message "Error handling your request" - ${e.error_code} - ${e.description}`
+            );
+          } else {
+            this.logger.error(
+              `Error when sending message "Error handling your request", ${e.toString()} `
+            );
+          }
+        });
+      }
     }
   }
 
   async onLast(ctx: OnMessageContext | OnCallBackQueryData) {
     if (ctx.session.openAi.chatGpt.chatConversation.length > 0) {
       const chat = ctx.session.openAi.chatGpt.chatConversation;
-      ctx.reply(`${appText.gptLast}\n_${chat[chat.length - 1].content}_`, {
-        parse_mode: "Markdown",
-      });
+      ctx
+        .reply(`${appText.gptLast}\n_${chat[chat.length - 1].content}_`, {
+          parse_mode: "Markdown",
+        })
+        .catch((e) => {
+          if (e instanceof GrammyError) {
+            this.logger.error(
+              `Error when sending message "Error handling your request" - ${e.error_code} - ${e.description}`
+            );
+          } else {
+            this.logger.error(
+              `Error when sending message "Error handling your request", ${e.toString()} `
+            );
+          }
+        });
     } else {
-      ctx.reply(`To start a conversation please write */ask*`, {
-        parse_mode: "Markdown",
-      });
+      ctx
+        .reply(`To start a conversation please write */ask*`, {
+          parse_mode: "Markdown",
+        })
+        .catch((e) => {
+          if (e instanceof GrammyError) {
+            this.logger.error(
+              `Error when sending message "Error handling your request" - ${e.error_code} - ${e.description}`
+            );
+          } else {
+            this.logger.error(
+              `Error when sending message "Error handling your request", ${e.toString()} `
+            );
+          }
+        });
     }
   }
 

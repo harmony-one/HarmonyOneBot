@@ -1,4 +1,5 @@
 import { pino } from "pino";
+import { GrammyError } from "grammy";
 import {
   ChatConversation,
   OnCallBackQueryData,
@@ -48,15 +49,25 @@ export const imgGen = async (
   try {
     const imgs = await postGenerateImg(prompt, numImages, imgSize);
     imgs.map(async (img: any) => {
-      await ctx.replyWithPhoto(img.url, {
-        caption: `/DALLE ${prompt}`,
-      });
+      await ctx
+        .replyWithPhoto(img.url, {
+          caption: `/DALLE ${prompt}`,
+        })
+        .catch((e) => {
+          if (e instanceof GrammyError) {
+            logger.error(
+              `Error when sending message "Error handling your request" - ${e.error_code} - ${e.description}`
+            );
+          } else {
+            logger.error(
+              `Error when sending message "Error handling your request", ${e.toString()} `
+            );
+          }
+        });
     });
     return true;
   } catch (e: any) {
-    logger.error("/gen Error", e.toString());
-    ctx.reply("There was an error while generating the image");
-    return false;
+    throw e;
   }
 };
 
@@ -68,9 +79,21 @@ export const imgGenEnhanced = async (
   try {
     const upgratedPrompt = await improvePrompt(prompt, model!);
     if (upgratedPrompt) {
-      ctx.reply(
-        `The following description was added to your prompt: ${upgratedPrompt}`
-      );
+      ctx
+        .reply(
+          `The following description was added to your prompt: ${upgratedPrompt}`
+        )
+        .catch((e) => {
+          if (e instanceof GrammyError) {
+            logger.error(
+              `Error when sending message "Error handling your request" - ${e.error_code} - ${e.description}`
+            );
+          } else {
+            logger.error(
+              `Error when sending message "Error handling your request", ${e.toString()} `
+            );
+          }
+        });
     }
     // bot.api.sendMessage(chatId, "generating the output...");
     const imgs = await postGenerateImg(
@@ -79,14 +102,25 @@ export const imgGenEnhanced = async (
       imgSize
     );
     imgs.map(async (img: any) => {
-      await ctx.replyWithPhoto(img.url, {
-        caption: `/DALLE ${upgratedPrompt || prompt}`,
-      });
+      await ctx
+        .replyWithPhoto(img.url, {
+          caption: `/DALLE ${upgratedPrompt || prompt}`,
+        })
+        .catch((e) => {
+          if (e instanceof GrammyError) {
+            logger.error(
+              `Error when sending message "Error handling your request" - ${e.error_code} - ${e.description}`
+            );
+          } else {
+            logger.error(
+              `Error when sending message "Error handling your request", ${e.toString()} `
+            );
+          }
+        });
     });
     return true;
   } catch (e) {
-    ctx.reply(`There was an error while generating the image: ${e}`);
-    return false;
+    throw e;
   }
 };
 
@@ -107,14 +141,22 @@ export const alterImg = async (
     );
     if (imgs) {
       imgs!.map(async (img: any) => {
-        ctx.replyWithPhoto(img.url);
+        ctx.replyWithPhoto(img.url).catch((e) => {
+          if (e instanceof GrammyError) {
+            logger.error(
+              `Error when sending message "Error handling your request" - ${e.error_code} - ${e.description}`
+            );
+          } else {
+            logger.error(
+              `Error when sending message "Error handling your request", ${e.toString()} `
+            );
+          }
+        });
       });
     }
     ctx.chatAction = null;
   } catch (e) {
-    logger.error("alterImg Error", e);
-    ctx.reply("There was an error while generating the image");
-    return false;
+    throw e;
   }
 };
 
@@ -122,7 +164,7 @@ export const promptGen = async (data: ChatGptPayload) => {
   const { conversation, ctx, model } = data;
   try {
     let msgId = (await ctx.reply("...")).message_id;
-    const isTypingEnabled = config.openAi.chatGpt.isTypingEnabled
+    const isTypingEnabled = config.openAi.chatGpt.isTypingEnabled;
     if (isTypingEnabled) {
       ctx.chatAction = "typing";
     }
@@ -133,6 +175,9 @@ export const promptGen = async (data: ChatGptPayload) => {
       msgId,
       true // telegram messages has a char limit
     );
+    if (isTypingEnabled) {
+      ctx.chatAction = null;
+    }
     if (completion) {
       const prompt = conversation[conversation.length - 1].content;
       const promptTokens = getTokenNumber(prompt);
@@ -142,9 +187,9 @@ export const promptGen = async (data: ChatGptPayload) => {
         getChatModelPrice(modelPrice, true, promptTokens, completionTokens) *
         config.openAi.chatGpt.priceAdjustment;
       logger.info(
-        `streamChatCompletion result = tokens: ${promptTokens + completionTokens} | ${
-          modelPrice.name
-        } | price: ${price}¢`
+        `streamChatCompletion result = tokens: ${
+          promptTokens + completionTokens
+        } | ${modelPrice.name} | price: ${price}¢`
       );
       conversation.push({ content: completion, role: "system" });
       ctx.session.openAi.chatGpt.usage += promptTokens + completionTokens;
@@ -155,7 +200,6 @@ export const promptGen = async (data: ChatGptPayload) => {
     return 0;
   } catch (e: any) {
     ctx.chatAction = null;
-    logger.error(`promptGen Error: ${e.toString()}`);
     throw e;
   }
 };

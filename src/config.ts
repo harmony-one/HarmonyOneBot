@@ -48,13 +48,15 @@ export default {
       },
     },
     chatGpt: {
+      wordCountBetween: process.env.WORD_COUNT_BETWEEN ? parseInt(process.env.WORD_COUNT_BETWEEN) : 100,
       priceAdjustment: process.env.PRICE_ADJUSTMENT
         ? parseInt(process.env.PRICE_ADJUSTMENT)
         : 2,
       isEnabled: Boolean(parseInt(process.env.CHAT_GPT_ENABLED || "1")),
       isTypingEnabled: Boolean(parseInt(process.env.TYPING_STATUS_ENABLED || "1")),
       //hard coded gpt-4
-      model: "gpt-4", // process.env.OPENAI_MODEL ||
+      // model: "gpt-4",
+      model: process.env.OPENAI_MODEL ?? "gpt-4",
       chatPrefix: process.env.GROUP_PREFIX
         ? process.env.GROUP_PREFIX.split(",")
         : ["?", ">"],

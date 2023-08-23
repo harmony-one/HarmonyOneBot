@@ -86,7 +86,7 @@ export class BotPayments {
   }
 
   public toONE(amount: BigNumber, roundCeil = true) {
-    const value = this.web3.utils.fromWei(amount.toFixed(), 'ether')
+    const value = this.web3.utils.fromWei(amount.toFixed(0), 'ether')
     if(roundCeil) {
       return Math.ceil(+value)
     }
