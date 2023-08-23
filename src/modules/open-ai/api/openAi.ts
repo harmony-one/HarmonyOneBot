@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import { encode } from "gpt-tokenizer";
+import { GrammyError } from "grammy";
 
 import config from "../../../config";
 import { deleteFile, getImage } from "../utils/file";
@@ -16,6 +17,7 @@ import {
   DalleGPTModel,
   DalleGPTModels,
 } from "../types";
+import { sleep } from "../../sd-images/utils";
 
 const openai = new OpenAI({
   apiKey: config.openAiKey,
@@ -148,13 +150,14 @@ export const streamChatCompletion = async (
 ): Promise<string> => {
   try {
     let completion = "";
+    const wordCountBetween = config.openAi.chatGpt.wordCountBetween
     return new Promise<string>(async (resolve, reject) => {
       try {
         const stream = await openai.chat.completions.create({
           model: model,
           messages:
             conversation as OpenAI.Chat.Completions.CreateChatCompletionRequestMessage[],
-          stream: true, 
+          stream: true,
           max_tokens: limitTokens ? config.openAi.maxTokens : undefined,
           temperature: config.openAi.dalle.completions.temperature,
         });
@@ -166,24 +169,69 @@ export const streamChatCompletion = async (
             ? part.choices[0]?.delta?.content
             : "";
           completion += chunck;
-          if (chunck === "." && wordCount > 100) {
+          // if (chunck === "3") {
+          //   throw new GrammyError(
+          //     "GrammyError: Call to 'sendMessage' failed! (429: Too Many Requests: retry after 33)",
+          //     {
+          //       ok: false,
+          //       error_code: 429,
+          //       description: "Too Many Requests: retry after 36",
+          //     } as any,
+          //     "editMessageText",
+          //     {
+          //       parameters: { retry_after: 36 },
+          //     }
+          //   );
+          // }
+          if (chunck === "." && wordCount > wordCountBetween) {
             completion = completion.replaceAll("..", "");
             completion += "..";
             wordCount = 0;
             ctx.api
               .editMessageText(ctx.chat?.id!, msgId, completion)
-              .catch((e: any) => console.log(e));
+              .catch(async (e: any) => {
+                if (e instanceof GrammyError) {
+                  if (e.error_code === 429) {
+                    reject(e);
+                  } else {
+                    const errorMessage = `${e.error_code} - ${e.description}`;
+                    logger.error(errorMessage);
+                  }
+                } else {
+                  logger.error(e);
+                }
+              });
           }
         }
         completion = completion.replaceAll("..", "");
         ctx.api
           .editMessageText(ctx.chat?.id!, msgId, completion)
-          .catch((e: any) => console.log(e));
+          .catch((e: any) => {
+            if (e instanceof GrammyError) {
+              if (e.error_code === 429) {
+                reject(e);
+              } else {
+                const errorMessage = `${e.error_code} - ${e.description}`;
+                logger.error(errorMessage);
+              }
+            } else {
+              logger.error(e);
+            }
+          });
         resolve(completion);
-      } catch (error) {
-        reject(
-          `streamChatCompletion: An error occurred during OpenAI request: ${error}`
-        );
+      } catch (e) {
+        if (e instanceof GrammyError) {
+          if (e.error_code === 429) {
+            reject(e);
+          } else {
+            const errorMessage = `${e.error_code} - ${e.description}`;
+            logger.error(errorMessage);
+          }
+        } else {
+          reject(
+            `streamChatCompletion: An error occurred during OpenAI request: ${e}`
+          );
+        }
       }
     });
   } catch (error: any) {

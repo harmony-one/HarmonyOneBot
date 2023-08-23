@@ -1,4 +1,6 @@
-import config from "../../config";
+import {
+  GrammyError,
+} from "grammy";
 import { getCommandNamePrompt } from "../1country/utils";
 import { BotPayments } from "../payment";
 import { OnMessageContext, OnCallBackQueryData } from "../types";
@@ -9,6 +11,8 @@ import { appText } from "./utils/text";
 import { chatService } from "../../database/services";
 import { ChatGPTModelsEnum } from "./types";
 import { askTemplates } from "../../constants";
+import config from "../../config";
+import { sleep } from "../sd-images/utils";
 
 export const SupportedCommands = {
   // chat: {
@@ -67,6 +71,7 @@ export const SupportedCommands = {
 export class OpenAIBot {
   private logger: Logger;
   private payments: BotPayments;
+  private botSuspended: boolean
 
   constructor(payments: BotPayments) {
     this.logger = pino({
@@ -78,6 +83,7 @@ export class OpenAIBot {
         },
       },
     });
+    this.botSuspended = false
     this.payments = payments;
     if (!config.openAi.dalle.isEnabled) {
       this.logger.warn("DALL·E 2 Image Bot is disabled in config");
@@ -359,6 +365,10 @@ export class OpenAIBot {
   };
 
   async onChat(ctx: OnMessageContext | OnCallBackQueryData) {
+    if (this.botSuspended) {
+      ctx.reply('The bot is suspended')
+      return
+    }
     try {
       const { prompt, commandName } = getCommandNamePrompt(
         ctx,
@@ -419,10 +429,24 @@ export class OpenAIBot {
           .replaceAll("$WALLET_ADDRESS", account?.address || "");
         await ctx.reply(balanceMessage, { parse_mode: "Markdown" });
       }
-    } catch (error: any) {
+    } catch (e: any) {
       ctx.chatAction = null;
-      this.logger.error(`onChat: ${error.toString()}`);
-      await ctx.reply("Error handling your request");
+      if (e instanceof GrammyError) {
+        if (e.error_code === 429) {
+          this.botSuspended = true
+          const retryAfter = e.parameters.retry_after ? 
+            (e.parameters.retry_after < 60 ? 60 : e.parameters.retry_after * 2) : 60
+          const errorMessage = `${e.error_code} - ${e.description}`
+          ctx.session.openAi.chatGpt.chatConversation.pop() //deletes lastt prompt
+          ctx.reply(`${ctx.from.username ? ctx.from.username : ''} Bot has reached limit, wait ${retryAfter} seconds`)
+          await sleep(retryAfter * 1000)
+          this.botSuspended = false
+          this.logger.error(errorMessage)
+        }
+      } else {
+        this.logger.error(`onChat: ${e.toString()}`);
+        await ctx.reply("Error handling your request");
+      }
     }
   }
 

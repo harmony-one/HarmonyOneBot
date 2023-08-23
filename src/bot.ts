@@ -374,7 +374,7 @@ bot.catch((err) => {
   logger.error(`Error while handling update ${ctx.update.update_id}:`);
   const e = err.error;
   if (e instanceof GrammyError) {
-    console.log('GrammyERROR:', e);
+    console.log('Grammy error:', {e});
     logger.error("Error in request:", e.description);
     logger.error(`Error in message: ${JSON.stringify(ctx.message)}`)
   } else if (e instanceof HttpError) {

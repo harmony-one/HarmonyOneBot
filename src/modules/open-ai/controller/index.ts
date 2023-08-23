@@ -158,7 +158,6 @@ export const promptGen = async (data: ChatGptPayload) => {
     return 0;
   } catch (e: any) {
     ctx.chatAction = null;
-    logger.error(`promptGen Error: ${e.toString()}`);
     throw e;
   }
 };
