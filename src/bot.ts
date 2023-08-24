@@ -165,19 +165,19 @@ const assignFreeCredits = async (ctx: OnMessageContext) => {
   return true;
 };
 
-// bot.use((ctx, next) => {
-//   const entities = ctx.entities();
-//
-//   for (let i = 0; i < entities.length; i++) {
-//     const entity = entities[i];
-//     if (entity.type === 'bot_command' && ctx.message) {
-//       const tgUserId = ctx.message.from.id;
-//       statsService.addCommandStat({tgUserId, command: entity.text.replace('/', ''), rawMessage: ''})
-//     }
-//   }
-//
-//   return next();
-// })
+bot.use((ctx, next) => {
+  const entities = ctx.entities();
+
+  for (let i = 0; i < entities.length; i++) {
+    const entity = entities[i];
+    if (entity.type === 'bot_command' && ctx.message) {
+      const tgUserId = ctx.message.from.id;
+      statsService.addCommandStat({tgUserId, command: entity.text.replace('/', ''), rawMessage: ''})
+    }
+  }
+
+  return next();
+})
 
 const writeCommandLog = async (ctx: OnMessageContext, isSupportedCommand = true) => {
   const { from, text = '', chat } = ctx.update.message
