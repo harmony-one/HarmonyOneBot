@@ -1,7 +1,9 @@
-import { ComfyClient } from '../qrcode/comfy/ComfyClient';
-import config from "../../config";
-import { sleep, waitingExecute } from './utils';
+import { ComfyClient } from '../../qrcode/comfy/ComfyClient';
+import config from "../../../config";
+import { sleep } from '../utils';
 import { buildImgPrompt } from './text_to_img_config';
+import { MODELS_CONFIGS } from './models-config';
+import { waitingExecute } from './helpers';
 
 export type Txt2ImgOptions = {
     hires?: {
@@ -31,7 +33,7 @@ export type Txt2ImgOptions = {
         name: string
         args?: string[]
     }
-    model?: MODELS
+    model?: string;
 }
 
 export type Txt2ImgResponse = {
@@ -41,19 +43,16 @@ export type Txt2ImgResponse = {
     info: string
 }
 
-export enum MODELS {
-    "XL_BASE_1.0" = "sd_xl_base_1.0.safetensors",
-}
-
 const getRandomSeed = () => Math.round(Math.random() * 1e15);
 
 export class Client {
     constructor() { }
 
-    txt2img = async (options: Txt2ImgOptions): Promise<Txt2ImgResponse> => {
+    txt2img = async (options: Txt2ImgOptions, serverConfig?: { host: string, wsHost: string }): Promise<Txt2ImgResponse> => {
         const comfyClient = new ComfyClient({
             host: config.comfyHost,
-            wsHost: config.comfyWsHost
+            wsHost: config.comfyWsHost,
+            ...serverConfig
         });
 
         try {
@@ -70,12 +69,11 @@ export class Client {
                 ...options,
                 seed,
                 clientId: comfyClient.clientId,
-                model: MODELS['XL_BASE_1.0']
             });
 
             const r = await comfyClient.queuePrompt(prompt);
 
-            const promptResult = await waitingExecute(() => comfyClient.waitingPromptExecution(r.prompt_id), 1000 * 120);
+            const promptResult = await waitingExecute(() => comfyClient.waitingPromptExecution(r.prompt_id), 1000 * 180);
 
             const history = await comfyClient.history(r.prompt_id);
 
@@ -88,7 +86,7 @@ export class Client {
             return {
                 images,
                 parameters: {},
-                all_seeds: history.outputs['9'].images.map((i, idx) => String(seed + idx)),
+                all_seeds: [String(seed)],
                 info: ''
             } as Txt2ImgResponse;
         } catch (e) {
