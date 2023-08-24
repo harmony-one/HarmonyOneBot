@@ -30,11 +30,10 @@ import { BotSchedule } from "./modules/schedule";
 import config from "./config";
 import { commandsHelpText, TERMS, SUPPORT, FEEDBACK, LOVE } from "./constants";
 
-import {chatService} from "./database/services";
-import {AppDataSource} from "./database/datasource";
+import { chatService } from "./database/services";
+import { AppDataSource } from "./database/datasource";
 import { text } from "stream/consumers";
 import { autoRetry } from "@grammyjs/auto-retry";
-
 
 const logger = pino({
   name: "bot",
@@ -83,6 +82,8 @@ function createInitialSessionData(): BotSessionData {
         chatConversation: [],
         price: 0,
         usage: 0,
+        isProcessingQueue: false,
+        requestQueue: [],
       },
     },
     oneCountry: {
@@ -172,12 +173,12 @@ const onMessage = async (ctx: OnMessageContext) => {
       const isPaid = await payments.pay(ctx, price);
       if (isPaid) {
         qrCodeBot
-            .onEvent(ctx, (reason?: string) => {
-              payments.refundPayment(reason, ctx, price);
-            })
-            .catch((e) => {
-              payments.refundPayment(e.message || "Unknown error", ctx, price);
-            });
+          .onEvent(ctx, (reason?: string) => {
+            payments.refundPayment(reason, ctx, price);
+          })
+          .catch((e) => {
+            payments.refundPayment(e.message || "Unknown error", ctx, price);
+          });
 
         return;
       }
@@ -187,12 +188,12 @@ const onMessage = async (ctx: OnMessageContext) => {
       const isPaid = await payments.pay(ctx, price);
       if (isPaid) {
         sdImagesBot
-            .onEvent(ctx, (reason?: string) => {
-              payments.refundPayment(reason, ctx, price);
-            })
-            .catch((e) => {
-              payments.refundPayment(e.message || "Unknown error", ctx, price);
-            });
+          .onEvent(ctx, (reason?: string) => {
+            payments.refundPayment(reason, ctx, price);
+          })
+          .catch((e) => {
+            payments.refundPayment(e.message || "Unknown error", ctx, price);
+          });
         return;
       }
       return;
@@ -214,8 +215,8 @@ const onMessage = async (ctx: OnMessageContext) => {
           const isPaid = await payments.pay(ctx, price);
           if (isPaid) {
             return openAiBot
-                .onEvent(ctx)
-                .catch((e) => payments.refundPayment(e, ctx, price));
+              .onEvent(ctx)
+              .catch((e) => payments.refundPayment(e, ctx, price));
           }
           return;
         } else {
@@ -236,8 +237,8 @@ const onMessage = async (ctx: OnMessageContext) => {
         const isPaid = await payments.pay(ctx, price);
         if (isPaid) {
           oneCountryBot
-              .onEvent(ctx)
-              .catch((e) => payments.refundPayment(e, ctx, price));
+            .onEvent(ctx)
+            .catch((e) => payments.refundPayment(e, ctx, price));
           return;
         }
         return;
@@ -263,19 +264,16 @@ const onMessage = async (ctx: OnMessageContext) => {
     //  const command = ctx.update.message.text.split(' ')[0].slice(1)
     // onlfy for private chats
     if (ctx.update.message.chat && ctx.chat.type === "private") {
-      ctx.reply(
-          `Unsupported, type */help* for commands.`,
-          {
-            parse_mode: "Markdown",
-          }
-      );
+      ctx.reply(`Unsupported, type */help* for commands.`, {
+        parse_mode: "Markdown",
+      });
       return;
     }
     if (ctx.update.message.chat) {
       logger.info(`Received message in chat id: ${ctx.update.message.chat.id}`);
     }
-  }catch(ex: any){
-    console.error('onMessage error', ex)
+  } catch (ex: any) {
+    console.error("onMessage error", ex);
   }
 };
 
@@ -294,8 +292,8 @@ const onCallback = async (ctx: OnCallBackQueryData) => {
       });
       return;
     }
-  }catch(ex: any){
-    console.error('onMessage error', ex)
+  } catch (ex: any) {
+    console.error("onMessage error", ex);
   }
 };
 
@@ -387,16 +385,15 @@ bot.catch((err) => {
   logger.error(`Error while handling update ${ctx.update.update_id}:`);
   const e = err.error;
   if (e instanceof GrammyError) {
-    console.log('Grammy error:', {e});
     logger.error("Error in request:", e.description);
-    logger.error(`Error in message: ${JSON.stringify(ctx.message)}`)
+    logger.error(`Error in message: ${JSON.stringify(ctx.message)}`);
   } else if (e instanceof HttpError) {
     logger.error("Could not contact Telegram:", e);
   } else {
     logger.error("Unknown error:", e);
-    console.error('global error others', err)
+    console.error("global error others", err);
   }
-  console.error('global error', err)
+  console.error("global error", err);
 });
 
 bot.errorBoundary((error) => {
@@ -415,7 +412,6 @@ app.listen(config.port, () => {
   // });
 });
 
-app.get('/health', (req, res) =>{
-  res.send('OK').end()
-})
-
+app.get("/health", (req, res) => {
+  res.send("OK").end();
+});
