@@ -17,7 +17,6 @@ import {
   DalleGPTModel,
   DalleGPTModels,
 } from "../types";
-import { sleep } from "../../sd-images/utils";
 
 const openai = new OpenAI({
   apiKey: config.openAiKey,
@@ -83,16 +82,8 @@ export async function alterGeneratedImg(
       deleteFile(imageData.fileName!);
       return response?.data;
     } else {
-      ctx.reply(imageData.error).catch((e) => {
-        if (e instanceof GrammyError) {
-          logger.error(
-            `Error when sending message "Error handling your request" - ${e.error_code} - ${e.description}`
-          );
-        } else {
-          logger.error(
-            `Error when sending message "Error handling your request", ${e.toString()} `
-          );
-        }
+      await ctx.reply(imageData.error).catch((e) => {
+        throw e;
       });
       return null;
     }
@@ -129,11 +120,7 @@ export async function chatCompilation(
       price: price * config.openAi.chatGpt.priceAdjustment,
     };
   } catch (e: any) {
-    logger.error(e.response);
-    throw (
-      e.response?.data.error.message ||
-      "There was an error processing your request"
-    );
+    throw e;
   }
 }
 
@@ -165,64 +152,50 @@ export const streamChatCompletion = async (
             ? part.choices[0]?.delta?.content
             : "";
           completion += chunck;
-          // if (chunck === '3') {
+          // if (wordCount > 20) {
           //   throw getGrammy429Error()
           // }
           if (chunck === "." && wordCount > wordCountMinimum) {
             completion = completion.replaceAll("..", "");
             completion += "..";
             wordCount = 0;
-            ctx.api
+            await ctx.api
               .editMessageText(ctx.chat?.id!, msgId, completion)
               .catch(async (e: any) => {
                 if (e instanceof GrammyError) {
-                  if (e.error_code === 429) {
+                  if (e.error_code !== 400) {
                     reject(e);
                   } else {
-                    const errorMessage = `${e.error_code} - ${e.description}`;
-                    logger.error(errorMessage);
+                    logger.error(e);
                   }
                 } else {
-                  logger.error(e);
+                  reject(e);
                 }
               });
           }
         }
         completion = completion.replaceAll("..", "");
-        ctx.api
+        await ctx.api
           .editMessageText(ctx.chat?.id!, msgId, completion)
           .catch((e: any) => {
             if (e instanceof GrammyError) {
-              if (e.error_code === 429) {
+              if (e.error_code !== 400) {
                 reject(e);
               } else {
-                const errorMessage = `${e.error_code} - ${e.description}`;
-                logger.error(errorMessage);
+                logger.error(e);
               }
             } else {
-              logger.error(e);
+              reject(e);
             }
           });
+
         resolve(completion);
       } catch (e) {
-        if (e instanceof GrammyError) {
-          if (e.error_code === 429) {
-            reject(e);
-          } else {
-            const errorMessage = `${e.error_code} - ${e.description}`;
-            logger.error(errorMessage);
-          }
-        } else {
-          reject(
-            `streamChatCompletion: An error occurred during OpenAI request: ${e}`
-          );
-        }
+        reject(e);
       }
     });
   } catch (error: any) {
-    return Promise.reject(
-      `streamChatCompletion: An error occurred during OpenAI request: ${error}`
-    );
+    return Promise.reject(error);
   }
 };
 
@@ -233,11 +206,7 @@ export async function improvePrompt(promptText: string, model: string) {
     const response = await chatCompilation(conversation, model);
     return response.completion;
   } catch (e: any) {
-    logger.error(e.response);
-    throw (
-      e.response?.data.error.message ||
-      "There was an error processing your request"
-    );
+    throw e;
   }
 }
 
