@@ -71,6 +71,7 @@ export class BotSchedule {
       this.reportMessage = reportMessage
       return reportMessage
     } catch (e) {
+      console.log('### e', e);
       this.logger.error(`Cannot get stats: ${(e as Error).message}`)
     }
   }
@@ -111,7 +112,7 @@ export class BotSchedule {
   }
 
   public isSupportedEvent(ctx: OnMessageContext) {
-    return ctx.hasCommand(Object.values(SupportedCommands));
+    return config.schedule.isEnabled && ctx.hasCommand(Object.values(SupportedCommands));
   }
 
   public async getBotFeeReport(address: string): Promise<string> {
