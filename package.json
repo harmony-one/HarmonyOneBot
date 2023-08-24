@@ -6,7 +6,7 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/bot.js",
-    "dev": "env-cmd ts-node-dev src/bot.ts",
+    "dev": "env-cmd ts-node-dev --exit-child src/bot.ts",
     "test": "echo \"Error: no test specified\" && exit 1",
     "typeorm": "typeorm-ts-node-commonjs -d src/database/datasource.ts"
   },
@@ -44,6 +44,7 @@
     "@grammyjs/conversations": "^1.1.2",
     "@grammyjs/menu": "^1.2.1",
     "@grammyjs/ratelimiter": "^1.2.0",
+    "@grammyjs/runner": "^2.0.3",
     "@walletconnect/sign-client": "^2.9.2",
     "axios": "^1.4.0",
     "bignumber.js": "^9.1.1",
@@ -62,6 +63,7 @@
     "pg": "^8.11.2",
     "pino": "^8.14.1",
     "pino-pretty": "^10.0.1",
+    "prom-client": "^14.2.0",
     "qrcode": "^1.5.3",
     "reflect-metadata": "^0.1.13",
     "retry": "^0.13.1",

@@ -20,7 +20,7 @@ Example: \`/send 0x199177Bcc7cdB22eC10E3A2DA888c7811275fc38 2.55\`
 export const walletMenu = new Menu<BotContext>(MenuIds.WALLET_MAIN).back(
   menuText.mainMenu.backButton,
   (ctx) => {
-    ctx.editMessageText(menuText.mainMenu.menuName).catch((ex) => {
+    return ctx.editMessageText(menuText.mainMenu.menuName).catch((ex) => {
       console.log('### ex', ex);
     });
   }
