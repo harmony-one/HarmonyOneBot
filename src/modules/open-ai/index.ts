@@ -67,6 +67,8 @@ export const SupportedCommands = {
   },
 };
 
+const MAX_TRIES = 3;
+
 // const payments = new BotPayments();
 export class OpenAIBot {
   private logger: Logger;
@@ -208,7 +210,6 @@ export class OpenAIBot {
       return 0;
     } catch (e) {
       this.onError(ctx, e);
-      return 0;
     }
   }
 
@@ -241,7 +242,6 @@ export class OpenAIBot {
 
     if (ctx.hasCommand(SupportedCommands.ask.name)) {
       ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_4;
-      // ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_35_TURBO;
       this.onChat(ctx);
       return;
     }
@@ -296,9 +296,9 @@ export class OpenAIBot {
     }
 
     this.logger.warn(`### unsupported command`);
-    ctx
+    await ctx
       .reply("### unsupported command")
-      .catch((e) => this.onError(ctx, e, 3, "Bot disabled"));
+      .catch((e) => this.onError(ctx, e, MAX_TRIES, "Bot disabled"));
   }
 
   onGenImgCmd = async (ctx: OnMessageContext | OnCallBackQueryData) => {
@@ -317,9 +317,9 @@ export class OpenAIBot {
         };
         await imgGen(payload, ctx);
       } else {
-        ctx
+        await ctx
           .reply("Bot disabled")
-          .catch((e) => this.onError(ctx, e, 3, "Bot disabled"));
+          .catch((e) => this.onError(ctx, e, MAX_TRIES, "Bot disabled"));
       }
     } catch (e) {
       this.onError(ctx, e, 3, "There was an error while generating the image");
@@ -329,27 +329,29 @@ export class OpenAIBot {
   onGenImgEnCmd = async (ctx: OnMessageContext | OnCallBackQueryData) => {
     try {
       if (ctx.session.openAi.imageGen.isEnabled) {
-        const prompt = ctx.match;
+        const prompt = await ctx.match;
         if (!prompt) {
-          ctx
+          await ctx
             .reply("Error: Missing prompt")
-            .catch((e) => this.onError(ctx, e, 3, "Error: Missing prompt"));
+            .catch((e) =>
+              this.onError(ctx, e, MAX_TRIES, "Error: Missing prompt")
+            );
           return;
         }
         const payload = {
-          chatId: ctx.chat?.id!,
-          prompt: ctx.match as string,
+          chatId: await ctx.chat?.id!,
+          prompt: prompt as string,
           numImages: await ctx.session.openAi.imageGen.numImages,
           imgSize: await ctx.session.openAi.imageGen.imgSize,
         };
-        ctx
+        await ctx
           .reply("generating improved prompt...")
           .catch((e) => this.onError(ctx, e));
         await imgGenEnhanced(payload, ctx);
       } else {
-        ctx
+        await ctx
           .reply("Bot disabled")
-          .catch((e) => this.onError(ctx, e, 3, "Bot disabled"));
+          .catch((e) => this.onError(ctx, e, MAX_TRIES, "Bot disabled"));
       }
     } catch (e) {
       this.onError(ctx, e);
@@ -375,7 +377,12 @@ export class OpenAIBot {
         await alterImg(payload, ctx);
       }
     } catch (e: any) {
-      this.onError(ctx, e, 3, "An error occurred while generating the AI edit");
+      this.onError(
+        ctx,
+        e,
+        MAX_TRIES,
+        "An error occurred while generating the AI edit"
+      );
     }
   };
 
@@ -472,9 +479,17 @@ export class OpenAIBot {
             .reply(balanceMessage, { parse_mode: "Markdown" })
             .catch((e) => this.onError(ctx, e));
         }
-      } catch (e: any) {
-        this.onError(ctx, e);
+        ctx.chatAction = null;
+      } else {
+        const balanceMessage = appText.notEnoughBalance
+          .replaceAll("$CREDITS", balanceOne)
+          .replaceAll("$WALLET_ADDRESS", account?.address || "");
+        await ctx
+          .reply(balanceMessage, { parse_mode: "Markdown" })
+          .catch((e) => this.onError(ctx, e));
       }
+    } catch (e: any) {
+      this.onError(ctx, e);
     }
   }
 

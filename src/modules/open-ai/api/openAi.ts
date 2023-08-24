@@ -159,13 +159,33 @@ export const streamChatCompletion = async (
             wordCount = 0;
             await ctx.api
               .editMessageText(ctx.chat?.id!, msgId, completion)
-              .catch(async (e: any) => reject(e));
+              .catch(async (e: any) => {
+                if (e instanceof GrammyError) {
+                  if (e.error_code !== 400) {
+                    reject(e);
+                  } else {
+                    logger.error(e);
+                  }
+                } else {
+                  reject(e);
+                }
+              });
           }
         }
         completion = completion.replaceAll("..", "");
         await ctx.api
           .editMessageText(ctx.chat?.id!, msgId, completion)
-          .catch((e: any) => reject(e));
+          .catch((e: any) => {
+            if (e instanceof GrammyError) {
+              if (e.error_code !== 400) {
+                reject(e);
+              } else {
+                logger.error(e);
+              }
+            } else {
+              reject(e);
+            }
+          });
         resolve(completion);
       } catch (e) {
         reject(e);
