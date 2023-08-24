@@ -67,6 +67,8 @@ export const SupportedCommands = {
   },
 };
 
+const MAX_TRIES = 3;
+
 // const payments = new BotPayments();
 export class OpenAIBot {
   private logger: Logger;
@@ -296,7 +298,7 @@ export class OpenAIBot {
     this.logger.warn(`### unsupported command`);
     await ctx
       .reply("### unsupported command")
-      .catch((e) => this.onError(ctx, e, 3, "Bot disabled"));
+      .catch((e) => this.onError(ctx, e, MAX_TRIES, "Bot disabled"));
   }
 
   onGenImgCmd = async (ctx: OnMessageContext | OnCallBackQueryData) => {
@@ -317,7 +319,7 @@ export class OpenAIBot {
       } else {
         await ctx
           .reply("Bot disabled")
-          .catch((e) => this.onError(ctx, e, 3, "Bot disabled"));
+          .catch((e) => this.onError(ctx, e, MAX_TRIES, "Bot disabled"));
       }
     } catch (e) {
       this.onError(ctx, e, 3, "There was an error while generating the image");
@@ -331,7 +333,9 @@ export class OpenAIBot {
         if (!prompt) {
           await ctx
             .reply("Error: Missing prompt")
-            .catch((e) => this.onError(ctx, e, 3, "Error: Missing prompt"));
+            .catch((e) =>
+              this.onError(ctx, e, MAX_TRIES, "Error: Missing prompt")
+            );
           return;
         }
         const payload = {
@@ -347,7 +351,7 @@ export class OpenAIBot {
       } else {
         await ctx
           .reply("Bot disabled")
-          .catch((e) => this.onError(ctx, e, 3, "Bot disabled"));
+          .catch((e) => this.onError(ctx, e, MAX_TRIES, "Bot disabled"));
       }
     } catch (e) {
       this.onError(ctx, e);
@@ -373,7 +377,12 @@ export class OpenAIBot {
         await alterImg(payload, ctx);
       }
     } catch (e: any) {
-      this.onError(ctx, e, 3, "An error occurred while generating the AI edit");
+      this.onError(
+        ctx,
+        e,
+        MAX_TRIES,
+        "An error occurred while generating the AI edit"
+      );
     }
   };
 
