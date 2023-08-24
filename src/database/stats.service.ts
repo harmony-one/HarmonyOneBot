@@ -70,7 +70,7 @@ export class StatsService {
       [dateStart, dateEnd])
 
     if(rows.length > 0) {
-      return rows[0].count
+      return +rows[0].count
     }
     return 0
   }
