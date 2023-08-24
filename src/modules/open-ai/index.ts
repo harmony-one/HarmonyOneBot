@@ -154,7 +154,7 @@ export class OpenAIBot {
   private hasPrefix(prompt: string): string {
     const prefixList = config.openAi.chatGpt.chatPrefix;
     for (let i = 0; i < prefixList.length; i++) {
-      if (prompt.startsWith(prefixList[i])) {
+      if (prompt.toLocaleLowerCase().startsWith(prefixList[i])) {
         return prefixList[i];
       }
     }
