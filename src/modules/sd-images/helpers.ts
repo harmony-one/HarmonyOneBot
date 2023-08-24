@@ -33,7 +33,9 @@ const parsePrompts = (fullText: string): { modelId: string, prompt: string } => 
 
     let text = fullText;
 
-    if (text.startsWith('/') || text.startsWith(',')) {
+    const specialSymbols = ['/', ',', 'i.'];
+
+    if (specialSymbols.some(s => !!text.startsWith(s))) {
         const startIdx = text.indexOf(' ');
         text = startIdx > -1 ? text.slice(startIdx) : '';
     }
@@ -82,13 +84,17 @@ export const parseCtx = (ctx: Context): IOperation | false => {
             command = COMMAND.TEXT_TO_IMAGE;
         }
 
+        if (ctx.hasCommand('img')) {
+            command = COMMAND.TEXT_TO_IMAGE;
+        }
+
         if (ctx.hasCommand('images')) {
             command = COMMAND.TEXT_TO_IMAGES;
         }
 
-        if (ctx.hasCommand('all')) {
-            command = COMMAND.CONSTRUCTOR;
-        }
+        // if (ctx.hasCommand('all')) {
+        //     command = COMMAND.CONSTRUCTOR;
+        // }
 
         if (ctx.hasCommand('SD')) {
             command = COMMAND.HELP;
@@ -106,7 +112,9 @@ export const parseCtx = (ctx: Context): IOperation | false => {
             }
         }
 
-        const startWithSpecialSymbol = !!ctx.message?.text?.startsWith(',');
+        const specialSymbols = [',', 'i.'];
+
+        const startWithSpecialSymbol = specialSymbols.some(s => !!ctx.message?.text?.startsWith(s));
 
         if (startWithSpecialSymbol) {
             command = COMMAND.TEXT_TO_IMAGE;
