@@ -53,11 +53,9 @@ export async function postGenerateImg(
 }
 
 export async function alterGeneratedImg(
-  chatId: number,
   prompt: string,
   filePath: string,
   ctx: OnMessageContext | OnCallBackQueryData,
-  numImages?: number,
   imgSize?: string
 ) {
   try {

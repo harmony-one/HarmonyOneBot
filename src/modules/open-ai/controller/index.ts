@@ -107,11 +107,9 @@ export const alterImg = async (
   try {
     ctx.chatAction = "upload_photo";
     const imgs = await alterGeneratedImg(
-      chatId,
       prompt!,
       filePath!,
       ctx,
-      numImages!,
       imgSize!
     );
     if (imgs) {
@@ -140,7 +138,7 @@ export const promptGen = async (data: ChatGptPayload) => {
       ctx,
       model,
       msgId,
-      true // telegram messages has a char limit
+      true // telegram messages has a character limit
     );
     if (isTypingEnabled) {
       ctx.chatAction = null;
