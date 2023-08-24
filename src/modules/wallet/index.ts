@@ -43,7 +43,7 @@ export class Wallet {
       }
     }
 
-    ctx.reply('Harmony ONE Wallet', {
+    await ctx.reply('Harmony ONE Wallet', {
       reply_markup: keyboard
     });
   }

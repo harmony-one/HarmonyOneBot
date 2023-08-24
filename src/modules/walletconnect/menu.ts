@@ -20,7 +20,7 @@ Example:
 
 export const walletMenu = new Menu<BotContext>(MenuIds.WALLET_MAIN)
   .text("Help", (ctx) => {
-    ctx
+    return ctx
       .editMessageText(helpText, {
         parse_mode: "Markdown",
         disable_web_page_preview: true,
