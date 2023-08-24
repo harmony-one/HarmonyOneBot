@@ -22,7 +22,7 @@ export const MODELS_CONFIGS: IModel[] = [
         baseModel: 'SDXL 1.0',
         aliases: ['xl', '1010', 'he6b'],
         defaultPrompt: 'A cat is sitting in a kimono, in the style of renaissance - inspired chiaroscuro, hyper - realistic portraiture, nicolas mignard, old master influenced fantasy, portraitures with hidden meanings, dom qwek, art of burma',
-        defaultImage
+        defaultImage: 'https://github.com/harmony-one/HarmonyOneBot/blob/fc0fb21f8d64b9fa7b68aa5aa28ed099b07d81cd/src/modules/sd-images/default_images/xl.jpeg?raw=true'
     },
     {
         path: "deliberate_v2.safetensors",

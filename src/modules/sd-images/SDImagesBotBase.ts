@@ -34,26 +34,37 @@ export class SDImagesBotBase {
     generateImage = async (
         ctx: OnMessageContext | OnCallBackQueryData,
         refundCallback: (reason?: string) => void,
-        prompt: string,
-        model: IModel,
-        seed?: number
+        params: {
+            prompt: string,
+            model: IModel,
+            seed?: number,
+            isDefault?: boolean
+        }
     ) => {
         const uuid = uuidv4();
+
+        const { prompt, model, seed, isDefault = false } = params;
 
         try {
             await this.waitingQueue(uuid, ctx);
 
             ctx.chatAction = "upload_photo";
 
-            const imageBuffer = await this.sdNodeApi.generateImage(
-                prompt,
-                model,
-                seed
-            );
+            if (isDefault && model.defaultImage) {
+                await ctx.replyWithPhoto(model.defaultImage, {
+                    caption: `/${model.aliases[0]} ${prompt}`,
+                });
+            } else {
+                const imageBuffer = await this.sdNodeApi.generateImage(
+                    prompt,
+                    model,
+                    seed
+                );
 
-            await ctx.replyWithPhoto(new InputFile(imageBuffer), {
-                caption: `/${model.aliases[0]} ${prompt}`,
-            });
+                await ctx.replyWithPhoto(new InputFile(imageBuffer), {
+                    caption: `/${model.aliases[0]} ${prompt}`,
+                });
+            }
         } catch (e) {
             console.error(e);
             ctx.reply(`Error: something went wrong... Refunding payments`);

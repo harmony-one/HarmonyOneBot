@@ -13,6 +13,7 @@ export interface IOperation {
     command: COMMAND;
     prompt: string;
     model: IModel;
+    isDefault: boolean;
 }
 
 const removeSpaceFromBegin = (text: string) => {
@@ -79,6 +80,7 @@ export const parseCtx = (ctx: Context): IOperation | false => {
 
         let model = getModelByParam(modelId);
         let command;
+        let isDefault = false;
 
         if (ctx.hasCommand('image')) {
             command = COMMAND.TEXT_TO_IMAGE;
@@ -126,13 +128,15 @@ export const parseCtx = (ctx: Context): IOperation | false => {
 
         if (!prompt) {
             prompt = model.defaultPrompt;
+            isDefault = !!model.defaultImage;
         }
 
         if (command) {
             return {
                 command,
                 model,
-                prompt
+                prompt,
+                isDefault
             }
         }
     } catch (e) {
