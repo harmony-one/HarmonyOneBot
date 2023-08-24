@@ -71,6 +71,7 @@ export class BotSchedule {
       this.reportMessage = reportMessage
       return reportMessage
     } catch (e) {
+      console.log('### e', e);
       this.logger.error(`Cannot get stats: ${(e as Error).message}`)
     }
   }
@@ -111,7 +112,7 @@ export class BotSchedule {
   }
 
   public isSupportedEvent(ctx: OnMessageContext) {
-    return ctx.hasCommand(Object.values(SupportedCommands));
+    return config.schedule.isEnabled && ctx.hasCommand(Object.values(SupportedCommands));
   }
 
   public async getBotFeeReport(address: string): Promise<string> {
@@ -127,8 +128,8 @@ export class BotSchedule {
     ])
 
     const report = `\nBot fees: ${botFeesReport}` +
-      `\nDaily Active Users: ${dau}` +
-      `\nMonthly Active Users: ${mau}`
+      `\nDaily Active Users: *${dau}*` +
+      `\nMonthly Active Users: *${mau}*`
     return report;
   }
 
@@ -139,7 +140,6 @@ export class BotSchedule {
       const report = await this.prepareMetricsUpdate()
       if(report) {
         await ctx.reply(report, {
-          reply_to_message_id: message_id,
           parse_mode: "Markdown",
         });
       }
@@ -148,7 +148,6 @@ export class BotSchedule {
     if (ctx.hasCommand(SupportedCommands.STATS)) {
       const report = await this.generateReport()
       ctx.reply(report, {
-        reply_to_message_id: message_id,
         parse_mode: "Markdown",
       });
     }

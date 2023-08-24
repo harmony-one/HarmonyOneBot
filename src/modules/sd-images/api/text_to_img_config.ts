@@ -9,7 +9,7 @@ export function buildImgPrompt(options: Txt2ImgOptions & { clientId: string }) {
                     seed: options.seed,
                     steps: options.steps,
                     cfg: 8,
-                    sampler_name: "euler_ancestral",
+                    sampler_name: "dpmpp_2m",
                     scheduler: "karras",
                     denoise: 1,
                     model: ["4", 0],
@@ -25,8 +25,8 @@ export function buildImgPrompt(options: Txt2ImgOptions & { clientId: string }) {
             },
             5: {
                 inputs: {
-                    width: 1024,
-                    height: 1024,
+                    width: options.width || 1024,
+                    height: options.height || 1024,
                     batch_size: options.batchSize || 1,
                 },
                 class_type: "EmptyLatentImage",
@@ -35,7 +35,7 @@ export function buildImgPrompt(options: Txt2ImgOptions & { clientId: string }) {
                 inputs: { text: options.prompt, clip: ["4", 1] },
                 class_type: "CLIPTextEncode",
             },
-            7: { inputs: { text: "", clip: ["4", 1] }, class_type: "CLIPTextEncode" },
+            7: { inputs: { text: options.negativePrompt, clip: ["4", 1] }, class_type: "CLIPTextEncode" },
             8: {
                 inputs: { samples: ["3", 0], vae: ["4", 2] },
                 class_type: "VAEDecode",
@@ -136,7 +136,7 @@ export function buildImgPrompt(options: Txt2ImgOptions & { clientId: string }) {
                                 { name: "LATENT", type: "LATENT", links: [2], slot_index: 0 },
                             ],
                             properties: { "Node name for S&R": "EmptyLatentImage" },
-                            widgets_values: [1024, 1024, 1],
+                            widgets_values: [options.width || 1024, options.height || 1024, 1],
                         },
                         {
                             id: 9,
@@ -169,11 +169,11 @@ export function buildImgPrompt(options: Txt2ImgOptions & { clientId: string }) {
                             ],
                             properties: { "Node name for S&R": "KSampler" },
                             widgets_values: [
-                                877217196051697,
+                                options.seed,
                                 "randomize",
-                                30,
+                                options.steps,
                                 8,
-                                "euler_ancestral",
+                                "dpmpp_2m",
                                 "karras",
                                 1,
                             ],
