@@ -11,6 +11,7 @@ export class SDNodeApi {
   }
 
   generateImage = async (prompt: string, model: IModel, seed?: number) => {
+    // --ar Aspect ratio flag <w>:<h>
     const aspectRatioMatch = prompt.match(/--ar\s+(\d+:\d+)/);
     let width = model.baseModel === 'SDXL 1.0' ? 1024 : 512;
     let height = model.baseModel === 'SDXL 1.0' ? 1024 : 768;
@@ -25,6 +26,14 @@ export class SDNodeApi {
       }
     }
 
+    // --cfg cfgScale flag <scale>
+    const cfgScaleMatch = prompt.match(/--cfg\s+(\d+)/);
+    let cfgScale = 7;
+
+    if (cfgScaleMatch) {
+      cfgScale = parseInt(cfgScaleMatch[1]);
+    }
+
     const { images } = await this.client.txt2img({
       prompt,
       negativePrompt: NEGATIVE_PROMPT,
@@ -32,7 +41,7 @@ export class SDNodeApi {
       height,
       steps: 26,
       batchSize: 1,
-      cfgScale: 7,
+      cfgScale,
       seed,
       model: model.path
     })
