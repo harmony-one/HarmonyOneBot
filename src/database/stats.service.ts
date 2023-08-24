@@ -1,6 +1,6 @@
 import {AppDataSource} from "./datasource";
 import {StatBotCommand} from "./entities/StatBotCommand";
-import moment from "moment/moment";
+import moment from "moment-timezone";
 import {BotLog} from "./entities/Log";
 
 const statBotCommandRepository = AppDataSource.getRepository(StatBotCommand);
@@ -49,6 +49,28 @@ export class StatsService {
     const [result] = await logRepository.query(`select count(distinct("tgUserId")) from logs`)
     if(result) {
       return +result.count
+    }
+    return 0
+  }
+
+  public async getDAUFromLogs() {
+    const currentTime = moment();
+    const dateStart = moment()
+      .tz('America/Los_Angeles')
+      .set({ hour: 11, minute: 59, second: 0 })
+      .unix()
+
+    const dateEnd = currentTime.unix();
+
+    const rows = await logRepository.query(`
+        select count(logs."tgUserId") from logs
+        where logs."createdAt" BETWEEN TO_TIMESTAMP($1) and TO_TIMESTAMP($2)
+        group by logs."tgUserId"
+      `,
+      [dateStart, dateEnd])
+
+    if(rows.length > 0) {
+      return rows[0].count
     }
     return 0
   }
