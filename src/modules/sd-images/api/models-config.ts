@@ -54,7 +54,7 @@ export const MODELS_CONFIGS: IModel[] = [
         shortName: 'majicmix-realistic',
         link: 'https://civitai.com/models/43331/majicmix-realistic',
         baseModel: 'SD 1.5',
-        aliases: ['maji', '4333', 'h7e2'],
+        aliases: ['majic', '4333', 'h7e2'],
         defaultPrompt: '1girl,sitting on a cozy couch,crossing legs,soft light'
     },
     {
@@ -96,7 +96,7 @@ export const MODELS_CONFIGS: IModel[] = [
         shortName: 'cyberrealistic',
         link: 'https://civitai.com/models/15003/cyberrealistic',
         baseModel: 'SD 1.5',
-        aliases: ['cyber', '1500', 'h7a4'],
+        aliases: ['real', '1500', 'h7a4'],
         defaultPrompt: '<lora:LowRA:0.6> (8k, RAW photo, highest quality), beautiful girl, close up, dress, (detailed eyes:0.8), defiance512, (looking at the camera:1.4), (highest quality), (best shadow), intricate details, interior, ginger hair:1.3, dark studio, muted colors, freckles   <lora:epiNoiseoffset_v2Pynoise:1.2>',
     },
     {
