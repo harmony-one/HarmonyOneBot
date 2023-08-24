@@ -1,5 +1,4 @@
 import config from "../../../config";
-import { SupportedCommands } from "../../conversation-handler";
 import { OnCallBackQueryData, OnMessageContext } from "../../types";
 
 export const formatONEAmount = (num: number | string) => {

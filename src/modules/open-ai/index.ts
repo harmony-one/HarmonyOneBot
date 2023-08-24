@@ -15,11 +15,11 @@ import config from "../../config";
 import { sleep } from "../sd-images/utils";
 
 export const SupportedCommands = {
-  // chat: {
-  //   name: "chat",
-  //   groupParams: ">0",
-  //   privateParams: ">0",
-  // },
+  chat: {
+    name: "chat",
+    groupParams: ">0",
+    privateParams: ">0",
+  },
   ask: {
     name: "ask",
     groupParams: ">0",
@@ -99,8 +99,8 @@ export class OpenAIBot {
       Object.values(SupportedCommands).map((command) => command.name)
     );
     const hasReply = this.isSupportedImageReply(ctx);
-    const hasGroupPrefix = this.hasPrefix(ctx.message?.text || "");
-    if (hasGroupPrefix) {
+    const chatPrefix = this.hasPrefix(ctx.message?.text || "");
+    if (chatPrefix !== '') {
       return true;
     }
     return hasCommand || hasReply;
@@ -116,8 +116,8 @@ export class OpenAIBot {
       return true;
     }
     if (!commandName) {
-      const hasGroupPrefix = this.hasPrefix(ctx.message?.text || "");
-      if (hasGroupPrefix && promptNumber >= 1) {
+      const chatPrefix = this.hasPrefix(ctx.message?.text || "");
+      if (chatPrefix !== '' && promptNumber >= 1) {
         return true;
       }
       return false;
@@ -151,15 +151,16 @@ export class OpenAIBot {
     return false;
   }
 
-  private hasPrefix(prompt: string): boolean {
+  private hasPrefix(prompt: string): string {
     const prefixList = config.openAi.chatGpt.chatPrefix;
     for (let i = 0; i < prefixList.length; i++) {
       if (prompt.startsWith(prefixList[i])) {
-        return true;
+        return prefixList[i];
       }
     }
-    return false;
+    return '';
   }
+
 
   public getEstimatedPrice(ctx: any): number {
     try {
@@ -200,13 +201,6 @@ export class OpenAIBot {
         ); //cents
         return price * priceAdjustment;
       }
-      // if (ctx.hasCommand(SupportedCommands.ask.name)) {
-      //   const baseTokens = getTokenNumber(prompts as string);
-      //   const modelName = ctx.session.openAi.chatGpt.model;
-      //   const model = getChatModel(modelName);
-      //   const price = getChatModelPrice(model, true, baseTokens, 100); //cents
-      //   return price
-      // }
       return 0;
     } catch (e) {
       this.logger.error(`getEstimatedPrice error ${e}`);
@@ -231,10 +225,10 @@ export class OpenAIBot {
       return false;
     }
 
-    // if (ctx.hasCommand(SupportedCommands.chat.name)) {
-    //   await this.onChat(ctx);
-    //   return;
-    // }
+    if (ctx.hasCommand(SupportedCommands.chat.name)) {
+      await this.onChat(ctx);
+      return;
+    }
 
     if (ctx.message!.text === "/ask harmony.one/dear") {
       await ctx.reply(askTemplates.dear).catch((e) => this.onError(ctx, e));
@@ -291,7 +285,7 @@ export class OpenAIBot {
       return;
     }
 
-    if (this.hasPrefix(ctx.message?.text || "")) {
+    if (this.hasPrefix(ctx.message?.text || "") !== '') {
       this.onChat(ctx);
       return;
     }
@@ -399,12 +393,13 @@ export class OpenAIBot {
         ctx,
         SupportedCommands
       );
+      const prefix = this.hasPrefix(prompt)
       this.logger.info(
-        `onChat: ${
+        `onChat with ${
           commandName
-            ? commandName
-            : "(Used prefix/alias) " + prompt.slice(0, 1)
-        }`
+            ? `command: "${commandName}"`
+            : `prefix/alias: "${prefix}"`
+        } | model: ${ctx.session.openAi.chatGpt.model} | position: ${ctx.session.openAi.chatGpt.requestQueue.length}`
       );
       ctx.session.openAi.chatGpt.requestQueue.push(prompt);
       if (!ctx.session.openAi.chatGpt.isProcessingQueue) {
@@ -453,9 +448,10 @@ export class OpenAIBot {
           // if (chatConversation.length === 0) {
           //   ctx.reply(`_Using model ${ctx.session.openAi.chatGpt.model}_`,{ parse_mode: "Markdown" })
           // }
+          const prefix = this.hasPrefix(prompt)
           chatConversation.push({
             role: "user",
-            content: `${this.hasPrefix(prompt) ? prompt.slice(1) : prompt}.`,
+            content: `${prefix !== '' ? prompt.slice(prefix.length) : prompt}.`,
           });
           const payload = {
             conversation: chatConversation!,
