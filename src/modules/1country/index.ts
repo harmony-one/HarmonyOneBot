@@ -34,7 +34,7 @@ export const SupportedCommands = {
     name: "nft",
     groupParams: "=1", // TODO: add support for groups
     privateParams: "=1",
-  }
+  },
 };
 
 // enum SupportedCommands {
@@ -120,7 +120,8 @@ export class OneCountryBot {
   private hasPrefix(prompt: string): boolean {
     const prefixList = config.country.registerPrefix;
     for (let i = 0; i < prefixList.length; i++) {
-      if (prompt.startsWith(prefixList[i])) {
+      console.log(prefixList[i]);
+      if (prompt.toLocaleLowerCase().startsWith(prefixList[i])) {
         return true;
       }
     }
@@ -165,7 +166,6 @@ export class OneCountryBot {
       this.onCertCmd(ctx);
       return;
     }
-
 
     // if (ctx.hasCommand(SupportedCommands.RENEW)) {
     //   this.onRenewCmd(ctx);
