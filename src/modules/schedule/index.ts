@@ -71,7 +71,6 @@ export class BotSchedule {
       this.reportMessage = reportMessage
       return reportMessage
     } catch (e) {
-      console.log('### e', e);
       this.logger.error(`Cannot get stats: ${(e as Error).message}`)
     }
   }
