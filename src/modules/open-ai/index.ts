@@ -399,47 +399,80 @@ export class OpenAIBot {
         ctx,
         SupportedCommands
       );
-      const { chatConversation, model } = ctx.session.openAi.chatGpt;
-      const accountId = this.payments.getAccountId(ctx as OnMessageContext);
-      const account = await this.payments.getUserAccount(accountId);
-      const addressBalance = await this.payments.getUserBalance(accountId);
-      const creditsBalance = await chatService.getBalance(accountId);
-      const balance = addressBalance.plus(creditsBalance);
-      const balanceOne = (await this.payments.toONE(balance, false)).toFixed(2);
-      if (
-        +balanceOne > +config.openAi.chatGpt.minimumBalance ||
-        (await this.payments.isUserInWhitelist(ctx.from.id, ctx.from.username))
-      ) {
-        if (prompt === "") {
-          const msg =
-            chatConversation.length > 0
-              ? `${appText.gptLast}\n_${
-                  chatConversation[chatConversation.length - 1].content
-                }_`
-              : appText.introText;
-          await ctx
-            .reply(msg, { parse_mode: "Markdown" })
-            .catch((e) => this.onError(ctx, e));
-          return;
-        }
-        chatConversation.push({
-          role: "user",
-          content: `${this.hasPrefix(prompt) ? prompt.slice(1) : prompt}.`,
+      this.logger.info(
+        `onChat: ${
+          commandName
+            ? commandName
+            : "(Used prefix/alias) " + prompt.slice(0, 1)
+        }`
+      );
+      ctx.session.openAi.chatGpt.requestQueue.push(prompt);
+      if (!ctx.session.openAi.chatGpt.isProcessingQueue) {
+        ctx.session.openAi.chatGpt.isProcessingQueue = true;
+        this.onChatRequestHandler(ctx).then(() => {
+          ctx.session.openAi.chatGpt.isProcessingQueue = false;
         });
-        const payload = {
-          conversation: chatConversation!,
-          model: model || config.openAi.chatGpt.model,
-          ctx,
-        };
-        this.logger.info(
-          `onChat: ${
-            commandName
-              ? commandName
-              : "(Used prefix/alias) " + prompt.slice(0, 1)
-          }`
+      }
+    } catch (e: any) {
+      this.onError(ctx, e);
+    }
+  }
+
+  async onChatRequestHandler(ctx: OnMessageContext | OnCallBackQueryData) {
+    while (ctx.session.openAi.chatGpt.requestQueue.length > 0) {
+      try {
+        const prompt = ctx.session.openAi.chatGpt.requestQueue.shift() || "";
+        const { chatConversation, model } = ctx.session.openAi.chatGpt;
+        const accountId = this.payments.getAccountId(ctx as OnMessageContext);
+        const account = await this.payments.getUserAccount(accountId);
+        const addressBalance = await this.payments.getUserBalance(accountId);
+        const creditsBalance = await chatService.getBalance(accountId);
+        const balance = addressBalance.plus(creditsBalance);
+        const balanceOne = (await this.payments.toONE(balance, false)).toFixed(
+          2
         );
-        const price = await promptGen(payload);
-        if (!(await this.payments.pay(ctx as OnMessageContext, price))) {
+        if (
+          +balanceOne > +config.openAi.chatGpt.minimumBalance ||
+          (await this.payments.isUserInWhitelist(
+            ctx.from.id,
+            ctx.from.username
+          ))
+        ) {
+          if (prompt === "") {
+            const msg =
+              chatConversation.length > 0
+                ? `${appText.gptLast}\n_${
+                    chatConversation[chatConversation.length - 1].content
+                  }_`
+                : appText.introText;
+            await ctx
+              .reply(msg, { parse_mode: "Markdown" })
+              .catch((e) => this.onError(ctx, e));
+            return;
+          }
+          // if (chatConversation.length === 0) {
+          //   ctx.reply(`_Using model ${ctx.session.openAi.chatGpt.model}_`,{ parse_mode: "Markdown" })
+          // }
+          chatConversation.push({
+            role: "user",
+            content: `${this.hasPrefix(prompt) ? prompt.slice(1) : prompt}.`,
+          });
+          const payload = {
+            conversation: chatConversation!,
+            model: model || config.openAi.chatGpt.model,
+            ctx,
+          };
+          const price = await promptGen(payload);
+          if (!(await this.payments.pay(ctx as OnMessageContext, price))) {
+            const balanceMessage = appText.notEnoughBalance
+              .replaceAll("$CREDITS", balanceOne)
+              .replaceAll("$WALLET_ADDRESS", account?.address || "");
+            await ctx
+              .reply(balanceMessage, { parse_mode: "Markdown" })
+              .catch((e) => this.onError(ctx, e));
+          }
+          ctx.chatAction = null;
+        } else {
           const balanceMessage = appText.notEnoughBalance
             .replaceAll("$CREDITS", balanceOne)
             .replaceAll("$WALLET_ADDRESS", account?.address || "");
