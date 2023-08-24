@@ -129,4 +129,7 @@ export default {
       .map((item) => item.toString().toLowerCase()),
     creditsAmount: "100",
   },
+  betteruptime: {
+    botHeartBitId: process.env.BOT_HEARTBIT_ID || ''
+  }
 };

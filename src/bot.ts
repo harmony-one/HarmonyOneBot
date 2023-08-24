@@ -36,6 +36,7 @@ import {AppDataSource} from "./database/datasource";
 import { text } from "stream/consumers";
 import { autoRetry } from "@grammyjs/auto-retry";
 import {run} from "@grammyjs/runner";
+import {runBotHeartBit} from "./monitoring/monitoring";
 
 
 const logger = pino({
@@ -447,3 +448,8 @@ process.once("SIGTERM", stopRunner);
 
 AppDataSource.initialize();
 
+if (config.betteruptime.botHeartBitId) {
+  const task = runBotHeartBit(runner, config.betteruptime.botHeartBitId);
+  process.once("SIGINT", () => task.stop());
+  process.once("SIGTERM", () => task.stop());
+}
