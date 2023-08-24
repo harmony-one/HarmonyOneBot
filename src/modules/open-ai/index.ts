@@ -208,7 +208,6 @@ export class OpenAIBot {
       return 0;
     } catch (e) {
       this.onError(ctx, e);
-      return 0;
     }
   }
 
@@ -241,7 +240,6 @@ export class OpenAIBot {
 
     if (ctx.hasCommand(SupportedCommands.ask.name)) {
       ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_4;
-      // ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_35_TURBO;
       this.onChat(ctx);
       return;
     }
@@ -381,7 +379,9 @@ export class OpenAIBot {
 
   async onChat(ctx: OnMessageContext | OnCallBackQueryData) {
     if (this.botSuspended) {
-      await ctx.reply("The bot is suspended").catch((e) => this.onError(ctx, e));
+      await ctx
+        .reply("The bot is suspended")
+        .catch((e) => this.onError(ctx, e));
       return;
     }
     try {
@@ -412,9 +412,6 @@ export class OpenAIBot {
             .catch((e) => this.onError(ctx, e));
           return;
         }
-        // if (chatConversation.length === 0) {
-        //   ctx.reply(`_Using model ${ctx.session.openAi.chatGpt.model}_`,{ parse_mode: "Markdown" })
-        // }
         chatConversation.push({
           role: "user",
           content: `${this.hasPrefix(prompt) ? prompt.slice(1) : prompt}.`,
@@ -471,14 +468,13 @@ export class OpenAIBot {
     }
   }
 
-
   async onEnd(ctx: OnMessageContext | OnCallBackQueryData) {
     this.logger.info("/stop command");
     ctx.session.openAi.chatGpt.chatConversation = [];
     ctx.session.openAi.chatGpt.usage = 0;
     ctx.session.openAi.chatGpt.price = 0;
   }
-  
+
   async onError(
     ctx: OnMessageContext | OnCallBackQueryData,
     e: any,
@@ -509,7 +505,7 @@ export class OpenAIBot {
           )
           .catch((e) => this.onError(ctx, e, retryCount - 1));
         if (method === "editMessageText") {
-          ctx.session.openAi.chatGpt.chatConversation.pop();  //deletes last prompt
+          ctx.session.openAi.chatGpt.chatConversation.pop(); //deletes last prompt
         }
         await sleep(retryAfter * 1000); // wait retryAfter seconds to enable bot
         this.botSuspended = false;
