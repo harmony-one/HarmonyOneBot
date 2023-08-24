@@ -100,7 +100,7 @@ export const parseCtx = (ctx: Context): IOperation | false => {
         //     command = COMMAND.CONSTRUCTOR;
         // }
 
-        if (ctx.hasCommand('SD')) {
+        if (ctx.hasCommand('sd')) {
             command = COMMAND.HELP;
         }
 
