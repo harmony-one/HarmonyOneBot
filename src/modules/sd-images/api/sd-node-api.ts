@@ -11,11 +11,25 @@ export class SDNodeApi {
   }
 
   generateImage = async (prompt: string, model: IModel, seed?: number) => {
+    const aspectRatioMatch = prompt.match(/--ar\s+(\d+:\d+)/);
+    let width = model.baseModel === 'SDXL 1.0' ? 1024 : 512;
+    let height = model.baseModel === 'SDXL 1.0' ? 1024 : 768;
+
+    if (aspectRatioMatch) {
+      const aspectRatio = aspectRatioMatch[1];
+      const [aspectWidth, aspectHeight] = aspectRatio.split(':').map(Number);
+      
+      if (!isNaN(aspectWidth) && !isNaN(aspectHeight) && aspectHeight !== 0) {
+        const scaleFactor = width / aspectWidth;
+        height = Math.round(aspectHeight * scaleFactor);
+      }
+    }
+
     const { images } = await this.client.txt2img({
       prompt,
       negativePrompt: NEGATIVE_PROMPT,
-      width: model.baseModel === 'SDXL 1.0' ? 1024 : 512,
-      height: model.baseModel === 'SDXL 1.0' ? 1024 : 768,
+      width,
+      height,
       steps: 26,
       batchSize: 1,
       cfgScale: 7,
