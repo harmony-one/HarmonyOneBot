@@ -479,17 +479,9 @@ export class OpenAIBot {
             .reply(balanceMessage, { parse_mode: "Markdown" })
             .catch((e) => this.onError(ctx, e));
         }
-        ctx.chatAction = null;
-      } else {
-        const balanceMessage = appText.notEnoughBalance
-          .replaceAll("$CREDITS", balanceOne)
-          .replaceAll("$WALLET_ADDRESS", account?.address || "");
-        await ctx
-          .reply(balanceMessage, { parse_mode: "Markdown" })
-          .catch((e) => this.onError(ctx, e));
+      } catch (e: any) {
+        this.onError(ctx, e);
       }
-    } catch (e: any) {
-      this.onError(ctx, e);
     }
   }
 
