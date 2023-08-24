@@ -17,10 +17,9 @@ export class SDImagesBotBase {
 
         let idx = this.queue.findIndex((v) => v === uuid);
 
-        if (idx !== 0) {
+        if (idx >= 0) {
             ctx.reply(
-                `You are ${idx + 1}/${this.queue.length
-                }, wait about ${idx * 30} seconds`
+                `You are #${idx + 1}, wait about ${(idx + 1) * 30} seconds`
             );
         }
 
