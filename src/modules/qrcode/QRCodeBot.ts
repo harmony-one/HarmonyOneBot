@@ -12,8 +12,6 @@ import pino, {Logger} from "pino";
 
 enum SupportedCommands {
   QR = 'qr',
-  QR2 = 'qr2',
-  QR_MARGIN = 'qrMargin',
 }
 
 enum Callbacks {
@@ -37,12 +35,6 @@ export class QRCodeBot {
 
   }
 
-  // public init() {
-  //   this.bot.command('qr', (ctx) => this.onQr(ctx, 'img2img'));
-  //   this.bot.command('qr2', (ctx) => this.onQr(ctx, 'txt2img'));
-  //   this.bot.command('qrMargin', (ctx) => this.onQrMargin(ctx))
-  // }
-
   public getEstimatedPrice(ctx: any) {
     return 1; //  1.5;
   }
@@ -53,7 +45,7 @@ export class QRCodeBot {
 
   public async onEvent(ctx: OnMessageContext | OnCallBackQueryData, refundCallback: RefundCallback) {
     if (!this.isSupportedEvent(ctx)) {
-      ctx.reply(`Unsupported command: ${ctx.message?.text}`);
+      await ctx.reply(`Unsupported command: ${ctx.message?.text}`)
       return refundCallback('Unsupported command')
     }
 
@@ -68,36 +60,24 @@ export class QRCodeBot {
         const msg = ctx.callbackQuery.message?.text || ctx.callbackQuery.message?.caption || '';
 
         if (!msg) {
-          ctx.reply('Error: message is too old');
+          await ctx.reply('Error: message is too old');
           return refundCallback('Error: message is too old')
         }
 
         const cmd = this.parseQrCommand(msg);
 
         if (cmd.error || !cmd.command || !cmd.url || !cmd.prompt) {
-          ctx.reply('Message haven\'t contain command: ' + msg);
+          await ctx.reply('Message haven\'t contain command: ' + msg);
           return refundCallback('Message haven\'t contain command: ')
         }
 
         if (cmd.command === SupportedCommands.QR) {
           return this.onQr(ctx, msg, 'img2img');
         }
-
-        if (cmd.command === SupportedCommands.QR2) {
-          return this.onQr(ctx, msg, 'txt2img');
-        }
       }
 
       if (ctx.hasCommand(SupportedCommands.QR)) {
         return this.onQr(ctx, ctx.message.text, 'img2img');
-      }
-
-      if (ctx.hasCommand(SupportedCommands.QR2)) {
-        return this.onQr(ctx, ctx.message.text, 'txt2img');
-      }
-
-      if (ctx.hasCommand(SupportedCommands.QR_MARGIN)){
-        return this.onQrMargin(ctx);
       }
     } catch (ex) {
       if (ex instanceof Error) {
@@ -109,7 +89,7 @@ export class QRCodeBot {
       return refundCallback('Unknown error');
     }
 
-    ctx.reply('Unsupported command');
+    await ctx.reply('Unsupported command');
     this.logger.info('Unsupported command');
     return refundCallback('Unsupported command');
   }
@@ -133,18 +113,6 @@ export class QRCodeBot {
       url,
       prompt: rest.join(' '),
     }
-  }
-
-  private async onQrMargin(ctx: OnMessageContext) {
-    const [_, value] = (ctx.message?.text || '').split(' ')
-
-    const margin = parseInt(value, 10);
-
-    if (!isNaN(margin)) {
-      ctx.session.qrMargin = margin;
-    }
-    await ctx.reply('qrMargin: ' + ctx.session.qrMargin);
-    return true;
   }
 
   private async onQr(ctx: OnMessageContext | OnCallBackQueryData, message: string, method: 'txt2img' | 'img2img') {
@@ -178,7 +146,7 @@ export class QRCodeBot {
         prompt: command.prompt,
       };
 
-      const qrImgBuffer = await this.genQRCode2(props);
+      const qrImgBuffer = await this.genQRCodeByComfyUI(props);
 
       if (!qrImgBuffer) {
         throw new Error('internal error');
@@ -199,8 +167,9 @@ export class QRCodeBot {
       qrImgBuffer = await retryAsync(operation, 5, 100);
 
     } catch (ex) {
+      ctx.chatAction = null;
       this.logger.error(`ex ${ex}`);
-      ctx.reply("Internal error")
+      await ctx.reply("Internal error")
       throw new Error('Internal error');
     }
 
@@ -236,7 +205,7 @@ export class QRCodeBot {
     return  sdClient.img2img({...automatic1111DefaultConfig.img2img, ...sdConfig});
   }
 
-  private async genQRCode2({qrUrl, qrMargin, prompt, method}: {qrUrl: string, qrMargin: number, prompt: string, method: 'img2img' | 'txt2img'}) {
+  private async genQRCodeByComfyUI({qrUrl, qrMargin, prompt, method}: {qrUrl: string, qrMargin: number, prompt: string, method: 'img2img' | 'txt2img'}) {
     const qrImgBuffer = await createQRCode({url: normalizeUrl(qrUrl), width: 680, margin: qrMargin });
     const extendedPrompt = prompt + ', ' + automatic1111DefaultConfig.additionalPrompt;
     const negativePrompt = automatic1111DefaultConfig.defaultNegativePrompt;

@@ -7,6 +7,15 @@ import {ethers} from "ethers";
 import { SessionTypes } from "@walletconnect/types";
 import {PROPOSAL_EXPIRY_MESSAGE} from "@walletconnect/sign-client";
 import { generateWcQr } from "./utils/qrcode";
+import { Message } from "grammy/types";
+
+enum SupportedCommands {
+  GET= 'get',
+  SEND = 'send',
+  POOLS = 'pools',
+  CONNECT = 'connect',
+  CONNECT_HEX = 'connecthex'
+}
 
 const sessionMap: Record<number, string> = {}
 
@@ -16,9 +25,7 @@ const defaultProvider = new ethers.providers.JsonRpcProvider(
 
 const getUserAddr = (session: SessionTypes.Struct) => {
   const acc = session.namespaces['eip155'].accounts[0];
-  const addr = acc.split(":")[2];
-
-  return addr;
+  return acc.split(":")[2];
 }
 
 export class WalletConnect {
@@ -44,8 +51,7 @@ export class WalletConnect {
   }
 
   public isSupportedEvent(ctx: OnMessageContext) {
-    const commands = ['get', 'send', 'pools', 'connect', 'connecthex']
-    return commands.find((command) => ctx.hasCommand(command));
+    return ctx.hasCommand(Object.values(SupportedCommands));
   }
 
   public async onEvent(ctx: OnMessageContext) {
@@ -56,49 +62,45 @@ export class WalletConnect {
     this.logger.info(`Message from ${username} (${userId}): "${text}"`);
 
 
-    if (ctx.hasCommand('connect')) {
-      this.connect(ctx);
-      return;
+    if (ctx.hasCommand(SupportedCommands.CONNECT)) {
+      return this.connect(ctx);
     }
 
-    if (ctx.hasCommand('connecthex')) {
-      this.connecthex(ctx)
-      return;
+    if (ctx.hasCommand(SupportedCommands.CONNECT_HEX)) {
+      return this.connecthex(ctx)
     }
 
-    if (ctx.hasCommand('pools')) {
+    if (ctx.hasCommand(SupportedCommands.POOLS)) {
       let keyboard = new InlineKeyboard().webApp(
         "Open",
         `${config.walletc.webAppUrl}/pools`,
       );
 
-      ctx.reply('Swap Pools Info', {
+      await ctx.reply('Swap Pools Info', {
         reply_markup: keyboard,
       });
       return;
     }
 
     // /wallet send 0x199177Bcc7cdB22eC10E3A2DA888c7811275fc38 0.01
-    if (ctx.hasCommand('send') && text) {
+    if (ctx.hasCommand(SupportedCommands.SEND) && text) {
       const [, to = "", amount = ""] = text.split(" ");
       if (to.startsWith("0x") && +amount) {
-        this.send(ctx, to, amount);
-        return;
+        return this.send(ctx, to, amount);
       }
     }
 
-    if (ctx.hasCommand('get')) {
-      this.getBalance(ctx);
-      return;
+    if (ctx.hasCommand(SupportedCommands.GET)) {
+      return this.getBalance(ctx);
     }
 
-    ctx.reply('Unsupported command');
+    await ctx.reply('Unsupported command');
   }
 
   async requestProposal() {
     const signClient = await getSignClient();
 
-    return  signClient.connect({
+    return signClient.connect({
       requiredNamespaces: {
         eip155: {
           methods: [
@@ -143,24 +145,7 @@ export class WalletConnect {
       parse_mode: 'Markdown'
     });
 
-    try {
-      const session = await approval();
-
-      sessionMap[ctx.from.id] = session.topic;
-
-      ctx.api.deleteMessage(ctx.chat.id, message.message_id);
-      // ctx.reply('wallet connected: ' + getUserAddr(session));
-    } catch (ex) {
-      ctx.api.deleteMessage(ctx.chat.id, message.message_id);
-      if (ex instanceof Error) {
-        this.logger.error('error wc connect ' + ex.message)
-        if (ex.message === PROPOSAL_EXPIRY_MESSAGE) {
-          return;
-        }
-
-        ctx.reply('Error while connection');
-      }
-    }
+    this.requestApproval(ctx, approval, message);
   }
 
   async connecthex(ctx: OnMessageContext) {
@@ -168,27 +153,31 @@ export class WalletConnect {
 
     const message = await ctx.reply(`Copy this connection link to use Wallet Connect with your MetaMask / Gnosis Safe / Timeless wallets:\n\n\`${uri}\` `, {parse_mode: 'Markdown'});
 
+    this.requestApproval(ctx, approval, message);
+  }
+
+  async requestApproval(ctx: OnMessageContext, approval: () => Promise<SessionTypes.Struct>, message: Message.TextMessage | Message.PhotoMessage ) {
     try {
       const session = await approval();
 
       sessionMap[ctx.from.id] = session.topic;
 
-      ctx.api.deleteMessage(ctx.chat.id, message.message_id);
+      await ctx.api.deleteMessage(ctx.chat.id, message.message_id);
       // ctx.reply('wallet connected: ' + getUserAddr(session));
     } catch (ex) {
-      ctx.api.deleteMessage(ctx.chat.id, message.message_id);
+      await ctx.api.deleteMessage(ctx.chat.id, message.message_id);
       if (ex instanceof Error) {
         this.logger.error('error wc connect ' + ex.message)
         if (ex.message === PROPOSAL_EXPIRY_MESSAGE) {
           return;
         }
 
-        ctx.reply('Error while connection');
+        await ctx.reply('Error while connection');
+      } else {
+        this.logger.error('error wc connect ' + ex)
       }
     }
   }
-
-
 
   async send(ctx: OnMessageContext, addr: string, amount: string) {
     const signClient = await getSignClient();
@@ -197,14 +186,14 @@ export class WalletConnect {
     const sessionId = sessionMap[userId];
 
     if (!sessionId) {
-      ctx.reply('Link wallet with /connect');
+      await ctx.reply('Link wallet with /connect');
       return
     }
 
     const session = signClient.session.get(sessionId);
 
     if (!session) {
-      ctx.reply('Link wallet with /connect');
+      await ctx.reply('Link wallet with /connect');
       return
     }
 
@@ -248,14 +237,14 @@ export class WalletConnect {
       const sessionId = sessionMap[userId];
 
       if (!sessionId) {
-        ctx.reply('Link wallet with /connect');
+        await ctx.reply('Link wallet with /connect');
         return
       }
 
       const session = signClient.session.get(sessionId);
 
       if (!session) {
-        ctx.reply('Link wallet with /connect');
+        await ctx.reply('Link wallet with /connect');
         return
       }
 
@@ -271,11 +260,11 @@ export class WalletConnect {
 
 *USDT*: 0 USDT       
 `
-      ctx.reply(message, {
+      await ctx.reply(message, {
         parse_mode: "Markdown",
       })
     } catch (ex) {
-      ctx.reply('Unknown error');
+      await ctx.reply('Unknown error');
     }
   }
 }

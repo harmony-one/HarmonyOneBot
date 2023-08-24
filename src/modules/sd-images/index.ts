@@ -94,7 +94,7 @@ export class SDImagesBot extends SDImagesBotBase {
         for (let i = 0; i < MODELS_CONFIGS.length; i++) {
           const model = MODELS_CONFIGS[i];
 
-          await ctx.reply(`${model.name}: ${model.link} \nUsing: /${model.aliases[0]} /${model.aliases[1]} /${model.aliases[2]}`);
+          await ctx.reply(`${model.name}: ${model.link} \n \nUsing: /${model.aliases[0]} /${model.aliases[1]} /${model.aliases[2]} \n`);
         }
         return;
     }

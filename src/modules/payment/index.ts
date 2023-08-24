@@ -6,6 +6,8 @@ import bn, { BigNumber } from "bignumber.js";
 import config from "../../config";
 import {chatService} from "../../database/services";
 import { OnMessageContext } from "../types";
+import { LRUCache } from 'lru-cache'
+import {creditsFeeCounter, oneTokenFeeCounter, usdFeeCounter} from "../../metrics/prometheus";
 
 interface CoinGeckoResponse {
   harmony: {
@@ -21,6 +23,10 @@ export class BotPayments {
   private ONERate: number = 0;
   private rpcURL: string = "https://api.harmony.one";
   private lastPaymentTimestamp = 0;
+  private noncePending = new LRUCache<string, number>({
+    max: 1000,
+    ttl: 30 * 1000
+  })
 
   constructor() {
     this.web3 = new Web3(this.rpcURL);
@@ -73,15 +79,15 @@ export class BotPayments {
     }
   }
 
-  public getPriceInONE(usdAmount: number) {
+  public getPriceInONE(centsUsd: number) {
     const amount = this.ONERate
-      ? Math.round(usdAmount / 100 / this.ONERate)
+      ? centsUsd / 100 / this.ONERate
       : 0;
-    return bn(amount).multipliedBy(10 ** 18);
+    return bn(Math.round(amount * 10**18))
   }
 
   public toONE(amount: BigNumber, roundCeil = true) {
-    const value = this.web3.utils.fromWei(amount.toFixed(), 'ether')
+    const value = this.web3.utils.fromWei(amount.toFixed(0), 'ether')
     if(roundCeil) {
       return Math.ceil(+value)
     }
@@ -112,22 +118,48 @@ export class BotPayments {
     addressTo: string,
     amount: BigNumber
   ) {
-    const web3 = new Web3(this.rpcURL);
-    web3.eth.accounts.wallet.add(accountFrom);
+    try {
+      const web3 = new Web3(this.rpcURL);
+      web3.eth.accounts.wallet.add(accountFrom);
 
-    const gasPrice = await web3.eth.getGasPrice();
-    const txBody = {
-      from: accountFrom.address,
-      to: addressTo,
-      value: web3.utils.toHex(amount.toFixed()),
-    };
-    const gasLimit = await web3.eth.estimateGas(txBody);
-    const tx = await web3.eth.sendTransaction({
-      ...txBody,
-      gasPrice,
-      gas: web3.utils.toHex(gasLimit),
-    });
-    return tx;
+      const gasPrice = await web3.eth.getGasPrice();
+
+      let nonce = undefined
+      const nonceCache = this.noncePending.get(accountFrom.address)
+      if(nonceCache) {
+        nonce = nonceCache + 1
+      } else {
+        nonce = await web3.eth.getTransactionCount(accountFrom.address)
+      }
+      this.noncePending.set(accountFrom.address, nonce)
+
+      const txBody = {
+        from: accountFrom.address,
+        to: addressTo,
+        value: web3.utils.toHex(amount.toFixed()),
+        nonce
+      };
+      const gasLimit = await web3.eth.estimateGas(txBody);
+      const tx = await web3.eth.sendTransaction({
+        ...txBody,
+        gasPrice,
+        gas: web3.utils.toHex(gasLimit),
+      });
+      return tx;
+    } catch (e) {
+      const message = (e as Error).message || ''
+      if(message &&
+        (message.includes('replacement transaction underpriced')
+          || message.includes('was not mined within')
+          || message.includes('Failed to check for transaction receipt')
+        )
+      ) {
+        // skip this error
+        this.logger.warn(`Skip error: ${message}`)
+      } else {
+        throw new Error(message)
+      }
+    }
   }
 
   public isUserInWhitelist(userId: number | string, username = "") {
@@ -197,11 +229,13 @@ export class BotPayments {
           userAccount.address,
           amountONE.minus(fee)
         );
-        this.logger.info(
-          `[${userId} @${username}] refund successful, from: ${tx.from}, to: ${
-            tx.to
-          }, amount ONE: ${amountONE.toFixed()}, txHash: ${tx.transactionHash}`
-        );
+        if(tx) {
+          this.logger.info(
+            `[${userId} @${username}] refund successful, from: ${tx.from}, to: ${
+              tx.to
+            }, amount ONE: ${amountONE.toFixed()}, txHash: ${tx.transactionHash}`
+          );
+        }
         return true;
       } catch (e) {
         this.logger.error(
@@ -236,12 +270,13 @@ export class BotPayments {
     const balanceWithCredits = balance.plus(credits)
     const balanceDelta = balanceWithCredits.minus(amountToPay);
 
-    this.logger.info(`[@${from.username}] credits: ${credits.toFixed()}, balance: ${balance.toFixed()}. to withdraw: ${amountToPay.toFixed()}, balance after: ${balanceDelta.toFixed()}`)
+    this.logger.info(`[@${from.username}] credits: ${credits.toFixed()}, ONE balance: ${balance.toFixed()}, to withdraw: ${amountToPay.toFixed()}, balance after: ${balanceDelta.toFixed()}`)
     if (balanceDelta.gte(0)) {
       if(amountToPay.gt(0) && credits.gt(0)) {
         const creditsPayAmount = bn.min(amountToPay, credits)
         await chatService.withdrawAmount(accountId, creditsPayAmount.toFixed())
         amountToPay = amountToPay.minus(creditsPayAmount)
+        creditsFeeCounter.inc(creditsPayAmount.toNumber())
         this.logger.info(`[@${from.username}] paid from credits: ${creditsPayAmount.toFixed()}, left to pay: ${amountToPay.toFixed()}`)
       }
       if(amountToPay.gt(0)) {
@@ -252,14 +287,17 @@ export class BotPayments {
             amountToPay
           );
           this.lastPaymentTimestamp = Date.now();
-          this.logger.info(
-            `[${from.id} @${from.username}] withdraw successful, txHash: ${
-              tx.transactionHash
-            }, from: ${tx.from}, to: ${
-              tx.to
-            }, amount ONE: ${amountToPay.toString()}`
-          );
-          return true;
+          if(tx) {
+            usdFeeCounter.inc(amountUSD)
+            oneTokenFeeCounter.inc(amountToPay.toNumber())
+            this.logger.info(
+              `[${from.id} @${from.username}] withdraw successful, txHash: ${
+                tx.transactionHash
+              }, from: ${tx.from}, to: ${
+                tx.to
+              }, amount ONE: ${amountToPay.toString()}`
+            );
+          }
         } catch (e) {
           this.logger.error(
             `[${from.id}] withdraw error: "${JSON.stringify(
@@ -271,8 +309,9 @@ export class BotPayments {
           });
         }
       } else {
-        return true;
+        usdFeeCounter.inc(amountUSD)
       }
+      return true
     } else {
       const addressBalance = await this.getAddressBalance(userAccount.address)
       const creditsBalance = await chatService.getBalance(accountId)
@@ -350,7 +389,7 @@ export class BotPayments {
         ctx.reply(
           `Your credits in ONE tokens: ${balanceOne.toFixed(2)}
 
-Send to: \`${account.address}\``,
+To recharge: \`${account.address}\``,
           {
             parse_mode: "Markdown",
           }
@@ -403,7 +442,7 @@ Send to: \`${account.address}\``,
 
   private async runIntervalCheck() {
     try {
-      if (Date.now() - this.lastPaymentTimestamp > 10 * 60 * 1000) {
+      if (Date.now() - this.lastPaymentTimestamp > 30 * 1000) {
         await this.withdrawHotWalletFunds();
       }
     } catch (e) {
@@ -412,9 +451,9 @@ Send to: \`${account.address}\``,
           this.hotWallet.address
         } to holder address ${this.holderAddress} :"${(e as Error).message}"`
       );
-      await this.sleep(1000 * 60 * 10);
+      await this.sleep(1000 * 10);
     } finally {
-      await this.sleep(1000 * 60);
+      await this.sleep(1000 * 30);
       this.runIntervalCheck();
     }
   }
