@@ -4,10 +4,11 @@ import { Account } from "web3-core";
 import axios from "axios";
 import bn, { BigNumber } from "bignumber.js";
 import config from "../../config";
-import {chatService} from "../../database/services";
+import {chatService, statsService} from "../../database/services";
 import { OnMessageContext } from "../types";
 import { LRUCache } from 'lru-cache'
-import {creditsFeeCounter, oneTokenFeeCounter, usdFeeCounter} from "../../metrics/prometheus";
+import {oneTokenFeeCounter, freeCreditsFeeCounter} from "../../metrics/prometheus";
+import {BotPaymentLog} from "../../database/stats.service";
 
 interface CoinGeckoResponse {
   harmony: {
@@ -63,7 +64,9 @@ export class BotPayments {
       );
       this.ONERate = +data.harmony.usd;
     } catch (e) {
-      this.logger.error(`Cannot get ONE price: ${JSON.stringify(e)}`);
+      this.ONERate = 0.01
+      this.logger.error(`Cannot get ONE price: ${JSON.stringify((e as Error).message)}. Use hardcoded price: ${this.ONERate}.`);
+      await this.sleep(1000 * 60 * 30);
     } finally {
       await this.sleep(1000 * 60);
       this.pollRates();
@@ -247,12 +250,44 @@ export class BotPayments {
     }
   }
 
-  public async pay(ctx: OnMessageContext, amountUSD: number) {
-    const { from, message_id, chat } = ctx.update.message;
+  private convertBigNumber(value: BigNumber, precision = 8) {
+    return +value.div(BigNumber(10).pow(18)).toFormat(precision)
+  }
 
-    if (this.skipPayment(ctx, amountUSD)) {
-      return true;
+  private async writePaymentLog(ctx: OnMessageContext, amountCredits: BigNumber, amountOne: BigNumber) {
+    const {
+      from,
+      text = '',
+      audio,
+      voice = ''
+    } = ctx.update.message
+
+    try {
+      const accountId = this.getAccountId(ctx)
+      let [command = ''] = text.split(' ')
+      if(!command) {
+        if((audio && audio.duration > 0) || (voice && voice.duration > 0)) {
+          command = 'audio'
+        }
+      }
+
+      const paymentLog: BotPaymentLog = {
+        tgUserId: from.id,
+        accountId,
+        command,
+        message: text || '',
+        amountCredits: this.convertBigNumber(amountCredits),
+        amountOne: this.convertBigNumber(amountOne),
+      }
+      await statsService.writeLog(paymentLog)
+    } catch (e) {
+      this.logger.error(`Cannot write payments log: ${JSON.stringify((e as Error).message)}`)
     }
+  }
+
+  public async pay(ctx: OnMessageContext, amountUSD: number) {
+    const { from, message_id, chat, text } = ctx.update.message;
+
     const accountId = this.getAccountId(ctx)
     const userAccount = this.getUserAccount(accountId);
     if (!userAccount) {
@@ -270,13 +305,20 @@ export class BotPayments {
     const balanceWithCredits = balance.plus(credits)
     const balanceDelta = balanceWithCredits.minus(amountToPay);
 
+    const creditsPayAmount = bn.min(amountToPay, credits)
+    const oneTokensPayAmount = amountToPay.minus(creditsPayAmount)
+
+    if (this.skipPayment(ctx, amountUSD)) {
+      await this.writePaymentLog(ctx, BigNumber(0), BigNumber(0))
+      return true;
+    }
+
     this.logger.info(`[@${from.username}] credits: ${credits.toFixed()}, ONE balance: ${balance.toFixed()}, to withdraw: ${amountToPay.toFixed()}, balance after: ${balanceDelta.toFixed()}`)
     if (balanceDelta.gte(0)) {
       if(amountToPay.gt(0) && credits.gt(0)) {
-        const creditsPayAmount = bn.min(amountToPay, credits)
         await chatService.withdrawAmount(accountId, creditsPayAmount.toFixed())
         amountToPay = amountToPay.minus(creditsPayAmount)
-        creditsFeeCounter.inc(creditsPayAmount.toNumber())
+        freeCreditsFeeCounter.inc(this.convertBigNumber(creditsPayAmount))
         this.logger.info(`[@${from.username}] paid from credits: ${creditsPayAmount.toFixed()}, left to pay: ${amountToPay.toFixed()}`)
       }
       if(amountToPay.gt(0)) {
@@ -288,8 +330,7 @@ export class BotPayments {
           );
           this.lastPaymentTimestamp = Date.now();
           if(tx) {
-            usdFeeCounter.inc(amountUSD)
-            oneTokenFeeCounter.inc(amountToPay.toNumber())
+            oneTokenFeeCounter.inc(this.convertBigNumber(amountToPay))
             this.logger.info(
               `[${from.id} @${from.username}] withdraw successful, txHash: ${
                 tx.transactionHash
@@ -308,9 +349,8 @@ export class BotPayments {
             reply_to_message_id: message_id,
           });
         }
-      } else {
-        usdFeeCounter.inc(amountUSD)
       }
+      await this.writePaymentLog(ctx, creditsPayAmount, oneTokensPayAmount)
       return true
     } else {
       const addressBalance = await this.getAddressBalance(userAccount.address)

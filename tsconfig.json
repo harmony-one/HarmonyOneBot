@@ -6,7 +6,8 @@
     "types": ["node"],
     "lib": ["es2022"],
     "emitDecoratorMetadata": true,
-    "experimentalDecorators": true
+    "experimentalDecorators": true,
+    "strictPropertyInitialization": false
   },
   "include": ["src/bot.ts", "environment.d.ts"],
   "exclude": ["node_modules"]

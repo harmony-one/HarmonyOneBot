@@ -145,12 +145,12 @@ export class BotSchedule {
       }
     }
 
-    if (ctx.hasCommand(SupportedCommands.STATS)) {
-      const report = await this.generateReport()
-      ctx.reply(report, {
-        reply_to_message_id: message_id,
-        parse_mode: "Markdown",
-      });
-    }
+    // if (ctx.hasCommand(SupportedCommands.STATS)) {
+    //   const report = await this.generateReport()
+    //   ctx.reply(report, {
+    //     reply_to_message_id: message_id,
+    //     parse_mode: "Markdown",
+    //   });
+    // }
   }
 }

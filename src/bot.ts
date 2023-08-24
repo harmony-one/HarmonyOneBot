@@ -29,15 +29,13 @@ import { BotPayments } from "./modules/payment";
 import { BotSchedule } from "./modules/schedule";
 import config from "./config";
 import { commandsHelpText, TERMS, SUPPORT, FEEDBACK, LOVE } from "./constants";
-import prometheusRegister from './metrics/prometheus'
+import prometheusRegister, {PrometheusMetrics} from './metrics/prometheus'
 
 import {chatService, statsService} from "./database/services";
 import {AppDataSource} from "./database/datasource";
-import { text } from "stream/consumers";
 import { autoRetry } from "@grammyjs/auto-retry";
 import {run} from "@grammyjs/runner";
 import {runBotHeartBit} from "./monitoring/monitoring";
-
 
 const logger = pino({
   name: "bot",
@@ -166,19 +164,19 @@ const assignFreeCredits = async (ctx: OnMessageContext) => {
   return true;
 };
 
-bot.use((ctx, next) => {
-  const entities = ctx.entities();
-
-  for (let i = 0; i < entities.length; i++) {
-    const entity = entities[i];
-    if (entity.type === 'bot_command' && ctx.message) {
-      const tgUserId = ctx.message.from.id;
-      statsService.addCommandStat({tgUserId, command: entity.text.replace('/', ''), rawMessage: ''})
-    }
-  }
-
-  return next();
-})
+// bot.use((ctx, next) => {
+//   const entities = ctx.entities();
+//
+//   for (let i = 0; i < entities.length; i++) {
+//     const entity = entities[i];
+//     if (entity.type === 'bot_command' && ctx.message) {
+//       const tgUserId = ctx.message.from.id;
+//       statsService.addCommandStat({tgUserId, command: entity.text.replace('/', ''), rawMessage: ''})
+//     }
+//   }
+//
+//   return next();
+// })
 
 const onMessage = async (ctx: OnMessageContext) => {
   try {
@@ -446,7 +444,12 @@ const stopRunner = () => {
 process.once("SIGINT", stopRunner);
 process.once("SIGTERM", stopRunner);
 
-AppDataSource.initialize();
+AppDataSource.initialize().then(() => {
+  const prometheusMetrics = new PrometheusMetrics()
+  prometheusMetrics.bootstrap()
+}).catch((e) => {
+  logger.error(`Error during DB initialization: ${(e as Error).message}`)
+})
 
 if (config.betteruptime.botHeartBitId) {
   const task = runBotHeartBit(runner, config.betteruptime.botHeartBitId);

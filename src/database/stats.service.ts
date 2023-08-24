@@ -1,19 +1,55 @@
 import {AppDataSource} from "./datasource";
 import {StatBotCommand} from "./entities/StatBotCommand";
 import moment from "moment/moment";
+import {PaymentLog} from "./entities/Log";
 
 const statBotCommandRepository = AppDataSource.getRepository(StatBotCommand);
+const paymentLogRepository = AppDataSource.getRepository(PaymentLog);
+
+export interface BotPaymentLog {
+  tgUserId: number
+  accountId: number
+  command: string
+  message: string
+  amountOne: number
+  amountCredits: number
+}
 
 export class StatsService {
-  public addCommandStat({tgUserId, rawMessage, command}: {tgUserId: number, rawMessage: string, command: string}) {
-    const stat = new StatBotCommand();
-
-    stat.command = command
-    stat.rawMessage = rawMessage
-    stat.tgUserId = tgUserId
-
-    return statBotCommandRepository.save(stat);
+  public writeLog(log: BotPaymentLog) {
+    let paymentLog = new PaymentLog()
+    paymentLog = {
+      ...paymentLog,
+      ...log
+    }
+    return paymentLogRepository.save(paymentLog);
   }
+
+  async getTotalONE() {
+    const [result] = await paymentLogRepository.query(`select sum("amountOne") from payment_log`)
+    if(result) {
+      return +result.sum
+    }
+    return 0
+  }
+
+  async getTotalFreeCredits() {
+    const [result] = await paymentLogRepository.query(`select sum("amountCredits") from payment_log`)
+    if(result) {
+      return +result.sum
+    }
+    return 0
+  }
+
+  // public addCommandStat({tgUserId, rawMessage, command}: {tgUserId: number, rawMessage: string, command: string}) {
+  //   const stat = new StatBotCommand();
+  //
+  //   stat.command = command
+  //   stat.rawMessage = rawMessage
+  //   stat.tgUserId = tgUserId
+  //
+  //   return statBotCommandRepository.save(stat);
+  // }
 
   public async getDAU() {
     const currentTime = moment(); // Get the current time
