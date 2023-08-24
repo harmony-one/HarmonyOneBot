@@ -294,7 +294,7 @@ export class OpenAIBot {
     }
 
     this.logger.warn(`### unsupported command`);
-    ctx
+    await ctx
       .reply("### unsupported command")
       .catch((e) => this.onError(ctx, e, 3, "Bot disabled"));
   }
