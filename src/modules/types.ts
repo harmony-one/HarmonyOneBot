@@ -1,4 +1,3 @@
-
 import { Context, SessionFlavor } from "grammy";
 import { Filter, FilterQuery } from "grammy/out/filter";
 import { MenuFlavor } from "@grammyjs/menu/out/menu";
@@ -6,9 +5,7 @@ import {
   type Conversation,
   type ConversationFlavor,
 } from "@grammyjs/conversations";
-import {
-  AutoChatActionFlavor,
-} from "@grammyjs/auto-chat-action";
+import { AutoChatActionFlavor } from "@grammyjs/auto-chat-action";
 export interface ImageGenSessionData {
   numImages: number;
   imgSize: string;
@@ -16,9 +13,9 @@ export interface ImageGenSessionData {
 }
 
 export interface ChatCompletion {
-  completion: string
-  usage: number
-  price: number
+  completion: string;
+  usage: number;
+  price: number;
 }
 export interface ChatConversation {
   role: string;
@@ -30,6 +27,8 @@ export interface ChatGptSessionData {
   chatConversation: ChatConversation[];
   usage: number;
   price: number;
+  requestQueue: string[];
+  isProcessingQueue: boolean;
 }
 export interface OpenAiSessionData {
   imageGen: ImageGenSessionData;
@@ -46,7 +45,8 @@ export interface BotSessionData {
 
 export type BotContext = Context &
   SessionFlavor<BotSessionData> &
-  ConversationFlavor & AutoChatActionFlavor;
+  ConversationFlavor &
+  AutoChatActionFlavor;
 
 export type CustomContext<Q extends FilterQuery> = Filter<BotContext, Q>;
 export type OnMessageContext = CustomContext<"message">;
@@ -56,4 +56,4 @@ export type MenuContext = Filter<BotContext, "callback_query:data"> &
 
 export type BotConversation = Conversation<BotContext>;
 
-export type RefundCallback = (reason?: string) => void
+export type RefundCallback = (reason?: string) => void;

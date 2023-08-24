@@ -29,15 +29,14 @@ import { BotPayments } from "./modules/payment";
 import { BotSchedule } from "./modules/schedule";
 import config from "./config";
 import { commandsHelpText, TERMS, SUPPORT, FEEDBACK, LOVE } from "./constants";
-import prometheusRegister, {PrometheusMetrics} from './metrics/prometheus'
+import prometheusRegister, {PrometheusMetrics} from "./metrics/prometheus";
 
-import {chatService, statsService} from "./database/services";
-import {AppDataSource} from "./database/datasource";
+import { chatService, statsService } from "./database/services";
+import { AppDataSource } from "./database/datasource";
 import { autoRetry } from "@grammyjs/auto-retry";
 import {run} from "@grammyjs/runner";
 import {runBotHeartBit} from "./monitoring/monitoring";
 import {BotPaymentLog} from "./database/stats.service";
-
 const logger = pino({
   name: "bot",
   transport: {
@@ -85,6 +84,8 @@ function createInitialSessionData(): BotSessionData {
         chatConversation: [],
         price: 0,
         usage: 0,
+        isProcessingQueue: false,
+        requestQueue: [],
       },
     },
     oneCountry: {
@@ -170,14 +171,18 @@ bot.use((ctx, next) => {
 
   for (let i = 0; i < entities.length; i++) {
     const entity = entities[i];
-    if (entity.type === 'bot_command' && ctx.message) {
+    if (entity.type === "bot_command" && ctx.message) {
       const tgUserId = ctx.message.from.id;
-      statsService.addCommandStat({tgUserId, command: entity.text.replace('/', ''), rawMessage: ''})
+      statsService.addCommandStat({
+        tgUserId,
+        command: entity.text.replace("/", ""),
+        rawMessage: "",
+      });
     }
   }
 
   return next();
-})
+});
 
 const writeCommandLog = async (ctx: OnMessageContext, isSupportedCommand = true) => {
   const { from, text = '', chat } = ctx.update.message
@@ -206,19 +211,17 @@ const writeCommandLog = async (ctx: OnMessageContext, isSupportedCommand = true)
 const onMessage = async (ctx: OnMessageContext) => {
   try {
     await assignFreeCredits(ctx);
-
     if (qrCodeBot.isSupportedEvent(ctx)) {
       const price = qrCodeBot.getEstimatedPrice(ctx);
       const isPaid = await payments.pay(ctx, price);
       if (isPaid) {
         await qrCodeBot
-            .onEvent(ctx, (reason?: string) => {
-              payments.refundPayment(reason, ctx, price);
-            })
-            .catch((e) => {
-              payments.refundPayment(e.message || "Unknown error", ctx, price);
-            });
-
+          .onEvent(ctx, (reason?: string) => {
+            payments.refundPayment(reason, ctx, price);
+          })
+          .catch((e) => {
+            payments.refundPayment(e.message || "Unknown error", ctx, price);
+          });
         return;
       }
     }
@@ -227,12 +230,12 @@ const onMessage = async (ctx: OnMessageContext) => {
       const isPaid = await payments.pay(ctx, price);
       if (isPaid) {
         await sdImagesBot
-            .onEvent(ctx, (reason?: string) => {
-              payments.refundPayment(reason, ctx, price);
-            })
-            .catch((e) => {
-              payments.refundPayment(e.message || "Unknown error", ctx, price);
-            });
+          .onEvent(ctx, (reason?: string) => {
+            payments.refundPayment(reason, ctx, price);
+          })
+          .catch((e) => {
+            payments.refundPayment(e.message || "Unknown error", ctx, price);
+          });
         return;
       }
       return;
@@ -241,7 +244,7 @@ const onMessage = async (ctx: OnMessageContext) => {
       const price = voiceMemo.getEstimatedPrice(ctx);
       const isPaid = await payments.pay(ctx, price);
       if (isPaid) {
-       await voiceMemo.onEvent(ctx).catch((e) => {
+        await voiceMemo.onEvent(ctx).catch((e) => {
           payments.refundPayment(e.message || "Unknown error", ctx, price);
         });
       }
@@ -251,19 +254,19 @@ const onMessage = async (ctx: OnMessageContext) => {
       if (ctx.session.openAi.imageGen.isEnabled) {
         if (openAiBot.isValidCommand(ctx)) {
           const price = openAiBot.getEstimatedPrice(ctx);
-          const isPaid = await payments.pay(ctx, price || 0);
+          const isPaid = await payments.pay(ctx, price!);
           if (isPaid) {
-            return openAiBot
-                .onEvent(ctx)
-                .catch((e) => payments.refundPayment(e, ctx, price || 0));
+            await openAiBot
+              .onEvent(ctx)
+              .catch((e) => payments.refundPayment(e, ctx, price!));
+            return;
           }
           return;
         } else {
-          // ctx.reply("Error: Missing prompt");
           return;
         }
       } else {
-        ctx.reply("Bot disabled");
+        await ctx.reply("Bot disabled");
         return;
       }
     }
@@ -276,13 +279,12 @@ const onMessage = async (ctx: OnMessageContext) => {
         const isPaid = await payments.pay(ctx, price);
         if (isPaid) {
           await oneCountryBot
-              .onEvent(ctx)
-              .catch((e) => payments.refundPayment(e, ctx, price));
+            .onEvent(ctx)
+            .catch((e) => payments.refundPayment(e, ctx, price));
           return;
         }
         return;
       } else {
-        // ctx.reply("Error: Missing prompt");
         return;
       }
     }
@@ -316,8 +318,8 @@ const onMessage = async (ctx: OnMessageContext) => {
       logger.info(`Received message in chat id: ${ctx.update.message.chat.id}`);
     }
     await writeCommandLog(ctx, false)
-  }catch(ex: any){
-    console.error('onMessage error', ex)
+  } catch (ex: any) {
+    console.error("onMessage error", ex);
   }
 };
 
@@ -336,8 +338,8 @@ const onCallback = async (ctx: OnCallBackQueryData) => {
       });
       return;
     }
-  }catch(ex: any){
-    console.error('onMessage error', ex)
+  } catch (ex: any) {
+    console.error("onMessage error", ex);
   }
 };
 
@@ -430,16 +432,15 @@ bot.catch((err) => {
   logger.error(`Error while handling update ${ctx.update.update_id}:`);
   const e = err.error;
   if (e instanceof GrammyError) {
-    console.log('Grammy error:', {e});
     logger.error("Error in request:", e.description);
-    logger.error(`Error in message: ${JSON.stringify(ctx.message)}`)
+    logger.error(`Error in message: ${JSON.stringify(ctx.message)}`);
   } else if (e instanceof HttpError) {
     logger.error("Could not contact Telegram:", e);
   } else {
     logger.error("Unknown error:", e);
-    console.error('global error others', err)
+    console.error("global error others", err);
   }
-  console.error('global error', err)
+  console.error("global error", err);
 });
 
 bot.errorBoundary((error) => {
@@ -458,14 +459,14 @@ const httpServer = app.listen(config.port, () => {
   // });
 });
 
-app.get('/health', (req, res) =>{
-  res.send('OK').end()
-})
+app.get("/health", (req, res) => {
+  res.send("OK").end();
+});
 
-app.get('/metrics', async (req, res) =>{
-  res.setHeader('Content-Type', prometheusRegister.contentType);
+app.get("/metrics", async (req, res) => {
+  res.setHeader("Content-Type", prometheusRegister.contentType);
   res.send(await prometheusRegister.metrics());
-})
+});
 
 const runner = run(bot);
 
@@ -474,7 +475,7 @@ const runner = run(bot);
 const stopRunner = () => {
   httpServer.close();
   return runner.isRunning() && runner.stop();
-}
+};
 process.once("SIGINT", stopRunner);
 process.once("SIGTERM", stopRunner);
 
@@ -490,3 +491,4 @@ if (config.betteruptime.botHeartBitId) {
   process.once("SIGINT", () => task.stop());
   process.once("SIGTERM", () => task.stop());
 }
+

@@ -73,7 +73,7 @@ export const MODELS_CONFIGS: IModel[] = [
         link: 'https://civitai.com/models/23521/anime-pastel-dream',
         baseModel: 'SD 1.5',
         aliases: ['anime', '2352', 'h4be'],
-        defaultPrompt: 'masterpiece, best quality, ultra-detailed, illustration,(1girl),beautiful detailed eyes, looking at viewer, close up, (breast focus), pink hair, shy, cat ears'
+        defaultPrompt: 'masterpiece, best quality, ultra-detailed, illustration, beautiful detailed eyes, looking at viewer, close up, pink hair, shy, cat ears'
     },
     {
         path: 'cyberrealistic_v33.safetensors',
@@ -117,7 +117,7 @@ export const MODELS_CONFIGS: IModel[] = [
         link: 'https://civitai.com/models/84040/sdxl-unstable-diffusers-yamermix',
         baseModel: 'SDXL 1.0',
         aliases: ['xl_dif', '8404', 'hef9'],
-        defaultPrompt: 'pastel color, from above, upper body, depth of field, masterpiece, best quality, best quality, 1girl sitting on a swing, school uniform, black hair, blue eyes, autumn, park'
+        defaultPrompt: 'pastel color, from above, upper body, depth of field, masterpiece, best quality, best quality, girl sitting on a swing, school uniform, black hair, blue eyes, autumn, park'
     }
 ];
 
