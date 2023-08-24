@@ -231,11 +231,11 @@ const onMessage = async (ctx: OnMessageContext) => {
       if (ctx.session.openAi.imageGen.isEnabled) {
         if (openAiBot.isValidCommand(ctx)) {
           const price = openAiBot.getEstimatedPrice(ctx);
-          const isPaid = await payments.pay(ctx, price);
+          const isPaid = await payments.pay(ctx, price!);
           if (isPaid) {
             await openAiBot
               .onEvent(ctx)
-              .catch((e) => payments.refundPayment(e, ctx, price));
+              .catch((e) => payments.refundPayment(e, ctx, price!));
             return;
           }
           return;
