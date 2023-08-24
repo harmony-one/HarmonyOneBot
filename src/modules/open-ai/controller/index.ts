@@ -70,7 +70,7 @@ export const imgGenEnhanced = async (
   try {
     const upgratedPrompt = await improvePrompt(prompt, model!);
     if (upgratedPrompt) {
-      ctx
+      await ctx
         .reply(
           `The following description was added to your prompt: ${upgratedPrompt}`
         )
@@ -116,7 +116,7 @@ export const alterImg = async (
     );
     if (imgs) {
       imgs!.map(async (img: any) => {
-        ctx.replyWithPhoto(img.url).catch((e) => {
+        await ctx.replyWithPhoto(img.url).catch((e) => {
           throw e;
         });
       });

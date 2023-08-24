@@ -317,7 +317,7 @@ export class OpenAIBot {
         };
         await imgGen(payload, ctx);
       } else {
-        ctx
+        await ctx
           .reply("Bot disabled")
           .catch((e) => this.onError(ctx, e, 3, "Bot disabled"));
       }
@@ -329,25 +329,25 @@ export class OpenAIBot {
   onGenImgEnCmd = async (ctx: OnMessageContext | OnCallBackQueryData) => {
     try {
       if (ctx.session.openAi.imageGen.isEnabled) {
-        const prompt = ctx.match;
+        const prompt = await ctx.match;
         if (!prompt) {
-          ctx
+          await ctx
             .reply("Error: Missing prompt")
             .catch((e) => this.onError(ctx, e, 3, "Error: Missing prompt"));
           return;
         }
         const payload = {
-          chatId: ctx.chat?.id!,
-          prompt: ctx.match as string,
+          chatId: await ctx.chat?.id!,
+          prompt: prompt as string,
           numImages: await ctx.session.openAi.imageGen.numImages,
           imgSize: await ctx.session.openAi.imageGen.imgSize,
         };
-        ctx
+        await ctx
           .reply("generating improved prompt...")
           .catch((e) => this.onError(ctx, e));
         await imgGenEnhanced(payload, ctx);
       } else {
-        ctx
+        await ctx
           .reply("Bot disabled")
           .catch((e) => this.onError(ctx, e, 3, "Bot disabled"));
       }
