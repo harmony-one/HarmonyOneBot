@@ -50,8 +50,8 @@ export class SDImagesBotBase {
 
             ctx.chatAction = "upload_photo";
 
-            if (isDefault && model.defaultImage) {
-                await ctx.replyWithPhoto(model.defaultImage, {
+            if (isDefault && model.defaultImageUrl) {
+                await ctx.replyWithPhoto(model.defaultImageUrl, {
                     caption: `/${model.aliases[0]} ${prompt}`,
                 });
             } else {

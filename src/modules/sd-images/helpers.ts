@@ -128,7 +128,7 @@ export const parseCtx = (ctx: Context): IOperation | false => {
 
         if (!prompt) {
             prompt = model.defaultPrompt;
-            isDefault = !!model.defaultImage;
+            isDefault = !!model.defaultImageUrl;
         }
 
         if (command) {
