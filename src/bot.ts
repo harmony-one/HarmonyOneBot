@@ -29,13 +29,13 @@ import { BotPayments } from "./modules/payment";
 import { BotSchedule } from "./modules/schedule";
 import config from "./config";
 import { commandsHelpText, TERMS, SUPPORT, FEEDBACK, LOVE } from "./constants";
-import prometheusRegister from './metrics/prometheus'
+import prometheusRegister from "./metrics/prometheus";
 
-import {chatService, statsService} from "./database/services";
-import {AppDataSource} from "./database/datasource";
+import { chatService, statsService } from "./database/services";
+import { AppDataSource } from "./database/datasource";
 import { text } from "stream/consumers";
 import { autoRetry } from "@grammyjs/auto-retry";
-import {run} from "@grammyjs/runner";
+import { run } from "@grammyjs/runner";
 
 const logger = pino({
   name: "bot",
@@ -171,14 +171,18 @@ bot.use((ctx, next) => {
 
   for (let i = 0; i < entities.length; i++) {
     const entity = entities[i];
-    if (entity.type === 'bot_command' && ctx.message) {
+    if (entity.type === "bot_command" && ctx.message) {
       const tgUserId = ctx.message.from.id;
-      statsService.addCommandStat({tgUserId, command: entity.text.replace('/', ''), rawMessage: ''})
+      statsService.addCommandStat({
+        tgUserId,
+        command: entity.text.replace("/", ""),
+        rawMessage: "",
+      });
     }
   }
 
   return next();
-})
+});
 
 const onMessage = async (ctx: OnMessageContext) => {
   try {
@@ -188,12 +192,12 @@ const onMessage = async (ctx: OnMessageContext) => {
       const isPaid = await payments.pay(ctx, price);
       if (isPaid) {
         await qrCodeBot
-            .onEvent(ctx, (reason?: string) => {
-              payments.refundPayment(reason, ctx, price);
-            })
-            .catch((e) => {
-              payments.refundPayment(e.message || "Unknown error", ctx, price);
-            });
+          .onEvent(ctx, (reason?: string) => {
+            payments.refundPayment(reason, ctx, price);
+          })
+          .catch((e) => {
+            payments.refundPayment(e.message || "Unknown error", ctx, price);
+          });
         return;
       }
     }
@@ -202,12 +206,12 @@ const onMessage = async (ctx: OnMessageContext) => {
       const isPaid = await payments.pay(ctx, price);
       if (isPaid) {
         await sdImagesBot
-            .onEvent(ctx, (reason?: string) => {
-              payments.refundPayment(reason, ctx, price);
-            })
-            .catch((e) => {
-              payments.refundPayment(e.message || "Unknown error", ctx, price);
-            });
+          .onEvent(ctx, (reason?: string) => {
+            payments.refundPayment(reason, ctx, price);
+          })
+          .catch((e) => {
+            payments.refundPayment(e.message || "Unknown error", ctx, price);
+          });
         return;
       }
       return;
@@ -216,7 +220,7 @@ const onMessage = async (ctx: OnMessageContext) => {
       const price = voiceMemo.getEstimatedPrice(ctx);
       const isPaid = await payments.pay(ctx, price);
       if (isPaid) {
-       await voiceMemo.onEvent(ctx).catch((e) => {
+        await voiceMemo.onEvent(ctx).catch((e) => {
           payments.refundPayment(e.message || "Unknown error", ctx, price);
         });
       }
@@ -228,17 +232,17 @@ const onMessage = async (ctx: OnMessageContext) => {
           const price = openAiBot.getEstimatedPrice(ctx);
           const isPaid = await payments.pay(ctx, price);
           if (isPaid) {
-            return openAiBot
+            await openAiBot
               .onEvent(ctx)
               .catch((e) => payments.refundPayment(e, ctx, price));
+            return;
           }
           return;
         } else {
-          // ctx.reply("Error: Missing prompt");
           return;
         }
       } else {
-        ctx.reply("Bot disabled");
+        await ctx.reply("Bot disabled");
         return;
       }
     }
@@ -251,13 +255,12 @@ const onMessage = async (ctx: OnMessageContext) => {
         const isPaid = await payments.pay(ctx, price);
         if (isPaid) {
           await oneCountryBot
-              .onEvent(ctx)
-              .catch((e) => payments.refundPayment(e, ctx, price));
+            .onEvent(ctx)
+            .catch((e) => payments.refundPayment(e, ctx, price));
           return;
         }
         return;
       } else {
-        // ctx.reply("Error: Missing prompt");
         return;
       }
     }
@@ -278,12 +281,9 @@ const onMessage = async (ctx: OnMessageContext) => {
     //  const command = ctx.update.message.text.split(' ')[0].slice(1)
     // onlfy for private chats
     if (ctx.update.message.chat && ctx.chat.type === "private") {
-      await ctx.reply(
-          `Unsupported, type */help* for commands.`,
-          {
-            parse_mode: "Markdown",
-          }
-      );
+      await ctx.reply(`Unsupported, type */help* for commands.`, {
+        parse_mode: "Markdown",
+      });
       return;
     }
     if (ctx.update.message.chat) {
@@ -423,14 +423,14 @@ const httpServer = app.listen(config.port, () => {
   // });
 });
 
-app.get('/health', (req, res) =>{
-  res.send('OK').end()
-})
+app.get("/health", (req, res) => {
+  res.send("OK").end();
+});
 
-app.get('/metrics', async (req, res) =>{
-  res.setHeader('Content-Type', prometheusRegister.contentType);
+app.get("/metrics", async (req, res) => {
+  res.setHeader("Content-Type", prometheusRegister.contentType);
   res.send(await prometheusRegister.metrics());
-})
+});
 
 const runner = run(bot);
 
@@ -439,7 +439,7 @@ const runner = run(bot);
 const stopRunner = () => {
   httpServer.close();
   return runner.isRunning() && runner.stop();
-}
+};
 process.once("SIGINT", stopRunner);
 process.once("SIGTERM", stopRunner);
 
