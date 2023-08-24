@@ -28,13 +28,15 @@ const removeSpaceFromBegin = (text: string) => {
     return text.slice(idx);
 }
 
+const SPECIAL_IMG_CMD_SYMBOLS = [',', 'i.', 'I.'];
+
 const parsePrompts = (fullText: string): { modelId: string, prompt: string } => {
     let modelId = '';
     let prompt: any;
 
     let text = fullText;
 
-    const specialSymbols = ['/', ',', 'i.'];
+    const specialSymbols = ['/', ...SPECIAL_IMG_CMD_SYMBOLS];
 
     if (specialSymbols.some(s => !!text.startsWith(s))) {
         const startIdx = text.indexOf(' ');
@@ -114,9 +116,7 @@ export const parseCtx = (ctx: Context): IOperation | false => {
             }
         }
 
-        const specialSymbols = [',', 'i.'];
-
-        const startWithSpecialSymbol = specialSymbols.some(s => !!ctx.message?.text?.startsWith(s));
+        const startWithSpecialSymbol = SPECIAL_IMG_CMD_SYMBOLS.some(s => !!ctx.message?.text?.startsWith(s));
 
         if (startWithSpecialSymbol) {
             command = COMMAND.TEXT_TO_IMAGE;
