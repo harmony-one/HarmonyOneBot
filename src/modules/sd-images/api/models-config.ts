@@ -8,9 +8,22 @@ export interface IModel {
     baseModel: 'SD 1.5' | 'SDXL 1.0';
     aliases: string[];
     defaultPrompt: string;
+    defaultImage?: string;
 }
 
 export const MODELS_CONFIGS: IModel[] = [
+    {
+        path: 'sdXL_v10VAEFix.safetensors',
+        name: 'SD XL',
+        id: '101055',
+        hash: 'E6BB9EA85B',
+        shortName: 'sd-xl',
+        link: 'https://civitai.com/models/101055/sd-xl',
+        baseModel: 'SDXL 1.0',
+        aliases: ['xl', '1010', 'he6b'],
+        defaultPrompt: 'A cat is sitting in a kimono, in the style of renaissance - inspired chiaroscuro, hyper - realistic portraiture, nicolas mignard, old master influenced fantasy, portraitures with hidden meanings, dom qwek, art of burma',
+        defaultImage
+    },
     {
         path: "deliberate_v2.safetensors",
         name: "Deliberate",
@@ -96,17 +109,6 @@ export const MODELS_CONFIGS: IModel[] = [
         baseModel: 'SDXL 1.0',
         aliases: ['xl_dream', '1129', 'h0f1'],
         defaultPrompt: 'barry allen the flash on wheelchair moving at supersonic speed creating flame trails, speed trails, motion blur, electricity speed outdoor, realistic highly detailed cinematic cinematography, movie shots footage,',
-    },
-    {
-        path: 'sdXL_v10VAEFix.safetensors',
-        name: 'SD XL',
-        id: '101055',
-        hash: 'E6BB9EA85B',
-        shortName: 'sd-xl',
-        link: 'https://civitai.com/models/101055/sd-xl',
-        baseModel: 'SDXL 1.0',
-        aliases: ['xl', '1010', 'he6b'],
-        defaultPrompt: 'A cat is sitting in a kimono, in the style of renaissance - inspired chiaroscuro, hyper - realistic portraiture, nicolas mignard, old master influenced fantasy, portraitures with hidden meanings, dom qwek, art of burma'
     },
     {
         path: 'sdxlUnstableDiffusers_v5UnchainedSlayer.safetensors',
