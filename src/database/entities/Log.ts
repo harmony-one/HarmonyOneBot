@@ -1,6 +1,6 @@
 import {Entity, Column, PrimaryGeneratedColumn, CreateDateColumn} from 'typeorm';
 
-@Entity({ name: 'log' })
+@Entity({ name: 'logs' })
 export class BotLog {
   @PrimaryGeneratedColumn()
   id!: number;

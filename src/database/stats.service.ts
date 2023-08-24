@@ -23,13 +23,14 @@ export class StatsService {
     let paymentLog = new BotLog()
     paymentLog = {
       ...paymentLog,
-      ...log
+      ...log,
+      message: (log.message || '').trim().slice(0, 1024)
     }
     return logRepository.save(paymentLog);
   }
 
   async getTotalONE() {
-    const [result] = await logRepository.query(`select sum("amountOne") from log`)
+    const [result] = await logRepository.query(`select sum("amountOne") from logs`)
     if(result) {
       return +result.sum
     }
@@ -37,7 +38,7 @@ export class StatsService {
   }
 
   async getTotalFreeCredits() {
-    const [result] = await logRepository.query(`select sum("amountCredits") from log`)
+    const [result] = await logRepository.query(`select sum("amountCredits") from logs`)
     if(result) {
       return +result.sum
     }
@@ -45,7 +46,7 @@ export class StatsService {
   }
 
   async getUniqueUsersCount() {
-    const [result] = await logRepository.query(`select count(distinct("tgUserId")) from log`)
+    const [result] = await logRepository.query(`select count(distinct("tgUserId")) from logs`)
     if(result) {
       return +result.count
     }
@@ -63,9 +64,12 @@ export class StatsService {
   }
 
   public async getDAU() {
-    const currentTime = moment(); // Get the current time
+    const currentTime = moment();
     const eightPm = moment().set({ hour: 20, minute: 0, second: 0 });
-    let dateStart = moment().set({ hour: 20, minute: 0, second: 0 }).subtract(1, 'days').unix();
+    let dateStart = moment()
+      .set({ hour: 20, minute: 0, second: 0 })
+      .subtract(1, 'days')
+      .unix();
 
     if (currentTime.isAfter(eightPm)) {
       dateStart = eightPm.unix();
