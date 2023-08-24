@@ -13,6 +13,7 @@ export interface IOperation {
     command: COMMAND;
     prompt: string;
     model: IModel;
+    isDefault: boolean;
 }
 
 const removeSpaceFromBegin = (text: string) => {
@@ -27,13 +28,17 @@ const removeSpaceFromBegin = (text: string) => {
     return text.slice(idx);
 }
 
+const SPECIAL_IMG_CMD_SYMBOLS = [',', 'i.', 'I.'];
+
 const parsePrompts = (fullText: string): { modelId: string, prompt: string } => {
     let modelId = '';
     let prompt: any;
 
     let text = fullText;
 
-    if (text.startsWith('/') || text.startsWith(',')) {
+    const specialSymbols = ['/', ...SPECIAL_IMG_CMD_SYMBOLS];
+
+    if (specialSymbols.some(s => !!text.startsWith(s))) {
         const startIdx = text.indexOf(' ');
         text = startIdx > -1 ? text.slice(startIdx) : '';
     }
@@ -77,8 +82,13 @@ export const parseCtx = (ctx: Context): IOperation | false => {
 
         let model = getModelByParam(modelId);
         let command;
+        let isDefault = false;
 
         if (ctx.hasCommand('image')) {
+            command = COMMAND.TEXT_TO_IMAGE;
+        }
+
+        if (ctx.hasCommand('img')) {
             command = COMMAND.TEXT_TO_IMAGE;
         }
 
@@ -86,9 +96,9 @@ export const parseCtx = (ctx: Context): IOperation | false => {
             command = COMMAND.TEXT_TO_IMAGES;
         }
 
-        if (ctx.hasCommand('all')) {
-            command = COMMAND.CONSTRUCTOR;
-        }
+        // if (ctx.hasCommand('all')) {
+        //     command = COMMAND.CONSTRUCTOR;
+        // }
 
         if (ctx.hasCommand('SD')) {
             command = COMMAND.HELP;
@@ -106,7 +116,7 @@ export const parseCtx = (ctx: Context): IOperation | false => {
             }
         }
 
-        const startWithSpecialSymbol = !!ctx.message?.text?.startsWith(',');
+        const startWithSpecialSymbol = SPECIAL_IMG_CMD_SYMBOLS.some(s => !!ctx.message?.text?.startsWith(s));
 
         if (startWithSpecialSymbol) {
             command = COMMAND.TEXT_TO_IMAGE;
@@ -118,13 +128,15 @@ export const parseCtx = (ctx: Context): IOperation | false => {
 
         if (!prompt) {
             prompt = model.defaultPrompt;
+            isDefault = !!model.defaultImageUrl;
         }
 
         if (command) {
             return {
                 command,
                 model,
-                prompt
+                prompt,
+                isDefault
             }
         }
     } catch (e) {
