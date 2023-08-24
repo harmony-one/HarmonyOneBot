@@ -1,32 +1,35 @@
 import {AppDataSource} from "./datasource";
 import {StatBotCommand} from "./entities/StatBotCommand";
 import moment from "moment/moment";
-import {PaymentLog} from "./entities/Log";
+import {BotLog} from "./entities/Log";
 
 const statBotCommandRepository = AppDataSource.getRepository(StatBotCommand);
-const paymentLogRepository = AppDataSource.getRepository(PaymentLog);
+const logRepository = AppDataSource.getRepository(BotLog);
 
 export interface BotPaymentLog {
   tgUserId: number
   accountId: number
+  groupId: number
+  isPrivate: boolean
   command: string
   message: string
+  isSupportedCommand: boolean
   amountOne: number
   amountCredits: number
 }
 
 export class StatsService {
   public writeLog(log: BotPaymentLog) {
-    let paymentLog = new PaymentLog()
+    let paymentLog = new BotLog()
     paymentLog = {
       ...paymentLog,
       ...log
     }
-    return paymentLogRepository.save(paymentLog);
+    return logRepository.save(paymentLog);
   }
 
   async getTotalONE() {
-    const [result] = await paymentLogRepository.query(`select sum("amountOne") from payment_log`)
+    const [result] = await logRepository.query(`select sum("amountOne") from log`)
     if(result) {
       return +result.sum
     }
@@ -34,22 +37,30 @@ export class StatsService {
   }
 
   async getTotalFreeCredits() {
-    const [result] = await paymentLogRepository.query(`select sum("amountCredits") from payment_log`)
+    const [result] = await logRepository.query(`select sum("amountCredits") from log`)
     if(result) {
       return +result.sum
     }
     return 0
   }
 
-  // public addCommandStat({tgUserId, rawMessage, command}: {tgUserId: number, rawMessage: string, command: string}) {
-  //   const stat = new StatBotCommand();
-  //
-  //   stat.command = command
-  //   stat.rawMessage = rawMessage
-  //   stat.tgUserId = tgUserId
-  //
-  //   return statBotCommandRepository.save(stat);
-  // }
+  async getUniqueUsersCount() {
+    const [result] = await logRepository.query(`select count(distinct("tgUserId")) from log`)
+    if(result) {
+      return +result.count
+    }
+    return 0
+  }
+
+  public addCommandStat({tgUserId, rawMessage, command}: {tgUserId: number, rawMessage: string, command: string}) {
+    const stat = new StatBotCommand();
+
+    stat.command = command
+    stat.rawMessage = rawMessage
+    stat.tgUserId = tgUserId
+
+    return statBotCommandRepository.save(stat);
+  }
 
   public async getDAU() {
     const currentTime = moment(); // Get the current time

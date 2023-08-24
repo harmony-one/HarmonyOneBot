@@ -4,12 +4,12 @@ import { Chat } from "./entities/Chat"
 import { User } from "./entities/User";
 import { StatBotCommand } from "./entities/StatBotCommand";
 import config from "../config"
-import {PaymentLog} from "./entities/Log";
+import {BotLog} from "./entities/Log";
 
 export const AppDataSource = new DataSource({
   type: "postgres",
   url: config.db.url,
-  entities: [Chat, User, StatBotCommand, PaymentLog],
+  entities: [Chat, User, StatBotCommand, BotLog],
   synchronize: true,
   migrations: ['./src/database/migrations/**/*.{.ts,.js}'],
   logging: false,

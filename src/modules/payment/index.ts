@@ -259,27 +259,31 @@ export class BotPayments {
       from,
       text = '',
       audio,
-      voice = ''
+      voice = '',
+      chat
     } = ctx.update.message
 
     try {
       const accountId = this.getAccountId(ctx)
       let [command = ''] = text.split(' ')
       if(!command) {
-        if((audio && audio.duration > 0) || (voice && voice.duration > 0)) {
-          command = 'audio'
+        if(audio || voice) {
+          command = 'voice-memo'
         }
       }
 
-      const paymentLog: BotPaymentLog = {
+      const log: BotPaymentLog = {
         tgUserId: from.id,
         accountId,
+        groupId: chat.id,
+        isPrivate: chat.type === 'private',
         command,
         message: text || '',
+        isSupportedCommand: true,
         amountCredits: this.convertBigNumber(amountCredits),
         amountOne: this.convertBigNumber(amountOne),
       }
-      await statsService.writeLog(paymentLog)
+      await statsService.writeLog(log)
     } catch (e) {
       this.logger.error(`Cannot write payments log: ${JSON.stringify((e as Error).message)}`)
     }

@@ -20,17 +20,25 @@ export const freeCreditsFeeCounter = new client.Counter({
   help: 'Free credits spent by users'
 })
 
+export const uniqueUsersCounter = new client.Counter({
+  name: 'total_unique_users',
+  help: 'Number of unique users'
+})
+
 register.registerMetric(oneTokenFeeCounter)
 register.registerMetric(freeCreditsFeeCounter)
+register.registerMetric(uniqueUsersCounter)
 
 export class PrometheusMetrics {
   public async bootstrap() {
     try {
       const totalOne = await statsService.getTotalONE()
       const freeCredits = await statsService.getTotalFreeCredits()
+      const uniqueUsersCount = await statsService.getUniqueUsersCount()
       oneTokenFeeCounter.inc(totalOne)
       freeCreditsFeeCounter.inc(freeCredits)
-      console.log(`Prometheus bootstrap: total ONE: ${totalOne}, freeCredits: ${freeCredits}`)
+      uniqueUsersCounter.inc(uniqueUsersCount)
+      console.log(`Prometheus bootstrap: total ONE: ${totalOne}, freeCredits: ${freeCredits}, uniqueUsersCount: ${uniqueUsersCount}`)
     } catch (e) {
       console.log('Prometheus bootstrap error:', (e as Error).message)
     }

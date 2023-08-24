@@ -1,7 +1,7 @@
 import {Entity, Column, PrimaryGeneratedColumn, CreateDateColumn} from 'typeorm';
 
-@Entity({ name: 'payment_log' })
-export class PaymentLog {
+@Entity({ name: 'log' })
+export class BotLog {
   @PrimaryGeneratedColumn()
   id!: number;
 
@@ -11,11 +11,20 @@ export class PaymentLog {
   @Column({type: "bigint"})
   accountId: number;
 
+  @Column({type: "bigint"})
+  groupId: number;
+
+  @Column({ default: false })
+  isPrivate: boolean;
+
   @Column()
   command: string;
 
   @Column()
   message: string;
+
+  @Column({ default: false })
+  isSupportedCommand: boolean;
 
   @Column({ type: 'decimal', precision: 10, scale: 8, default: 0 })
   amountOne: number;
