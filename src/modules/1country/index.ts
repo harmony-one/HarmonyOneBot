@@ -120,7 +120,6 @@ export class OneCountryBot {
   private hasPrefix(prompt: string): boolean {
     const prefixList = config.country.registerPrefix;
     for (let i = 0; i < prefixList.length; i++) {
-      console.log(prefixList[i]);
       if (prompt.toLocaleLowerCase().startsWith(prefixList[i])) {
         return true;
       }
