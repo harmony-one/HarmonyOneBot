@@ -1,4 +1,4 @@
-import { InlineKeyboard } from "grammy";
+import { InlineKeyboard, GrammyError } from "grammy";
 import { relayApi } from "./api/relayApi";
 import { AxiosError } from "axios";
 import { isDomainAvailable, validateDomainName } from "./utils/domain";
@@ -8,6 +8,7 @@ import { getCommandNamePrompt, getUrl } from "./utils/";
 import { Logger, pino } from "pino";
 import { isAdmin } from "../open-ai/utils/context";
 import config from "../../config";
+import { sleep } from "../sd-images/utils";
 
 export const SupportedCommands = {
   register: {
@@ -34,7 +35,7 @@ export const SupportedCommands = {
     name: "nft",
     groupParams: "=1", // TODO: add support for groups
     privateParams: "=1",
-  }
+  },
 };
 
 // enum SupportedCommands {
@@ -49,6 +50,7 @@ export const SupportedCommands = {
 
 export class OneCountryBot {
   private logger: Logger;
+  private botSuspended: boolean;
 
   constructor() {
     this.logger = pino({
@@ -60,6 +62,7 @@ export class OneCountryBot {
         },
       },
     });
+    this.botSuspended = false;
   }
 
   public isSupportedEvent(
@@ -166,7 +169,6 @@ export class OneCountryBot {
       return;
     }
 
-
     // if (ctx.hasCommand(SupportedCommands.RENEW)) {
     //   this.onRenewCmd(ctx);
     //   return;
@@ -183,26 +185,26 @@ export class OneCountryBot {
     // }
 
     this.logger.warn(`### unsupported command`);
-    ctx.reply("### unsupported command");
+    await ctx.reply("### unsupported command");
   }
 
   onVistitCmd = async (ctx: OnMessageContext | OnCallBackQueryData) => {
     if (!ctx.match) {
-      ctx.reply("Error: Missing 1.country domain");
+      await ctx.reply("Error: Missing 1.country domain");
       return;
     }
 
     const url = getUrl(ctx.match as string);
     let keyboard = new InlineKeyboard().webApp("Go", `https://${url}/`);
 
-    ctx.reply(`Visit ${url}`, {
+    await ctx.reply(`Visit ${url}`, {
       reply_markup: keyboard,
     });
   };
 
-  onRenewCmd = (ctx: OnMessageContext | OnCallBackQueryData) => {
+  onRenewCmd = async (ctx: OnMessageContext | OnCallBackQueryData) => {
     if (!ctx.match) {
-      ctx.reply("Error: Missing 1.country domain");
+      await ctx.reply("Error: Missing 1.country domain");
       return;
     }
     const url = getUrl(ctx.match as string);
@@ -214,7 +216,7 @@ export class OneCountryBot {
         `https://${url}/?renew`
       );
 
-    ctx.reply(`Renew ${url}`, {
+    await ctx.reply(`Renew ${url}`, {
       reply_markup: keyboard,
     });
   };
@@ -235,17 +237,17 @@ export class OneCountryBot {
             "Process the Notion page Renew in 1.country",
             `https://${domainName}.country/?${alias}#=${url}`
           );
-          ctx.reply(`Renew ${url}`, {
+          await ctx.reply(`Renew ${url}`, {
             reply_markup: keyboard,
           });
         } else {
-          ctx.reply(`The domain doesn't exist`);
+          await ctx.reply(`The domain doesn't exist`);
         }
       } else {
-        ctx.reply(`Invalid url`);
+        await ctx.reply(`Invalid url`);
       }
     } else {
-      ctx.reply(appText.notion.promptMissing, {
+      await ctx.reply(appText.notion.promptMissing, {
         parse_mode: "Markdown",
       });
     }
@@ -274,7 +276,7 @@ export class OneCountryBot {
         );
       }
     } else {
-      ctx.reply("This command is reserved");
+      await ctx.reply("This command is reserved");
     }
   };
 
@@ -283,7 +285,7 @@ export class OneCountryBot {
     if (await isAdmin(ctx, false, true)) {
       try {
         const response = await relayApi().genNFT({ domain: url });
-        ctx.reply("NFT metadata generated");
+        await ctx.reply("NFT metadata generated");
       } catch (e) {
         this.logger.error(
           e instanceof AxiosError
@@ -297,7 +299,7 @@ export class OneCountryBot {
         );
       }
     } else {
-      ctx.reply("This command is reserved");
+      await ctx.reply("This command is reserved");
     }
   };
 
@@ -319,11 +321,11 @@ export class OneCountryBot {
         }
         msg += `Write */rent ${domain}* to purchase it`;
       }
-      ctx.reply(msg, {
+      await ctx.reply(msg, {
         parse_mode: "Markdown",
       });
     } else {
-      ctx.reply("This command is reserved");
+      await ctx.reply("This command is reserved");
     }
   };
 
@@ -350,7 +352,7 @@ export class OneCountryBot {
     );
     const validate = validateDomainName(domain);
     if (!validate.valid) {
-      ctx.reply(validate.error, {
+      await ctx.reply(validate.error, {
         parse_mode: "Markdown",
       });
       return;
@@ -373,7 +375,7 @@ export class OneCountryBot {
       }
       msg += `${appText.registerConfirmation}, or ${appText.registerKeepWriting}`;
     }
-    ctx.api.editMessageText(ctx.chat?.id!, msgId, msg, {
+    await ctx.api.editMessageText(ctx.chat?.id!, msgId, msg, {
       parse_mode: "Markdown",
     });
   }
@@ -398,15 +400,58 @@ export class OneCountryBot {
               ? e.response?.data
               : "There was an error processing your request"
           );
-          ctx.reply("There was an error processing your request");
+          await ctx.reply("There was an error processing your request");
         }
       }
     } else {
-      ctx.reply("This command is reserved");
+      await ctx.reply("This command is reserved");
     }
   };
 
   private cleanInput = (input: string) => {
     return input.replace(/[^a-z0-9-]/g, "").toLowerCase();
   };
+
+  async onError(
+    ctx: OnMessageContext | OnCallBackQueryData,
+    e: any,
+    retryCount: number = 3,
+    msg?: string
+  ) {
+    if (retryCount === 0) {
+      // Retry limit reached, log an error or take alternative action
+      this.logger.error(`Retry limit reached for error: ${e}`);
+      return;
+    }
+    if (e instanceof GrammyError) {
+      if (e.error_code === 429) {
+        this.botSuspended = true;
+        const retryAfter = e.parameters.retry_after
+          ? e.parameters.retry_after < 60
+            ? 60
+            : e.parameters.retry_after * 2
+          : 60;
+        const method = e.method;
+        const errorMessage = `On method "${method}" | ${e.error_code} - ${e.description}`;
+        this.logger.error(errorMessage);
+        await ctx
+          .reply(
+            `${
+              ctx.from.username ? ctx.from.username : ""
+            } Bot has reached limit, wait ${retryAfter} seconds`
+          )
+          .catch((e) => this.onError(ctx, e, retryCount - 1));
+        if (method === "editMessageText") {
+          ctx.session.openAi.chatGpt.chatConversation.pop(); //deletes last prompt
+        }
+        await sleep(retryAfter * 1000); // wait retryAfter seconds to enable bot
+        this.botSuspended = false;
+      }
+    } else {
+      this.logger.error(`onChat: ${e.toString()}`);
+      await ctx
+        .reply(msg ? msg : "Error handling your request")
+        .catch((e) => this.onError(ctx, e, retryCount - 1));
+    }
+  }
 }
