@@ -161,7 +161,7 @@ export class OpenAIBot {
     return false;
   }
 
-  public getEstimatedPrice(ctx: any) {
+  public getEstimatedPrice(ctx: any): number {
     try {
       const priceAdjustment = config.openAi.chatGpt.priceAdjustment;
       const prompts = ctx.match;
@@ -209,7 +209,8 @@ export class OpenAIBot {
       // }
       return 0;
     } catch (e) {
-      this.onError(ctx, e);
+      this.logger.error(`getEstimatedPrice error ${e}`);
+      throw e;
     }
   }
 
