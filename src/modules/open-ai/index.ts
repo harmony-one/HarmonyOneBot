@@ -433,7 +433,6 @@ export class OpenAIBot {
   }
 
   private async onWebCrawler(url: string) {
-    console.log(url);
     return {
       text: hardCoded[url].replaceAll("\n", " "),
       bytes: Math.floor(Math.random() * (1048 - 1024 + 1)) + 1024,
@@ -478,7 +477,6 @@ export class OpenAIBot {
           const url = this.hasWebCrawlerRequest(ctx, prompt);
           if (url) {
             const webCrawler = await this.onWebCrawler(url);
-            console.log(webCrawler);
             chatConversation.push({
               role: "user",
               content: `this is a web crawler of ${url}: ${webCrawler.text}`,
