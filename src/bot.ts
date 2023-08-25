@@ -34,9 +34,10 @@ import prometheusRegister, { PrometheusMetrics } from "./metrics/prometheus";
 import { chatService, statsService } from "./database/services";
 import { AppDataSource } from "./database/datasource";
 import { autoRetry } from "@grammyjs/auto-retry";
-import { run } from "@grammyjs/runner";
-import { runBotHeartBit } from "./monitoring/monitoring";
-import { BotPaymentLog } from "./database/stats.service";
+import {run} from "@grammyjs/runner";
+import {runBotHeartBit} from "./monitoring/monitoring";
+import {BotPaymentLog} from "./database/stats.service";
+
 const logger = pino({
   name: "bot",
   transport: {
@@ -491,3 +492,10 @@ if (config.betteruptime.botHeartBitId) {
   process.once("SIGINT", () => task.stop());
   process.once("SIGTERM", () => task.stop());
 }
+
+if (config.betteruptime.botHeartBitId) {
+  const task = runBotHeartBit(runner, config.betteruptime.botHeartBitId);
+  process.once("SIGINT", () => task.stop());
+  process.once("SIGTERM", () => task.stop());
+}
+

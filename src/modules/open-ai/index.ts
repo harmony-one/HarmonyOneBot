@@ -202,10 +202,10 @@ export class OpenAIBot {
       return;
     }
 
-    if (ctx.message!.text === "/ask harmony.one/dear") {
-      await ctx.reply(askTemplates.dear).catch((e) => this.onError(ctx, e));
-      return;
-    }
+    // if (ctx.message!.text === "/ask harmony.one/dear") {
+    //   await ctx.reply(askTemplates.dear).catch((e) => this.onError(ctx, e));
+    //   return;
+    // }
 
     if (ctx.hasCommand(SupportedCommands.ask.name)) {
       ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_4;
@@ -498,7 +498,7 @@ export class OpenAIBot {
               content: `this is a web crawler of ${url}: ${webCrawler.text}`,
             });
             ctx.reply(
-              `${webCrawler.bytes} bytes downloaded, ${webCrawler.time} time elapsed, ${webCrawler.oneFees} ONE fees paid`,
+              `${webCrawler.bytes} bytes downloaded, ${webCrawler.time}s time elapsed, ${webCrawler.oneFees} ONE fees paid`,
               {
                 parse_mode: "Markdown",
               }
