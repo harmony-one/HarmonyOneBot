@@ -13,6 +13,7 @@ import { ChatGPTModelsEnum } from "./types";
 import { askTemplates } from "../../constants";
 import config from "../../config";
 import { sleep } from "../sd-images/utils";
+import { isValidUrl, hardCoded } from "./utils/crawler";
 
 export const SupportedCommands = {
   chat: {
@@ -100,7 +101,7 @@ export class OpenAIBot {
     );
     const hasReply = this.isSupportedImageReply(ctx);
     const chatPrefix = this.hasPrefix(ctx.message?.text || "");
-    if (chatPrefix !== '') {
+    if (chatPrefix !== "") {
       return true;
     }
     return hasCommand || hasReply;
@@ -117,7 +118,7 @@ export class OpenAIBot {
     }
     if (!commandName) {
       const chatPrefix = this.hasPrefix(ctx.message?.text || "");
-      if (chatPrefix !== '' && promptNumber >= 1) {
+      if (chatPrefix !== "" && promptNumber >= 1) {
         return true;
       }
       return false;
@@ -158,9 +159,8 @@ export class OpenAIBot {
         return prefixList[i];
       }
     }
-    return '';
+    return "";
   }
-
 
   public getEstimatedPrice(ctx: any): number {
     try {
@@ -230,10 +230,10 @@ export class OpenAIBot {
       return;
     }
 
-    if (ctx.message!.text === "/ask harmony.one/dear") {
-      await ctx.reply(askTemplates.dear).catch((e) => this.onError(ctx, e));
-      return;
-    }
+    // if (ctx.message!.text === "/ask harmony.one/dear") {
+    //   await ctx.reply(askTemplates.dear).catch((e) => this.onError(ctx, e));
+    //   return;
+    // }
 
     if (ctx.hasCommand(SupportedCommands.ask.name)) {
       ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_4;
@@ -285,7 +285,7 @@ export class OpenAIBot {
       return;
     }
 
-    if (this.hasPrefix(ctx.message?.text || "") !== '') {
+    if (this.hasPrefix(ctx.message?.text || "") !== "") {
       this.onChat(ctx);
       return;
     }
@@ -393,13 +393,15 @@ export class OpenAIBot {
         ctx,
         SupportedCommands
       );
-      const prefix = this.hasPrefix(prompt)
+      const prefix = this.hasPrefix(prompt);
       this.logger.info(
         `onChat with ${
           commandName
             ? `command: "${commandName}"`
             : `prefix/alias: "${prefix}"`
-        } | model: ${ctx.session.openAi.chatGpt.model} | position: ${ctx.session.openAi.chatGpt.requestQueue.length}`
+        } | model: ${ctx.session.openAi.chatGpt.model} | position: ${
+          ctx.session.openAi.chatGpt.requestQueue.length
+        }`
       );
       ctx.session.openAi.chatGpt.requestQueue.push(prompt);
       if (!ctx.session.openAi.chatGpt.isProcessingQueue) {
@@ -411,6 +413,32 @@ export class OpenAIBot {
     } catch (e: any) {
       this.onError(ctx, e);
     }
+  }
+
+  private hasWebCrawlerRequest(
+    ctx: OnMessageContext | OnCallBackQueryData,
+    prompt: string
+  ): string {
+    const prefix = this.hasPrefix(prompt);
+    const url = (
+      (prefix ? prompt.slice(prefix.length) : ctx.match) as string
+    ).trim();
+    if (url.split(" ").length === 1 && isValidUrl(url)) {
+      // temp while hard coded
+      if (url === "harmony.one" || url === "harmony.one/dear") {
+        return url;
+      }
+    }
+    return "";
+  }
+
+  private async onWebCrawler(url: string) {
+    return {
+      text: hardCoded[url].replaceAll("\n", " "),
+      bytes: Math.floor(Math.random() * (1048 - 1024 + 1)) + 1024,
+      time: (Math.random() * (0.45 - 0.33) + 0.33).toFixed(2),
+      oneFees: (Math.random() * (0.5 - 0.3) + 0.3).toFixed(1),
+    };
   }
 
   async onChatRequestHandler(ctx: OnMessageContext | OnCallBackQueryData) {
@@ -445,27 +473,41 @@ export class OpenAIBot {
               .catch((e) => this.onError(ctx, e));
             return;
           }
-          // if (chatConversation.length === 0) {
-          //   ctx.reply(`_Using model ${ctx.session.openAi.chatGpt.model}_`,{ parse_mode: "Markdown" })
-          // }
-          const prefix = this.hasPrefix(prompt)
-          chatConversation.push({
-            role: "user",
-            content: `${prefix !== '' ? prompt.slice(prefix.length) : prompt}.`,
-          });
-          const payload = {
-            conversation: chatConversation!,
-            model: model || config.openAi.chatGpt.model,
-            ctx,
-          };
-          const price = await promptGen(payload);
-          if (!(await this.payments.pay(ctx as OnMessageContext, price))) {
-            const balanceMessage = appText.notEnoughBalance
-              .replaceAll("$CREDITS", balanceOne)
-              .replaceAll("$WALLET_ADDRESS", account?.address || "");
-            await ctx
-              .reply(balanceMessage, { parse_mode: "Markdown" })
-              .catch((e) => this.onError(ctx, e));
+          const prefix = this.hasPrefix(prompt);
+          const url = this.hasWebCrawlerRequest(ctx, prompt);
+          if (url) {
+            const webCrawler = await this.onWebCrawler(url);
+            chatConversation.push({
+              role: "user",
+              content: `this is a web crawler of ${url}: ${webCrawler.text}`,
+            });
+            ctx.reply(
+              `${webCrawler.bytes} bytes downloaded, ${webCrawler.time}s time elapsed, ${webCrawler.oneFees} ONE fees paid`,
+              {
+                parse_mode: "Markdown",
+              }
+            );
+          } else {
+            chatConversation.push({
+              role: "user",
+              content: `${
+                prefix !== "" ? prompt.slice(prefix.length) : prompt
+              }.`,
+            });
+            const payload = {
+              conversation: chatConversation!,
+              model: model || config.openAi.chatGpt.model,
+              ctx,
+            };
+            const price = await promptGen(payload);
+            if (!(await this.payments.pay(ctx as OnMessageContext, price))) {
+              const balanceMessage = appText.notEnoughBalance
+                .replaceAll("$CREDITS", balanceOne)
+                .replaceAll("$WALLET_ADDRESS", account?.address || "");
+              await ctx
+                .reply(balanceMessage, { parse_mode: "Markdown" })
+                .catch((e) => this.onError(ctx, e));
+            }
           }
           ctx.chatAction = null;
         } else {
