@@ -130,29 +130,34 @@ export class BotSchedule {
     return `*${botFees.value}* ONE (${botFees.change}%)`
   }
 
-  public async generateReport() {
-    const [botFeesReport, dau, mau] = await Promise.all([
+  public async generateAllStatsReport() {
+    const [totalOne, botFeesReport, dau, mau, weu] = await Promise.all([
+      statsService.getTotalONE(),
       this.getBotFeeReport(this.holderAddress),
       statsService.getDAU(),
       statsService.getMAU(),
+      statsService.getWEUunfiltered(),
     ])
 
-    const report = `\nBot fees: ${botFeesReport}` +
+    const report =
+      `\nTotal ONE: *${totalOne.toFixed()}*` +
+      `\nBot fees: ${botFeesReport}` +
       `\nDaily Active Users: *${dau}*` +
-      `\nMonthly Active Users: *${mau}*`
+      `\nMonthly Active Users: *${mau}*` +
+      `\nWeekly User Engagement: *${weu}*`
     return report;
   }
 
   public async generateStatsReport() {
-    const [botFeesReport, dau, weu] = await Promise.all([
+    const [totalOne, dau, weu] = await Promise.all([
       statsService.getTotalONE(),
       statsService.getWAU(),
-      statsService.getWUE(),
+      statsService.getWEU(),
     ])
 
-    const report = `\nTotal ONE (excluding free): *${botFeesReport}*` +
+    const report = `\nTotal ONE: *${totalOne.toFixed()}*` +
       `\nWeekly Active Users: *${dau}*` +
-      `\nWeekly User Engagement: *${weu}*`
+      `\nWeekly User Engagement: *${weu}*`;
     return report;
   }
 
@@ -169,7 +174,7 @@ export class BotSchedule {
     }
 
     if (ctx.hasCommand(SupportedCommands.ALL_STATS)) {
-      const report = await this.generateReport()
+      const report = await this.generateAllStatsReport()
       await ctx.reply(report, {
         parse_mode: "Markdown",
       });

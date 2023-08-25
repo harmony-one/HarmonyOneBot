@@ -136,16 +136,31 @@ export class StatsService {
   }
 
   // weekly user engagement (the total messages sent to bot in the last 7 days).
-  public async getWUE() {
+  public async getWEU() {
     const dateStart = moment().subtract(7, 'days').unix();
     const dateEnd = moment().unix();
 
-    const rows = await statBotCommandRepository
-      .query(`
-        select count(stat_bot_command."tgUserId") from stat_bot_command
-        where stat_bot_command."createDate" BETWEEN TO_TIMESTAMP($1) and TO_TIMESTAMP($2)
+    const rows = await logRepository.query(`
+        select count(logs."tgUserId") from logs
+        where logs."createdAt" BETWEEN TO_TIMESTAMP($1) and TO_TIMESTAMP($2)
+        and logs."isSupportedCommand" = true
       `,
-        [dateStart, dateEnd])
+      [dateStart, dateEnd])
+
+    return +rows[0].count;
+  }
+
+
+  // weekly user engagement (the total messages sent to bot in the last 7 days).
+  public async getWEUunfiltered() {
+    const dateStart = moment().subtract(7, 'days').unix();
+    const dateEnd = moment().unix();
+
+    const rows = await logRepository.query(`
+        select count(logs."tgUserId") from logs
+        where logs."createdAt" BETWEEN TO_TIMESTAMP($1) and TO_TIMESTAMP($2)
+      `,
+      [dateStart, dateEnd])
 
     return +rows[0].count;
   }
