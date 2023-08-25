@@ -11,7 +11,8 @@ import {statsService} from "../../database/services";
 
 enum SupportedCommands {
   BOT_STATS = 'botstats',
-  STATS = 'stats'
+  STATS = 'stats',
+  ALL_STATS = 'allstats'
 }
 
 export class BotSchedule {
@@ -142,6 +143,19 @@ export class BotSchedule {
     return report;
   }
 
+  public async generateStatsReport() {
+    const [botFeesReport, dau, weu] = await Promise.all([
+      statsService.getTotalONE(),
+      statsService.getWAU(),
+      statsService.getWUE(),
+    ])
+
+    const report = `\nTotal ONE (excluding free): *${botFeesReport}*` +
+      `\nWeekly Active Users: *${dau}*` +
+      `\nWeekly User Engagement: *${weu}*`
+    return report;
+  }
+
   public async onEvent(ctx: OnMessageContext) {
     const { message_id } = ctx.update.message
 
@@ -154,9 +168,17 @@ export class BotSchedule {
       }
     }
 
-    if (ctx.hasCommand(SupportedCommands.STATS)) {
+    if (ctx.hasCommand(SupportedCommands.ALL_STATS)) {
       const report = await this.generateReport()
-      ctx.reply(report, {
+      await ctx.reply(report, {
+        parse_mode: "Markdown",
+      });
+    }
+
+    if (ctx.hasCommand(SupportedCommands.STATS)) {
+      const report = await this.generateStatsReport()
+      console.log('### report', report);
+      await ctx.reply(report, {
         parse_mode: "Markdown",
       });
     }

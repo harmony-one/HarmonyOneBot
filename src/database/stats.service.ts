@@ -109,6 +109,19 @@ export class StatsService {
     return rows.length;
   }
 
+  public async getWAU() {
+    const dateStart = moment().subtract(14, 'days').unix();
+    const dateEnd = moment().unix();
+
+    const rows = await statBotCommandRepository
+      .createQueryBuilder('uda')
+      .select('uda.tgUserId')
+      .groupBy('uda.tgUserId')
+      .where(`uda.createDate BETWEEN TO_TIMESTAMP(${dateStart}) and TO_TIMESTAMP(${dateEnd})`).execute();
+
+    return rows.length;
+  }
+
   public async getMAU() {
     const dateStart = moment().subtract(30, 'days').unix();
     const dateEnd = moment().unix();
@@ -120,5 +133,20 @@ export class StatsService {
       .where(`uda.createDate BETWEEN TO_TIMESTAMP(${dateStart}) and TO_TIMESTAMP(${dateEnd})`).execute();
 
     return rows.length;
+  }
+
+  // weekly user engagement (the total messages sent to bot in the last 7 days).
+  public async getWUE() {
+    const dateStart = moment().subtract(7, 'days').unix();
+    const dateEnd = moment().unix();
+
+    const rows = await statBotCommandRepository
+      .query(`
+        select count(stat_bot_command."tgUserId") from stat_bot_command
+        where stat_bot_command."createDate" BETWEEN TO_TIMESTAMP($1) and TO_TIMESTAMP($2)
+      `,
+        [dateStart, dateEnd])
+
+    return +rows[0].count;
   }
 }
