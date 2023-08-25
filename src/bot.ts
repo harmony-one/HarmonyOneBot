@@ -492,10 +492,3 @@ if (config.betteruptime.botHeartBitId) {
   process.once("SIGINT", () => task.stop());
   process.once("SIGTERM", () => task.stop());
 }
-
-if (config.betteruptime.botHeartBitId) {
-  const task = runBotHeartBit(runner, config.betteruptime.botHeartBitId);
-  process.once("SIGINT", () => task.stop());
-  process.once("SIGTERM", () => task.stop());
-}
-
