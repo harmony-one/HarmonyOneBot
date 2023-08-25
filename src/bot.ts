@@ -29,14 +29,14 @@ import { BotPayments } from "./modules/payment";
 import { BotSchedule } from "./modules/schedule";
 import config from "./config";
 import { commandsHelpText, TERMS, SUPPORT, FEEDBACK, LOVE } from "./constants";
-import prometheusRegister, {PrometheusMetrics} from "./metrics/prometheus";
+import prometheusRegister, { PrometheusMetrics } from "./metrics/prometheus";
 
 import { chatService, statsService } from "./database/services";
 import { AppDataSource } from "./database/datasource";
 import { autoRetry } from "@grammyjs/auto-retry";
-import {run} from "@grammyjs/runner";
-import {runBotHeartBit} from "./monitoring/monitoring";
-import {BotPaymentLog} from "./database/stats.service";
+import { run } from "@grammyjs/runner";
+import { runBotHeartBit } from "./monitoring/monitoring";
+import { BotPaymentLog } from "./database/stats.service";
 const logger = pino({
   name: "bot",
   transport: {
@@ -184,29 +184,34 @@ bot.use((ctx, next) => {
   return next();
 });
 
-const writeCommandLog = async (ctx: OnMessageContext, isSupportedCommand = true) => {
-  const { from, text = '', chat } = ctx.update.message
+const writeCommandLog = async (
+  ctx: OnMessageContext,
+  isSupportedCommand = true
+) => {
+  const { from, text = "", chat } = ctx.update.message;
 
   try {
     const accountId = payments.getAccountId(ctx);
-    const [command] = text?.split(' ')
+    const [command] = text?.split(" ");
 
     const log: BotPaymentLog = {
       tgUserId: from.id,
       accountId,
       command,
       groupId: chat.id,
-      isPrivate: chat.type === 'private',
+      isPrivate: chat.type === "private",
       message: text,
       isSupportedCommand,
       amountCredits: 0,
       amountOne: 0,
-    }
-    await statsService.writeLog(log)
+    };
+    await statsService.writeLog(log);
   } catch (e) {
-    logger.error(`Cannot write unsupported command log: ${(e as Error).message}`)
+    logger.error(
+      `Cannot write unsupported command log: ${(e as Error).message}`
+    );
   }
-}
+};
 
 const onMessage = async (ctx: OnMessageContext) => {
   try {
@@ -252,19 +257,15 @@ const onMessage = async (ctx: OnMessageContext) => {
     }
     if (openAiBot.isSupportedEvent(ctx)) {
       if (ctx.session.openAi.imageGen.isEnabled) {
-        if (openAiBot.isValidCommand(ctx)) {
-          const price = openAiBot.getEstimatedPrice(ctx);
-          const isPaid = await payments.pay(ctx, price!);
-          if (isPaid) {
-            await openAiBot
-              .onEvent(ctx)
-              .catch((e) => payments.refundPayment(e, ctx, price!));
-            return;
-          }
-          return;
-        } else {
+        const price = openAiBot.getEstimatedPrice(ctx);
+        const isPaid = await payments.pay(ctx, price!);
+        if (isPaid) {
+          await openAiBot
+            .onEvent(ctx)
+            .catch((e) => payments.refundPayment(e, ctx, price!));
           return;
         }
+        return;
       } else {
         await ctx.reply("Bot disabled");
         return;
@@ -305,19 +306,16 @@ const onMessage = async (ctx: OnMessageContext) => {
     //  const command = ctx.update.message.text.split(' ')[0].slice(1)
     // only for private chats
     if (ctx.update.message.chat && ctx.chat.type === "private") {
-      await ctx.reply(
-          `Unsupported, type */help* for commands.`,
-          {
-            parse_mode: "Markdown",
-          }
-      );
-      await writeCommandLog(ctx, false)
+      await ctx.reply(`Unsupported, type */help* for commands.`, {
+        parse_mode: "Markdown",
+      });
+      await writeCommandLog(ctx, false);
       return;
     }
     if (ctx.update.message.chat) {
       logger.info(`Received message in chat id: ${ctx.update.message.chat.id}`);
     }
-    await writeCommandLog(ctx, false)
+    await writeCommandLog(ctx, false);
   } catch (ex: any) {
     console.error("onMessage error", ex);
   }
@@ -353,7 +351,7 @@ bot.command(["start", "help", "menu"], async (ctx) => {
     return false;
   }
 
-  await writeCommandLog(ctx as OnMessageContext)
+  await writeCommandLog(ctx as OnMessageContext);
 
   const addressBalance = await payments.getAddressBalance(account.address);
   const credits = await chatService.getBalance(accountId);
@@ -371,7 +369,7 @@ bot.command(["start", "help", "menu"], async (ctx) => {
 });
 
 bot.command("more", async (ctx) => {
-  writeCommandLog(ctx as OnMessageContext)
+  writeCommandLog(ctx as OnMessageContext);
   return ctx.reply(commandsHelpText.more, {
     parse_mode: "Markdown",
     disable_web_page_preview: true,
@@ -379,7 +377,7 @@ bot.command("more", async (ctx) => {
 });
 
 bot.command("terms", (ctx) => {
-  writeCommandLog(ctx as OnMessageContext)
+  writeCommandLog(ctx as OnMessageContext);
   return ctx.reply(TERMS.text, {
     parse_mode: "Markdown",
     disable_web_page_preview: true,
@@ -387,7 +385,7 @@ bot.command("terms", (ctx) => {
 });
 
 bot.command("support", (ctx) => {
-  writeCommandLog(ctx as OnMessageContext)
+  writeCommandLog(ctx as OnMessageContext);
   return ctx.reply(SUPPORT.text, {
     parse_mode: "Markdown",
     disable_web_page_preview: true,
@@ -395,7 +393,7 @@ bot.command("support", (ctx) => {
 });
 
 bot.command("feedback", (ctx) => {
-  writeCommandLog(ctx as OnMessageContext)
+  writeCommandLog(ctx as OnMessageContext);
   return ctx.reply(FEEDBACK.text, {
     parse_mode: "Markdown",
     disable_web_page_preview: true,
@@ -403,7 +401,7 @@ bot.command("feedback", (ctx) => {
 });
 
 bot.command("love", (ctx) => {
-  writeCommandLog(ctx as OnMessageContext)
+  writeCommandLog(ctx as OnMessageContext);
   return ctx.reply(LOVE.text, {
     parse_mode: "Markdown",
     disable_web_page_preview: true,
@@ -479,16 +477,17 @@ const stopRunner = () => {
 process.once("SIGINT", stopRunner);
 process.once("SIGTERM", stopRunner);
 
-AppDataSource.initialize().then(() => {
-  const prometheusMetrics = new PrometheusMetrics()
-  prometheusMetrics.bootstrap()
-}).catch((e) => {
-  logger.error(`Error during DB initialization: ${(e as Error).message}`)
-})
+AppDataSource.initialize()
+  .then(() => {
+    const prometheusMetrics = new PrometheusMetrics();
+    prometheusMetrics.bootstrap();
+  })
+  .catch((e) => {
+    logger.error(`Error during DB initialization: ${(e as Error).message}`);
+  });
 
 if (config.betteruptime.botHeartBitId) {
   const task = runBotHeartBit(runner, config.betteruptime.botHeartBitId);
   process.once("SIGINT", () => task.stop());
   process.once("SIGTERM", () => task.stop());
 }
-
