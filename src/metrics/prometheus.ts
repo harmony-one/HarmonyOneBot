@@ -45,7 +45,7 @@ export class PrometheusMetrics {
       const totalOne = await statsService.getTotalONE()
       const freeCredits = await statsService.getTotalFreeCredits()
       const uniqueUsersCount = await statsService.getUniqueUsersCount()
-      const dauValue = await statsService.getDAUFromLogs()
+      const dauValue = await statsService.getActiveUsers(0)
       oneTokenFeeCounter.inc(totalOne)
       freeCreditsFeeCounter.inc(freeCredits)
       uniqueUsersCounter.inc(uniqueUsersCount)
@@ -58,7 +58,7 @@ export class PrometheusMetrics {
 
   async updateDau() {
     try {
-      const dauValue = await statsService.getDAUFromLogs()
+      const dauValue = await statsService.getActiveUsers()
       dauCounter.inc(dauValue)
     } catch (e) {
       console.log('Prometheus interval update error:', (e as Error).message)

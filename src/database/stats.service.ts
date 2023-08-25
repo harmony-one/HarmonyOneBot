@@ -30,49 +30,62 @@ export class StatsService {
   }
 
   async getTotalONE() {
-    const [result] = await logRepository.query(`select sum("amountOne") from logs`)
-    if(result) {
-      return +result.sum
-    }
-    return 0
+    const rows = await logRepository.query(`select sum("amountOne") from logs`)
+    return rows.length ? +rows[0].sum : 0
   }
 
   async getTotalFreeCredits() {
-    const [result] = await logRepository.query(`select sum("amountCredits") from logs`)
-    if(result) {
-      return +result.sum
-    }
-    return 0
+    const rows = await logRepository.query(`select sum("amountCredits") from logs`)
+    return rows.length ? +rows[0].sum : 0
   }
 
   async getUniqueUsersCount() {
-    const [result] = await logRepository.query(`select count(distinct("tgUserId")) from logs`)
-    if(result) {
-      return +result.count
-    }
-    return 0
+    const rows = await logRepository.query(`select count(distinct("tgUserId")) from logs`)
+    return rows.length ? +rows[0].count : 0
   }
 
-  public async getDAUFromLogs() {
+  public async getActiveUsers(daysPeriod = 0) {
     const currentTime = moment();
     const dateStart = moment()
       .tz('America/Los_Angeles')
-      .set({ hour: 11, minute: 59, second: 0 })
+      .set({ hour: 23, minute: 59, second: 0 })
+      .subtract(daysPeriod,'days')
       .unix()
 
     const dateEnd = currentTime.unix();
 
-    const rows = await logRepository.query(`
-        select count(logs."tgUserId") from logs
-        where logs."createdAt" BETWEEN TO_TIMESTAMP($1) and TO_TIMESTAMP($2)
-        group by logs."tgUserId"
-      `,
-      [dateStart, dateEnd])
+    const rows = await logRepository
+      .createQueryBuilder('logs')
+      .select('count(logs.tgUserId)')
+      .where(`logs.createdAt BETWEEN TO_TIMESTAMP(${dateStart}) and TO_TIMESTAMP(${dateEnd})`)
+      .groupBy('logs.tgUserId')
+      .execute();
 
-    if(rows.length > 0) {
-      return +rows[0].count
+    return rows.length ? +rows[0].count : 0
+  }
+
+  public async getTotalMessages(daysPeriod = 0, onlySupportedCommands = false) {
+    const currentTime = moment();
+    const dateStart = moment()
+      .tz('America/Los_Angeles')
+      .set({ hour: 23, minute: 59, second: 0 })
+      .subtract(daysPeriod,'days')
+      .unix()
+
+    const dateEnd = currentTime.unix();
+
+    const query = await logRepository
+      .createQueryBuilder('logs')
+      .select('count(*)')
+      .where(`logs.createdAt BETWEEN TO_TIMESTAMP(${dateStart}) and TO_TIMESTAMP(${dateEnd})`)
+
+    if(onlySupportedCommands) {
+      query.andWhere(`logs.isSupportedCommand=true`)
     }
-    return 0
+
+    const rows = await query.execute()
+
+    return rows.length ? +rows[0].count : 0
   }
 
   public addCommandStat({tgUserId, rawMessage, command}: {tgUserId: number, rawMessage: string, command: string}) {
@@ -83,42 +96,5 @@ export class StatsService {
     stat.tgUserId = tgUserId
 
     return statBotCommandRepository.save(stat);
-  }
-
-  public async getDAU() {
-    const currentTime = moment();
-    const eightPm = moment().set({ hour: 20, minute: 0, second: 0 });
-    let dateStart = moment()
-      .set({ hour: 20, minute: 0, second: 0 })
-      .subtract(1, 'days')
-      .unix();
-
-    if (currentTime.isAfter(eightPm)) {
-      dateStart = eightPm.unix();
-    }
-
-    const dateEnd = currentTime.unix();
-
-    const rows = await statBotCommandRepository
-      .createQueryBuilder('uda')
-      .select('uda.tgUserId')
-      .where(`uda.createDate BETWEEN TO_TIMESTAMP(${dateStart}) and TO_TIMESTAMP(${dateEnd})`)
-      .groupBy('uda.tgUserId')
-      .execute();
-
-    return rows.length;
-  }
-
-  public async getMAU() {
-    const dateStart = moment().subtract(30, 'days').unix();
-    const dateEnd = moment().unix();
-
-    const rows = await statBotCommandRepository
-      .createQueryBuilder('uda')
-      .select('uda.tgUserId')
-      .groupBy('uda.tgUserId')
-      .where(`uda.createDate BETWEEN TO_TIMESTAMP(${dateStart}) and TO_TIMESTAMP(${dateEnd})`).execute();
-
-    return rows.length;
   }
 }
