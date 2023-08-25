@@ -1,49 +1,30 @@
-import { SDNodeApi } from "./sd-node-api";
-import config from "../../config";
 import { InlineKeyboard, InputFile } from "grammy";
 import { OnMessageContext, OnCallBackQueryData } from "../types";
-import { sleep, uuidv4 } from "./utils";
-import { showcasePrompts } from "./showcase";
-import { AbortController, AbortSignal } from "grammy/out/shim.node";
-
-enum SupportedCommands {
-  IMAGE = "image",
-  IMAGES = "images",
-  // SHOWCASE = 'image_example',
-}
-
-enum SESSION_STEP {
-  IMAGE_SELECT = "IMAGE_SELECT",
-  IMAGE_GENERATED = "IMAGE_GENERATED",
-}
+import { SDImagesBotBase } from './SDImagesBotBase';
+import { COMMAND, parseCtx } from './helpers';
+import { getModelByParam, IModel, MODELS_CONFIGS } from "./api";
+import { uuidv4 } from "./utils";
 
 interface ISession {
   id: string;
   author: string;
-  step: SESSION_STEP;
   prompt: string;
+  model: IModel;
   all_seeds: string[];
+  command: COMMAND;
 }
 
-export class SDImagesBot {
-  sdNodeApi: SDNodeApi;
-
-  private queue: string[] = [];
+export class SDImagesBot extends SDImagesBotBase {
   private sessions: ISession[] = [];
-  private showcaseCount = 0;
-
-  constructor() {
-    this.sdNodeApi = new SDNodeApi();
-  }
 
   public isSupportedEvent(
     ctx: OnMessageContext | OnCallBackQueryData
   ): boolean {
-    const hasCommand = ctx.hasCommand(Object.values(SupportedCommands));
+    const operation = !!parseCtx(ctx);
 
     const hasCallbackQuery = this.isSupportedCallbackQuery(ctx);
 
-    return hasCallbackQuery || hasCommand;
+    return hasCallbackQuery || operation;
   }
 
   public getEstimatedPrice(ctx: any) {
@@ -66,136 +47,85 @@ export class SDImagesBot {
     ctx: OnMessageContext | OnCallBackQueryData,
     refundCallback: (reason?: string) => void
   ) {
-    if (!this.isSupportedEvent(ctx)) {
-      console.log(`### unsupported command ${ctx.message?.text}`);
-      refundCallback("Unsupported command");
-      await ctx.reply("### unsupported command");
+    if (this.isSupportedCallbackQuery(ctx)) {
+      this.onImgSelected(ctx, refundCallback);
       return;
     }
 
-    if (ctx.hasCommand(SupportedCommands.IMAGE)) {
-      return this.onImageCmd(ctx, refundCallback);
+    const operation = parseCtx(ctx);
+
+    if (!operation) {
+      console.log(`### unsupported command ${ctx.message?.text}`);
+      ctx.reply("### unsupported command");
+      return refundCallback("Unsupported command");
     }
 
-    if (ctx.hasCommand(SupportedCommands.IMAGES)) {
-      return this.onImagesCmd(ctx, refundCallback);
-    }
+    switch (operation.command) {
+      case COMMAND.TEXT_TO_IMAGE:
+        this.generateImage(
+          ctx,
+          refundCallback,
+          operation.prompt,
+          operation.model
+        );
+        return;
 
-    // if (ctx.hasCommand(SupportedCommands.SHOWCASE)) {
-    //     this.onShowcaseCmd(ctx);
-    //     return;
-    // }
+      case COMMAND.TEXT_TO_IMAGES:
+        this.onImagesCmd(
+          ctx,
+          refundCallback,
+          operation.prompt,
+          operation.model
+        );
+        return;
 
-    if (this.isSupportedCallbackQuery(ctx)) {
-      return this.onImgSelected(ctx, refundCallback);
+      case COMMAND.CONSTRUCTOR:
+        this.onConstructorCmd(
+          ctx,
+          refundCallback,
+          operation.prompt,
+          operation.model
+        );
+        return;
+
+      case COMMAND.HELP:
+        await ctx.reply('Stable Diffusion Models: \n');
+
+        for (let i = 0; i < MODELS_CONFIGS.length; i++) {
+          const model = MODELS_CONFIGS[i];
+
+          await ctx.reply(`${model.name}: ${model.link} \n \nUsing: /${model.aliases[0]} /${model.aliases[1]} /${model.aliases[2]} \n`);
+        }
+        return;
     }
 
     console.log(`### unsupported command`);
-    await ctx.reply("### unsupported command");
+    ctx.reply("### unsupported command");
   }
-
-  onImageCmd = async (
-    ctx: OnMessageContext | OnCallBackQueryData,
-    refundCallback: (reason?: string) => void
-  ) => {
-    const uuid = uuidv4();
-
-    // /qr s.country/ai astronaut, exuberant, anime girl, smile, sky, colorful
-    try {
-      const prompt: any = ctx.match
-        ? ctx.match
-        : config.stableDiffusion.imageDefaultMessage;
-
-      const authorObj = await ctx.getAuthor();
-      const author = `@${authorObj.user.username}`;
-
-      if (!prompt) {
-        refundCallback("Wrong prompts");
-        await ctx.reply(`${author} please add prompt to your message`);
-        return;
-      }
-      ctx.chatAction = "upload_photo";
-      this.queue.push(uuid);
-
-      let idx = this.queue.findIndex((v) => v === uuid);
-
-      if (idx >= 0) {
-        await ctx.reply(
-          `You are #${idx + 1} in line, wait ~${idx * 30 + 30} seconds`
-        );
-      }
-
-      // waiting queue
-      while (idx !== 0) {
-        await sleep(3000 * this.queue.findIndex((v) => v === uuid));
-        idx = this.queue.findIndex((v) => v === uuid);
-      }
-
-      const imageBuffer = await this.sdNodeApi.generateImage(prompt);
-      await ctx.replyWithPhoto(new InputFile(imageBuffer), {
-        caption: `/image ${prompt}`,
-      });
-
-      // await ctx.reply(`/image ${prompt}`);
-    } catch (e: any) {
-      console.log(e);
-      this.queue = this.queue.filter((v) => v !== uuid);
-      ctx.chatAction = null;
-      refundCallback(e);
-      await ctx.reply(`Error: something went wrong...`);
-    }
-
-    this.queue = this.queue.filter((v) => v !== uuid);
-  };
 
   onImagesCmd = async (
     ctx: OnMessageContext | OnCallBackQueryData,
-    refundCallback: (reason?: string) => void
+    refundCallback: (reason?: string) => void,
+    prompt: string,
+    model: IModel
   ) => {
     const uuid = uuidv4();
 
     try {
-      const prompt: any = ctx.match
-        ? ctx.match
-        : config.stableDiffusion.imagesDefaultMessage;
-
       const authorObj = await ctx.getAuthor();
       const author = `@${authorObj.user.username}`;
 
-      if (!prompt) {
-        refundCallback("Wrong prompts");
-        await ctx.reply(`${author} please add prompt to your message`);
-        return;
-      }
-      ctx.chatAction = "upload_photo";
-      this.queue.push(uuid);
+      await this.waitingQueue(uuid, ctx);
 
-      let idx = this.queue.findIndex((v) => v === uuid);
-
-      if (idx >= 0) {
-        await ctx.reply(
-          `You are #${idx + 1} in line, wait ~${idx * 30 + 30} seconds`
-        );
-      }
-
-      // waiting queue
-      while (idx !== 0) {
-        await sleep(3000 * this.queue.findIndex((v) => v === uuid));
-
-        idx = this.queue.findIndex((v) => v === uuid);
-      }
-
-      // ctx.reply(`${author} starting to generate your images`);
-      const res = await this.sdNodeApi.generateImagesPreviews(prompt);
-
-      // res.images.map(img => new InputFile(Buffer.from(img, 'base64')));
+      const res = await this.sdNodeApi.generateImagesPreviews(prompt, model);
 
       const newSession: ISession = {
         id: uuidv4(),
         author,
-        prompt: String(prompt),
-        step: SESSION_STEP.IMAGE_SELECT,
+        prompt: prompt,
         all_seeds: res.all_seeds,
+        model,
+        command: COMMAND.TEXT_TO_IMAGES
       };
 
       this.sessions.push(newSession);
@@ -208,23 +138,19 @@ export class SDImagesBot {
         }))
       );
 
-      // await ctx.reply("Please choose 1 of 4 images for next high quality generation", {
-      //     parse_mode: "HTML",
-      //     reply_markup: new InlineKeyboard()
-      //         .text("1", `${newSession.id}_1`)
-      //         .text("2", `${newSession.id}_2`)
-      //         .text("3", `${newSession.id}_3`)
-      //         .text("4", `${newSession.id}_4`)
-      //         .row()
-      // });
+      await ctx.reply("Please choose 1 of 4 images for next high quality generation", {
+        parse_mode: "HTML",
+        reply_markup: new InlineKeyboard()
+          .text("1", `${newSession.id}_1`)
+          .text("2", `${newSession.id}_2`)
+          .text("3", `${newSession.id}_3`)
+          .text("4", `${newSession.id}_4`)
+          .row()
+      });
     } catch (e: any) {
-      ctx.chatAction = null;
-
       console.log(e);
-      this.queue = this.queue.filter((v) => v !== uuid);
-      ctx.chatAction = null;
+      ctx.reply(`Error: something went wrong...`);
       refundCallback(e.message);
-      await ctx.reply(`Error: something went wrong...`);
     }
 
     this.queue = this.queue.filter((v) => v !== uuid);
@@ -244,9 +170,11 @@ export class SDImagesBot {
         return;
       }
 
-      const [sessionId, imageNumber] = ctx.callbackQuery.data.split("_");
+      const [sessionId, ...paramsArray] = ctx.callbackQuery.data.split("_");
 
-      if (!sessionId || !imageNumber) {
+      const params = paramsArray.join('_');
+
+      if (!sessionId || !params) {
         refundCallback("Wrong params");
         return;
       }
@@ -257,44 +185,92 @@ export class SDImagesBot {
         refundCallback("Wrong author");
         return;
       }
-      ctx.chatAction = "upload_photo";
-      // ctx.reply(`${author} starting to generate your image ${imageNumber} in high quality`);
-      const imageBuffer = await this.sdNodeApi.generateImageFull(
-        session.prompt,
-        +session.all_seeds[+imageNumber - 1]
-      );
 
-      await ctx.replyWithPhoto(new InputFile(imageBuffer), {
-        caption: `/image ${session.prompt}`,
-      });
+      let model;
+
+      if (session.command === COMMAND.CONSTRUCTOR) {
+        model = getModelByParam(params);
+
+        if (!model) {
+          console.log("wrong model");
+          refundCallback("Wrong callbackQuery");
+          return;
+        }
+
+        this.generateImage(
+          ctx,
+          refundCallback,
+          session.prompt,
+          model
+        );
+
+        return;
+      }
+
+      if (session.command === COMMAND.TEXT_TO_IMAGES) {
+        this.generateImage(
+          ctx,
+          refundCallback,
+          session.prompt,
+          session.model,
+          Number(session.all_seeds[+params - 1])
+        );
+
+        return;
+      }
     } catch (e: any) {
-      ctx.chatAction = null;
       console.log(e);
+      ctx.reply(`Error: something went wrong...`);
       refundCallback(e.message);
-      await ctx.reply(`Error: something went wrong...`);
     }
   }
 
-  onShowcaseCmd = async (ctx: OnMessageContext | OnCallBackQueryData) => {
-    const uuid = uuidv4();
-
+  onConstructorCmd = async (
+    ctx: OnMessageContext | OnCallBackQueryData,
+    refundCallback: (reason?: string) => void,
+    prompt: string,
+    model: IModel
+  ) => {
     try {
-      if (this.showcaseCount >= showcasePrompts.length) {
-        this.showcaseCount = 0;
+      const authorObj = await ctx.getAuthor();
+      const author = `@${authorObj.user.username}`;
+
+      const newSession: ISession = {
+        id: uuidv4(),
+        author,
+        prompt: String(prompt),
+        all_seeds: [],
+        model,
+        command: COMMAND.CONSTRUCTOR
+      };
+
+      this.sessions.push(newSession);
+
+      const buttonsPerRow = 2;
+      let rowCount = buttonsPerRow;
+      const keyboard = new InlineKeyboard();
+
+      for (let i = 0; i < MODELS_CONFIGS.length; i++) {
+        keyboard.text(MODELS_CONFIGS[i].name, `${newSession.id}_${MODELS_CONFIGS[i].hash}`);
+
+        rowCount--;
+
+        if (!rowCount) {
+          keyboard.row();
+          rowCount = buttonsPerRow;
+        }
       }
 
-      const prompt = showcasePrompts[this.showcaseCount++];
+      keyboard.row();
 
-      const imageBuffer = await this.sdNodeApi.generateImage(prompt);
-      ctx.chatAction = "upload_photo";
-      await ctx.replyWithPhoto(new InputFile(imageBuffer));
-
-      await ctx.reply(`/image ${prompt}`);
+      await ctx.reply(prompt, {
+        parse_mode: "HTML",
+        reply_markup: keyboard
+      });
     } catch (e: any) {
-      ctx.chatAction = null;
       console.log(e);
-      await ctx.reply(`Error: something went wrong...`);
-      // throw new Error(e?.message);
+      ctx.reply(`Error: something went wrong...`);
+      refundCallback(e);
     }
   };
 }

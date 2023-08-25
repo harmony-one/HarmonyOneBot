@@ -57,6 +57,7 @@
     "lokijs": "^1.5.12",
     "lru-cache": "^10.0.0",
     "moment": "^2.29.4",
+    "moment-timezone": "^0.5.43",
     "node-cron": "^3.0.2",
     "openai": "^4.0.1",
     "otpauth": "^9.1.3",
