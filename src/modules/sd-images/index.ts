@@ -65,7 +65,8 @@ export class SDImagesBot extends SDImagesBotBase {
         this.generateImage(
           ctx,
           refundCallback,
-          operation
+          operation.prompt,
+          operation.model
         );
         return;
 
@@ -199,10 +200,8 @@ export class SDImagesBot extends SDImagesBotBase {
         this.generateImage(
           ctx,
           refundCallback,
-          {
-            prompt: session.prompt,
-            model
-          }
+          session.prompt,
+          model
         );
 
         return;
@@ -212,11 +211,9 @@ export class SDImagesBot extends SDImagesBotBase {
         this.generateImage(
           ctx,
           refundCallback,
-          {
-            prompt: session.prompt,
-            model: session.model,
-            seed: Number(session.all_seeds[+params - 1])
-          }
+          session.prompt,
+          session.model,
+          Number(session.all_seeds[+params - 1])
         );
 
         return;
