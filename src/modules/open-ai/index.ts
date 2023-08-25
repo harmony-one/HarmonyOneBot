@@ -482,7 +482,7 @@ export class OpenAIBot {
               content: `this is a web crawler of ${url}: ${webCrawler.text}`,
             });
             ctx.reply(
-              `${webCrawler.bytes} bytes downloaded, ${webCrawler.time} time elapsed, ${webCrawler.oneFees} ONE fees paid`,
+              `${webCrawler.bytes} bytes downloaded, ${webCrawler.time}s time elapsed, ${webCrawler.oneFees} ONE fees paid`,
               {
                 parse_mode: "Markdown",
               }
