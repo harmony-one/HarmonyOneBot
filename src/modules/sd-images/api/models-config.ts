@@ -21,7 +21,7 @@ export const MODELS_CONFIGS: IModel[] = [
         link: 'https://civitai.com/models/101055/sd-xl',
         baseModel: 'SDXL 1.0',
         aliases: ['xl', '1010', 'he6b'],
-        defaultPrompt: 'A cat is sitting in a kimono, in the style of renaissance - inspired chiaroscuro, hyper - realistic portraiture, nicolas mignard, old master influenced fantasy, portraitures with hidden meanings, dom qwek, art of burma',
+        defaultPrompt: 'A bunny is sitting in a kimono, in the style of renaissance - inspired chiaroscuro, hyper - realistic portraiture, nicolas mignard, old master influenced fantasy, portraitures with hidden meanings, dom qwek, art of burma',
     },
     {
         path: "deliberate_v2.safetensors",
