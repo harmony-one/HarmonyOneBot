@@ -24,15 +24,19 @@ export class SDNodeApi {
         const scaleFactor = width / aspectWidth;
         height = Math.round(aspectHeight * scaleFactor);
       }
+
+      prompt = prompt.replace(/--ar\s+(\d+:\d+)/, '');
     }
 
-    // --d Dimensions flag <w>:<h>
+    // --d Dimensions flag <w>x<h>
     const dimensionsMatch = prompt.match(/--d\s+(\d+x\d+)/);
 
     if (dimensionsMatch) {
       const dimensions = dimensionsMatch[1];
 
       [width, height] = dimensions.split('x').map(Number);
+
+      prompt = prompt.replace(/--d\s+(\d+x\d+)/, '');
     }
 
     // --cfg cfgScale flag <scale>
@@ -41,21 +45,27 @@ export class SDNodeApi {
 
     if (cfgScaleMatch) {
       cfgScale = parseFloat(cfgScaleMatch[1]);
+
+      prompt = prompt.replace(/--cfg\s+(\d+(\.\d+)?)/, '');
     }
 
     // --steps Steps flag <steps>
-    const stepsMatch = prompt.match(/--steps \s+(\d+)/);
+    const stepsMatch = prompt.match(/--steps\s+(\d+)/);
     let steps = 26;
 
     if (stepsMatch) {
       steps = parseInt(stepsMatch[1]);
+      
+      prompt = prompt.replace(/--steps\s+(\d+)/, '');
     }
 
     // --seed cfgScale flag <seed>
-    const seedMatch = prompt.match(/--seed \s+(\d+)/);
+    const seedMatch = prompt.match(/--seed\s+(\d+)/);
 
     if (seedMatch) {
       seed = parseInt(seedMatch[1]);
+
+      prompt = prompt.replace(/--seed\s+(\d+)/, '');
     }
 
     // --no Negative prompt flag <negative_prompts>
@@ -64,6 +74,7 @@ export class SDNodeApi {
 
     if (noMatch) {
       negativePrompt = noMatch[1].trim();
+      prompt = prompt.replace(/--no\s+(.+?)(?=\s+--|$)/, '');
     } 
 
     const { images } = await this.client.txt2img({
