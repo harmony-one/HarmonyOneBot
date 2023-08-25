@@ -26,20 +26,52 @@ export class SDNodeApi {
       }
     }
 
+    // --d Dimensions flag <w>:<h>
+    const dimensionsMatch = prompt.match(/--d\s+(\d+x\d+)/);
+
+    if (dimensionsMatch) {
+      const dimensions = dimensionsMatch[1];
+
+      [width, height] = dimensions.split('x').map(Number);
+    }
+
     // --cfg cfgScale flag <scale>
-    const cfgScaleMatch = prompt.match(/--cfg\s+(\d+)/);
-    let cfgScale = 7;
+    const cfgScaleMatch = prompt.match(/--cfg\s+(\d+(\.\d+)?)/);
+    let cfgScale = 7.0;
 
     if (cfgScaleMatch) {
-      cfgScale = parseInt(cfgScaleMatch[1]);
+      cfgScale = parseFloat(cfgScaleMatch[1]);
     }
+
+    // --steps Steps flag <steps>
+    const stepsMatch = prompt.match(/--steps \s+(\d+)/);
+    let steps = 26;
+
+    if (stepsMatch) {
+      steps = parseInt(stepsMatch[1]);
+    }
+
+    // --seed cfgScale flag <seed>
+    const seedMatch = prompt.match(/--seed \s+(\d+)/);
+
+    if (seedMatch) {
+      seed = parseInt(seedMatch[1]);
+    }
+
+    // --no Negative prompt flag <negative_prompts>
+    const noMatch = prompt.match(/--no\s+(.+?)(?=\s+--|$)/);
+    let negativePrompt = '(deformed, distorted, disfigured:1.3), poorly drawn, bad anatomy, wrong anatomy, extra limb, missing limb, floating limbs, (mutated hands and fingers:1.4), disconnected limbs, mutation, mutated, ugly, disgusting, blurry, amputation';
+
+    if (noMatch) {
+      negativePrompt = noMatch[1].trim();
+    } 
 
     const { images } = await this.client.txt2img({
       prompt,
-      negativePrompt: NEGATIVE_PROMPT,
+      negativePrompt,
       width,
       height,
-      steps: 26,
+      steps,
       batchSize: 1,
       cfgScale,
       seed,
