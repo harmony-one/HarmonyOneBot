@@ -2,6 +2,7 @@ import { ComfyClient } from '../../qrcode/comfy/ComfyClient';
 import config from "../../../config";
 import { sleep } from '../utils';
 import { buildImgPrompt } from './text_to_img_config';
+import { buildImgPromptLora } from './text_to_img_lora_config';
 import { MODELS_CONFIGS } from './models-config';
 import { waitingExecute } from './helpers';
 
@@ -65,7 +66,7 @@ export class Client {
 
             const seed = options.seed || getRandomSeed();
 
-            const prompt = buildImgPrompt({
+            const prompt = buildImgPromptLora({
                 ...options,
                 seed,
                 clientId: comfyClient.clientId,
