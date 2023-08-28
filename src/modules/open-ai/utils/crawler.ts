@@ -214,7 +214,8 @@ ONE Bot: Tips, Aliases & Shortcuts
 💡 Key Reference 
 Context length is especially important for Retrieval Augmented Generation (RAG; Lewis et al., 2020) – which has emerged to be the predominant pattern for LLM industry use cases… this percentage would be even higher for enterprise use cases. For example, say a company builds a chatbot for customer support, for this chatbot to answer any customer question about any product, the context needed might be that customer’s history or that product’s information.
  `,
- "https://xn--qv9h.s.country/p/one-bot-for-all-generative-ai-on": `
+
+ "xn--qv9h.s.country/p/one-bot-for-all-generative-ai-on": `
  💍 ONE Bot on Telegram for ALL Your AI (Wishes) 🧚
 AUG 11, 2023
 Can you access ALL possible AI models, agents, characters, services… as ONE bot in a harmonious interface that already has 1 billion users? How about Pay-per-Use rather than $20 monthly subscriptions for each of the hundreds of automation, intelligence, personalization… yet to come?

@@ -425,7 +425,7 @@ export class OpenAIBot {
     ).trim();
     if (url.split(" ").length === 1 && isValidUrl(url)) {
       // temp while hard coded
-      if (url === "harmony.one" || url === "harmony.one/dear") {
+      if (url === "harmony.one" || url === "harmony.one/dear" || url === "harmony.one/q4" || url === "xn--qv9h.s.country/p/one-bot-for-all-generative-ai-on") {
         return url;
       }
     }
