@@ -92,20 +92,30 @@ export class BotSchedule {
   }
 
   private async runCronJob() {
-    cron.schedule('30 17 * * *', () => {
+    const task1 = cron.schedule('30 17 * * *', () => {
       this.prepareMetricsUpdate(true)
     }, {
       scheduled: true,
       timezone: "Europe/Lisbon"
     });
 
-    cron.schedule('00 18 * * *', () => {
+    const task2 = cron.schedule('00 18 * * *', () => {
       this.logger.info('Posting daily metrics')
       this.postMetricsUpdate()
     }, {
       scheduled: true,
       timezone: "Europe/Lisbon"
     });
+
+    const stopTasks = () => {
+      console.log('### stop tasks');
+
+      task1.stop();
+      task2.stop();
+    }
+
+    process.once("SIGINT", stopTasks)
+    process.once("SIGTERM", stopTasks);
 
     await this.prepareMetricsUpdate()
     // await this.postMetricsUpdate()
