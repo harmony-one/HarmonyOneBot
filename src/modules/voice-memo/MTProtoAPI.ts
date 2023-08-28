@@ -22,13 +22,5 @@ export const initTelegramClient = async () => {
     onError: (err) => console.log('Telegram client error:', err),
   });
   client.session.save()
-
-  process.once("SIGINT", () => {
-    client.disconnect();
-  });
-  process.once("SIGTERM", () => {
-    client.disconnect();
-  });
-
   return client
 }
