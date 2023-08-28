@@ -10,6 +10,8 @@ export const AppDataSource = new DataSource({
   type: "postgres",
   url: config.db.url,
   entities: [Chat, User, StatBotCommand, BotLog],
-  migrations: ['./src/database/migrations/**/*.{.ts,.js}'],
+  // migrations: ['./src/database/migrations/**/*.{.ts,.js}'],
+  migrations: ['./src/database/migrations/**/*.ts'],
   logging: false,
 })
+
