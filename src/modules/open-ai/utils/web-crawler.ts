@@ -1,6 +1,7 @@
 import axios from "axios";
 import { getTokenNumber } from "../api/openAi";
 import { ChatConversation } from "../../types";
+import { getUSDPrice } from "../../1country/api/coingecko";
 
 interface WebContent {
   urlText: ChatConversation[];
@@ -20,10 +21,7 @@ export const isValidUrl = (url: string): boolean => {
   return urlRegex.test(url);
 };
 
-function parseWebContent(
-  inputArray: CrawlerElement[],
-  maxTokens: number
-) {
+function parseWebContent(inputArray: CrawlerElement[], maxTokens: number) {
   let concatenatedText = "";
   const resultArray = [];
   let currentTokenCount = 0;
@@ -46,11 +44,19 @@ function parseWebContent(
   return resultArray;
 }
 
-export const getWebContent = async (url: string, maxTokens: number): Promise<WebContent> => {
+export const getCrawlerPrice = async (
+  networkTraffic: number
+): Promise<number> => {
+  return 0.5; //cents
+};
+
+export const getWebContent = async (
+  url: string,
+  maxTokens: number
+): Promise<WebContent> => {
   if (!url.startsWith("https://")) {
     url = `https://${url}`;
   }
-  console.log(url, maxTokens);
   try {
     const response = await axios.get(
       `https://harmony-webcrawler.fly.dev/parse?url=${url}`

@@ -13,7 +13,11 @@ import { ChatGPTModelsEnum } from "./types";
 import { askTemplates } from "../../constants";
 import config from "../../config";
 import { sleep } from "../sd-images/utils";
-import { isValidUrl, getWebContent } from "./utils/web-crawler";
+import {
+  isValidUrl,
+  getWebContent,
+  getCrawlerPrice,
+} from "./utils/web-crawler";
 
 export const SupportedCommands = {
   chat: {
@@ -431,15 +435,16 @@ export class OpenAIBot {
 
   private async onWebCrawler(url: string, modelName: string) {
     try {
-      const model = getChatModel(modelName) 
-      const webCrawlerMaxTokens = model.maxContextTokens - config.openAi.maxTokens
-      console.log(model.maxContextTokens,config.openAi.maxTokens)
-      const webContent = await getWebContent(url,webCrawlerMaxTokens);
+      const model = getChatModel(modelName);
+      const webCrawlerMaxTokens =
+        model.maxContextTokens - config.openAi.maxTokens;
+      const webContent = await getWebContent(url, webCrawlerMaxTokens);
       return {
         text: webContent.urlText,
         bytes: webContent.networkTraffic,
         time: webContent.elapsedTime,
-        oneFees: (Math.random() * (0.5 - 0.3) + 0.3).toFixed(1),
+        fees: await getCrawlerPrice(webContent.networkTraffic),
+        oneFees: 0.5,
       };
     } catch (e) {
       throw e;
@@ -481,19 +486,32 @@ export class OpenAIBot {
           const prefix = this.hasPrefix(prompt);
           const url = this.hasWebCrawlerRequest(ctx, prompt);
           if (url) {
-            const webCrawler = await this.onWebCrawler(url,model);
+            const webCrawler = await this.onWebCrawler(url, model);
             if (webCrawler.bytes > 0) {
-              // chatConversation.push({
-              //   content: `Generating a web crawling of the following website ${url}`,
-              //   role: "user",
-              // });
               chatConversation.push(...webCrawler.text);
               ctx.reply(
-                `${webCrawler.bytes} bytes downloaded, ${webCrawler.time} time elapsed, ${webCrawler.oneFees} ONE fees paid`,
+                `${(webCrawler.bytes / 1048576).toFixed(2)} MB downloaded, ${(
+                  webCrawler.time / 1000
+                ).toFixed(2)} time elapsed, ${
+                  webCrawler.oneFees
+                } ONE fees paid`,
                 {
                   parse_mode: "Markdown",
                 }
               );
+              if (
+                !(await this.payments.pay(
+                  ctx as OnMessageContext,
+                  webCrawler.fees
+                ))
+              ) {
+                const balanceMessage = appText.notEnoughBalance
+                  .replaceAll("$CREDITS", balanceOne)
+                  .replaceAll("$WALLET_ADDRESS", account?.address || "");
+                await ctx
+                  .reply(balanceMessage, { parse_mode: "Markdown" })
+                  .catch((e) => this.onError(ctx, e));
+              }
             } else {
               ctx.reply("Url not supported or incorrect web site address");
             }
