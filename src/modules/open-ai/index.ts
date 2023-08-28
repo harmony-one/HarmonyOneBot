@@ -13,7 +13,7 @@ import { ChatGPTModelsEnum } from "./types";
 import { askTemplates } from "../../constants";
 import config from "../../config";
 import { sleep } from "../sd-images/utils";
-import { isValidUrl, hardCoded } from "./utils/crawler";
+import { isValidUrl, getWebContent } from "./utils/web-crawler";
 
 export const SupportedCommands = {
   chat: {
@@ -424,21 +424,26 @@ export class OpenAIBot {
       (prefix ? prompt.slice(prefix.length) : ctx.match) as string
     ).trim();
     if (url.split(" ").length === 1 && isValidUrl(url)) {
-      // temp while hard coded
-      if (url === "harmony.one" || url === "harmony.one/dear") {
-        return url;
-      }
+      return url;
     }
     return "";
   }
 
-  private async onWebCrawler(url: string) {
-    return {
-      text: hardCoded[url].replaceAll("\n", " "),
-      bytes: Math.floor(Math.random() * (1048 - 1024 + 1)) + 1024,
-      time: (Math.random() * (0.45 - 0.33) + 0.33).toFixed(2),
-      oneFees: (Math.random() * (0.5 - 0.3) + 0.3).toFixed(1),
-    };
+  private async onWebCrawler(url: string, modelName: string) {
+    try {
+      const model = getChatModel(modelName) 
+      const webCrawlerMaxTokens = model.maxContextTokens - config.openAi.maxTokens
+      console.log(model.maxContextTokens,config.openAi.maxTokens)
+      const webContent = await getWebContent(url,webCrawlerMaxTokens);
+      return {
+        text: webContent.urlText,
+        bytes: webContent.networkTraffic,
+        time: webContent.elapsedTime,
+        oneFees: (Math.random() * (0.5 - 0.3) + 0.3).toFixed(1),
+      };
+    } catch (e) {
+      throw e;
+    }
   }
 
   async onChatRequestHandler(ctx: OnMessageContext | OnCallBackQueryData) {
@@ -476,17 +481,22 @@ export class OpenAIBot {
           const prefix = this.hasPrefix(prompt);
           const url = this.hasWebCrawlerRequest(ctx, prompt);
           if (url) {
-            const webCrawler = await this.onWebCrawler(url);
-            chatConversation.push({
-              role: "user",
-              content: `this is a web crawler of ${url}: ${webCrawler.text}`,
-            });
-            ctx.reply(
-              `${webCrawler.bytes} bytes downloaded, ${webCrawler.time} time elapsed, ${webCrawler.oneFees} ONE fees paid`,
-              {
-                parse_mode: "Markdown",
-              }
-            );
+            const webCrawler = await this.onWebCrawler(url,model);
+            if (webCrawler.bytes > 0) {
+              // chatConversation.push({
+              //   content: `Generating a web crawling of the following website ${url}`,
+              //   role: "user",
+              // });
+              chatConversation.push(...webCrawler.text);
+              ctx.reply(
+                `${webCrawler.bytes} bytes downloaded, ${webCrawler.time} time elapsed, ${webCrawler.oneFees} ONE fees paid`,
+                {
+                  parse_mode: "Markdown",
+                }
+              );
+            } else {
+              ctx.reply("Url not supported or incorrect web site address");
+            }
           } else {
             chatConversation.push({
               role: "user",
