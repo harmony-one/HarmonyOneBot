@@ -454,6 +454,13 @@ const app = express();
 app.use(express.json());
 app.use(express.static("./public")); // Public directory, used in voice-memo bot
 
+const httpServer = app.listen(config.port, () => {
+  logger.info(`Bot listening on port ${config.port}`);
+  // bot.start({
+  //   allowed_updates: ["callback_query"], // Needs to be set for menu middleware, but bot doesn't work with current configuration.
+  // });
+});
+
 app.get("/health", (req, res) => {
   res.send("OK").end();
 });
@@ -463,44 +470,32 @@ app.get("/metrics", async (req, res) => {
   res.send(await prometheusRegister.metrics());
 });
 
-async function bootstrap() {
-  const httpServer = app.listen(config.port, () => {
-    logger.info(`Bot listening on port ${config.port}`);
-    // bot.start({
-    //   allowed_updates: ["callback_query"], // Needs to be set for menu middleware, but bot doesn't work with current configuration.
-    // });
-  });
+const runner = run(bot);
 
-  await AppDataSource.initialize();
+// Stopping the bot when the Node.js process
+// is about to be terminated
+const stopRunner = () => {
+  httpServer.close();
+  return runner.isRunning() && runner.stop();
+};
+process.once("SIGINT", stopRunner);
+process.once("SIGTERM", stopRunner);
 
-  const prometheusMetrics = new PrometheusMetrics();
-  await prometheusMetrics.bootstrap();
+AppDataSource.initialize().then(() => {
+  const prometheusMetrics = new PrometheusMetrics()
+  prometheusMetrics.bootstrap()
+}).catch((e) => {
+  logger.error(`Error during DB initialization: ${(e as Error).message}`)
+})
 
-  const runner = run(bot);
-
-  // Stopping the bot when the Node.js process
-  // is about to be terminated
-  const stopRunner = async () => {
-    await httpServer.close();
-    await AppDataSource.destroy();
-    logger.info(`bot stopping ${runner.isRunning()}`);
-    if (runner.isRunning()) {
-      await runner.stop()
-    }
-  };
-
-  process.on("SIGINT", stopRunner);
-  process.on("SIGTERM", stopRunner);
-
-  if (config.betteruptime.botHeartBitId) {
-    const task = runBotHeartBit(runner, config.betteruptime.botHeartBitId);
-    const stopHeartBit = () => {
-      logger.info('heart bit stopping');
-      task.stop();
-    }
-    process.once("SIGINT", stopHeartBit);
-    process.once("SIGTERM", stopHeartBit);
-  }
+if (config.betteruptime.botHeartBitId) {
+  const task = runBotHeartBit(runner, config.betteruptime.botHeartBitId);
+  process.once("SIGINT", () => task.stop());
+  process.once("SIGTERM", () => task.stop());
 }
 
-bootstrap();
+if (config.betteruptime.botHeartBitId) {
+  const task = runBotHeartBit(runner, config.betteruptime.botHeartBitId);
+  process.once("SIGINT", () => task.stop());
+  process.once("SIGTERM", () => task.stop());
+}
