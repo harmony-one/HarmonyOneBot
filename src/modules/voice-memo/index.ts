@@ -94,7 +94,7 @@ export class VoiceMemo {
       const requestKey = `${senderId}_${size.toString()}`
       this.logger.info(`Request from ${senderId}: request key: ${requestKey}`)
 
-      for(let i= 0; i < 100; i++) {
+      for(let i= 0; i < 500; i++) {
         if(this.requestsQueue.get(requestKey)) {
           this.logger.info(`Request ${requestKey} found in queue, start downloading audio file...`)
           const result = await this.downloadAudioFile(media)

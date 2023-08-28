@@ -22,33 +22,41 @@ export default {
   qrBot: {
     checkReadable: Boolean(process.env.QRBOT_CHECK_READABLE) || false,
   },
+  sessionTimeout: process.env.SESSION_TIMEOUT
+    ? parseInt(process.env.SESSION_TIMEOUT)
+    : 48, // in hours
   openAi: {
-    imageGen: {
+    maxTokens:
+      (process.env.OPENAI_MAX_TOKENS &&
+        parseInt(process.env.OPENAI_MAX_TOKENS)) ||
+      800, // telegram messages has a char limit
+    dalle: {
       isEnabled: Boolean(parseInt(process.env.IMAGE_GEN_ENABLED || "1")),
       telegramFileUrl: "https://api.telegram.org/file/bot",
       completions: {
         model: process.env.OPENAI_MODEL || "text-davinci-003",
-        maxTokens:
-          (process.env.OPENAI_MAX_TOKENS &&
-            parseInt(process.env.OPENAI_MAX_TOKENS)) ||
-          140,
         temperature:
           (process.env.OPENAI_TEMPERATURE &&
             parseInt(process.env.OPENAI_TEMPERATURE)) ||
           0.8,
       },
+      defaultPrompt:
+        "beautiful waterfall in a lush jungle, with sunlight shining through the trees",
       sessionDefault: {
         numImages: 1,
         imgSize: "1024x1024",
       },
     },
     chatGpt: {
+      wordCountBetween: process.env.WORD_COUNT_BETWEEN ? parseInt(process.env.WORD_COUNT_BETWEEN) : 100,
       priceAdjustment: process.env.PRICE_ADJUSTMENT
         ? parseInt(process.env.PRICE_ADJUSTMENT)
         : 2,
       isEnabled: Boolean(parseInt(process.env.CHAT_GPT_ENABLED || "1")),
+      isTypingEnabled: Boolean(parseInt(process.env.TYPING_STATUS_ENABLED || "1")),
       //hard coded gpt-4
-      model: "gpt-4", // process.env.OPENAI_MODEL ||
+      // model: "gpt-4",
+      model: process.env.OPENAI_MODEL ?? "gpt-4",
       chatPrefix: process.env.GROUP_PREFIX
         ? process.env.GROUP_PREFIX.split(",")
         : ["?", ">"],
@@ -112,13 +120,16 @@ export default {
     projectId: process.env.WALLET_CONNECT_PROJECT_ID || "",
   },
   db: {
-    url: process.env.DATABASE_URL || ''
+    url: process.env.DATABASE_URL || "",
   },
   credits: {
     maxChats: 10,
     maxChatsWhitelist: (process.env.CREDITS_CHATS_WHITELIST || "stephentse")
       .split(",")
       .map((item) => item.toString().toLowerCase()),
-    creditsAmount: '100',
+    creditsAmount: "100",
+  },
+  betteruptime: {
+    botHeartBitId: process.env.BOT_HEARTBIT_ID || ''
   }
 };

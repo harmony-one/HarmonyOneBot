@@ -4,9 +4,11 @@ import { Account } from "web3-core";
 import axios from "axios";
 import bn, { BigNumber } from "bignumber.js";
 import config from "../../config";
-import {chatService} from "../../database/services";
+import {chatService, statsService} from "../../database/services";
 import { OnMessageContext } from "../types";
 import { LRUCache } from 'lru-cache'
+import {oneTokenFeeCounter, freeCreditsFeeCounter} from "../../metrics/prometheus";
+import {BotPaymentLog} from "../../database/stats.service";
 
 interface CoinGeckoResponse {
   harmony: {
@@ -62,7 +64,9 @@ export class BotPayments {
       );
       this.ONERate = +data.harmony.usd;
     } catch (e) {
-      this.logger.error(`Cannot get ONE price: ${JSON.stringify(e)}`);
+      this.ONERate = 0.01
+      this.logger.error(`Cannot get ONE price: ${JSON.stringify((e as Error).message)}. Use hardcoded price: ${this.ONERate}.`);
+      await this.sleep(1000 * 60 * 30);
     } finally {
       await this.sleep(1000 * 60);
       this.pollRates();
@@ -86,8 +90,7 @@ export class BotPayments {
   }
 
   public toONE(amount: BigNumber, roundCeil = true) {
-    console.log(amount, amount.toFixed())
-    const value = this.web3.utils.fromWei(amount.toFixed(), 'ether')
+    const value = this.web3.utils.fromWei(amount.toFixed(0), 'ether')
     if(roundCeil) {
       return Math.ceil(+value)
     }
@@ -129,7 +132,7 @@ export class BotPayments {
       if(nonceCache) {
         nonce = nonceCache + 1
       } else {
-        nonce = await web3.eth.getTransactionCount(accountFrom.address, 'pending') + 1
+        nonce = await web3.eth.getTransactionCount(accountFrom.address)
       }
       this.noncePending.set(accountFrom.address, nonce)
 
@@ -148,7 +151,14 @@ export class BotPayments {
       return tx;
     } catch (e) {
       const message = (e as Error).message || ''
-      if(message && message.includes('replacement transaction underpriced')) {
+      if(message &&
+        (message.includes('replacement transaction underpriced')
+          || message.includes('was not mined within')
+          || message.includes('Failed to check for transaction receipt')
+        )
+      ) {
+        // skip this error
+        this.logger.warn(`Skip error: ${message}`)
       } else {
         throw new Error(message)
       }
@@ -240,12 +250,48 @@ export class BotPayments {
     }
   }
 
-  public async pay(ctx: OnMessageContext, amountUSD: number) {
-    const { from, message_id, chat } = ctx.update.message;
+  private convertBigNumber(value: BigNumber, precision = 8) {
+    return +value.div(BigNumber(10).pow(18)).toFormat(precision)
+  }
 
-    if (this.skipPayment(ctx, amountUSD)) {
-      return true;
+  private async writePaymentLog(ctx: OnMessageContext, amountCredits: BigNumber, amountOne: BigNumber) {
+    const {
+      from,
+      text = '',
+      audio,
+      voice = '',
+      chat
+    } = ctx.update.message
+
+    try {
+      const accountId = this.getAccountId(ctx)
+      let [command = ''] = text.split(' ')
+      if(!command) {
+        if(audio || voice) {
+          command = 'voice-memo'
+        }
+      }
+
+      const log: BotPaymentLog = {
+        tgUserId: from.id,
+        accountId,
+        groupId: chat.id,
+        isPrivate: chat.type === 'private',
+        command,
+        message: text || '',
+        isSupportedCommand: true,
+        amountCredits: this.convertBigNumber(amountCredits),
+        amountOne: this.convertBigNumber(amountOne),
+      }
+      await statsService.writeLog(log)
+    } catch (e) {
+      this.logger.error(`Cannot write payments log: ${JSON.stringify((e as Error).message)}`)
     }
+  }
+
+  public async pay(ctx: OnMessageContext, amountUSD: number) {
+    const { from, message_id, chat, text } = ctx.update.message;
+
     const accountId = this.getAccountId(ctx)
     const userAccount = this.getUserAccount(accountId);
     if (!userAccount) {
@@ -263,12 +309,20 @@ export class BotPayments {
     const balanceWithCredits = balance.plus(credits)
     const balanceDelta = balanceWithCredits.minus(amountToPay);
 
-    this.logger.info(`[@${from.username}] credits: ${credits.toFixed()}, balance: ${balance.toFixed()}. to withdraw: ${amountToPay.toFixed()}, balance after: ${balanceDelta.toFixed()}`)
+    const creditsPayAmount = bn.min(amountToPay, credits)
+    const oneTokensPayAmount = amountToPay.minus(creditsPayAmount)
+
+    if (this.skipPayment(ctx, amountUSD)) {
+      await this.writePaymentLog(ctx, BigNumber(0), BigNumber(0))
+      return true;
+    }
+
+    this.logger.info(`[@${from.username}] credits: ${credits.toFixed()}, ONE balance: ${balance.toFixed()}, to withdraw: ${amountToPay.toFixed()}, balance after: ${balanceDelta.toFixed()}`)
     if (balanceDelta.gte(0)) {
       if(amountToPay.gt(0) && credits.gt(0)) {
-        const creditsPayAmount = bn.min(amountToPay, credits)
         await chatService.withdrawAmount(accountId, creditsPayAmount.toFixed())
         amountToPay = amountToPay.minus(creditsPayAmount)
+        freeCreditsFeeCounter.inc(this.convertBigNumber(creditsPayAmount))
         this.logger.info(`[@${from.username}] paid from credits: ${creditsPayAmount.toFixed()}, left to pay: ${amountToPay.toFixed()}`)
       }
       if(amountToPay.gt(0)) {
@@ -280,6 +334,7 @@ export class BotPayments {
           );
           this.lastPaymentTimestamp = Date.now();
           if(tx) {
+            oneTokenFeeCounter.inc(this.convertBigNumber(amountToPay))
             this.logger.info(
               `[${from.id} @${from.username}] withdraw successful, txHash: ${
                 tx.transactionHash
@@ -288,7 +343,6 @@ export class BotPayments {
               }, amount ONE: ${amountToPay.toString()}`
             );
           }
-          return true;
         } catch (e) {
           this.logger.error(
             `[${from.id}] withdraw error: "${JSON.stringify(
@@ -299,9 +353,9 @@ export class BotPayments {
             reply_to_message_id: message_id,
           });
         }
-      } else {
-        return true;
       }
+      await this.writePaymentLog(ctx, creditsPayAmount, oneTokensPayAmount)
+      return true
     } else {
       const addressBalance = await this.getAddressBalance(userAccount.address)
       const creditsBalance = await chatService.getBalance(accountId)
@@ -375,7 +429,6 @@ export class BotPayments {
         const freeCredits = await chatService.getBalance(accountId)
         const addressBalance = await this.getAddressBalance(account.address);
         const balance = addressBalance.plus(freeCredits)
-        console.log('balance',balance)
         const balanceOne = this.toONE(balance, false);
         ctx.reply(
           `Your credits in ONE tokens: ${balanceOne.toFixed(2)}
@@ -433,7 +486,7 @@ To recharge: \`${account.address}\``,
 
   private async runIntervalCheck() {
     try {
-      if (Date.now() - this.lastPaymentTimestamp > 10 * 60 * 1000) {
+      if (Date.now() - this.lastPaymentTimestamp > 30 * 1000) {
         await this.withdrawHotWalletFunds();
       }
     } catch (e) {
@@ -442,9 +495,9 @@ To recharge: \`${account.address}\``,
           this.hotWallet.address
         } to holder address ${this.holderAddress} :"${(e as Error).message}"`
       );
-      await this.sleep(1000 * 60 * 10);
+      await this.sleep(1000 * 10);
     } finally {
-      await this.sleep(1000 * 60);
+      await this.sleep(1000 * 30);
       this.runIntervalCheck();
     }
   }

@@ -1,14 +1,9 @@
-import {
-  Configuration,
-  OpenAIApi,
-  CreateImageRequest,
-  CreateChatCompletionRequest,
-} from "openai";
+import OpenAI from "openai";
 import { encode } from "gpt-tokenizer";
+import { GrammyError } from "grammy";
 
 import config from "../../../config";
 import { deleteFile, getImage } from "../utils/file";
-import { bot } from "../../../bot";
 import {
   ChatCompletion,
   ChatConversation,
@@ -23,11 +18,9 @@ import {
   DalleGPTModels,
 } from "../types";
 
-const configuration = new Configuration({
+const openai = new OpenAI({
   apiKey: config.openAiKey,
 });
-
-const openai = new OpenAIApi(configuration);
 
 const logger = pino({
   name: "openAIBot",
@@ -47,59 +40,50 @@ export async function postGenerateImg(
   try {
     const payload = {
       prompt: prompt,
-      n: numImgs ? numImgs : config.openAi.imageGen.sessionDefault.numImages,
-      size: imgSize ? imgSize : config.openAi.imageGen.sessionDefault.imgSize,
+      n: numImgs ? numImgs : config.openAi.dalle.sessionDefault.numImages,
+      size: imgSize ? imgSize : config.openAi.dalle.sessionDefault.imgSize,
     };
-    const response = await openai.createImage(payload as CreateImageRequest);
-    return response.data.data;
+    const response = await openai.images.generate(
+      payload as OpenAI.Images.ImageGenerateParams
+    );
+    return response.data;
   } catch (error) {
     throw error;
   }
 }
 
 export async function alterGeneratedImg(
-  chatId: number,
   prompt: string,
   filePath: string,
-  numImages?: number,
+  ctx: OnMessageContext | OnCallBackQueryData,
   imgSize?: string
 ) {
   try {
     const imageData = await getImage(filePath);
     if (!imageData.error) {
-      bot.api.sendMessage(chatId, "validating image... ");
       let response;
       const size = imgSize
         ? imgSize
-        : config.openAi.imageGen.sessionDefault.imgSize;
-      if (isNaN(+prompt)) {
-        const n = numImages
-          ? numImages
-          : config.openAi.imageGen.sessionDefault.numImages;
-
-        response = await openai.createImageEdit(
-          imageData.file,
-          prompt,
-          undefined,
-          n,
-          size
-        );
-      } else {
+        : config.openAi.dalle.sessionDefault.imgSize;
+      if (!isNaN(+prompt)) {
         const size = imgSize
           ? imgSize
-          : config.openAi.imageGen.sessionDefault.imgSize;
+          : config.openAi.dalle.sessionDefault.imgSize;
         const n = parseInt(prompt);
-        response = await openai.createImageVariation(
-          imageData.file,
-          n > 10 ? 1 : n,
-          size
-        );
+        const payLoad: OpenAI.Images.ImageCreateVariationParams = {
+          image: imageData.file as any,
+          n: n > 10 ? 1 : n,
+          // size
+        };
+        response = await openai.images.createVariation(payLoad);
       }
-      bot.api.sendMessage(chatId, "Generating...");
       deleteFile(imageData.fileName!);
-      return response.data.data;
+      return response?.data;
     } else {
-      bot.api.sendMessage(chatId, imageData.error);
+      await ctx.reply(imageData.error).catch((e) => {
+        throw e;
+      });
+      return null;
     }
   } catch (error: any) {
     throw error;
@@ -114,33 +98,27 @@ export async function chatCompilation(
   try {
     const payload = {
       model: model,
-      max_tokens: limitTokens
-        ? config.openAi.imageGen.completions.maxTokens
-        : undefined,
-      temperature: config.openAi.imageGen.completions.temperature,
+      max_tokens: limitTokens ? config.openAi.maxTokens : undefined,
+      temperature: config.openAi.dalle.completions.temperature,
       messages: conversation,
     };
-    const response = await openai.createChatCompletion(
-      payload as CreateChatCompletionRequest
+    const response = await openai.chat.completions.create(
+      payload as OpenAI.Chat.CompletionCreateParamsNonStreaming
     );
     const chatModel = getChatModel(model);
     const price = getChatModelPrice(
       chatModel,
       true,
-      response.data.usage?.prompt_tokens!,
-      response.data.usage?.completion_tokens
+      response.usage?.prompt_tokens!,
+      response.usage?.completion_tokens
     );
     return {
-      completion: response.data.choices[0].message?.content!,
-      usage: response.data.usage?.total_tokens!,
+      completion: response.choices[0].message?.content!,
+      usage: response.usage?.total_tokens!,
       price: price * config.openAi.chatGpt.priceAdjustment,
     };
   } catch (e: any) {
-    logger.error(e.response);
-    throw (
-      e.response?.data.error.message ||
-      "There was an error processing your request"
-    );
+    throw e;
   }
 }
 
@@ -148,98 +126,73 @@ export const streamChatCompletion = async (
   conversation: ChatConversation[],
   ctx: OnMessageContext | OnCallBackQueryData,
   model = config.openAi.chatGpt.model,
+  msgId: number,
   limitTokens = true
 ): Promise<string> => {
   try {
-    const payload = {
-      model: model,
-      max_tokens: 800,
-      // limitTokens
-      //   ? config.openAi.imageGen.completions.maxTokens
-      //   : undefined,
-      temperature: config.openAi.imageGen.completions.temperature,
-      messages: conversation,
-      stream: true,
-    };
     let completion = "";
-    let msgId = (
-      await ctx.reply(
-        `...`,
-        {
-          parse_mode: "Markdown",
-        }
-      )
-    ).message_id;
-    // ctx.chatAction = "typing";
+    const wordCountMinimum = config.openAi.chatGpt.wordCountBetween;
     return new Promise<string>(async (resolve, reject) => {
-      const res = await openai.createChatCompletion(
-        payload as CreateChatCompletionRequest,
-        { responseType: "stream" }
-      );
-      let wordCount = 0;
-      //@ts-ignore
-      res.data.on("data", async (data: any) => {
-        const lines = data
-          .toString()
-          .split("\n")
-          .filter((line: string) => line.trim() !== "");
-        for (const line of lines) {
-          const message = line.replace(/^data: /, "");
-          if (message === "[DONE]") {
-            ctx.chatAction = null;
+      try {
+        const stream = await openai.chat.completions.create({
+          model: model,
+          messages:
+            conversation as OpenAI.Chat.Completions.CreateChatCompletionRequestMessage[],
+          stream: true,
+          max_tokens: limitTokens ? config.openAi.maxTokens : undefined,
+          temperature: config.openAi.dalle.completions.temperature,
+        });
+        let wordCount = 0;
+
+        for await (const part of stream) {
+          wordCount++;
+          const chunck = part.choices[0]?.delta?.content
+            ? part.choices[0]?.delta?.content
+            : "";
+          completion += chunck;
+          // if (wordCount > 20) {
+          //   throw getGrammy429Error()
+          // }
+          if (chunck === "." && wordCount > wordCountMinimum) {
             completion = completion.replaceAll("..", "");
-            if (!completion.endsWith(".")) {
-              if (msgId === 0) {
-                msgId = (await ctx.reply(completion)).message_id;
-                resolve(completion);
-                return;
-              }
-            }
+            completion += "..";
+            wordCount = 0;
             await ctx.api
               .editMessageText(ctx.chat?.id!, msgId, completion)
-              .catch((e: any) => console.log(e));
-            // const msgIdEnd = (
-            //   await ctx.reply(`_done_`, {
-            //     // with ${ctx.session.openAi.chatGpt.model.toLocaleUpperCase()}
-            //     parse_mode: "Markdown",
-            //   })
-            // ).message_id;
-            // ctx.api.deleteMessage(ctx.chat?.id!, msgId); // msgIdEnd);
-            // ctx.reply(completion);
-            resolve(completion);
-            return;
-          }
-          try {
-            wordCount++;
-            const parsed = JSON.parse(message);
-            // console.log(parsed.choices[0].delta.content, wordCount)
-            completion +=
-              parsed.choices[0].delta.content !== undefined
-                ? parsed.choices[0].delta.content
-                : "";
-            if (parsed.choices[0].delta.content === ".") {
-              if (msgId === 0) {
-                // msgId = (await ctx.reply(completion)).message_id;
-                // ctx.chatAction = "typing";
-              } else if (wordCount > 20) {
-                completion = completion.replaceAll("..", "");
-                completion += "..";
-                wordCount = 0;
-                ctx.api
-                  .editMessageText(ctx.chat?.id!, msgId, completion)
-                  .catch((e: any) => console.log(e));
-              }
-            }
-          } catch (error) {
-            logger.error("Could not JSON parse stream message", message, error);
-            reject(`An error occurred during OpenAI request: ${error}`);
+              .catch(async (e: any) => {
+                if (e instanceof GrammyError) {
+                  if (e.error_code !== 400) {
+                    reject(e);
+                  } else {
+                    logger.error(e);
+                  }
+                } else {
+                  reject(e);
+                }
+              });
           }
         }
-      });
+        completion = completion.replaceAll("..", "");
+        await ctx.api
+          .editMessageText(ctx.chat?.id!, msgId, completion)
+          .catch((e: any) => {
+            if (e instanceof GrammyError) {
+              if (e.error_code !== 400) {
+                reject(e);
+              } else {
+                logger.error(e);
+              }
+            } else {
+              reject(e);
+            }
+          });
+        resolve(completion);
+      } catch (e) {
+        reject(e);
+      }
     });
   } catch (error: any) {
-    logger.error("Could not JSON parse stream message", error);
-    return Promise.reject(`An error occurred during OpenAI request: ${error}`);
+    return Promise.reject(error);
   }
 };
 
@@ -250,11 +203,7 @@ export async function improvePrompt(promptText: string, model: string) {
     const response = await chatCompilation(conversation, model);
     return response.completion;
   } catch (e: any) {
-    logger.error(e.response);
-    throw (
-      e.response?.data.error.message ||
-      "There was an error processing your request"
-    );
+    throw e;
   }
 }
 
@@ -299,3 +248,18 @@ export const getDalleModelPrice = (
   }
   return price;
 };
+
+function getGrammy429Error() {
+  return new GrammyError(
+    "GrammyError: Call to 'sendMessage' failed! (429: Too Many Requests: retry after 33)",
+    {
+      ok: false,
+      error_code: 429,
+      description: "Too Many Requests: retry after 33",
+    } as any,
+    "editMessageText",
+    {
+      parameters: { retry_after: 33 },
+    }
+  );
+}
