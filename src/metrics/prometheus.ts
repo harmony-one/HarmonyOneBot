@@ -37,7 +37,14 @@ register.registerMetric(dauCounter)
 
 export class PrometheusMetrics {
   constructor() {
-    setInterval(() => this.updateDau(), 30 * 60 * 1000)
+    const intervalId = setInterval(() => this.updateDau(), 30 * 60 * 1000)
+
+    const clearIntervalUpdateDau = () => {
+      clearInterval(intervalId);
+    }
+
+    process.once("SIGINT", clearIntervalUpdateDau);
+    process.once("SIGTERM", clearIntervalUpdateDau);
   }
 
   public async bootstrap() {
