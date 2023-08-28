@@ -1,3 +1,4 @@
+require('events').EventEmitter.defaultMaxListeners = 30;
 import express from "express";
 import {
   Bot,

@@ -442,7 +442,7 @@ export class OpenAIBot {
           .catch((e) => this.onError(ctx, e));
         return;
       }
-      try {
+
         ctx.session.openAi.chatGpt.requestQueue.push(ctx.match as string);
         if (!ctx.session.openAi.chatGpt.isProcessingQueue) {
           ctx.session.openAi.chatGpt.isProcessingQueue = true;
@@ -450,8 +450,23 @@ export class OpenAIBot {
             ctx.session.openAi.chatGpt.isProcessingQueue = false;
           });
         }
-      } catch (e: any) {
-        this.onError(ctx, e);
+    } catch (e: any) {
+      this.onError(ctx, e);
+    }
+  }
+
+  private hasWebCrawlerRequest(
+    ctx: OnMessageContext | OnCallBackQueryData,
+    prompt: string
+  ): string {
+    const prefix = this.hasPrefix(prompt);
+    const url = (
+      (prefix ? prompt.slice(prefix.length) : ctx.match) as string
+    ).trim();
+    if (url.split(" ").length === 1 && isValidUrl(url)) {
+      // temp while hard coded
+      if (url === "harmony.one" || url === "harmony.one/dear" || url === "harmony.one/q4" || url === "xn--qv9h.s.country/p/one-bot-for-all-generative-ai-on") {
+        return url;
       }
     } catch (e) {
       this.onError(ctx, e);
