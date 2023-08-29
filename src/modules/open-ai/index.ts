@@ -443,9 +443,7 @@ export class OpenAIBot {
         ctx.reply(
           `${(webContent.networkTraffic / 1048576).toFixed(
             2
-          )} MB, ${(webContent.elapsedTime / 1000).toFixed(
-            2
-          )}seconds, ${webContent.oneFees} ONE charged`,
+          )} mb downloaded, ${webContent.oneFees} ONE charged`,
           {
             parse_mode: "Markdown",
           }
