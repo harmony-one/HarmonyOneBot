@@ -18,7 +18,7 @@ export class SDImagesBotBase {
         let idx = this.queue.findIndex((v) => v === uuid);
 
         const { message_id } = await ctx.reply(
-            `You are #${idx + 1}, wait about ${(idx + 1) * 30} seconds`
+            `You are #${idx + 1}, wait about ${(idx + 1) * 15} seconds`
         );
 
         // waiting queue
