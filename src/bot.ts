@@ -478,19 +478,32 @@ async function bootstrap() {
 
   const runner = run(bot);
 
-  // Stopping the bot when the Node.js process
-  // is about to be terminated
-  const stopRunner = async () => {
-    await httpServer.close();
-    await AppDataSource.destroy();
-    logger.info(`bot stopping ${runner.isRunning()}`);
-    if (runner.isRunning()) {
-      await runner.stop()
+  const stopApplication = async () => {
+    console.warn('Terminating the bot...')
+
+    try {
+      await httpServer.close();
+      console.warn('The HTTP server is turned off')
+
+      if (runner && runner.isRunning()) {
+        await runner.stop()
+        console.warn('Bot runner is stopped');
+      }
+
+      if (AppDataSource.isInitialized) {
+        await AppDataSource.destroy();
+        console.warn('Database is disconnected')
+      }
+
+      process.exit(0);
+    } catch (ex) {
+      console.error('An error occurred while terminating', ex);
+      process.exit(1);
     }
   };
 
-  process.on("SIGINT", stopRunner);
-  process.on("SIGTERM", stopRunner);
+  process.on("SIGINT", stopApplication);
+  process.on("SIGTERM", stopApplication);
 
   if (config.betteruptime.botHeartBitId) {
     const task = runBotHeartBit(runner, config.betteruptime.botHeartBitId);
