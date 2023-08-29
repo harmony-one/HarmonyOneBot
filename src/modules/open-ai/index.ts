@@ -464,7 +464,7 @@ export class OpenAIBot {
             });
           } else {
             chat.push({
-              content: `${command === "sum" && "Summarize this text:"} ${
+              content: `${command === "sum" && "Summarize this text in 50 words:"} ${
                 webContent.urlText
               }`,
               role: "user",
