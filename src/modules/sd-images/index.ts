@@ -1,7 +1,7 @@
 import { InlineKeyboard, InputFile } from "grammy";
 import { OnMessageContext, OnCallBackQueryData } from "../types";
 import { SDImagesBotBase } from './SDImagesBotBase';
-import { COMMAND, IOperation, parseCtx } from './helpers';
+import { COMMAND, IOperation, parseCtx, promptHasBadWords } from './helpers';
 import { getModelByParam, IModel, MODELS_CONFIGS } from "./api";
 import { uuidv4 } from "./utils";
 
@@ -47,6 +47,12 @@ export class SDImagesBot extends SDImagesBotBase {
       console.log(`### unsupported command ${ctx.message?.text}`);
       ctx.reply("### unsupported command");
       return refundCallback("Unsupported command");
+    }
+
+    if (promptHasBadWords(operation.prompt)) {
+      console.log(`### promptHasBadWords ${ctx.message?.text}`);
+      await ctx.reply("Your prompt has been flagged for potentially generating illegal or malicious content. If you believe there has been a mistake, please reach out to support.");
+      return refundCallback("Prompt has bad words");
     }
 
     switch (operation.command) {
