@@ -452,13 +452,6 @@ const app = express();
 app.use(express.json());
 app.use(express.static("./public")); // Public directory, used in voice-memo bot
 
-const httpServer = app.listen(config.port, () => {
-  logger.info(`Bot listening on port ${config.port}`);
-  // bot.start({
-  //   allowed_updates: ["callback_query"], // Needs to be set for menu middleware, but bot doesn't work with current configuration.
-  // });
-});
-
 app.get("/health", (req, res) => {
   res.send("OK").end();
 });
@@ -468,28 +461,57 @@ app.get("/metrics", async (req, res) => {
   res.send(await prometheusRegister.metrics());
 });
 
-const runner = run(bot);
-
-// Stopping the bot when the Node.js process
-// is about to be terminated
-const stopRunner = () => {
-  httpServer.close();
-  return runner.isRunning() && runner.stop();
-};
-process.once("SIGINT", stopRunner);
-process.once("SIGTERM", stopRunner);
-
-AppDataSource.initialize()
-  .then(() => {
-    const prometheusMetrics = new PrometheusMetrics();
-    prometheusMetrics.bootstrap();
-  })
-  .catch((e) => {
-    logger.error(`Error during DB initialization: ${(e as Error).message}`);
+async function bootstrap() {
+  const httpServer = app.listen(config.port, () => {
+    logger.info(`Bot listening on port ${config.port}`);
+    // bot.start({
+    //   allowed_updates: ["callback_query"], // Needs to be set for menu middleware, but bot doesn't work with current configuration.
+    // });
   });
 
-if (config.betteruptime.botHeartBitId) {
-  const task = runBotHeartBit(runner, config.betteruptime.botHeartBitId);
-  process.once("SIGINT", () => task.stop());
-  process.once("SIGTERM", () => task.stop());
+  await AppDataSource.initialize();
+
+  const prometheusMetrics = new PrometheusMetrics();
+  await prometheusMetrics.bootstrap();
+
+  const runner = run(bot);
+
+  const stopApplication = async () => {
+    console.warn('Terminating the bot...')
+
+    try {
+      await httpServer.close();
+      console.warn('The HTTP server is turned off')
+
+      if (runner && runner.isRunning()) {
+        await runner.stop()
+        console.warn('Bot runner is stopped');
+      }
+
+      if (AppDataSource.isInitialized) {
+        await AppDataSource.destroy();
+        console.warn('Database is disconnected')
+      }
+
+      process.exit(0);
+    } catch (ex) {
+      console.error('An error occurred while terminating', ex);
+      process.exit(1);
+    }
+  };
+
+  process.on("SIGINT", stopApplication);
+  process.on("SIGTERM", stopApplication);
+
+  if (config.betteruptime.botHeartBitId) {
+    const task = runBotHeartBit(runner, config.betteruptime.botHeartBitId);
+    const stopHeartBit = () => {
+      logger.info('heart bit stopping');
+      task.stop();
+    }
+    process.once("SIGINT", stopHeartBit);
+    process.once("SIGTERM", stopHeartBit);
+  }
 }
+
+bootstrap();
