@@ -12,57 +12,50 @@ export class SDImagesBotBase {
         this.sdNodeApi = new SDNodeApi();
     }
 
-    waitingQueue = async (uuid: string, ctx: OnMessageContext | OnCallBackQueryData,) => {
+    waitingQueue = async (uuid: string, ctx: OnMessageContext | OnCallBackQueryData,): Promise<number> => {
         this.queue.push(uuid);
 
         let idx = this.queue.findIndex((v) => v === uuid);
 
-        if (idx >= 0) {
-            ctx.reply(
-                `You are #${idx + 1}, wait about ${(idx + 1) * 30} seconds`
-            );
-        }
+        const { message_id } = await ctx.reply(
+            `You are #${idx + 1}, wait about ${(idx + 1) * 30} seconds`
+        );
 
         // waiting queue
         while (idx !== 0) {
             await sleep(3000 * this.queue.findIndex((v) => v === uuid));
             idx = this.queue.findIndex((v) => v === uuid);
         }
+
+        return message_id;
     }
 
     generateImage = async (
         ctx: OnMessageContext | OnCallBackQueryData,
         refundCallback: (reason?: string) => void,
-        params: {
-            prompt: string,
-            model: IModel,
-            seed?: number,
-            isDefault?: boolean
-        }
+        prompt: string,
+        model: IModel,
+        seed?: number
     ) => {
         const uuid = uuidv4();
 
-        const { prompt, model, seed, isDefault = false } = params;
-
         try {
-            await this.waitingQueue(uuid, ctx);
+            const queueMessageId = await this.waitingQueue(uuid, ctx);
 
             ctx.chatAction = "upload_photo";
 
-            if (isDefault && model.defaultImageUrl) {
-                await ctx.replyWithPhoto(model.defaultImageUrl, {
-                    caption: `/${model.aliases[0]} ${prompt}`,
-                });
-            } else {
-                const imageBuffer = await this.sdNodeApi.generateImage(
-                    prompt,
-                    model,
-                    seed
-                );
+            const imageBuffer = await this.sdNodeApi.generateImage(
+                prompt,
+                model,
+                seed
+            );
 
-                await ctx.replyWithPhoto(new InputFile(imageBuffer), {
-                    caption: `/${model.aliases[0]} ${prompt}`,
-                });
+            await ctx.replyWithPhoto(new InputFile(imageBuffer), {
+                caption: `/${model.aliases[0]} ${prompt}`,
+            });
+
+            if (ctx.chat?.id && queueMessageId) {
+                await ctx.api.deleteMessage(ctx.chat?.id, queueMessageId);
             }
         } catch (e) {
             console.error(e);

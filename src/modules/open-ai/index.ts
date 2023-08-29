@@ -97,63 +97,35 @@ export class OpenAIBot {
     }
   }
 
+  private isMentioned(ctx: OnMessageContext | OnCallBackQueryData): boolean {
+    if (ctx.entities()[0]) {
+      const { offset, text } = ctx.entities()[0];
+      const { username } = ctx.me;
+      if (username === text.slice(1) && offset === 0) {
+        const prompt = ctx.message?.text!.slice(text.length);
+        if (prompt && prompt.split(" ").length > 0) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
   public isSupportedEvent(
     ctx: OnMessageContext | OnCallBackQueryData
   ): boolean {
     const hasCommand = ctx.hasCommand(
       Object.values(SupportedCommands).map((command) => command.name)
     );
+    if (this.isMentioned(ctx)) {
+      return true;
+    }
     const hasReply = this.isSupportedImageReply(ctx);
     const chatPrefix = this.hasPrefix(ctx.message?.text || "");
     if (chatPrefix !== "") {
       return true;
     }
     return hasCommand || hasReply;
-  }
-
-  public isValidCommand(ctx: OnMessageContext | OnCallBackQueryData): boolean {
-    const { commandName, prompt } = getCommandNamePrompt(
-      ctx,
-      SupportedCommands
-    );
-    const promptNumber = prompt === "" ? 0 : prompt.split(" ").length;
-    if (this.isSupportedImageReply(ctx)) {
-      return true;
-    }
-    if (!commandName) {
-      const chatPrefix = this.hasPrefix(ctx.message?.text || "");
-      if (chatPrefix !== "" && promptNumber >= 1) {
-        return true;
-      }
-      return false;
-    }
-    const command = Object.values(SupportedCommands).filter((c) =>
-      commandName.includes(c.name)
-    )[0];
-    const comparisonOperator =
-      ctx.chat?.type === "private"
-        ? command.privateParams[0]
-        : command.groupParams[0];
-    const comparisonValue = parseInt(
-      ctx.chat?.type === "private"
-        ? command.privateParams.slice(1)
-        : command.groupParams.slice(1)
-    );
-    switch (comparisonOperator) {
-      case ">":
-        if (promptNumber >= comparisonValue) {
-          return true;
-        }
-        break;
-      case "=":
-        if (promptNumber === comparisonValue) {
-          return true;
-        }
-        break;
-      default:
-        break;
-    }
-    return false;
   }
 
   private hasPrefix(prompt: string): string {
@@ -290,7 +262,12 @@ export class OpenAIBot {
     }
 
     if (this.hasPrefix(ctx.message?.text || "") !== "") {
-      this.onChat(ctx);
+      this.onPrefix(ctx);
+      return;
+    }
+
+    if (this.isMentioned(ctx)) {
+      this.onMention(ctx);
       return;
     }
 
@@ -385,52 +362,22 @@ export class OpenAIBot {
     }
   };
 
-  async onChat(ctx: OnMessageContext | OnCallBackQueryData) {
-    if (this.botSuspended) {
-      await ctx
-        .reply("The bot is suspended")
-        .catch((e) => this.onError(ctx, e));
-      return;
-    }
-    try {
-      const { prompt, commandName } = getCommandNamePrompt(
-        ctx,
-        SupportedCommands
-      );
-      const prefix = this.hasPrefix(prompt);
-      this.logger.info(
-        `onChat with ${
-          commandName
-            ? `command: "${commandName}"`
-            : `prefix/alias: "${prefix}"`
-        } | model: ${ctx.session.openAi.chatGpt.model} | position: ${
-          ctx.session.openAi.chatGpt.requestQueue.length
-        }`
-      );
-      ctx.session.openAi.chatGpt.requestQueue.push(prompt);
-      if (!ctx.session.openAi.chatGpt.isProcessingQueue) {
-        ctx.session.openAi.chatGpt.isProcessingQueue = true;
-        this.onChatRequestHandler(ctx).then(() => {
-          ctx.session.openAi.chatGpt.isProcessingQueue = false;
-        });
-      }
-    } catch (e: any) {
-      this.onError(ctx, e);
-    }
-  }
-
   private hasWebCrawlerRequest(
     ctx: OnMessageContext | OnCallBackQueryData,
     prompt: string
   ): string {
-    const prefix = this.hasPrefix(prompt);
-    const url = (
-      (prefix ? prompt.slice(prefix.length) : ctx.match) as string
-    ).trim();
-    if (url.split(" ").length === 1 && isValidUrl(url)) {
-      return url;
+    try {
+      const url = prompt.trim();
+      if (url.split(" ").length === 1 && isValidUrl(url)) {
+        // return url;
+        // temp while hard coded
+          return url;
+      }
+      return "";
+    } catch (e) {
+      this.onError(ctx, e);
+      return "";
     }
-    return "";
   }
 
   private async onWebCrawler(url: string, modelName: string) {
@@ -448,6 +395,74 @@ export class OpenAIBot {
       };
     } catch (e) {
       throw e;
+    }
+  }
+
+  async onMention(ctx: OnMessageContext | OnCallBackQueryData) {
+    try {
+      if (this.botSuspended) {
+        await ctx
+          .reply("The bot is suspended")
+          .catch((e) => this.onError(ctx, e));
+        return;
+      }
+      const { username } = ctx.me;
+      const prompt = ctx.message?.text?.slice(username.length + 1) || ""; //@
+      ctx.session.openAi.chatGpt.requestQueue.push(prompt);
+      if (!ctx.session.openAi.chatGpt.isProcessingQueue) {
+        ctx.session.openAi.chatGpt.isProcessingQueue = true;
+        this.onChatRequestHandler(ctx).then(() => {
+          ctx.session.openAi.chatGpt.isProcessingQueue = false;
+        });
+      }
+    } catch (e) {
+      this.onError(ctx, e);
+    }
+  }
+
+  async onPrefix(ctx: OnMessageContext | OnCallBackQueryData) {
+    try {
+      if (this.botSuspended) {
+        await ctx
+          .reply("The bot is suspended")
+          .catch((e) => this.onError(ctx, e));
+        return;
+      }
+      const { prompt, commandName } = getCommandNamePrompt(
+        ctx,
+        SupportedCommands
+      );
+      const prefix = this.hasPrefix(prompt);
+      ctx.session.openAi.chatGpt.requestQueue.push(prompt.slice(prefix.length));
+      if (!ctx.session.openAi.chatGpt.isProcessingQueue) {
+        ctx.session.openAi.chatGpt.isProcessingQueue = true;
+        this.onChatRequestHandler(ctx).then(() => {
+          ctx.session.openAi.chatGpt.isProcessingQueue = false;
+        });
+      }
+    } catch (e) {
+      this.onError(ctx, e);
+    }
+  }
+
+  async onChat(ctx: OnMessageContext | OnCallBackQueryData) {
+    try {
+      if (this.botSuspended) {
+        await ctx
+          .reply("The bot is suspended")
+          .catch((e) => this.onError(ctx, e));
+        return;
+      }
+
+        ctx.session.openAi.chatGpt.requestQueue.push(ctx.match as string);
+        if (!ctx.session.openAi.chatGpt.isProcessingQueue) {
+          ctx.session.openAi.chatGpt.isProcessingQueue = true;
+          this.onChatRequestHandler(ctx).then(() => {
+            ctx.session.openAi.chatGpt.isProcessingQueue = false;
+          });
+        }
+    } catch (e: any) {
+      this.onError(ctx, e);
     }
   }
 
@@ -483,7 +498,6 @@ export class OpenAIBot {
               .catch((e) => this.onError(ctx, e));
             return;
           }
-          const prefix = this.hasPrefix(prompt);
           const url = this.hasWebCrawlerRequest(ctx, prompt);
           if (url) {
             const webCrawler = await this.onWebCrawler(url, model);
@@ -518,9 +532,7 @@ export class OpenAIBot {
           } else {
             chatConversation.push({
               role: "user",
-              content: `${
-                prefix !== "" ? prompt.slice(prefix.length) : prompt
-              }.`,
+              content: prompt,
             });
             const payload = {
               conversation: chatConversation!,

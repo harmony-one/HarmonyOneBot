@@ -8,7 +8,7 @@ export function buildImgPrompt(options: Txt2ImgOptions & { clientId: string }) {
                 inputs: {
                     seed: options.seed,
                     steps: options.steps,
-                    cfg: 8,
+                    cfg: options.cfgScale,
                     sampler_name: "dpmpp_2m",
                     scheduler: "karras",
                     denoise: 1,
