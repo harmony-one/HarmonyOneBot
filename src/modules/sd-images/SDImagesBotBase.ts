@@ -1,16 +1,64 @@
-import { SDNodeApi, getModelByParam, IModel } from "./api";
+import { SDNodeApi, IModel } from "./api";
 import { OnMessageContext, OnCallBackQueryData } from "../types";
 import { sleep, uuidv4 } from "./utils";
-import { InlineKeyboard, InputFile } from "grammy";
+import { InputFile } from "grammy";
+import { COMMAND } from './helpers';
+
+export interface ISession {
+    id: string;
+    author: string;
+    prompt: string;
+    model: IModel;
+    all_seeds?: string[];
+    seed?: number;
+    command: COMMAND;
+    message: string;
+}
 
 export class SDImagesBotBase {
     sdNodeApi: SDNodeApi;
 
+    private sessions: ISession[] = [];
     queue: string[] = [];
 
     constructor() {
         this.sdNodeApi = new SDNodeApi();
     }
+
+    createSession = async (
+        ctx: OnMessageContext | OnCallBackQueryData,
+        params: {
+            prompt: string;
+            model: IModel;
+            command: COMMAND;
+            all_seeds?: string[];
+            seed?: string;
+        }
+    ) => {
+        const { prompt, model, command, all_seeds } = params;
+
+        const authorObj = await ctx.getAuthor();
+        const author = `@${authorObj.user.username}`;
+
+        const sessionId = uuidv4();
+        const message = (ctx.message?.text || '').replace('/images', '/image');
+
+        const newSession: ISession = {
+            id: sessionId,
+            author,
+            prompt: prompt,
+            model,
+            command,
+            all_seeds,
+            message
+        };
+
+        this.sessions.push(newSession);
+
+        return newSession;
+    }
+
+    getSessionById = (id: string) => this.sessions.find(s => s.id === id);
 
     waitingQueue = async (uuid: string, ctx: OnMessageContext | OnCallBackQueryData,): Promise<number> => {
         this.queue.push(uuid);
@@ -33,10 +81,9 @@ export class SDImagesBotBase {
     generateImage = async (
         ctx: OnMessageContext | OnCallBackQueryData,
         refundCallback: (reason?: string) => void,
-        prompt: string,
-        model: IModel,
-        seed?: number
+        session: ISession
     ) => {
+        const { model, prompt, seed } = session;
         const uuid = uuidv4();
 
         try {
@@ -50,8 +97,15 @@ export class SDImagesBotBase {
                 seed
             );
 
+            const reqMessage = session.message ?
+                session.message.split(' ').length > 1 ?
+                    session.message :
+                    `${session.message} ${prompt}`
+                :
+                `/${model.aliases[0]} ${prompt}`;
+
             await ctx.replyWithPhoto(new InputFile(imageBuffer), {
-                caption: `/${model.aliases[0]} ${prompt}`,
+                caption: reqMessage,
             });
 
             if (ctx.chat?.id && queueMessageId) {
