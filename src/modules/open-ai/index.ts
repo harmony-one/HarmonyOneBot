@@ -627,7 +627,7 @@ export class OpenAIBot {
         this.onError(ctx, e);
       }
     }
-  }
+  } 
 
   async onLast(ctx: OnMessageContext | OnCallBackQueryData) {
     if (ctx.session.openAi.chatGpt.chatConversation.length > 0) {
