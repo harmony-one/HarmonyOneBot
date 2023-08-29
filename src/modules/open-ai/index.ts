@@ -487,8 +487,8 @@ export class OpenAIBot {
           const url = this.hasWebCrawlerRequest(ctx, prompt);
           if (url) {
             const webCrawler = await this.onWebCrawler(url, model);
-            if (webCrawler.bytes > 0) {
-              chatConversation.push(...webCrawler.text);
+            if (webCrawler.text.content !== '') {
+              chatConversation.push(webCrawler.text);
               ctx.reply(
                 `${(webCrawler.bytes / 1048576).toFixed(2)} MB downloaded, ${(
                   webCrawler.time / 1000
@@ -615,9 +615,15 @@ export class OpenAIBot {
       // 429	RateLimitError
       // e.status = 400 || e.code = BadRequestError
       this.logger.error(`OPENAI Error ${e.status}(${e.code}) - ${e.message}`);
-      await ctx
+      if (e.code === 'context_length_exceeded') {
+        await ctx
+        .reply(`${e.message}`)
+        .catch((e) => this.onError(ctx, e, retryCount - 1));
+      } else {
+        await ctx
         .reply(`Error accessing OpenAI (ChatGPT). Please try later`)
         .catch((e) => this.onError(ctx, e, retryCount - 1));
+      }
     } else {
       this.logger.error(`onChat: ${e.toString()}`);
       await ctx

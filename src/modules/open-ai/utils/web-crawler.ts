@@ -2,9 +2,19 @@ import axios from "axios";
 import { getTokenNumber } from "../api/openAi";
 import { ChatConversation } from "../../types";
 import { getUSDPrice } from "../../1country/api/coingecko";
+import { pino } from "pino";
 
+const logger = pino({
+  name: "WebCrawler",
+  transport: {
+    target: "pino-pretty",
+    options: {
+      colorize: true,
+    },
+  },
+});
 interface WebContent {
-  urlText: ChatConversation[];
+  urlText: ChatConversation;
   elapsedTime: number;
   networkTraffic: number;
 }
@@ -21,9 +31,11 @@ export const isValidUrl = (url: string): boolean => {
   return urlRegex.test(url);
 };
 
-function parseWebContent(inputArray: CrawlerElement[], maxTokens: number) {
+function parseWebContent(
+  inputArray: CrawlerElement[],
+  maxTokens: number
+): string {
   let concatenatedText = "";
-  const resultArray = [];
   let currentTokenCount = 0;
   for (const item of inputArray) {
     if (item.tagName !== "a" && item.tagName !== "code") {
@@ -33,15 +45,11 @@ function parseWebContent(inputArray: CrawlerElement[], maxTokens: number) {
         concatenatedText += text + " ";
         currentTokenCount += tokenCount;
       } else {
-        resultArray.push({
-          content: concatenatedText.trim(),
-          role: "user",
-        });
         break;
       }
     }
   }
-  return resultArray;
+  return concatenatedText;
 }
 
 export const getCrawlerPrice = async (
@@ -62,9 +70,17 @@ export const getWebContent = async (
       `https://harmony-webcrawler.fly.dev/parse?url=${url}`
     );
     const result = response.data;
+    logger.info(
+      `Webcrawling ${url} => Tags processed: ${
+        result.elements ? result.elements.length : 0
+      }`
+    );
     const text = parseWebContent(result.elements, maxTokens);
     return {
-      urlText: text,
+      urlText: {
+        content: text,
+        role: "user",
+      },
       elapsedTime: result.elapsedTime,
       networkTraffic: result.networkTraffic,
     };
