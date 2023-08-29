@@ -17,6 +17,8 @@ interface WebContent {
   urlText: string;
   elapsedTime: number;
   networkTraffic: number;
+  fees: number;
+  oneFees: number
 }
 
 interface CrawlerElement {
@@ -80,6 +82,8 @@ export const getWebContent = async (
       urlText: text,
       elapsedTime: result.elapsedTime,
       networkTraffic: result.networkTraffic,
+      fees: await getCrawlerPrice(result.networkTraffic),
+      oneFees: 0.5,
     };
     // return { price: formatUSDAmount(Number(onePrice) * usdPrice), error: null };
   } catch (e) {
