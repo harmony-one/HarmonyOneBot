@@ -418,6 +418,14 @@ export class OpenAIBot {
         console.log(promptUpdate);
         const webCrawler = await this.onWebCrawler(url, model);
         if (webCrawler.text !== "") {
+          ctx.reply(
+            `${(webCrawler.bytes / 1048576).toFixed(2)} MB downloaded, ${(
+              webCrawler.time / 1000
+            ).toFixed(2)} time elapsed, ${webCrawler.oneFees} ONE fees paid`,
+            {
+              parse_mode: "Markdown",
+            }
+          );
           if (
             !(await this.payments.pay(ctx as OnMessageContext, webCrawler.fees))
           ) {
@@ -427,14 +435,6 @@ export class OpenAIBot {
               content: `Summarize this web crawler: ${webCrawler.text}`,
               role: "user",
             });
-            ctx.reply(
-              `${(webCrawler.bytes / 1048576).toFixed(2)} MB downloaded, ${(
-                webCrawler.time / 1000
-              ).toFixed(2)} time elapsed, ${webCrawler.oneFees} ONE fees paid`,
-              {
-                parse_mode: "Markdown",
-              }
-            );
             const payload = {
               conversation: chat,
               model: model || config.openAi.chatGpt.model,
