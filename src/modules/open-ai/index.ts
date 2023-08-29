@@ -30,6 +30,11 @@ export const SupportedCommands = {
     groupParams: ">0",
     privateParams: ">0",
   },
+  sum: {
+    name: "sum",
+    groupParams: ">0",
+    privateParams: ">0",
+  },
   ask35: {
     name: "ask35",
     groupParams: ">0",
@@ -128,6 +133,51 @@ export class OpenAIBot {
     return hasCommand || hasReply;
   }
 
+  // public isValidCommand(ctx: OnMessageContext | OnCallBackQueryData): boolean {
+  //   const { commandName, prompt } = getCommandNamePrompt(
+  //     ctx,
+  //     SupportedCommands
+  //   );
+  //   const promptNumber = prompt === "" ? 0 : prompt.split(" ").length;
+  //   if (this.isSupportedImageReply(ctx)) {
+  //     return true;
+  //   }
+  //   if (!commandName) {
+  //     const chatPrefix = this.hasPrefix(ctx.message?.text || "");
+  //     if (chatPrefix !== "" && promptNumber >= 1) {
+  //       return true;
+  //     }
+  //     return false;
+  //   }
+  //   const command = Object.values(SupportedCommands).filter((c) =>
+  //     commandName.includes(c.name)
+  //   )[0];
+  //   const comparisonOperator =
+  //     ctx.chat?.type === "private"
+  //       ? command.privateParams[0]
+  //       : command.groupParams[0];
+  //   const comparisonValue = parseInt(
+  //     ctx.chat?.type === "private"
+  //       ? command.privateParams.slice(1)
+  //       : command.groupParams.slice(1)
+  //   );
+  //   switch (comparisonOperator) {
+  //     case ">":
+  //       if (promptNumber >= comparisonValue) {
+  //         return true;
+  //       }
+  //       break;
+  //     case "=":
+  //       if (promptNumber === comparisonValue) {
+  //         return true;
+  //       }
+  //       break;
+  //     default:
+  //       break;
+  //   }
+  //   return false;
+  // }
+
   private hasPrefix(prompt: string): string {
     const prefixList = config.openAi.chatGpt.chatPrefix;
     for (let i = 0; i < prefixList.length; i++) {
@@ -136,6 +186,18 @@ export class OpenAIBot {
       }
     }
     return "";
+  }
+
+  private hasUrl(prompt: string): string {
+    const promptArray = prompt.split(' ')
+    let url = ''
+    for (let i = 0; i < promptArray.length; i++) {
+      if (isValidUrl(promptArray[i])) {
+        url = promptArray[i]
+        break
+      }
+    }
+    return url
   }
 
   public getEstimatedPrice(ctx: any): number {
@@ -251,6 +313,11 @@ export class OpenAIBot {
       return;
     }
 
+    if (ctx.hasCommand(SupportedCommands.sum.name)) {
+      this.onSum(ctx);
+      return;
+    }
+
     if (ctx.hasCommand(SupportedCommands.end.name)) {
       this.onEnd(ctx);
       return;
@@ -361,6 +428,56 @@ export class OpenAIBot {
       );
     }
   };
+
+  async onSum(ctx: OnMessageContext | OnCallBackQueryData) {
+    if (this.botSuspended) {
+      await ctx
+        .reply("The bot is suspended")
+        .catch((e) => this.onError(ctx, e));
+      return;
+    }
+    try {
+      const { prompt, commandName } = getCommandNamePrompt(
+        ctx,
+        SupportedCommands
+      );
+    } catch (e) {
+
+    }
+  }
+  async onChat(ctx: OnMessageContext | OnCallBackQueryData) {
+    if (this.botSuspended) {
+      await ctx
+        .reply("The bot is suspended")
+        .catch((e) => this.onError(ctx, e));
+      return;
+    }
+    try {
+      const { prompt, commandName } = getCommandNamePrompt(
+        ctx,
+        SupportedCommands
+      );
+      const prefix = this.hasPrefix(prompt);
+      this.logger.info(
+        `onChat with ${
+          commandName
+            ? `command: "${commandName}"`
+            : `prefix/alias: "${prefix}"`
+        } | model: ${ctx.session.openAi.chatGpt.model} | position: ${
+          ctx.session.openAi.chatGpt.requestQueue.length
+        }`
+      );
+      ctx.session.openAi.chatGpt.requestQueue.push(prompt);
+      if (!ctx.session.openAi.chatGpt.isProcessingQueue) {
+        ctx.session.openAi.chatGpt.isProcessingQueue = true;
+        this.onChatRequestHandler(ctx).then(() => {
+          ctx.session.openAi.chatGpt.isProcessingQueue = false;
+        });
+      }
+    } catch (e: any) {
+      this.onError(ctx, e);
+    }
+  }
 
   private hasWebCrawlerRequest(
     ctx: OnMessageContext | OnCallBackQueryData,
