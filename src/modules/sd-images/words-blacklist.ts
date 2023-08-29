@@ -1,6 +1,6 @@
 export const childrenWords = [
     // Words Related to Children
-    'underage', 'minor', 'minors', 'child', 'loli', 'lolita', 'shota', 'children', 'kid', 'kids', 'preteen', 'preteens', 'prepubescent', 'Adolescent', 'schoolgirl', 'baby', 'infant', 'Newborn', 'Nursery', 'Kindergarten', 'Playgroup', 'Elementary school', 'Middle school', 'High school'
+    'underage', 'minor', 'minors', 'child', 'boy', 'boys', 'loli', 'young girl', 'young girls', 'lolita', 'shota', 'children', 'kid', 'kids', 'preteen', 'preteens', 'prepubescent', 'Adolescent', 'schoolgirl', 'baby', 'infant', 'Newborn', 'Nursery', 'Kindergarten', 'Playgroup', 'Elementary school', 'Middle school', 'High school'
 ]
 
 export const sexWords = [
