@@ -1,7 +1,7 @@
 import config from "../../config";
 import { OnCallBackQueryData, OnMessageContext } from "../types";
 import { getModelByParam, IModel, MODELS_CONFIGS } from "./api";
-import { wordsBlacklist } from './words-blacklist';
+import { childrenWords, tabooWords, sexWords } from './words-blacklist';
 
 export enum COMMAND {
     TEXT_TO_IMAGE = 'image',
@@ -146,5 +146,17 @@ export const parseCtx = (ctx: Context): IOperation | false => {
 export const promptHasBadWords = (prompt: string) => {
     const lowerCasePrompt = prompt.toLowerCase();
 
-    return wordsBlacklist.some(badWord => lowerCasePrompt.includes(badWord.toLowerCase()));
+    const hasChildrenWords = childrenWords.some(
+        word => lowerCasePrompt.includes(word.toLowerCase())
+    );
+
+    const hasSexWords = sexWords.some(
+        word => lowerCasePrompt.includes(word.toLowerCase())
+    );
+
+    // const hasTabooWords = tabooWords.some(
+    //     word => lowerCasePrompt.includes(word.toLowerCase())
+    // );
+
+    return hasChildrenWords && hasSexWords;
 }
