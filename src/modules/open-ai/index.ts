@@ -4,7 +4,11 @@ import { Logger, pino } from "pino";
 
 import { getCommandNamePrompt } from "../1country/utils";
 import { BotPayments } from "../payment";
-import { OnMessageContext, OnCallBackQueryData } from "../types";
+import {
+  OnMessageContext,
+  OnCallBackQueryData,
+  ChatConversation,
+} from "../types";
 import { getChatModel, getDalleModel, getDalleModelPrice } from "./api/openAi";
 import { alterImg, imgGen, imgGenEnhanced, promptGen } from "./controller";
 import { appText } from "./utils/text";
@@ -133,51 +137,6 @@ export class OpenAIBot {
     return hasCommand || hasReply;
   }
 
-  // public isValidCommand(ctx: OnMessageContext | OnCallBackQueryData): boolean {
-  //   const { commandName, prompt } = getCommandNamePrompt(
-  //     ctx,
-  //     SupportedCommands
-  //   );
-  //   const promptNumber = prompt === "" ? 0 : prompt.split(" ").length;
-  //   if (this.isSupportedImageReply(ctx)) {
-  //     return true;
-  //   }
-  //   if (!commandName) {
-  //     const chatPrefix = this.hasPrefix(ctx.message?.text || "");
-  //     if (chatPrefix !== "" && promptNumber >= 1) {
-  //       return true;
-  //     }
-  //     return false;
-  //   }
-  //   const command = Object.values(SupportedCommands).filter((c) =>
-  //     commandName.includes(c.name)
-  //   )[0];
-  //   const comparisonOperator =
-  //     ctx.chat?.type === "private"
-  //       ? command.privateParams[0]
-  //       : command.groupParams[0];
-  //   const comparisonValue = parseInt(
-  //     ctx.chat?.type === "private"
-  //       ? command.privateParams.slice(1)
-  //       : command.groupParams.slice(1)
-  //   );
-  //   switch (comparisonOperator) {
-  //     case ">":
-  //       if (promptNumber >= comparisonValue) {
-  //         return true;
-  //       }
-  //       break;
-  //     case "=":
-  //       if (promptNumber === comparisonValue) {
-  //         return true;
-  //       }
-  //       break;
-  //     default:
-  //       break;
-  //   }
-  //   return false;
-  // }
-
   private hasPrefix(prompt: string): string {
     const prefixList = config.openAi.chatGpt.chatPrefix;
     for (let i = 0; i < prefixList.length; i++) {
@@ -189,15 +148,15 @@ export class OpenAIBot {
   }
 
   private hasUrl(prompt: string): string {
-    const promptArray = prompt.split(' ')
-    let url = ''
+    const promptArray = prompt.split(" ");
+    let url = "";
     for (let i = 0; i < promptArray.length; i++) {
       if (isValidUrl(promptArray[i])) {
-        url = promptArray[i]
-        break
+        url = promptArray[i];
+        break;
       }
     }
-    return url
+    return url;
   }
 
   public getEstimatedPrice(ctx: any): number {
@@ -344,6 +303,19 @@ export class OpenAIBot {
       .catch((e) => this.onError(ctx, e, MAX_TRIES, "Bot disabled"));
   }
 
+  private async hasBalance(ctx: OnMessageContext | OnCallBackQueryData) {
+    const accountId = this.payments.getAccountId(ctx as OnMessageContext);
+    const account = await this.payments.getUserAccount(accountId);
+    const addressBalance = await this.payments.getUserBalance(accountId);
+    const creditsBalance = await chatService.getBalance(accountId);
+    const balance = addressBalance.plus(creditsBalance);
+    const balanceOne = (await this.payments.toONE(balance, false)).toFixed(2);
+    return (
+      +balanceOne > +config.openAi.chatGpt.minimumBalance ||
+      (await this.payments.isUserInWhitelist(ctx.from.id, ctx.from.username))
+    );
+  }
+
   onGenImgCmd = async (ctx: OnMessageContext | OnCallBackQueryData) => {
     try {
       if (ctx.session.openAi.imageGen.isEnabled) {
@@ -437,46 +409,49 @@ export class OpenAIBot {
       return;
     }
     try {
-      const { prompt, commandName } = getCommandNamePrompt(
-        ctx,
-        SupportedCommands
-      );
-    } catch (e) {
-
-    }
-  }
-  async onChat(ctx: OnMessageContext | OnCallBackQueryData) {
-    if (this.botSuspended) {
-      await ctx
-        .reply("The bot is suspended")
-        .catch((e) => this.onError(ctx, e));
-      return;
-    }
-    try {
-      const { prompt, commandName } = getCommandNamePrompt(
-        ctx,
-        SupportedCommands
-      );
-      const prefix = this.hasPrefix(prompt);
-      this.logger.info(
-        `onChat with ${
-          commandName
-            ? `command: "${commandName}"`
-            : `prefix/alias: "${prefix}"`
-        } | model: ${ctx.session.openAi.chatGpt.model} | position: ${
-          ctx.session.openAi.chatGpt.requestQueue.length
-        }`
-      );
-      ctx.session.openAi.chatGpt.requestQueue.push(prompt);
-      if (!ctx.session.openAi.chatGpt.isProcessingQueue) {
-        ctx.session.openAi.chatGpt.isProcessingQueue = true;
-        this.onChatRequestHandler(ctx).then(() => {
-          ctx.session.openAi.chatGpt.isProcessingQueue = false;
-        });
+      const { prompt } = getCommandNamePrompt(ctx, SupportedCommands);
+      const url = this.hasUrl(prompt);
+      if (url) {
+        let chat: ChatConversation[] = [];
+        const { model } = ctx.session.openAi.chatGpt;
+        const promptUpdate = prompt.replace(url, "").trim();
+        console.log(promptUpdate);
+        const webCrawler = await this.onWebCrawler(url, model);
+        if (webCrawler.text !== "") {
+          if (
+            !(await this.payments.pay(ctx as OnMessageContext, webCrawler.fees))
+          ) {
+            this.onNotBalanceMessage(ctx);
+          } else {
+            chat.push({
+              content: `Summarize this web crawler: ${webCrawler.text}`,
+              role: "user",
+            });
+            ctx.reply(
+              `${(webCrawler.bytes / 1048576).toFixed(2)} MB downloaded, ${(
+                webCrawler.time / 1000
+              ).toFixed(2)} time elapsed, ${webCrawler.oneFees} ONE fees paid`,
+              {
+                parse_mode: "Markdown",
+              }
+            );
+            const payload = {
+              conversation: chat,
+              model: model || config.openAi.chatGpt.model,
+              ctx,
+            };
+            const price = await promptGen(payload, chat);
+            if (!(await this.payments.pay(ctx as OnMessageContext, price))) {
+              this.onNotBalanceMessage(ctx);
+            }
+          }
+        } else {
+          ctx.reply("Url not supported or incorrect web site address");
+        }
+      } else {
+        ctx.reply(`Error: Missing url`);
       }
-    } catch (e: any) {
-      this.onError(ctx, e);
-    }
+    } catch (e) {}
   }
 
   private hasWebCrawlerRequest(
@@ -488,7 +463,7 @@ export class OpenAIBot {
       if (url.split(" ").length === 1 && isValidUrl(url)) {
         // return url;
         // temp while hard coded
-          return url;
+        return url;
       }
       return "";
     } catch (e) {
@@ -570,14 +545,13 @@ export class OpenAIBot {
           .catch((e) => this.onError(ctx, e));
         return;
       }
-
-        ctx.session.openAi.chatGpt.requestQueue.push(ctx.match as string);
-        if (!ctx.session.openAi.chatGpt.isProcessingQueue) {
-          ctx.session.openAi.chatGpt.isProcessingQueue = true;
-          this.onChatRequestHandler(ctx).then(() => {
-            ctx.session.openAi.chatGpt.isProcessingQueue = false;
-          });
-        }
+      ctx.session.openAi.chatGpt.requestQueue.push(ctx.match as string);
+      if (!ctx.session.openAi.chatGpt.isProcessingQueue) {
+        ctx.session.openAi.chatGpt.isProcessingQueue = true;
+        this.onChatRequestHandler(ctx).then(() => {
+          ctx.session.openAi.chatGpt.isProcessingQueue = false;
+        });
+      }
     } catch (e: any) {
       this.onError(ctx, e);
     }
@@ -588,21 +562,7 @@ export class OpenAIBot {
       try {
         const prompt = ctx.session.openAi.chatGpt.requestQueue.shift() || "";
         const { chatConversation, model } = ctx.session.openAi.chatGpt;
-        const accountId = this.payments.getAccountId(ctx as OnMessageContext);
-        const account = await this.payments.getUserAccount(accountId);
-        const addressBalance = await this.payments.getUserBalance(accountId);
-        const creditsBalance = await chatService.getBalance(accountId);
-        const balance = addressBalance.plus(creditsBalance);
-        const balanceOne = (await this.payments.toONE(balance, false)).toFixed(
-          2
-        );
-        if (
-          +balanceOne > +config.openAi.chatGpt.minimumBalance ||
-          (await this.payments.isUserInWhitelist(
-            ctx.from.id,
-            ctx.from.username
-          ))
-        ) {
+        if (await this.hasBalance(ctx)) {
           if (prompt === "") {
             const msg =
               chatConversation.length > 0
@@ -618,8 +578,11 @@ export class OpenAIBot {
           const url = this.hasWebCrawlerRequest(ctx, prompt);
           if (url) {
             const webCrawler = await this.onWebCrawler(url, model);
-            if (webCrawler.text.content !== '') {
-              chatConversation.push(webCrawler.text);
+            if (webCrawler.text !== "") {
+              chatConversation.push({
+                content: webCrawler.text,
+                role: "user",
+              });
               ctx.reply(
                 `${(webCrawler.bytes / 1048576).toFixed(2)} MB downloaded, ${(
                   webCrawler.time / 1000
@@ -636,12 +599,7 @@ export class OpenAIBot {
                   webCrawler.fees
                 ))
               ) {
-                const balanceMessage = appText.notEnoughBalance
-                  .replaceAll("$CREDITS", balanceOne)
-                  .replaceAll("$WALLET_ADDRESS", account?.address || "");
-                await ctx
-                  .reply(balanceMessage, { parse_mode: "Markdown" })
-                  .catch((e) => this.onError(ctx, e));
+                await this.onNotBalanceMessage(ctx);
               }
             } else {
               ctx.reply("Url not supported or incorrect web site address");
@@ -656,24 +614,14 @@ export class OpenAIBot {
               model: model || config.openAi.chatGpt.model,
               ctx,
             };
-            const price = await promptGen(payload);
+            const price = await promptGen(payload, chatConversation);
             if (!(await this.payments.pay(ctx as OnMessageContext, price))) {
-              const balanceMessage = appText.notEnoughBalance
-                .replaceAll("$CREDITS", balanceOne)
-                .replaceAll("$WALLET_ADDRESS", account?.address || "");
-              await ctx
-                .reply(balanceMessage, { parse_mode: "Markdown" })
-                .catch((e) => this.onError(ctx, e));
+              this.onNotBalanceMessage(ctx);
             }
           }
           ctx.chatAction = null;
         } else {
-          const balanceMessage = appText.notEnoughBalance
-            .replaceAll("$CREDITS", balanceOne)
-            .replaceAll("$WALLET_ADDRESS", account?.address || "");
-          await ctx
-            .reply(balanceMessage, { parse_mode: "Markdown" })
-            .catch((e) => this.onError(ctx, e));
+          this.onNotBalanceMessage(ctx);
         }
       } catch (e: any) {
         this.onError(ctx, e);
@@ -703,6 +651,21 @@ export class OpenAIBot {
     ctx.session.openAi.chatGpt.chatConversation = [];
     ctx.session.openAi.chatGpt.usage = 0;
     ctx.session.openAi.chatGpt.price = 0;
+  }
+
+  async onNotBalanceMessage(ctx: OnMessageContext | OnCallBackQueryData) {
+    const accountId = this.payments.getAccountId(ctx as OnMessageContext);
+    const account = await this.payments.getUserAccount(accountId);
+    const addressBalance = await this.payments.getUserBalance(accountId);
+    const creditsBalance = await chatService.getBalance(accountId);
+    const balance = addressBalance.plus(creditsBalance);
+    const balanceOne = (await this.payments.toONE(balance, false)).toFixed(2);
+    const balanceMessage = appText.notEnoughBalance
+      .replaceAll("$CREDITS", balanceOne)
+      .replaceAll("$WALLET_ADDRESS", account?.address || "");
+    await ctx
+      .reply(balanceMessage, { parse_mode: "Markdown" })
+      .catch((e) => this.onError(ctx, e));
   }
 
   async onError(
@@ -744,14 +707,15 @@ export class OpenAIBot {
       // 429	RateLimitError
       // e.status = 400 || e.code = BadRequestError
       this.logger.error(`OPENAI Error ${e.status}(${e.code}) - ${e.message}`);
-      if (e.code === 'context_length_exceeded') {
+      if (e.code === "context_length_exceeded") {
         await ctx
-        .reply(`${e.message}`)
-        .catch((e) => this.onError(ctx, e, retryCount - 1));
+          .reply(`${e.message}`)
+          .catch((e) => this.onError(ctx, e, retryCount - 1));
+        this.onEnd(ctx);
       } else {
         await ctx
-        .reply(`Error accessing OpenAI (ChatGPT). Please try later`)
-        .catch((e) => this.onError(ctx, e, retryCount - 1));
+          .reply(`Error accessing OpenAI (ChatGPT). Please try later`)
+          .catch((e) => this.onError(ctx, e, retryCount - 1));
       }
     } else {
       this.logger.error(`onChat: ${e.toString()}`);

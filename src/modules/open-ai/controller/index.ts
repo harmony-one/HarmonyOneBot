@@ -125,7 +125,7 @@ export const alterImg = async (
   }
 };
 
-export const promptGen = async (data: ChatGptPayload) => {
+export const promptGen = async (data: ChatGptPayload, chat: ChatConversation[]) => {
   const { conversation, ctx, model } = data;
   try {
     let msgId = (await ctx.reply("...")).message_id;
@@ -159,7 +159,8 @@ export const promptGen = async (data: ChatGptPayload) => {
       conversation.push({ content: completion, role: "system" });
       ctx.session.openAi.chatGpt.usage += promptTokens + completionTokens;
       ctx.session.openAi.chatGpt.price += price;
-      ctx.session.openAi.chatGpt.chatConversation = [...conversation!];
+      chat = [...conversation!]
+      // ctx.session.openAi.chatGpt.chatConversation = [...conversation!];
       return price;
     }
     return 0;

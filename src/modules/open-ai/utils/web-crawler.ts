@@ -14,7 +14,7 @@ const logger = pino({
   },
 });
 interface WebContent {
-  urlText: ChatConversation;
+  urlText: string;
   elapsedTime: number;
   networkTraffic: number;
 }
@@ -65,10 +65,10 @@ export const getWebContent = async (
   if (!url.startsWith("https://")) {
     url = `https://${url}`;
   }
+  const request = `https://harmony-webcrawler.fly.dev/parse?url=${url}`
+  console.log(request)
   try {
-    const response = await axios.get(
-      `https://harmony-webcrawler.fly.dev/parse?url=${url}`
-    );
+    const response = await axios.get(request);
     const result = response.data;
     logger.info(
       `Webcrawling ${url} => Tags processed: ${
@@ -77,10 +77,7 @@ export const getWebContent = async (
     );
     const text = parseWebContent(result.elements, maxTokens);
     return {
-      urlText: {
-        content: text,
-        role: "user",
-      },
+      urlText: text,
       elapsedTime: result.elapsedTime,
       networkTraffic: result.networkTraffic,
     };
