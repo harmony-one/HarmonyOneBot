@@ -121,15 +121,31 @@ export class BotSchedule {
   }
 
   public async generateReport() {
-    const [botFeesReport, dau, mau] = await Promise.all([
+    const [
+      botFeesReport,
+      dau,
+      totalOne,
+      totalCredits,
+      weeklyUsers,
+      totalMessages,
+      totalSupportedMessages
+    ] = await Promise.all([
       this.getBotFeeReport(this.holderAddress),
-      statsService.getDAU(),
-      statsService.getMAU(),
+      statsService.getActiveUsers(0),
+      statsService.getTotalONE(),
+      statsService.getTotalFreeCredits(),
+      statsService.getActiveUsers(7),
+      statsService.getTotalMessages(7),
+      statsService.getTotalMessages(7, true)
     ])
 
     const report = `\nBot fees: ${botFeesReport}` +
       `\nDaily Active Users: *${dau}*` +
-      `\nMonthly Active Users: *${mau}*`
+      `\nTotal fees users pay in ONE: *${totalOne}*` +
+      `\nTotal fees users pay in free credits: *${totalCredits}*` +
+      `\nWeekly active users: *${weeklyUsers}*` +
+      `\nWeekly user engagement (any commands): *${totalMessages}*` +
+      `\nWeekly user engagement (commands supported by bot): *${totalSupportedMessages}*`
     return report;
   }
 

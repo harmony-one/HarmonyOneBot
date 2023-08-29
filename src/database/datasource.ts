@@ -10,9 +10,9 @@ export const AppDataSource = new DataSource({
   type: "postgres",
   url: config.db.url,
   entities: [Chat, User, StatBotCommand, BotLog],
-  // migrations: ['./src/database/migrations/**/*.{.ts,.js}'],
-  migrations: ['./src/database/migrations/**/*.ts'],                                      
-
+  migrations: ['./src/database/migrations/**/*.{.ts,.js}'],
+  // The ".ts" extension does not work with the built application.
+  // migrations: ['./src/database/migrations/**/*.ts'],
   logging: false,
 })
 
