@@ -53,8 +53,8 @@ export function buildImgPromptLora(options: Txt2ImgOptions & { clientId: string 
             "10": {
                 "inputs": {
                     "lora_name": "add_detail.safetensors",
-                    "strength_model": 1,
-                    "strength_clip": 1,
+                    "strength_model": options.addDetailLora,
+                    "strength_clip": options.addDetailLora,
                     "model": ["4", 0],
                     "clip": ["4", 1]
                 },
@@ -369,8 +369,8 @@ export function buildImgPromptLora(options: Txt2ImgOptions & { clientId: string 
                             },
                             "widgets_values": [
                                 "add_detail.safetensors",
-                                1,
-                                1
+                                options.addDetailLora,
+                                options.addDetailLora,
                             ]
                         },
                         {

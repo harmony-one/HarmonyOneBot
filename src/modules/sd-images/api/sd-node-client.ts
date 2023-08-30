@@ -1,8 +1,10 @@
 import { ComfyClient } from '../../qrcode/comfy/ComfyClient';
 import config from "../../../config";
 import { sleep } from '../utils';
-import { buildImgPrompt } from './text_to_img_config';
+
 import { buildImgPromptLora } from './text_to_img_lora_config';
+import { buildImgPrompt } from './text_to_img_config';
+
 import { MODELS_CONFIGS } from './models-config';
 import { waitingExecute } from './helpers';
 
@@ -35,6 +37,7 @@ export type Txt2ImgOptions = {
         args?: string[]
     }
     model?: string;
+    addDetailLora?: number;
 }
 
 export type Txt2ImgResponse = {
@@ -66,7 +69,9 @@ export class Client {
 
             const seed = options.seed || getRandomSeed();
 
-            const prompt = buildImgPromptLora({
+            const buildImgPromptMethod = !!options.addDetailLora ? buildImgPromptLora : buildImgPrompt;
+
+            const prompt = buildImgPromptMethod({
                 ...options,
                 seed,
                 clientId: comfyClient.clientId,

@@ -19,7 +19,7 @@ export class SDNodeApi {
     if (aspectRatioMatch) {
       const aspectRatio = aspectRatioMatch[1];
       const [aspectWidth, aspectHeight] = aspectRatio.split(':').map(Number);
-      
+
       if (!isNaN(aspectWidth) && !isNaN(aspectHeight) && aspectHeight !== 0) {
         const scaleFactor = width / aspectWidth;
         height = Math.round(aspectHeight * scaleFactor);
@@ -55,7 +55,7 @@ export class SDNodeApi {
 
     if (stepsMatch) {
       steps = parseInt(stepsMatch[1]);
-      
+
       prompt = prompt.replace(/--steps\s+(\d+)/, '');
     }
 
@@ -75,7 +75,15 @@ export class SDNodeApi {
     if (noMatch) {
       negativePrompt = noMatch[1].trim();
       prompt = prompt.replace(/--no\s+(.+?)(?=\s+--|$)/, '');
-    } 
+    }
+
+    const addDetailMatch = prompt.match(/<lora:add_detail:(.*)>/);
+    let addDetailLora = 0;
+
+    if (addDetailMatch && !isNaN(+addDetailMatch[1])) {
+      addDetailLora = Number(addDetailMatch[1]);
+      prompt = prompt.replace(/<lora:add_detail:(.*)>/, '');
+    }
 
     const { images } = await this.client.txt2img({
       prompt,
@@ -86,7 +94,8 @@ export class SDNodeApi {
       batchSize: 1,
       cfgScale,
       seed,
-      model: model.path
+      model: model.path,
+      addDetailLora
     })
 
     return images[0];
