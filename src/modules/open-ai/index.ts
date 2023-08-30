@@ -14,7 +14,6 @@ import { alterImg, imgGen, imgGenEnhanced, promptGen } from "./controller";
 import { appText } from "./utils/text";
 import { chatService } from "../../database/services";
 import { ChatGPTModelsEnum } from "./types";
-import { askTemplates } from "../../constants";
 import config from "../../config";
 import { sleep } from "../sd-images/utils";
 import {
@@ -222,7 +221,7 @@ export class OpenAIBot {
   }
 
   public async onEvent(ctx: OnMessageContext | OnCallBackQueryData) {
-    if (!this.isSupportedEvent(ctx)) {
+    if (!this.isSupportedEvent(ctx) && ctx.chat?.type !== "private") {
       this.logger.warn(`### unsupported command ${ctx.message?.text}`);
       return false;
     }
@@ -299,6 +298,11 @@ export class OpenAIBot {
 
     if (this.isMentioned(ctx)) {
       this.onMention(ctx);
+      return;
+    }
+
+    if (ctx.chat?.type === "private") {
+      this.onPrivateChat(ctx);
       return;
     }
 
@@ -406,6 +410,17 @@ export class OpenAIBot {
     }
   };
 
+  private async preparePrompt(
+    ctx: OnMessageContext | OnCallBackQueryData,
+    prompt: string
+  ) {
+    const msg = await ctx.message?.reply_to_message?.text;
+    if (msg) {
+      return `${prompt} ${msg}`;
+    }
+    return prompt;
+  }
+
   async onSum(ctx: OnMessageContext | OnCallBackQueryData) {
     if (this.botSuspended) {
       await ctx
@@ -418,7 +433,13 @@ export class OpenAIBot {
       const { url, newPrompt } = this.hasUrl(prompt);
       if (url) {
         let chat: ChatConversation[] = [];
-        this.onWebCrawler(ctx, newPrompt, chat, url, "sum");
+        this.onWebCrawler(
+          ctx,
+          await this.preparePrompt(ctx, newPrompt),
+          chat,
+          url,
+          "sum"
+        );
       } else {
         ctx.reply(`Error: Missing url`);
       }
@@ -462,9 +483,9 @@ export class OpenAIBot {
             });
           } else {
             chat.push({
-              content: `${command === "sum" && "Summarize this text in 50 words:"} ${
-                webContent.urlText
-              }`,
+              content: `${
+                command === "sum" && "Summarize this text in 50 words:"
+              } ${webContent.urlText}`,
               role: "user",
             });
           }
@@ -506,7 +527,9 @@ export class OpenAIBot {
       }
       const { username } = ctx.me;
       const prompt = ctx.message?.text?.slice(username.length + 1) || ""; //@
-      ctx.session.openAi.chatGpt.requestQueue.push(prompt);
+      ctx.session.openAi.chatGpt.requestQueue.push(
+        await this.preparePrompt(ctx, prompt)
+      );
       if (!ctx.session.openAi.chatGpt.isProcessingQueue) {
         ctx.session.openAi.chatGpt.isProcessingQueue = true;
         this.onChatRequestHandler(ctx).then(() => {
@@ -531,7 +554,31 @@ export class OpenAIBot {
         SupportedCommands
       );
       const prefix = this.hasPrefix(prompt);
-      ctx.session.openAi.chatGpt.requestQueue.push(prompt.slice(prefix.length));
+      ctx.session.openAi.chatGpt.requestQueue.push(
+        await this.preparePrompt(ctx, prompt.slice(prefix.length))
+      );
+      if (!ctx.session.openAi.chatGpt.isProcessingQueue) {
+        ctx.session.openAi.chatGpt.isProcessingQueue = true;
+        this.onChatRequestHandler(ctx).then(() => {
+          ctx.session.openAi.chatGpt.isProcessingQueue = false;
+        });
+      }
+    } catch (e) {
+      this.onError(ctx, e);
+    }
+  }
+
+  async onPrivateChat(ctx: OnMessageContext | OnCallBackQueryData) {
+    try {
+      if (this.botSuspended) {
+        await ctx
+          .reply("The bot is suspended")
+          .catch((e) => this.onError(ctx, e));
+        return;
+      }
+      ctx.session.openAi.chatGpt.requestQueue.push(
+        await this.preparePrompt(ctx, ctx.message?.text!)
+      );
       if (!ctx.session.openAi.chatGpt.isProcessingQueue) {
         ctx.session.openAi.chatGpt.isProcessingQueue = true;
         this.onChatRequestHandler(ctx).then(() => {
@@ -551,7 +598,9 @@ export class OpenAIBot {
           .catch((e) => this.onError(ctx, e));
         return;
       }
-      ctx.session.openAi.chatGpt.requestQueue.push(ctx.match as string);
+      ctx.session.openAi.chatGpt.requestQueue.push(
+        await this.preparePrompt(ctx, ctx.match as string)
+      );
       if (!ctx.session.openAi.chatGpt.isProcessingQueue) {
         ctx.session.openAi.chatGpt.isProcessingQueue = true;
         this.onChatRequestHandler(ctx).then(() => {
@@ -613,7 +662,7 @@ export class OpenAIBot {
         this.onError(ctx, e);
       }
     }
-  } 
+  }
 
   async onLast(ctx: OnMessageContext | OnCallBackQueryData) {
     if (ctx.session.openAi.chatGpt.chatConversation.length > 0) {
