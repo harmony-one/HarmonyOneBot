@@ -147,16 +147,21 @@ export class OpenAIBot {
     return "";
   }
 
-  private hasUrl(prompt: string): string {
+  private hasUrl(prompt: string) {
     const promptArray = prompt.split(" ");
     let url = "";
+    let pos = 0;
     for (let i = 0; i < promptArray.length; i++) {
       if (isValidUrl(promptArray[i])) {
         url = promptArray[i];
+        promptArray.splice(i, 1);
         break;
       }
     }
-    return url;
+    return {
+      url,
+      newPrompt: promptArray.join(" "),
+    };
   }
 
   public getEstimatedPrice(ctx: any): number {
@@ -410,31 +415,61 @@ export class OpenAIBot {
     }
     try {
       const { prompt } = getCommandNamePrompt(ctx, SupportedCommands);
-      const url = this.hasUrl(prompt);
+      const { url, newPrompt } = this.hasUrl(prompt);
       if (url) {
         let chat: ChatConversation[] = [];
-        const { model } = ctx.session.openAi.chatGpt;
-        const promptUpdate = prompt.replace(url, "").trim();
-        console.log(promptUpdate);
-        const webCrawler = await this.onWebCrawler(url, model);
-        if (webCrawler.text !== "") {
-          ctx.reply(
-            `${(webCrawler.bytes / 1048576).toFixed(2)} MB downloaded, ${(
-              webCrawler.time / 1000
-            ).toFixed(2)} time elapsed, ${webCrawler.oneFees} ONE fees paid`,
-            {
-              parse_mode: "Markdown",
-            }
-          );
-          if (
-            !(await this.payments.pay(ctx as OnMessageContext, webCrawler.fees))
-          ) {
-            this.onNotBalanceMessage(ctx);
-          } else {
+        this.onWebCrawler(ctx, newPrompt, chat, url, "sum");
+      } else {
+        ctx.reply(`Error: Missing url`);
+      }
+    } catch (e) {}
+  }
+
+  private async onWebCrawler(
+    ctx: OnMessageContext | OnCallBackQueryData,
+    prompt: string,
+    chat: ChatConversation[],
+    url: string,
+    command = "ask"
+  ) {
+    try {
+      const { model } = ctx.session.openAi.chatGpt;
+
+      const chatModel = getChatModel(model);
+      const webCrawlerMaxTokens =
+        chatModel.maxContextTokens - config.openAi.maxTokens;
+      const webContent = await getWebContent(url, webCrawlerMaxTokens);
+      if (webContent.urlText !== "") {
+        // ctx.reply(`URL downloaded`,
+        //   // `${(webContent.networkTraffic / 1048576).toFixed(
+        //   //   2
+        //   // )} MB in ${(webContent.elapsedTime / 1000).toFixed(2)} seconds`,
+        //   {
+        //     parse_mode: "Markdown",
+        //   }
+        // );
+        if (
+          !(await this.payments.pay(ctx as OnMessageContext, webContent.fees))
+        ) {
+          this.onNotBalanceMessage(ctx);
+        } else {
+          if (prompt !== "") {
             chat.push({
-              content: `Summarize this web crawler: ${webCrawler.text}`,
+              content: `${
+                command === "sum" && "Summarize"
+              } ${prompt} this text: ${webContent.urlText}`,
               role: "user",
             });
+          } else {
+            chat.push({
+              content: `${command === "sum" && "Summarize this text in 50 words:"} ${
+                webContent.urlText
+              }`,
+              role: "user",
+            });
+          }
+
+          if (prompt || command === "sum") {
             const payload = {
               conversation: chat,
               model: model || config.openAi.chatGpt.model,
@@ -445,39 +480,10 @@ export class OpenAIBot {
               this.onNotBalanceMessage(ctx);
             }
           }
-        } else {
-          ctx.reply("Url not supported or incorrect web site address");
         }
       } else {
-        ctx.reply(`Error: Missing url`);
+        ctx.reply("Url not supported or incorrect web site address");
       }
-    } catch (e) {}
-  }
-
-  private hasWebCrawlerRequest(
-    ctx: OnMessageContext | OnCallBackQueryData,
-    prompt: string
-  ): string {
-    try {
-      const url = prompt.trim();
-      if (url.split(" ").length === 1 && isValidUrl(url)) {
-        // return url;
-        // temp while hard coded
-        return url;
-      }
-      return "";
-    } catch (e) {
-      this.onError(ctx, e);
-      return "";
-    }
-  }
-
-  private async onWebCrawler(url: string, modelName: string) {
-    try {
-      const model = getChatModel(modelName);
-      const webCrawlerMaxTokens =
-        model.maxContextTokens - config.openAi.maxTokens;
-      const webContent = await getWebContent(url, webCrawlerMaxTokens);
       return {
         text: webContent.urlText,
         bytes: webContent.networkTraffic,
@@ -575,35 +581,15 @@ export class OpenAIBot {
               .catch((e) => this.onError(ctx, e));
             return;
           }
-          const url = this.hasWebCrawlerRequest(ctx, prompt);
+          const { url, newPrompt } = this.hasUrl(prompt);
           if (url) {
-            const webCrawler = await this.onWebCrawler(url, model);
-            if (webCrawler.text !== "") {
-              chatConversation.push({
-                content: webCrawler.text,
-                role: "user",
-              });
-              ctx.reply(
-                `${(webCrawler.bytes / 1048576).toFixed(2)} MB downloaded, ${(
-                  webCrawler.time / 1000
-                ).toFixed(2)} time elapsed, ${
-                  webCrawler.oneFees
-                } ONE fees paid`,
-                {
-                  parse_mode: "Markdown",
-                }
-              );
-              if (
-                !(await this.payments.pay(
-                  ctx as OnMessageContext,
-                  webCrawler.fees
-                ))
-              ) {
-                await this.onNotBalanceMessage(ctx);
-              }
-            } else {
-              ctx.reply("Url not supported or incorrect web site address");
-            }
+            await this.onWebCrawler(
+              ctx,
+              newPrompt,
+              chatConversation,
+              url,
+              "ask"
+            );
           } else {
             chatConversation.push({
               role: "user",
