@@ -106,12 +106,7 @@ export const alterImg = async (
   const { chatId, prompt, numImages, imgSize, filePath } = data;
   try {
     ctx.chatAction = "upload_photo";
-    const imgs = await alterGeneratedImg(
-      prompt!,
-      filePath!,
-      ctx,
-      imgSize!
-    );
+    const imgs = await alterGeneratedImg(prompt!, filePath!, ctx, imgSize!);
     if (imgs) {
       imgs!.map(async (img: any) => {
         await ctx.replyWithPhoto(img.url).catch((e) => {
@@ -125,7 +120,10 @@ export const alterImg = async (
   }
 };
 
-export const promptGen = async (data: ChatGptPayload, chat: ChatConversation[]) => {
+export const promptGen = async (
+  data: ChatGptPayload,
+  chat: ChatConversation[]
+) => {
   const { conversation, ctx, model } = data;
   try {
     let msgId = (await ctx.reply("...")).message_id;
@@ -159,8 +157,7 @@ export const promptGen = async (data: ChatGptPayload, chat: ChatConversation[]) 
       conversation.push({ content: completion, role: "system" });
       ctx.session.openAi.chatGpt.usage += promptTokens + completionTokens;
       ctx.session.openAi.chatGpt.price += price;
-      chat = [...conversation!]
-      // ctx.session.openAi.chatGpt.chatConversation = [...conversation!];
+      chat = [...conversation!];
       return price;
     }
     return 0;

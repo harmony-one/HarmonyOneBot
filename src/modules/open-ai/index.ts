@@ -410,6 +410,17 @@ export class OpenAIBot {
     }
   };
 
+  // private hasMention( ctx: OnMessageContext | OnCallBackQueryData) {
+  //   const entities = ctx.entities('mention')
+  //   for (let i = 0; i < entities.length; i++) {
+  //     const e = entities[i]
+  //     e.
+  //     ctx.en  .api  getChatMember(e.text)
+
+  //   }
+  //   console.log(ctx.entities())
+  // }
+
   private async preparePrompt(
     ctx: OnMessageContext | OnCallBackQueryData,
     prompt: string
@@ -443,7 +454,9 @@ export class OpenAIBot {
       } else {
         ctx.reply(`Error: Missing url`);
       }
-    } catch (e) {}
+    } catch (e) {
+      this.onError(ctx, e);
+    }
   }
 
   private async onWebCrawler(
@@ -454,11 +467,12 @@ export class OpenAIBot {
     command = "ask"
   ) {
     try {
-      const { model } = ctx.session.openAi.chatGpt;
-
+      ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_35_TURBO_16K;
+      const model = ChatGPTModelsEnum.GPT_35_TURBO_16K;
+      // const { model } = ctx.session.openAi.chatGpt;
       const chatModel = getChatModel(model);
       const webCrawlerMaxTokens =
-        chatModel.maxContextTokens - config.openAi.maxTokens;
+        chatModel.maxContextTokens - (config.openAi.maxTokens * 2);
       const webContent = await getWebContent(url, webCrawlerMaxTokens);
       if (webContent.urlText !== "") {
         // ctx.reply(`URL downloaded`,
@@ -485,7 +499,7 @@ export class OpenAIBot {
             chat.push({
               content: `${
                 command === "sum" && "Summarize this text in 50 words:"
-              } ${webContent.urlText}`,
+              } "${webContent.urlText}"`,
               role: "user",
             });
           }
@@ -513,7 +527,7 @@ export class OpenAIBot {
         oneFees: 0.5,
       };
     } catch (e) {
-      throw e;
+      this.onError(ctx, e);
     }
   }
 

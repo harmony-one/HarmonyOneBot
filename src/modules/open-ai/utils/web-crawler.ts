@@ -68,7 +68,7 @@ export const getWebContent = async (
     url = `https://${url}`;
   }
   const request = `https://harmony-webcrawler.fly.dev/parse?url=${url}`
-  console.log(request)
+  logger.info(request)
   try {
     const response = await axios.get(request);
     const result = response.data;
