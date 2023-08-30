@@ -1,4 +1,4 @@
-require('events').EventEmitter.defaultMaxListeners = 30;
+require("events").EventEmitter.defaultMaxListeners = 30;
 import express from "express";
 import {
   Bot,
@@ -35,9 +35,9 @@ import prometheusRegister, { PrometheusMetrics } from "./metrics/prometheus";
 import { chatService, statsService } from "./database/services";
 import { AppDataSource } from "./database/datasource";
 import { autoRetry } from "@grammyjs/auto-retry";
-import {run} from "@grammyjs/runner";
-import {runBotHeartBit} from "./monitoring/monitoring";
-import {BotPaymentLog} from "./database/stats.service";
+import { run } from "@grammyjs/runner";
+import { runBotHeartBit } from "./monitoring/monitoring";
+import { BotPaymentLog } from "./database/stats.service";
 
 const logger = pino({
   name: "bot",
@@ -308,7 +308,7 @@ const onMessage = async (ctx: OnMessageContext) => {
     //  const command = ctx.update.message.text.split(' ')[0].slice(1)
     // only for private chats
     if (ctx.update.message.chat && ctx.chat.type === "private") {
-      await openAiBot.onEvent(ctx)
+      await openAiBot.onEvent(ctx);
       // await ctx.reply(`Unsupported, type */help* for commands.`, {
       //   parse_mode: "Markdown",
       // });
@@ -478,25 +478,25 @@ async function bootstrap() {
   const runner = run(bot);
 
   const stopApplication = async () => {
-    console.warn('Terminating the bot...')
+    console.warn("Terminating the bot...");
 
     try {
       await httpServer.close();
-      console.warn('The HTTP server is turned off')
+      console.warn("The HTTP server is turned off");
 
       if (runner && runner.isRunning()) {
-        await runner.stop()
-        console.warn('Bot runner is stopped');
+        await runner.stop();
+        console.warn("Bot runner is stopped");
       }
 
       if (AppDataSource.isInitialized) {
         await AppDataSource.destroy();
-        console.warn('Database is disconnected')
+        console.warn("Database is disconnected");
       }
 
       process.exit(0);
     } catch (ex) {
-      console.error('An error occurred while terminating', ex);
+      console.error("An error occurred while terminating", ex);
       process.exit(1);
     }
   };
@@ -507,9 +507,9 @@ async function bootstrap() {
   if (config.betteruptime.botHeartBitId) {
     const task = runBotHeartBit(runner, config.betteruptime.botHeartBitId);
     const stopHeartBit = () => {
-      logger.info('heart bit stopping');
+      logger.info("heart bit stopping");
       task.stop();
-    }
+    };
     process.once("SIGINT", stopHeartBit);
     process.once("SIGTERM", stopHeartBit);
   }
