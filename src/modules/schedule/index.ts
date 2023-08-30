@@ -8,10 +8,12 @@ import {getFeeStats} from "./explorerApi";
 import {getBotFeeStats} from "./harmonyApi";
 import {getBridgeStats} from "./bridgeAPI";
 import {statsService} from "../../database/services";
+import {abbreviateNumber} from "./utils";
 
 enum SupportedCommands {
   BOT_STATS = 'botstats',
-  STATS = 'stats'
+  STATS = 'stats',
+  ALL_STATS = 'allstats'
 }
 
 export class BotSchedule {
@@ -121,15 +123,48 @@ export class BotSchedule {
   }
 
   public async generateReport() {
-    const [botFeesReport, dau, mau] = await Promise.all([
+    const [
+      botFeesReport,
+      weeklyUsers,
+      totalSupportedMessages
+    ] = await Promise.all([
       this.getBotFeeReport(this.holderAddress),
-      statsService.getDAU(),
-      statsService.getMAU(),
+      statsService.getActiveUsers(7),
+      statsService.getTotalMessages(7, true)
     ])
 
     const report = `\nBot fees: ${botFeesReport}` +
-      `\nDaily Active Users: *${dau}*` +
-      `\nMonthly Active Users: *${mau}*`
+      `\nWeekly active users: *${abbreviateNumber(weeklyUsers)}*` +
+      `\nWeekly user engagement: *${abbreviateNumber(totalSupportedMessages)}*`
+    return report;
+  }
+
+  public async generateFullReport() {
+    const [
+      botFeesReport,
+      dau,
+      totalOne,
+      totalCredits,
+      weeklyUsers,
+      totalMessages,
+      totalSupportedMessages
+    ] = await Promise.all([
+      this.getBotFeeReport(this.holderAddress),
+      statsService.getActiveUsers(0),
+      statsService.getTotalONE(),
+      statsService.getTotalFreeCredits(),
+      statsService.getActiveUsers(7),
+      statsService.getTotalMessages(7),
+      statsService.getTotalMessages(7, true)
+    ])
+
+    const report = `\nBot fees: ${botFeesReport}` +
+      `\nDaily Active Users: *${abbreviateNumber(dau)}*` +
+      `\nTotal fees users pay in ONE: *${abbreviateNumber(totalOne)}*` +
+      `\nTotal fees users pay in free credits: *${abbreviateNumber(totalCredits)}*` +
+      `\nWeekly active users: *${abbreviateNumber(weeklyUsers)}*` +
+      `\nWeekly user engagement (any commands): *${abbreviateNumber(totalMessages)}*` +
+      `\nWeekly user engagement (commands supported by bot): *${abbreviateNumber(totalSupportedMessages)}*`
     return report;
   }
 
@@ -147,6 +182,13 @@ export class BotSchedule {
 
     if (ctx.hasCommand(SupportedCommands.STATS)) {
       const report = await this.generateReport()
+      ctx.reply(report, {
+        parse_mode: "Markdown",
+      });
+    }
+
+    if (ctx.hasCommand(SupportedCommands.ALL_STATS)) {
+      const report = await this.generateFullReport()
       ctx.reply(report, {
         parse_mode: "Markdown",
       });

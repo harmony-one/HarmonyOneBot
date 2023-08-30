@@ -1,22 +1,11 @@
 import { InlineKeyboard, InputFile } from "grammy";
 import { OnMessageContext, OnCallBackQueryData } from "../types";
 import { SDImagesBotBase } from './SDImagesBotBase';
-import { COMMAND, parseCtx } from './helpers';
+import { COMMAND, IOperation, parseCtx, promptHasBadWords } from './helpers';
 import { getModelByParam, IModel, MODELS_CONFIGS } from "./api";
 import { uuidv4 } from "./utils";
 
-interface ISession {
-  id: string;
-  author: string;
-  prompt: string;
-  model: IModel;
-  all_seeds: string[];
-  command: COMMAND;
-}
-
 export class SDImagesBot extends SDImagesBotBase {
-  private sessions: ISession[] = [];
-
   public isSupportedEvent(
     ctx: OnMessageContext | OnCallBackQueryData
   ): boolean {
@@ -40,7 +29,7 @@ export class SDImagesBot extends SDImagesBotBase {
 
     const [sessionId] = ctx.callbackQuery.data.split("_");
 
-    return !!this.sessions.find((s) => s.id === sessionId);
+    return !!this.getSessionById(sessionId);
   }
 
   public async onEvent(
@@ -60,13 +49,18 @@ export class SDImagesBot extends SDImagesBotBase {
       return refundCallback("Unsupported command");
     }
 
+    if (promptHasBadWords(operation.prompt)) {
+      console.log(`### promptHasBadWords ${ctx.message?.text}`);
+      await ctx.reply("Your prompt has been flagged for potentially generating illegal or malicious content. If you believe there has been a mistake, please reach out to support.");
+      return refundCallback("Prompt has bad words");
+    }
+
     switch (operation.command) {
       case COMMAND.TEXT_TO_IMAGE:
         this.generateImage(
           ctx,
           refundCallback,
-          operation.prompt,
-          operation.model
+          await this.createSession(ctx, operation)
         );
         return;
 
@@ -74,8 +68,7 @@ export class SDImagesBot extends SDImagesBotBase {
         this.onImagesCmd(
           ctx,
           refundCallback,
-          operation.prompt,
-          operation.model
+          operation
         );
         return;
 
@@ -83,8 +76,7 @@ export class SDImagesBot extends SDImagesBotBase {
         this.onConstructorCmd(
           ctx,
           refundCallback,
-          operation.prompt,
-          operation.model
+          operation
         );
         return;
 
@@ -106,29 +98,20 @@ export class SDImagesBot extends SDImagesBotBase {
   onImagesCmd = async (
     ctx: OnMessageContext | OnCallBackQueryData,
     refundCallback: (reason?: string) => void,
-    prompt: string,
-    model: IModel
+    operation: IOperation
   ) => {
     const uuid = uuidv4();
 
     try {
-      const authorObj = await ctx.getAuthor();
-      const author = `@${authorObj.user.username}`;
-
       await this.waitingQueue(uuid, ctx);
+      const { prompt, model } = operation;
 
       const res = await this.sdNodeApi.generateImagesPreviews(prompt, model);
 
-      const newSession: ISession = {
-        id: uuidv4(),
-        author,
-        prompt: prompt,
+      const newSession = await this.createSession(ctx, {
+        ...operation,
         all_seeds: res.all_seeds,
-        model,
-        command: COMMAND.TEXT_TO_IMAGES
-      };
-
-      this.sessions.push(newSession);
+      });
 
       await ctx.replyWithMediaGroup(
         res.images.map((img, idx) => ({
@@ -179,7 +162,7 @@ export class SDImagesBot extends SDImagesBotBase {
         return;
       }
 
-      const session = this.sessions.find((s) => s.id === sessionId);
+      const session = this.getSessionById(sessionId);
 
       if (!session || session.author !== author) {
         refundCallback("Wrong author");
@@ -200,8 +183,7 @@ export class SDImagesBot extends SDImagesBotBase {
         this.generateImage(
           ctx,
           refundCallback,
-          session.prompt,
-          model
+          { ...session, model }
         );
 
         return;
@@ -211,9 +193,10 @@ export class SDImagesBot extends SDImagesBotBase {
         this.generateImage(
           ctx,
           refundCallback,
-          session.prompt,
-          session.model,
-          Number(session.all_seeds[+params - 1])
+          {
+            ...session,
+            seed: session?.all_seeds && Number(session.all_seeds[+params - 1])
+          }
         );
 
         return;
@@ -228,23 +211,10 @@ export class SDImagesBot extends SDImagesBotBase {
   onConstructorCmd = async (
     ctx: OnMessageContext | OnCallBackQueryData,
     refundCallback: (reason?: string) => void,
-    prompt: string,
-    model: IModel
+    operation: IOperation
   ) => {
     try {
-      const authorObj = await ctx.getAuthor();
-      const author = `@${authorObj.user.username}`;
-
-      const newSession: ISession = {
-        id: uuidv4(),
-        author,
-        prompt: String(prompt),
-        all_seeds: [],
-        model,
-        command: COMMAND.CONSTRUCTOR
-      };
-
-      this.sessions.push(newSession);
+      const newSession = await this.createSession(ctx, operation);
 
       const buttonsPerRow = 2;
       let rowCount = buttonsPerRow;
@@ -263,7 +233,7 @@ export class SDImagesBot extends SDImagesBotBase {
 
       keyboard.row();
 
-      await ctx.reply(prompt, {
+      await ctx.reply(newSession.message, {
         parse_mode: "HTML",
         reply_markup: keyboard
       });

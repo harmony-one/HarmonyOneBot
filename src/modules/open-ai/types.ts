@@ -22,7 +22,7 @@ export const ChatGPTModels: Record<string, ChatGPTModel> = {
     name: "gpt-4",
     inputPrice: 0.03,
     outputPrice: 0.06,
-    maxContextTokens: 8000
+    maxContextTokens: 8192
   },
   "gpt-4-32k": {
     name: "gpt-4-32k",

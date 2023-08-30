@@ -1,46 +1,93 @@
-import { SDNodeApi, getModelByParam, IModel } from "./api";
+import { SDNodeApi, IModel } from "./api";
 import { OnMessageContext, OnCallBackQueryData } from "../types";
 import { sleep, uuidv4 } from "./utils";
-import { InlineKeyboard, InputFile } from "grammy";
+import { InputFile } from "grammy";
+import { COMMAND } from './helpers';
+
+export interface ISession {
+    id: string;
+    author: string;
+    prompt: string;
+    model: IModel;
+    all_seeds?: string[];
+    seed?: number;
+    command: COMMAND;
+    message: string;
+}
 
 export class SDImagesBotBase {
     sdNodeApi: SDNodeApi;
 
+    private sessions: ISession[] = [];
     queue: string[] = [];
 
     constructor() {
         this.sdNodeApi = new SDNodeApi();
     }
 
-    waitingQueue = async (uuid: string, ctx: OnMessageContext | OnCallBackQueryData,) => {
+    createSession = async (
+        ctx: OnMessageContext | OnCallBackQueryData,
+        params: {
+            prompt: string;
+            model: IModel;
+            command: COMMAND;
+            all_seeds?: string[];
+            seed?: string;
+        }
+    ) => {
+        const { prompt, model, command, all_seeds } = params;
+
+        const authorObj = await ctx.getAuthor();
+        const author = `@${authorObj.user.username}`;
+
+        const sessionId = uuidv4();
+        const message = (ctx.message?.text || '').replace('/images', '/image');
+
+        const newSession: ISession = {
+            id: sessionId,
+            author,
+            prompt: prompt,
+            model,
+            command,
+            all_seeds,
+            message
+        };
+
+        this.sessions.push(newSession);
+
+        return newSession;
+    }
+
+    getSessionById = (id: string) => this.sessions.find(s => s.id === id);
+
+    waitingQueue = async (uuid: string, ctx: OnMessageContext | OnCallBackQueryData,): Promise<number> => {
         this.queue.push(uuid);
 
         let idx = this.queue.findIndex((v) => v === uuid);
 
-        if (idx >= 0) {
-            ctx.reply(
-                `You are #${idx + 1}, wait about ${(idx + 1) * 30} seconds`
-            );
-        }
+        const { message_id } = await ctx.reply(
+            `You are #${idx + 1}, wait about ${(idx + 1) * 15} seconds`
+        );
 
         // waiting queue
         while (idx !== 0) {
             await sleep(3000 * this.queue.findIndex((v) => v === uuid));
             idx = this.queue.findIndex((v) => v === uuid);
         }
+
+        return message_id;
     }
 
     generateImage = async (
         ctx: OnMessageContext | OnCallBackQueryData,
         refundCallback: (reason?: string) => void,
-        prompt: string,
-        model: IModel,
-        seed?: number
+        session: ISession
     ) => {
+        const { model, prompt, seed } = session;
         const uuid = uuidv4();
 
         try {
-            await this.waitingQueue(uuid, ctx);
+            const queueMessageId = await this.waitingQueue(uuid, ctx);
 
             ctx.chatAction = "upload_photo";
 
@@ -50,9 +97,20 @@ export class SDImagesBotBase {
                 seed
             );
 
+            const reqMessage = session.message ?
+                session.message.split(' ').length > 1 ?
+                    session.message :
+                    `${session.message} ${prompt}`
+                :
+                `/${model.aliases[0]} ${prompt}`;
+
             await ctx.replyWithPhoto(new InputFile(imageBuffer), {
-                caption: `/${model.aliases[0]} ${prompt}`,
+                caption: reqMessage,
             });
+
+            if (ctx.chat?.id && queueMessageId) {
+                await ctx.api.deleteMessage(ctx.chat?.id, queueMessageId);
+            }
         } catch (e) {
             console.error(e);
             ctx.reply(`Error: something went wrong... Refunding payments`);

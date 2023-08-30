@@ -22,6 +22,7 @@ export class BotPayments {
   private logger: Logger;
   private web3: Web3;
   private ONERate: number = 0;
+  private ONERateUpdateTimestamp = 0;
   private rpcURL: string = "https://api.harmony.one";
   private lastPaymentTimestamp = 0;
   private noncePending = new LRUCache<string, number>({
@@ -53,24 +54,26 @@ export class BotPayments {
     this.hotWallet = this.getUserAccount("hot_wallet") as Account;
     this.logger.info(`Hot wallet address: ${this.hotWallet.address}`);
 
-    this.pollRates();
-    this.runIntervalCheck();
+    this.getOneRate();
   }
 
-  private async pollRates() {
+  private async getOneRate() {
+    if(this.ONERate && (Date.now() - this.ONERateUpdateTimestamp < 10 * 60 * 1000)) {
+      return this.ONERate
+    }
+
+    let oneRate = 0
     try {
       const { data } = await axios.get<CoinGeckoResponse>(
         `https://api.coingecko.com/api/v3/simple/price?ids=harmony&vs_currencies=usd`
       );
-      this.ONERate = +data.harmony.usd;
+      oneRate = +data.harmony.usd;
     } catch (e) {
-      this.ONERate = 0.01
-      this.logger.error(`Cannot get ONE price: ${JSON.stringify((e as Error).message)}. Use hardcoded price: ${this.ONERate}.`);
-      await this.sleep(1000 * 60 * 30);
-    } finally {
-      await this.sleep(1000 * 60);
-      this.pollRates();
+      this.logger.error(`Cannot get ONE rates: ${JSON.stringify((e as Error).message)}`);
     }
+    this.ONERate = oneRate
+    this.ONERateUpdateTimestamp = Date.now()
+    return this.ONERate
   }
 
   public getUserAccount(userId: number | string, botSecret = config.payment.secret) {
@@ -82,9 +85,10 @@ export class BotPayments {
     }
   }
 
-  public getPriceInONE(centsUsd: number) {
-    const amount = this.ONERate
-      ? centsUsd / 100 / this.ONERate
+  public async getPriceInONE(centsUsd: number) {
+    const currentRate = await this.getOneRate()
+    const amount = currentRate
+      ? centsUsd / 100 / currentRate
       : 0;
     return bn(Math.round(amount * 10**18))
   }
@@ -224,7 +228,7 @@ export class BotPayments {
     const accountId = this.getAccountId(ctx)
     const userAccount = this.getUserAccount(accountId);
     if (userAccount) {
-      const amountONE = this.getPriceInONE(amountUSD);
+      const amountONE = await this.getPriceInONE(amountUSD);
       const fee = await this.getTransactionFee();
       try {
         const tx = await this.transferFunds(
@@ -299,9 +303,13 @@ export class BotPayments {
       return false;
     }
 
+    if(Date.now() - this.lastPaymentTimestamp > 60 * 1000) {
+      await this.withdrawHotWalletFunds();
+    }
+
     this.logger.info(`Pay event @${from.username}(${from.id}) in chat ${chat.id} (${chat.type}), accountId: ${accountId}, account address: ${userAccount.address}`)
 
-    let amountToPay = this.getPriceInONE(amountUSD);
+    let amountToPay = await this.getPriceInONE(amountUSD);
     const fee = await this.getTransactionFee();
     amountToPay = amountToPay.plus(fee)
     const balance = await this.getUserBalance(accountId);
@@ -462,43 +470,29 @@ To recharge: \`${account.address}\``,
     new Promise((resolve) => setTimeout(resolve, timeout));
 
   private async withdrawHotWalletFunds() {
-    const hotWalletBalance = await this.getAddressBalance(
-      this.hotWallet.address
-    );
-    const fee = await this.getTransactionFee();
-    if (hotWalletBalance.gt(fee)) {
-      await this.transferFunds(
-        this.hotWallet,
-        this.holderAddress,
-        hotWalletBalance.minus(fee)
-      );
-      this.logger.info(
-        `Hot wallet funds transferred from hot wallet ${
-          this.hotWallet.address
-        } to holder address: ${
-          this.holderAddress
-        }, amount: ${hotWalletBalance.toFixed()}`
-      );
-    } else {
-      // this.logger.info(`Hot wallet ${this.hotWallet.address} balance is zero, skip withdrawal`)
-    }
-  }
-
-  private async runIntervalCheck() {
     try {
-      if (Date.now() - this.lastPaymentTimestamp > 30 * 1000) {
-        await this.withdrawHotWalletFunds();
+      const hotWalletBalance = await this.getAddressBalance(
+        this.hotWallet.address
+      );
+      const fee = await this.getTransactionFee();
+      if (hotWalletBalance.gt(fee)) {
+        await this.transferFunds(
+          this.hotWallet,
+          this.holderAddress,
+          hotWalletBalance.minus(fee)
+        );
+        this.logger.info(
+          `Hot wallet funds transferred from hot wallet ${
+            this.hotWallet.address
+          } to holder address: ${
+            this.holderAddress
+          }, amount: ${hotWalletBalance.toFixed()}`
+        );
+      } else {
+        // this.logger.info(`Hot wallet ${this.hotWallet.address} balance is zero, skip withdrawal`)
       }
     } catch (e) {
-      this.logger.error(
-        `Cannot withdraw funds from hot wallet ${
-          this.hotWallet.address
-        } to holder address ${this.holderAddress} :"${(e as Error).message}"`
-      );
-      await this.sleep(1000 * 10);
-    } finally {
-      await this.sleep(1000 * 30);
-      this.runIntervalCheck();
+      this.logger.error(`Cannot withdraw hot wallet funds: ${(e as Error).message}`)
     }
   }
 }
