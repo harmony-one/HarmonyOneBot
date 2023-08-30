@@ -440,14 +440,14 @@ export class OpenAIBot {
         chatModel.maxContextTokens - config.openAi.maxTokens;
       const webContent = await getWebContent(url, webCrawlerMaxTokens);
       if (webContent.urlText !== "") {
-        ctx.reply(
-          `${(webContent.networkTraffic / 1048576).toFixed(
-            2
-          )} mb downloaded, ${webContent.oneFees} ONE charged`,
-          {
-            parse_mode: "Markdown",
-          }
-        );
+        // ctx.reply(`URL downloaded`,
+        //   // `${(webContent.networkTraffic / 1048576).toFixed(
+        //   //   2
+        //   // )} MB in ${(webContent.elapsedTime / 1000).toFixed(2)} seconds`,
+        //   {
+        //     parse_mode: "Markdown",
+        //   }
+        // );
         if (
           !(await this.payments.pay(ctx as OnMessageContext, webContent.fees))
         ) {
