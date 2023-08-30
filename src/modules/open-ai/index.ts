@@ -222,7 +222,7 @@ export class OpenAIBot {
   }
 
   public async onEvent(ctx: OnMessageContext | OnCallBackQueryData) {
-    if (!this.isSupportedEvent(ctx)) {
+    if (!this.isSupportedEvent(ctx) && ctx.chat?.type !== 'private') {
       this.logger.warn(`### unsupported command ${ctx.message?.text}`);
       return false;
     }
@@ -300,6 +300,11 @@ export class OpenAIBot {
     if (this.isMentioned(ctx)) {
       this.onMention(ctx);
       return;
+    }
+
+    if (ctx.chat?.type === 'private') {
+      this.onPrivateChat(ctx)
+      return
     }
 
     this.logger.warn(`### unsupported command`);
@@ -543,6 +548,26 @@ export class OpenAIBot {
     }
   }
 
+  async onPrivateChat(ctx: OnMessageContext | OnCallBackQueryData) {
+    try {
+      if (this.botSuspended) {
+        await ctx
+          .reply("The bot is suspended")
+          .catch((e) => this.onError(ctx, e));
+        return;
+      }
+      ctx.session.openAi.chatGpt.requestQueue.push(ctx.message?.text!);
+      if (!ctx.session.openAi.chatGpt.isProcessingQueue) {
+        ctx.session.openAi.chatGpt.isProcessingQueue = true;
+        this.onChatRequestHandler(ctx).then(() => {
+          ctx.session.openAi.chatGpt.isProcessingQueue = false;
+        });
+      }
+    } catch (e) {
+      this.onError(ctx, e);
+    }
+  }
+  
   async onChat(ctx: OnMessageContext | OnCallBackQueryData) {
     try {
       if (this.botSuspended) {

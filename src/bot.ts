@@ -308,10 +308,11 @@ const onMessage = async (ctx: OnMessageContext) => {
     //  const command = ctx.update.message.text.split(' ')[0].slice(1)
     // only for private chats
     if (ctx.update.message.chat && ctx.chat.type === "private") {
-      await ctx.reply(`Unsupported, type */help* for commands.`, {
-        parse_mode: "Markdown",
-      });
-      await writeCommandLog(ctx, false);
+      await openAiBot.onEvent(ctx)
+      // await ctx.reply(`Unsupported, type */help* for commands.`, {
+      //   parse_mode: "Markdown",
+      // });
+      // await writeCommandLog(ctx, false);
       return;
     }
     if (ctx.update.message.chat) {
