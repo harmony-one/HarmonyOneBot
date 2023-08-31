@@ -433,7 +433,7 @@ bot.on("msg:new_chat_members", async (ctx) => {
       const user = await getChatMemberInfo(m.username!);
       if (user.displayName) {
         await ctx.reply(
-          `Hi everyone, welcome ${user.displayName} (@${user.username})${
+          `Hi everyone! Welcome to ${user.displayName} (@${user.username})${
             user.bio && ": " + user.bio
           }`
         );
