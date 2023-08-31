@@ -87,6 +87,10 @@ export const parseCtx = (ctx: Context): IOperation | false => {
             command = COMMAND.TEXT_TO_IMAGE;
         }
 
+        if (ctx.hasCommand('imagine')) {
+            command = COMMAND.TEXT_TO_IMAGE;
+        }
+
         if (ctx.hasCommand('img')) {
             command = COMMAND.TEXT_TO_IMAGE;
         }
@@ -99,7 +103,7 @@ export const parseCtx = (ctx: Context): IOperation | false => {
         //     command = COMMAND.CONSTRUCTOR;
         // }
 
-        if (ctx.hasCommand('SD')) {
+        if (ctx.hasCommand('sd')) {
             command = COMMAND.HELP;
         }
 
