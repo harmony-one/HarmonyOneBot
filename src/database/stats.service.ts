@@ -56,9 +56,8 @@ export class StatsService {
 
     const rows = await logRepository
       .createQueryBuilder('logs')
-      .select('count(logs.tgUserId)')
+      .select('count(distinct(logs."tgUserId"))')
       .where(`logs.createdAt BETWEEN TO_TIMESTAMP(${dateStart}) and TO_TIMESTAMP(${dateEnd})`)
-      .groupBy('logs.tgUserId')
       .execute();
 
     return rows.length ? +rows[0].count : 0
