@@ -26,7 +26,7 @@ export const getAddressHistory = async (address: string): Promise<RpcTransaction
     pageSize: 1000,
     fullTx: true,
     txType: 'RECEIVED',
-    order: "ASC"
+    order: "DESC"
   }])
   return data ? data.transactions : []
 }
