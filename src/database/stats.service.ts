@@ -49,7 +49,7 @@ export class StatsService {
     const dateStart = moment()
       .tz('America/Los_Angeles')
       .set({ hour: 23, minute: 59, second: 0 })
-      .subtract(daysPeriod,'days')
+      .subtract(1 + daysPeriod,'days')
       .unix()
 
     const dateEnd = currentTime.unix();
