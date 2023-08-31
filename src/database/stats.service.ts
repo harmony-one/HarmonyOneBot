@@ -49,16 +49,15 @@ export class StatsService {
     const dateStart = moment()
       .tz('America/Los_Angeles')
       .set({ hour: 23, minute: 59, second: 0 })
-      .subtract(daysPeriod,'days')
+      .subtract(1 + daysPeriod,'days')
       .unix()
 
     const dateEnd = currentTime.unix();
 
     const rows = await logRepository
       .createQueryBuilder('logs')
-      .select('count(logs.tgUserId)')
+      .select('count(distinct(logs."tgUserId"))')
       .where(`logs.createdAt BETWEEN TO_TIMESTAMP(${dateStart}) and TO_TIMESTAMP(${dateEnd})`)
-      .groupBy('logs.tgUserId')
       .execute();
 
     return rows.length ? +rows[0].count : 0
