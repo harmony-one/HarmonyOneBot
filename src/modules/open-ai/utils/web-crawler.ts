@@ -4,6 +4,8 @@ import { getTokenNumber } from "../api/openAi";
 import { ChatConversation } from "../../types";
 import { getUSDPrice } from "../../1country/api/coingecko";
 import { pino } from "pino";
+import { Kagi } from "../../voice-memo/kagi";
+import config from "../../../config";
 
 const logger = pino({
   name: "WebCrawler",
@@ -59,6 +61,30 @@ export const getCrawlerPrice = async (
   networkTraffic: number
 ): Promise<number> => {
   return 0.5; //cents
+};
+
+export const getWebContentKagi = async (
+  url: string,
+  maxTokens: number
+): Promise<WebContent> => {
+  if (!url.startsWith("https://")) {
+    url = `https://${url}`;
+  }
+  const kagi = new Kagi(config.voiceMemo.kagiApiKey);
+  const request = `https://harmony-webcrawler.fly.dev/parse?url=${url}`;
+  logger.info(request);
+  try {
+    const response = await kagi.getSummarization(request);
+    return {
+      urlText: response,
+      elapsedTime: 0, // result.elapsedTime,
+      networkTraffic: 0, // result.networkTraffic,
+      fees: 0.5, //await getCrawlerPrice(result.networkTraffic),
+      oneFees: 0.5,
+    };
+  } catch (e) {
+    throw e;
+  }
 };
 
 export const getWebContent = async (
