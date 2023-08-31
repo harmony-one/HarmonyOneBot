@@ -1,6 +1,7 @@
-import {OnCallBackQueryData, OnMessageContext, RefundCallback} from "../types";
+import {OnMessageContext, RefundCallback} from "../types";
 import pino, {Logger} from "pino";
-import {chatCompilation} from "../open-ai/api/openAi";
+import {chatCompilation, getChatModel, getChatModelPrice, getTokenNumber} from "../open-ai/api/openAi";
+import config from "../../config";
 
 enum SupportedCommands {
   Translate = 'translate',
@@ -21,15 +22,35 @@ export class TranslateBot {
         }
       }
     })
-
   }
 
   public getEstimatedPrice(ctx: OnMessageContext) {
-    return 1; //  1.5;
+    if (ctx.hasCommand(Object.values(SupportedCommands))) {
+      return 0;
+    }
+
+    const hasCommand = this.isCtxHasCommand(ctx);
+
+    if (!hasCommand && ctx.session.translate.enable) {
+      const message = ctx.message.text || '';
+      const promptTokens = getTokenNumber(message);
+      const modelPrice = getChatModel(config.openAi.chatGpt.model);
+
+      const languageCount = ctx.session.translate.languages.length;
+
+      return getChatModelPrice(modelPrice, true, promptTokens, promptTokens * languageCount) *
+        config.openAi.chatGpt.priceAdjustment;
+    }
+
+    return 0;
   }
 
-  public isSupportedEvent(ctx: OnMessageContext | OnCallBackQueryData): boolean {
-    const hasCommand = ctx.entities().find((ent) => ent.type === 'bot_command');
+  public isCtxHasCommand(ctx: OnMessageContext) {
+    return ctx.entities().find((ent) => ent.type === 'bot_command');
+  }
+
+  public isSupportedEvent(ctx: OnMessageContext): boolean {
+    const hasCommand = this.isCtxHasCommand(ctx);
     return ctx.hasCommand(Object.values(SupportedCommands)) || !hasCommand;
   }
 
