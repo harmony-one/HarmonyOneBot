@@ -410,6 +410,63 @@ export class OpenAIBot {
     }
   };
 
+  private hasUserPassword2(prompt: string) {
+    const pattern =
+      // /\b(user=|password=|user|password)\s*([^\s]+)\b.*\b(user=|password=|user|password)\s*([^\s]+)\b/i;
+      /\b(user|password|user=|password=)\s*([A-Za-z0-9~\!@#$%^&*()_\-+={[}\]|:;<,>.\/?]+)\b.*\b(user|password|user=|password=)\s*([A-Za-z0-9~\!@#$%^&*()_\-+={[}\]|:;<,>.\/?]+)\b/i;
+
+    // /\b(user|password|user=|password=)\s*([^!\s]+)\b.*\b(user|password|user=|password=)\s*([^!\s]+)\b/i
+
+    const matches = pattern.exec(prompt);
+
+    let user = "";
+    let password = "";
+
+    if (matches) {
+      const [_, keyword, word, __, word2] = matches;
+      if (
+        keyword.toLowerCase() === "user" ||
+        keyword.toLowerCase() === "user="
+      ) {
+        user = word;
+        password = word2;
+      } else if (
+        keyword.toLowerCase() === "password" ||
+        keyword.toLowerCase() === "password="
+      ) {
+        password = word;
+        user = word2;
+      }
+    }
+
+    return { user, password };
+  }
+
+  private hasUserPassword(prompt: string) {
+    let user = "";
+    let password = "";
+    const parts = prompt.split(" ");
+
+    for (let i = 0; i < parts.length; i++) {
+      const part = parts[i].toLowerCase();
+      if (part.includes("=")) {
+        const [keyword, value] = parts[i].split("=");
+        if (keyword === "user" || keyword === "username") {
+          user = value;
+        } else if (keyword === "password" || keyword === "pwd") {
+          password = value;
+        }
+        if (user !== "" && password !== "") {
+          break;
+        }
+      } else if (part === "user") {
+        user = parts[i + 1];
+      } else if (part === "password") {
+        password = parts[i + 1];
+      }
+    }
+    return { user, password };
+  }
   private async preparePrompt(
     ctx: OnMessageContext | OnCallBackQueryData,
     prompt: string
@@ -462,7 +519,22 @@ export class OpenAIBot {
       const chatModel = getChatModel(model);
       const webCrawlerMaxTokens =
         chatModel.maxContextTokens - config.openAi.maxTokens * 2;
-      const webContent = await getWebContent(url, webCrawlerMaxTokens);
+      const { user, password } = this.hasUserPassword(prompt);
+      if (user && password) {
+        // && ctx.chat?.type !== 'private'
+        const maskedPrompt =
+          ctx.message
+            ?.text!.replaceAll(user, "****")
+            .replaceAll(password, "*****") || "";
+        ctx.api.deleteMessage(ctx.chat?.id!, ctx.message?.message_id!);
+        ctx.reply(maskedPrompt);
+      }
+      const webContent = await getWebContent(
+        url,
+        webCrawlerMaxTokens,
+        user,
+        password
+      );
       if (webContent.urlText !== "") {
         // ctx.reply(`URL downloaded`,
         //   // `${(webContent.networkTraffic / 1048576).toFixed(
@@ -506,7 +578,10 @@ export class OpenAIBot {
           }
         }
       } else {
-        ctx.reply("Url not supported or incorrect web site address");
+        ctx.reply(
+          "Url not supported, incorrect web site address or missing user credentials"
+        );
+        return;
       }
       return {
         text: webContent.urlText,
@@ -756,7 +831,7 @@ export class OpenAIBot {
           .catch((e) => this.onError(ctx, e, retryCount - 1));
       }
     } else {
-      this.logger.error(`onChat: ${e.toString()}`);
+      this.logger.error(`${e.toString()}`);
       await ctx
         .reply(msg ? msg : "Error handling your request")
         .catch((e) => this.onError(ctx, e, retryCount - 1));

@@ -89,12 +89,16 @@ export const getWebContentKagi = async (
 
 export const getWebContent = async (
   url: string,
-  maxTokens: number
+  maxTokens: number,
+  username?: string,
+  password?: string
 ): Promise<WebContent> => {
   if (!url.startsWith("https://")) {
     url = `https://${url}`;
   }
-  const request = `https://harmony-webcrawler.fly.dev/parse?url=${url}`;
+  const credentials =
+    username && password ? `&username=${username}&password=${password}` : "";
+  const request = `https://harmony-webcrawler.fly.dev/parse?url=${url}${credentials}`;
   logger.info(request);
   try {
     const response = await axios.get(request);
