@@ -1,4 +1,5 @@
 import axios from "axios";
+import * as cheerio from "cheerio";
 import { getTokenNumber } from "../api/openAi";
 import { ChatConversation } from "../../types";
 import { getUSDPrice } from "../../1country/api/coingecko";
@@ -18,7 +19,7 @@ interface WebContent {
   elapsedTime: number;
   networkTraffic: number;
   fees: number;
-  oneFees: number
+  oneFees: number;
 }
 
 interface CrawlerElement {
@@ -67,8 +68,8 @@ export const getWebContent = async (
   if (!url.startsWith("https://")) {
     url = `https://${url}`;
   }
-  const request = `https://harmony-webcrawler.fly.dev/parse?url=${url}`
-  logger.info(request)
+  const request = `https://harmony-webcrawler.fly.dev/parse?url=${url}`;
+  logger.info(request);
   try {
     const response = await axios.get(request);
     const result = response.data;
@@ -86,6 +87,38 @@ export const getWebContent = async (
       oneFees: 0.5,
     };
     // return { price: formatUSDAmount(Number(onePrice) * usdPrice), error: null };
+  } catch (e) {
+    throw e;
+  }
+};
+
+interface TelegramUserProfile {
+  username: string;
+  displayName: string;
+  bio: string;
+}
+
+export const getChatMemberInfo = async (
+  username: string
+): Promise<TelegramUserProfile> => {
+  const url = `https://t.me/${username}`;
+  try {
+    const response = await axios.get(url);
+    const $ = cheerio.load(response.data);
+
+    // Extract the display name
+    const displayName = $("div.tgme_page_title").text().trim();
+
+    // Extract the bio
+    const bio = $("div.tgme_page_description").text().trim();
+
+    const userInfo = {
+      username,
+      displayName,
+      bio,
+    };
+
+    return userInfo;
   } catch (e) {
     throw e;
   }

@@ -410,17 +410,6 @@ export class OpenAIBot {
     }
   };
 
-  // private hasMention( ctx: OnMessageContext | OnCallBackQueryData) {
-  //   const entities = ctx.entities('mention')
-  //   for (let i = 0; i < entities.length; i++) {
-  //     const e = entities[i]
-  //     e.
-  //     ctx.en  .api  getChatMember(e.text)
-
-  //   }
-  //   console.log(ctx.entities())
-  // }
-
   private async preparePrompt(
     ctx: OnMessageContext | OnCallBackQueryData,
     prompt: string
@@ -472,7 +461,7 @@ export class OpenAIBot {
       // const { model } = ctx.session.openAi.chatGpt;
       const chatModel = getChatModel(model);
       const webCrawlerMaxTokens =
-        chatModel.maxContextTokens - (config.openAi.maxTokens * 2);
+        chatModel.maxContextTokens - config.openAi.maxTokens * 2;
       const webContent = await getWebContent(url, webCrawlerMaxTokens);
       if (webContent.urlText !== "") {
         // ctx.reply(`URL downloaded`,
