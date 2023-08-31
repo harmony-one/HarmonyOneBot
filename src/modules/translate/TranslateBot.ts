@@ -53,21 +53,7 @@ export class TranslateBot {
       return this.onTranslate(ctx);
     }
 
-    await ctx.reply('Unsupported command');
-    this.logger.info('Unsupported command');
     return refundCallback('Unsupported command');
-  }
-
-  public validateLang(langList: string[]) {
-    const langSet = new Set(['en', 'zh', 'es', 'id', 'hi', 'ar', 'pt', 'bn', 'ru', 'ja', 'de', 'fr', 'ko', 'vi', 'it']);
-
-    for (let i = 0; i < langList.length; i++) {
-      const lang = langList[i];
-      if (!langSet.has(lang)) {
-        return {error: true, message: `Unsupported language: ${lang}`};
-      }
-    }
-    return {error: false, message: 'ok'};
   }
 
   public parseCommand(message:string) {
@@ -79,28 +65,27 @@ export class TranslateBot {
     ctx.chatAction = 'typing';
     const langList = this.parseCommand(ctx.message?.text || '');
 
-    // const result = this.validateLang(langList);
-    // if (result.error) {
-    //   return ctx.reply(result.message);
-    // }
-
     ctx.session.translate = {
       languages: langList,
       enable: true
     }
 
-    return ctx.reply(`Got it. I will translate the following messages into these languages: ${langList.join(', ')}`)
+    return ctx.reply(`Got it. I will translate the following messages into these languages:
+${langList.join(', ')}
+
+To disable translation, use the command /translatestop.`)
   }
 
   public async stopTranslate(ctx: OnMessageContext) {
     ctx.chatAction = 'typing';
     ctx.session.translate.enable = false;
-    return ctx.reply('Translation stopped');
+    return ctx.reply('Translation is disabled');
   }
 
   public async onTranslate(ctx: OnMessageContext) {
     const message = ctx.message.text;
 
+    const progressMessage = await ctx.reply('...');
     ctx.chatAction = 'typing';
 
     if (!message) {
@@ -110,8 +95,10 @@ export class TranslateBot {
     const prompt = `Translate the message below into: ${ctx.session.translate.languages.join(', ')}\n Message: ${message}`
     const conversation = [{ role: "user", content: prompt }];
 
-    const response = await chatCompilation(conversation)
+    const response = await chatCompilation(conversation);
 
-    return ctx.reply(response.completion);
+    return ctx.api.editMessageText(ctx.chat?.id!, progressMessage.message_id, response.completion, {
+      parse_mode: "Markdown",
+    });
   }
 }
