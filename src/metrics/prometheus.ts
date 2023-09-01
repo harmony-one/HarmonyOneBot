@@ -42,8 +42,8 @@ export class PrometheusMetrics {
 
   public async bootstrap() {
     try {
-      const totalOne = await statsService.getTotalONE()
-      const freeCredits = await statsService.getTotalFreeCredits()
+      const totalOne = await statsService.getONEAmount()
+      const freeCredits = await statsService.getFreeCreditsAmount()
       const uniqueUsersCount = await statsService.getUniqueUsersCount()
       const dauValue = await statsService.getActiveUsers(0)
       oneTokenFeeCounter.inc(totalOne)

@@ -151,8 +151,8 @@ export class BotSchedule {
     ] = await Promise.all([
       this.getBotFeeReport(this.holderAddress),
       statsService.getActiveUsers(0),
-      statsService.getTotalONE(),
-      statsService.getTotalFreeCredits(),
+      statsService.getONEAmount(),
+      statsService.getFreeCreditsAmount(),
       statsService.getActiveUsers(7),
       statsService.getTotalMessages(7),
       statsService.getTotalMessages(7, true)

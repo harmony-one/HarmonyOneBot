@@ -29,14 +29,40 @@ export class StatsService {
     return logRepository.save(paymentLog);
   }
 
-  async getTotalONE() {
-    const rows = await logRepository.query(`select sum("amountOne") from logs`)
-    return rows.length ? +rows[0].sum : 0
+  private getDateTimestamp(dayPeriod: number) {
+    return moment()
+      .tz('America/Los_Angeles')
+      .set({ hour: 0, minute: 0, second: 0 })
+      .subtract(dayPeriod,'days')
+      .unix()
   }
 
-  async getTotalFreeCredits() {
-    const rows = await logRepository.query(`select sum("amountCredits") from logs`)
-    return rows.length ? +rows[0].sum : 0
+  async getONEAmount(dayPeriod?: number) {
+    const query = logRepository
+      .createQueryBuilder('logs')
+      .select('sum(logs.amountOne) as amount')
+
+    if(dayPeriod) {
+      const dateFrom = this.getDateTimestamp(dayPeriod)
+      query.where(`logs.createdAt >= TO_TIMESTAMP(${dateFrom})`)
+    }
+
+    const rows = await query.execute();
+    return rows.length ? +rows[0].amount : 0
+  }
+
+  async getFreeCreditsAmount(dayPeriod?: number) {
+    const query = logRepository
+      .createQueryBuilder('logs')
+      .select('sum(logs.amountCredits) as amount')
+
+    if(dayPeriod) {
+      const dateFrom = this.getDateTimestamp(dayPeriod)
+      query.where(`logs.createdAt >= TO_TIMESTAMP(${dateFrom})`)
+    }
+
+    const rows = await query.execute();
+    return rows.length ? +rows[0].amount : 0
   }
 
   async getUniqueUsersCount() {
@@ -44,34 +70,23 @@ export class StatsService {
     return rows.length ? +rows[0].count : 0
   }
 
-  public async getActiveUsers(daysPeriod = 0) {
-    const currentTime = moment();
-    const dateStart = moment()
-      .tz('America/Los_Angeles')
-      .set({ hour: 0, minute: 0, second: 0 })
-      .subtract(daysPeriod,'days')
-      .unix()
-
-    const dateEnd = currentTime.unix();
-
-    const rows = await logRepository
+  public async getActiveUsers(daysCount?: number) {
+    const query = logRepository
       .createQueryBuilder('logs')
       .select('count(distinct(logs."tgUserId"))')
-      .where(`logs.createdAt BETWEEN TO_TIMESTAMP(${dateStart}) and TO_TIMESTAMP(${dateEnd})`)
-      .execute();
 
+    if(daysCount) {
+      const dateFrom = this.getDateTimestamp(daysCount)
+      query.where(`logs.createdAt >= TO_TIMESTAMP(${dateFrom})`)
+    }
+
+    const rows = await query.execute();
     return rows.length ? +rows[0].count : 0
   }
 
-  public async getTotalMessages(daysPeriod = 0, onlySupportedCommands = false) {
-    const currentTime = moment();
-    const dateStart = moment()
-      .tz('America/Los_Angeles')
-      .set({ hour: 0, minute: 0, second: 0 })
-      .subtract(daysPeriod,'days')
-      .unix()
-
-    const dateEnd = currentTime.unix();
+  public async getTotalMessages(daysCount = 0, onlySupportedCommands = false) {
+    const dateStart = this.getDateTimestamp(daysCount)
+    const dateEnd = moment().unix();
 
     const query = await logRepository
       .createQueryBuilder('logs')
