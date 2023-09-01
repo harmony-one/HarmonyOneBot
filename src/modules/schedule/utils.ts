@@ -6,8 +6,16 @@ export const getPercentDiff = function(v1: number, v2: number) {
 }
 
 export const abbreviateNumber = (value: number) => {
-  if (Math.abs(value) < 1) {
-    return value.toFixed(3)
+  if (Math.abs(value) < 100) {
+    const decimalPart = Math.round(value)
+    if(decimalPart === value) {
+      return value.toString()
+    }
+    const decimalPartString = decimalPart.toString()
+    const decimalPlaces = 3 - decimalPartString.length
+    return value.toFixed(decimalPlaces)
+  } else {
+    value = Math.round(value)
   }
 
   let fractionalDigits = 0
