@@ -43,6 +43,8 @@ export class SDImagesBot extends SDImagesBotBase {
 
     const operation = parseCtx(ctx);
 
+    const photo = ctx.message?.photo;
+
     if (!operation) {
       console.log(`### unsupported command ${ctx.message?.text}`);
       ctx.reply("### unsupported command");
@@ -58,6 +60,14 @@ export class SDImagesBot extends SDImagesBotBase {
     switch (operation.command) {
       case COMMAND.TEXT_TO_IMAGE:
         this.generateImage(
+          ctx,
+          refundCallback,
+          await this.createSession(ctx, operation)
+        );
+        return;
+
+      case COMMAND.IMAGE_TO_IMAGE:
+        this.generateImageByImage(
           ctx,
           refundCallback,
           await this.createSession(ctx, operation)
@@ -106,7 +116,7 @@ export class SDImagesBot extends SDImagesBotBase {
       await this.waitingQueue(uuid, ctx);
       const { prompt, model } = operation;
 
-      const res = await this.sdNodeApi.generateImagesPreviews(prompt, model);
+      const res = await this.sdNodeApi.generateImagesPreviews({ prompt, model });
 
       const newSession = await this.createSession(ctx, {
         ...operation,
