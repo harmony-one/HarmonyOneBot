@@ -5,6 +5,7 @@ import { childrenWords, tabooWords, sexWords } from './words-blacklist';
 
 export enum COMMAND {
     TEXT_TO_IMAGE = 'image',
+    IMAGE_TO_IMAGE = 'img2img',
     TEXT_TO_IMAGES = 'images',
     CONSTRUCTOR = 'constructor',
     HELP = 'help'
@@ -71,14 +72,20 @@ type Context = OnMessageContext | OnCallBackQueryData;
 
 export const parseCtx = (ctx: Context): IOperation | false => {
     try {
-        if (!ctx.message?.text) {
+        let messageText = ctx.message?.text;
+
+        if (!messageText && !!ctx.message?.photo?.length) {
+            messageText = ctx.message?.caption;
+        }
+
+        if (!messageText) {
             return false;
         }
 
         let {
             modelId,
             prompt
-        } = parsePrompts(ctx.message?.text);
+        } = parsePrompts(messageText);
 
         let model = getModelByParam(modelId);
         let command;
@@ -107,10 +114,10 @@ export const parseCtx = (ctx: Context): IOperation | false => {
             command = COMMAND.HELP;
         }
 
-        const startWithCmdSymbol = !!ctx.message?.text?.startsWith('/');
+        const startWithCmdSymbol = !!messageText?.startsWith('/');
 
         if (startWithCmdSymbol) {
-            const cmd = String(ctx.message?.text?.slice(1).split(' ')[0]);
+            const cmd = String(messageText?.slice(1).split(' ')[0]);
             const modelFromCmd = getModelByParam(cmd);
 
             if (modelFromCmd) {
@@ -119,7 +126,7 @@ export const parseCtx = (ctx: Context): IOperation | false => {
             }
         }
 
-        const startWithSpecialSymbol = SPECIAL_IMG_CMD_SYMBOLS.some(s => !!ctx.message?.text?.startsWith(s));
+        const startWithSpecialSymbol = SPECIAL_IMG_CMD_SYMBOLS.some(s => !!messageText?.startsWith(s));
 
         if (startWithSpecialSymbol) {
             command = COMMAND.TEXT_TO_IMAGE;
@@ -131,6 +138,13 @@ export const parseCtx = (ctx: Context): IOperation | false => {
 
         if (!prompt) {
             prompt = model.defaultPrompt;
+        }
+
+        const messageHasPhoto = !!ctx.message?.photo?.length
+            || !!ctx.message?.reply_to_message?.photo?.length;
+
+        if (command === COMMAND.TEXT_TO_IMAGE && messageHasPhoto) {
+            command = COMMAND.IMAGE_TO_IMAGE;
         }
 
         if (command) {

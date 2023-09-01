@@ -1,4 +1,4 @@
-import { Txt2ImgOptions } from './sd-node-client';
+import { Txt2ImgOptions } from './types';
 
 export function buildImgPrompt(options: Txt2ImgOptions & { clientId: string }) {
     return {
