@@ -270,13 +270,17 @@ const onMessage = async (ctx: OnMessageContext) => {
       const isPaid = await payments.pay(ctx, price);
 
       if(isPaid) {
-        return await translateBot.onEvent(ctx, (reason?: string) => {
+        const response = await translateBot.onEvent(ctx, (reason?: string) => {
           payments.refundPayment(reason, ctx, price);
         }).catch((e) => {
           payments.refundPayment(e.message || "Unknown error", ctx, price);
+          return {next: false};
         });
+
+        if (!response.next) {
+          return;
+        }
       }
-      return;
     }
 
     if (openAiBot.isSupportedEvent(ctx)) {

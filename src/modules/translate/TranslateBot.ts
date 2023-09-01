@@ -51,30 +51,35 @@ export class TranslateBot {
 
   public isSupportedEvent(ctx: OnMessageContext): boolean {
     const hasCommand = this.isCtxHasCommand(ctx);
-    return ctx.hasCommand(Object.values(SupportedCommands)) || !hasCommand;
+    return ctx.hasCommand(Object.values(SupportedCommands)) || (!hasCommand && ctx.session.translate.enable);
   }
 
   public async onEvent(ctx: OnMessageContext, refundCallback: RefundCallback) {
     if (!this.isSupportedEvent(ctx)) {
       await ctx.reply(`Unsupported command: ${ctx.message?.text}`)
-      return refundCallback('Unsupported command')
+      await refundCallback('Unsupported command')
+      return {next: true};
     }
 
     if (ctx.hasCommand(SupportedCommands.Translate)) {
-      return this.runTranslate(ctx);
+      await this.runTranslate(ctx);
+      return {next: false};
     }
 
     if (ctx.hasCommand(SupportedCommands.TranslateStop)) {
-      return this.stopTranslate(ctx);
+      await this.stopTranslate(ctx);
+      return {next: false};
     }
 
     const hasCommand = ctx.entities().find((ent) => ent.type === 'bot_command');
 
     if (!hasCommand && ctx.session.translate.enable) {
-      return this.onTranslate(ctx);
+      await this.onTranslate(ctx);
+      return {next: false}
     }
 
-    return refundCallback('Unsupported command');
+    await refundCallback('Unsupported command');
+    return {next: true};
   }
 
   public parseCommand(message:string) {
