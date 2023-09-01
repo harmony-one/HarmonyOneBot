@@ -3,7 +3,7 @@ export const appText = {
 Adjust image size or how many images are generated`,
   chatGptChangeModel: `*🖌️ ChatGPT Help*\nChoose one of the following models`,
   generatingText: `Generating response...`,
-  introText: `To start a conversation write:\n\n*/ask TEXT*`,
+  introText: `To start a conversation write:\n\n*/ask <TEXT>*`,
   gptHelpText: `To continue the conversation, start the following prompts with:\n\n *>*`, // Close chat with /end\n\n
   gptLast: `*Here is your most recent message:*\n`,
   gptChatEnd: "Chat Complete", // Total tokens used:

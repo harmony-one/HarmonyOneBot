@@ -412,6 +412,12 @@ bot.command("love", (ctx) => {
   });
 });
 
+bot.command('stop', (ctx) => {
+  logger.info("/stop command");
+  ctx.session.openAi.chatGpt.chatConversation = [];
+  ctx.session.openAi.chatGpt.usage = 0;
+  ctx.session.openAi.chatGpt.price = 0;  
+})
 // bot.command("memo", (ctx) => {
 //   ctx.reply(MEMO.text, {
 //     parse_mode: "Markdown",

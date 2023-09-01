@@ -72,12 +72,7 @@ export const SupportedCommands = {
     name: "genImgEn",
     groupParams: ">1",
     privateParams: ">1",
-  },
-  end: {
-    name: "stop",
-    groupParams: ">0",
-    privateParams: ">0",
-  },
+  }
 };
 
 const MAX_TRIES = 3;
@@ -284,12 +279,6 @@ export class OpenAIBot {
       this.onSum(ctx);
       return;
     }
-
-    if (ctx.hasCommand(SupportedCommands.end.name)) {
-      this.onEnd(ctx);
-      return;
-    }
-
     if (ctx.hasCommand(SupportedCommands.last.name)) {
       this.onLast(ctx);
       return;
@@ -318,7 +307,6 @@ export class OpenAIBot {
 
   private async hasBalance(ctx: OnMessageContext | OnCallBackQueryData) {
     const accountId = this.payments.getAccountId(ctx as OnMessageContext);
-    const account = await this.payments.getUserAccount(accountId);
     const addressBalance = await this.payments.getUserBalance(accountId);
     const creditsBalance = await chatService.getBalance(accountId);
     const balance = addressBalance.plus(creditsBalance);
@@ -443,7 +431,7 @@ export class OpenAIBot {
     return { user, password };
   }
 
-  private hasUserPassword(prompt: string) {
+  private hasUsernamePassword(prompt: string) {
     let user = "";
     let password = "";
     const parts = prompt.split(" ");
@@ -468,6 +456,7 @@ export class OpenAIBot {
     }
     return { user, password };
   }
+
   private async preparePrompt(
     ctx: OnMessageContext | OnCallBackQueryData,
     prompt: string
@@ -520,7 +509,7 @@ export class OpenAIBot {
       const chatModel = getChatModel(model);
       const webCrawlerMaxTokens =
         chatModel.maxContextTokens - config.openAi.maxTokens * 2;
-      const { user, password } = this.hasUserPassword(prompt);
+      const { user, password } = this.hasUsernamePassword(prompt);
       if (user && password) {
         // && ctx.chat?.type !== 'private'
         const maskedPrompt =
@@ -767,7 +756,7 @@ export class OpenAIBot {
     ctx.session.openAi.chatGpt.usage = 0;
     ctx.session.openAi.chatGpt.price = 0;
   }
-
+  
   async onNotBalanceMessage(ctx: OnMessageContext | OnCallBackQueryData) {
     const accountId = this.payments.getAccountId(ctx as OnMessageContext);
     const account = await this.payments.getUserAccount(accountId);
