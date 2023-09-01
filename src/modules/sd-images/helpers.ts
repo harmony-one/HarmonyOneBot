@@ -83,15 +83,15 @@ export const parseCtx = (ctx: Context): IOperation | false => {
         let model = getModelByParam(modelId);
         let command;
 
-        if (ctx.hasCommand('image')) {
+        if (ctx.hasCommand('image') || ctx.message.text.startsWith('image ')) {
             command = COMMAND.TEXT_TO_IMAGE;
         }
 
-        if (ctx.hasCommand('img')) {
+        if (ctx.hasCommand('img') || ctx.message.text.startsWith('image ')) {
             command = COMMAND.TEXT_TO_IMAGE;
         }
 
-        if (ctx.hasCommand('images')) {
+        if (ctx.hasCommand('images') || ctx.message.text.startsWith('images ')) {
             command = COMMAND.TEXT_TO_IMAGES;
         }
 

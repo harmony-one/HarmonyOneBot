@@ -50,7 +50,7 @@ export const imgGen = async (
     imgs.map(async (img: any) => {
       await ctx
         .replyWithPhoto(img.url, {
-          caption: `/DALLE ${prompt}`,
+          caption: `/dalle ${prompt}`,
         })
         .catch((e) => {
           throw e;

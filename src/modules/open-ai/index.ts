@@ -226,17 +226,18 @@ export class OpenAIBot {
       return false;
     }
 
-    if (ctx.hasCommand(SupportedCommands.chat.name)) {
+    if (
+      ctx.hasCommand(SupportedCommands.chat.name) ||
+      ctx.message?.text?.startsWith("chat ")
+    ) {
       await this.onChat(ctx);
       return;
     }
 
-    // if (ctx.message!.text === "/ask harmony.one/dear") {
-    //   await ctx.reply(askTemplates.dear).catch((e) => this.onError(ctx, e));
-    //   return;
-    // }
-
-    if (ctx.hasCommand(SupportedCommands.ask.name)) {
+    if (
+      ctx.hasCommand(SupportedCommands.ask.name) ||
+      ctx.message?.text?.startsWith("ask ")
+    ) {
       ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_4;
       this.onChat(ctx);
       return;
@@ -257,10 +258,10 @@ export class OpenAIBot {
       this.onChat(ctx);
       return;
     }
-
     if (
       ctx.hasCommand(SupportedCommands.dalle.name) ||
-      ctx.hasCommand(SupportedCommands.dalleLC.name)
+      ctx.hasCommand(SupportedCommands.dalleLC.name) ||
+      ctx.message?.text?.startsWith("dalle ")
     ) {
       this.onGenImgCmd(ctx);
       return;
@@ -276,7 +277,10 @@ export class OpenAIBot {
       return;
     }
 
-    if (ctx.hasCommand(SupportedCommands.sum.name)) {
+    if (
+      ctx.hasCommand(SupportedCommands.sum.name) ||
+      ctx.message?.text?.startsWith("sum ")
+    ) {
       this.onSum(ctx);
       return;
     }
@@ -328,8 +332,8 @@ export class OpenAIBot {
   onGenImgCmd = async (ctx: OnMessageContext | OnCallBackQueryData) => {
     try {
       if (ctx.session.openAi.imageGen.isEnabled) {
-        let prompt = ctx.match;
-        if (!prompt) {
+        let prompt = (ctx.match ? ctx.match : ctx.message?.text) as string;
+        if (!prompt || prompt.split(" ").length === 1) {
           prompt = config.openAi.dalle.defaultPrompt;
         }
         ctx.chatAction = "upload_photo";
@@ -410,13 +414,10 @@ export class OpenAIBot {
     }
   };
 
-  private hasUserPassword2(prompt: string) {
+  // doesn't get all the special characters like !
+  private hasUserPasswordRegex(prompt: string) {
     const pattern =
-      // /\b(user=|password=|user|password)\s*([^\s]+)\b.*\b(user=|password=|user|password)\s*([^\s]+)\b/i;
-      /\b(user|password|user=|password=)\s*([A-Za-z0-9~\!@#$%^&*()_\-+={[}\]|:;<,>.\/?]+)\b.*\b(user|password|user=|password=)\s*([A-Za-z0-9~\!@#$%^&*()_\-+={[}\]|:;<,>.\/?]+)\b/i;
-
-    // /\b(user|password|user=|password=)\s*([^!\s]+)\b.*\b(user|password|user=|password=)\s*([^!\s]+)\b/i
-
+      /\b(user=|password=|user|password)\s*([^\s]+)\b.*\b(user=|password=|user|password)\s*([^\s]+)\b/i;
     const matches = pattern.exec(prompt);
 
     let user = "";
@@ -676,8 +677,9 @@ export class OpenAIBot {
           .catch((e) => this.onError(ctx, e));
         return;
       }
+      const prompt = ctx.match ? ctx.match : ctx.message?.text;
       ctx.session.openAi.chatGpt.requestQueue.push(
-        await this.preparePrompt(ctx, ctx.match as string)
+        await this.preparePrompt(ctx, prompt as string)
       );
       if (!ctx.session.openAi.chatGpt.isProcessingQueue) {
         ctx.session.openAi.chatGpt.isProcessingQueue = true;
