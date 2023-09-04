@@ -25,53 +25,36 @@ import {
 export const SupportedCommands = {
   chat: {
     name: "chat",
-    groupParams: ">0",
-    privateParams: ">0",
   },
   ask: {
     name: "ask",
-    groupParams: ">0",
-    privateParams: ">0",
   },
   sum: {
     name: "sum",
-    groupParams: ">0",
-    privateParams: ">0",
   },
   ask35: {
     name: "ask35",
-    groupParams: ">0",
-    privateParams: ">0",
+  },
+  new: {
+    name: "new",
   },
   gpt4: {
     name: "gpt4",
-    groupParams: ">0",
-    privateParams: ">0",
   },
   gpt: {
     name: "gpt",
-    groupParams: ">0",
-    privateParams: ">0",
   },
   last: {
     name: "last",
-    groupParams: ">0",
-    privateParams: ">0",
   },
   dalle: {
     name: "DALLE",
-    groupParams: ">0",
-    privateParams: ">0",
   },
   dalleLC: {
     name: "dalle",
-    groupParams: ">0",
-    privateParams: ">0",
   },
   genImgEn: {
     name: "genImgEn",
-    groupParams: ">1",
-    privateParams: ">1",
   }
 };
 
@@ -132,7 +115,31 @@ export class OpenAIBot {
   }
 
   private hasPrefix(prompt: string): string {
-    const prefixList = config.openAi.chatGpt.chatPrefix;
+    return this.hasChatPrefix(prompt) || this.hasDallePrefix(prompt) || this.hasNewPrefix(prompt)
+  }
+
+  private hasChatPrefix(prompt: string): string {
+    const prefixList = config.openAi.chatGpt.prefixes.chatPrefix;
+    for (let i = 0; i < prefixList.length; i++) {
+      if (prompt.toLocaleLowerCase().startsWith(prefixList[i])) {
+        return prefixList[i];
+      }
+    }
+    return "";
+  }
+
+  private hasDallePrefix(prompt: string): string {
+    const prefixList = config.openAi.chatGpt.prefixes.dallePrefix;
+    for (let i = 0; i < prefixList.length; i++) {
+      if (prompt.toLocaleLowerCase().startsWith(prefixList[i])) {
+        return prefixList[i];
+      }
+    }
+    return "";
+  }
+
+  private hasNewPrefix(prompt: string): string {
+    const prefixList = config.openAi.chatGpt.prefixes.newPrefix;
     for (let i = 0; i < prefixList.length; i++) {
       if (prompt.toLocaleLowerCase().startsWith(prefixList[i])) {
         return prefixList[i];
@@ -144,7 +151,6 @@ export class OpenAIBot {
   private hasUrl(prompt: string) {
     const promptArray = prompt.split(" ");
     let url = "";
-    let pos = 0;
     for (let i = 0; i < promptArray.length; i++) {
       if (isValidUrl(promptArray[i])) {
         url = promptArray[i];
@@ -225,7 +231,18 @@ export class OpenAIBot {
       ctx.hasCommand(SupportedCommands.chat.name) ||
       (ctx.message?.text?.startsWith("chat ") && ctx.chat?.type === 'private')
     ) {
+      ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_4;
       await this.onChat(ctx);
+      return;
+    }
+
+    if (
+      ctx.hasCommand(SupportedCommands.new.name) ||
+      (ctx.message?.text?.startsWith("new ") && ctx.chat?.type === 'private')
+    ) {
+      ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_4;
+      await this.onEnd(ctx)
+      this.onChat(ctx);
       return;
     }
 
@@ -245,11 +262,13 @@ export class OpenAIBot {
     }
 
     if (ctx.hasCommand(SupportedCommands.gpt4.name)) {
+      ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_4;
       this.onChat(ctx);
       return;
     }
 
     if (ctx.hasCommand(SupportedCommands.gpt.name)) {
+      ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_4;
       this.onChat(ctx);
       return;
     }
@@ -284,7 +303,13 @@ export class OpenAIBot {
       return;
     }
 
-    if (this.hasPrefix(ctx.message?.text || "") !== "") {
+    if (this.hasChatPrefix(ctx.message?.text || "") !== "") {
+      this.onPrefix(ctx);
+      return;
+    }
+
+    if (this.hasNewPrefix(ctx.message?.text || "") !== "") {
+      await this.onEnd(ctx)
       this.onPrefix(ctx);
       return;
     }
@@ -751,7 +776,6 @@ export class OpenAIBot {
   }
 
   async onEnd(ctx: OnMessageContext | OnCallBackQueryData) {
-    this.logger.info("/stop command");
     ctx.session.openAi.chatGpt.chatConversation = [];
     ctx.session.openAi.chatGpt.usage = 0;
     ctx.session.openAi.chatGpt.price = 0;

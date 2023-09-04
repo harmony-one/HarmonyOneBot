@@ -48,18 +48,30 @@ export default {
       },
     },
     chatGpt: {
-      wordCountBetween: process.env.WORD_COUNT_BETWEEN ? parseInt(process.env.WORD_COUNT_BETWEEN) : 100,
+      wordCountBetween: process.env.WORD_COUNT_BETWEEN
+        ? parseInt(process.env.WORD_COUNT_BETWEEN)
+        : 100,
       priceAdjustment: process.env.PRICE_ADJUSTMENT
         ? parseInt(process.env.PRICE_ADJUSTMENT)
         : 2,
       isEnabled: Boolean(parseInt(process.env.CHAT_GPT_ENABLED || "1")),
-      isTypingEnabled: Boolean(parseInt(process.env.TYPING_STATUS_ENABLED || "1")),
+      isTypingEnabled: Boolean(
+        parseInt(process.env.TYPING_STATUS_ENABLED || "1")
+      ),
       //hard coded gpt-4
       // model: "gpt-4",
       model: process.env.OPENAI_MODEL ?? "gpt-4",
-      chatPrefix: process.env.GROUP_PREFIX
-        ? process.env.GROUP_PREFIX.split(",")
-        : ["?", ">"],
+      prefixes: {
+        chatPrefix: process.env.ASK_PREFIX
+          ? process.env.ASK_PREFIX.split(",")
+          : ["a.","?",">","."],
+        dallePrefix: process.env.DALLE_PREFIX
+          ? process.env.DALLE_PREFIX.split(",")
+          : ["d."],
+        newPrefix: process.env.NEW_PREFIX
+          ? process.env.NEW_PREFIX.split(",")
+          : ["n."],
+      },
       minimumBalance: process.env.MIN_BALANCE
         ? parseInt(process.env.MIN_BALANCE)
         : 0,
@@ -130,6 +142,6 @@ export default {
     creditsAmount: "100",
   },
   betteruptime: {
-    botHeartBitId: process.env.BOT_HEARTBIT_ID || ''
-  }
+    botHeartBitId: process.env.BOT_HEARTBIT_ID || "",
+  },
 };
