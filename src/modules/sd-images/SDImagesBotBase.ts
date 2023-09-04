@@ -4,12 +4,14 @@ import { getTelegramFileUrl, loadFile, sleep, uuidv4 } from "./utils";
 import { GrammyError, InputFile } from "grammy";
 import { COMMAND } from './helpers';
 import { Logger, pino } from "pino";
+import { ILora } from "./api/loras-config";
 
 export interface ISession {
     id: string;
     author: string;
     prompt: string;
     model: IModel;
+    lora?: ILora;
     all_seeds?: string[];
     seed?: number;
     command: COMMAND;
@@ -41,12 +43,13 @@ export class SDImagesBotBase {
         params: {
             prompt: string;
             model: IModel;
+            lora?: ILora;
             command: COMMAND;
             all_seeds?: string[];
             seed?: string;
         }
     ) => {
-        const { prompt, model, command, all_seeds } = params;
+        const { prompt, model, command, all_seeds, lora } = params;
 
         const authorObj = await ctx.getAuthor();
         const author = `@${authorObj.user.username}`;
@@ -59,6 +62,7 @@ export class SDImagesBotBase {
             author,
             prompt: prompt,
             model,
+            lora,
             command,
             all_seeds,
             message
@@ -94,7 +98,7 @@ export class SDImagesBotBase {
         refundCallback: (reason?: string) => void,
         session: ISession
     ) => {
-        const { model, prompt, seed } = session;
+        const { model, prompt, seed, lora } = session;
         const uuid = uuidv4();
 
         try {
@@ -105,7 +109,8 @@ export class SDImagesBotBase {
             const imageBuffer = await this.sdNodeApi.generateImage({
                 prompt,
                 model,
-                seed
+                seed,
+                lora
             });
 
             const reqMessage = session.message ?

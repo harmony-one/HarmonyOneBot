@@ -15,7 +15,8 @@ export interface IParams {
   height: number;
   steps: number;
   cfgScale: number;
-  addDetailLora: number;
+  loraStrength?: number;
+  loraName?: string;
   promptWithoutParams: string;
   seed?: number;
   denoise?: number;
@@ -116,12 +117,15 @@ export const getParamsFromPrompt = (originalPrompt: string, model: IModel): IPar
     prompt = prompt.replace(/--no\s+(.+?)(?=\s+--|$)/, '');
   }
 
-  const addDetailMatch = prompt.match(/<lora:add_detail:(.*)>/);
-  let addDetailLora = 0;
+  const loraMatch = prompt.match(/<lora:(.*):(.*)>/);
+  let loraStrength;
+  let loraName;
 
-  if (addDetailMatch && !isNaN(+addDetailMatch[1])) {
-    addDetailLora = Number(addDetailMatch[1]);
-    prompt = prompt.replace(/<lora:add_detail:(.*)>/, '');
+  if (loraMatch) {
+    loraName = loraMatch[1];
+    loraStrength = Number(loraMatch[1]);
+    
+    prompt = prompt.replace(/<lora:(.*):(.*)>/, '');
   }
 
   return {
@@ -130,7 +134,8 @@ export const getParamsFromPrompt = (originalPrompt: string, model: IModel): IPar
     height,
     steps,
     cfgScale,
-    addDetailLora,
+    loraStrength,
+    loraName,
     promptWithoutParams: prompt,
     seed,
     denoise,

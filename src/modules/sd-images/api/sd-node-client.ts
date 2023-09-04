@@ -41,7 +41,7 @@ export class Client {
 
             const seed = options.seed || getRandomSeed();
 
-            const buildImgPromptMethod = !!options.addDetailLora ? buildImgPromptLora : buildImgPrompt;
+            const buildImgPromptMethod = !!options.loraPath ? buildImgPromptLora : buildImgPrompt;
 
             const prompt = buildImgPromptMethod({
                 ...options,
