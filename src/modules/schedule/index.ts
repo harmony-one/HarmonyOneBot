@@ -5,7 +5,7 @@ import { LRUCache } from 'lru-cache'
 import config from '../../config'
 import {BotContext, OnMessageContext} from "../types";
 import {getFeeStats} from "./explorerApi";
-import {getBotFeeStats} from "./harmonyApi";
+import {getAddressBalance, getBotFeeStats} from "./harmonyApi";
 import {getBridgeStats} from "./bridgeAPI";
 import {statsService} from "../../database/services";
 import {abbreviateNumber} from "./utils";
@@ -124,18 +124,18 @@ export class BotSchedule {
 
   public async generateReport() {
     const [
-      botFeesReport,
+      balance,
       weeklyUsers,
       totalSupportedMessages
     ] = await Promise.all([
-      this.getBotFeeReport(this.holderAddress),
+      getAddressBalance(this.holderAddress),
       statsService.getActiveUsers(7),
-      statsService.getTotalMessages(7, true)
+      statsService.getTotalMessages(1, true)
     ])
 
-    const report = `\nBot fees: ${botFeesReport}` +
+    const report = `\nBot fees: ${abbreviateNumber(balance / Math.pow(10, 18))} ONE` +
       `\nWeekly active users: *${abbreviateNumber(weeklyUsers)}*` +
-      `\nWeekly user engagement: *${abbreviateNumber(totalSupportedMessages)}*`
+      `\nDaily user engagement: *${abbreviateNumber(totalSupportedMessages)}*`
     return report;
   }
 
