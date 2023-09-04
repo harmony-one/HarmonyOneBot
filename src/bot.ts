@@ -458,6 +458,7 @@ bot.command("love", (ctx) => {
 
 bot.on("message", onMessage);
 bot.on("callback_query:data", onCallback);
+bot.on("pre_checkout_query", ctx => telegramPayments.onPreCheckout(ctx));
 
 bot.catch((err) => {
   const ctx = err.ctx;

@@ -131,5 +131,8 @@ export default {
   },
   betteruptime: {
     botHeartBitId: process.env.BOT_HEARTBIT_ID || ''
+  },
+  telegramPayments: {
+    token: process.env.TELEGRAM_PAYMENTS_TOKEN || ''
   }
 };
