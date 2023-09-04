@@ -1,6 +1,7 @@
 import config from "../../config";
 import { OnCallBackQueryData, OnMessageContext } from "../types";
 import { getModelByParam, IModel, MODELS_CONFIGS } from "./api";
+import { getLoraByParam, ILora, LORAS_CONFIGS } from "./api/loras-config";
 import { childrenWords, tabooWords, sexWords } from './words-blacklist';
 
 export enum COMMAND {
@@ -15,6 +16,7 @@ export interface IOperation {
     command: COMMAND;
     prompt: string;
     model: IModel;
+    lora?: ILora;
 }
 
 const removeSpaceFromBegin = (text: string) => {
@@ -29,7 +31,7 @@ const removeSpaceFromBegin = (text: string) => {
     return text.slice(idx);
 }
 
-const SPECIAL_IMG_CMD_SYMBOLS = [',', 'i.', 'I.'];
+const SPECIAL_IMG_CMD_SYMBOLS = [',', 'i.', 'l.', 'I.'];
 
 const parsePrompts = (fullText: string): { modelId: string, prompt: string } => {
     let modelId = '';
@@ -70,6 +72,8 @@ const parsePrompts = (fullText: string): { modelId: string, prompt: string } => 
 
 type Context = OnMessageContext | OnCallBackQueryData;
 
+const hasCommand = (ctx: Context, cmd: string) => ctx.hasCommand(cmd) || (ctx.message?.text?.startsWith(`${cmd} `) && ctx.chat?.type === 'private');
+
 export const parseCtx = (ctx: Context): IOperation | false => {
     try {
         let messageText = ctx.message?.text;
@@ -89,20 +93,23 @@ export const parseCtx = (ctx: Context): IOperation | false => {
 
         let model = getModelByParam(modelId);
         let command;
+        let lora;
 
-        if (ctx.hasCommand('image') || (ctx.message?.text?.startsWith('image ') && ctx.chat?.type === 'private')) {
-            command = COMMAND.TEXT_TO_IMAGE;
-        }
-      
-        if (ctx.hasCommand('imagine') || (ctx.message?.text?.startsWith('imagine ') && ctx.chat?.type === 'private')) {
-            command = COMMAND.TEXT_TO_IMAGE;
-        }
-
-        if (ctx.hasCommand('img') || (ctx.message?.text?.startsWith('img ') && ctx.chat?.type === 'private')) {
+        if (
+            hasCommand(ctx, 'image') || hasCommand(ctx, 'imagine') || hasCommand(ctx, 'img')
+        ) {
             command = COMMAND.TEXT_TO_IMAGE;
         }
 
-        if (ctx.hasCommand('images') || (ctx.message?.text?.startsWith('images ') && ctx.chat?.type === 'private')) {
+        if (
+            hasCommand(ctx, 'logo') || hasCommand(ctx, 'l')
+        ) {
+            command = COMMAND.TEXT_TO_IMAGE;
+            lora = getLoraByParam('logo');
+            model = getModelByParam('xl');
+        }
+
+        if (hasCommand(ctx, 'images')) {
             command = COMMAND.TEXT_TO_IMAGES;
         }
 
@@ -132,12 +139,21 @@ export const parseCtx = (ctx: Context): IOperation | false => {
             command = COMMAND.TEXT_TO_IMAGE;
         }
 
+        if (messageText.startsWith('l.')) {
+            lora = getLoraByParam('logo');
+            model = getModelByParam('xl');
+        }
+
         if (!model) {
             model = MODELS_CONFIGS[0];
         }
 
         if (!prompt) {
             prompt = model.defaultPrompt;
+
+            if (lora?.shortName === 'logo') {
+                prompt = 'A bunny is sitting in a kimono';
+            }
         }
 
         const messageHasPhoto = !!ctx.message?.photo?.length
@@ -151,6 +167,7 @@ export const parseCtx = (ctx: Context): IOperation | false => {
             return {
                 command,
                 model,
+                lora,
                 prompt
             }
         }

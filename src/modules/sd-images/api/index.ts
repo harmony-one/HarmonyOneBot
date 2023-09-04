@@ -1,5 +1,6 @@
 import { Client } from './sd-node-client'
-import { MODELS_CONFIGS, getModelByParam, IModel } from './models-config';
+import { MODELS_CONFIGS, getModelByParam, IModel, modelsAliases } from './models-config';
+import { getLoraByParam, ILora } from './loras-config';
 import { getParamsFromPrompt, NEGATIVE_PROMPT } from './helpers';
 
 export * from './models-config';
@@ -7,6 +8,7 @@ export * from './models-config';
 interface IGenImageOptions {
   prompt: string;
   model: IModel;
+  lora?: ILora;
   seed?: number;
   width?: number;
   height?: number;
@@ -22,6 +24,25 @@ export class SDNodeApi {
   generateImage = async (options: IGenImageOptions) => {
     const params = getParamsFromPrompt(options.prompt, options.model);
 
+    let selectedLora;
+    let loraStrength;
+
+    if (options.lora) {
+      selectedLora = options.lora;
+      loraStrength = 1;
+    } else if (params.loraName) {
+      selectedLora = getLoraByParam(params.loraName);
+      loraStrength = params.loraStrength;
+    }
+
+    if (selectedLora && selectedLora.baseModel !== options.model.baseModel) {
+      selectedLora = undefined;
+    }
+
+    if (selectedLora?.shortName === 'logo') {
+      params.promptWithoutParams = `logo, ${params.promptWithoutParams}, LogoRedAF`;
+    }
+
     const { images } = await this.client.txt2img({
       prompt: params.promptWithoutParams,
       negativePrompt: params.negativePrompt,
@@ -29,7 +50,9 @@ export class SDNodeApi {
       height: params.height,
       steps: params.steps,
       cfgScale: params.cfgScale,
-      addDetailLora: params.addDetailLora,
+      loraPath: selectedLora?.path,
+      loraName: params.loraName,
+      loraStrength,
       seed: options.seed || params.seed,
       model: options.model.path,
       batchSize: 1,
@@ -52,7 +75,8 @@ export class SDNodeApi {
         height: options.height || params.height,
         steps: params.steps,
         cfgScale: params.cfgScale,
-        addDetailLora: params.addDetailLora,
+        loraName: params.loraName,
+        loraStrength: params.loraStrength,
         seed: options.seed || params.seed,
         denoise: params.denoise,
         model: options.model.path,

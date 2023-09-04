@@ -27,5 +27,7 @@ export type Txt2ImgOptions = {
         args?: string[]
     }
     model?: string;
-    addDetailLora?: number;
+    loraStrength?: number;
+    loraName?: string;
+    loraPath?: string;
 }
