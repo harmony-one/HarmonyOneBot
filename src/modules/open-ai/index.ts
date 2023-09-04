@@ -9,8 +9,8 @@ import {
   OnCallBackQueryData,
   ChatConversation,
 } from "../types";
-import { getChatModel, getDalleModel, getDalleModelPrice } from "./api/openAi";
-import { alterImg, imgGen, imgGenEnhanced, promptGen } from "./controller";
+import { getChatModel, getDalleModel, getDalleModelPrice, postGenerateImg } from "./api/openAi";
+import { alterImg, imgGenEnhanced, promptGen } from "./controller";
 import { appText } from "./utils/text";
 import { chatService } from "../../database/services";
 import { ChatGPTModelsEnum } from "./types";
@@ -97,9 +97,9 @@ export class OpenAIBot {
     return false;
   }
 
-  public isSupportedEvent(
+  public async isSupportedEvent(
     ctx: OnMessageContext | OnCallBackQueryData
-  ): boolean {
+  ): Promise<boolean> {
     const hasCommand = ctx.hasCommand(
       Object.values(SupportedCommands).map((command) => command.name)
     );
@@ -350,20 +350,24 @@ export class OpenAIBot {
           prompt = config.openAi.dalle.defaultPrompt;
         }
         ctx.chatAction = "upload_photo";
-        const payload = {
-          chatId: ctx.chat?.id!,
-          prompt: prompt as string,
-          numImages: await ctx.session.openAi.imageGen.numImages, // lazy load
-          imgSize: await ctx.session.openAi.imageGen.imgSize, // lazy load
-        };
-        await imgGen(payload, ctx);
+        const numImages = await ctx.session.openAi.imageGen.numImages
+        const imgSize = await ctx.session.openAi.imageGen.imgSize        
+        const imgs = await postGenerateImg(prompt, numImages, imgSize);
+        imgs.map(async (img: any) => {
+          await ctx
+            .replyWithPhoto(img.url, {
+              caption: `/dalle ${prompt}`,
+            }).catch((e) => {
+               this.onError(ctx,e,MAX_TRIES)
+            });
+        });
       } else {
         await ctx
           .reply("Bot disabled")
           .catch((e) => this.onError(ctx, e, MAX_TRIES, "Bot disabled"));
       }
     } catch (e) {
-      this.onError(ctx, e, 3, "There was an error while generating the image");
+      this.onError(ctx, e, MAX_TRIES, "There was an error while generating the image");
     }
   };
 
@@ -808,7 +812,9 @@ export class OpenAIBot {
       return;
     }
     if (e instanceof GrammyError) {
-      if (e.error_code === 429) {
+      if (e.error_code === 400 && e.description.includes('not enough rights')) {
+          ctx.reply('Error: The bot does not have permission to send photos in chat')
+      } else if (e.error_code === 429) {
         this.botSuspended = true;
         const retryAfter = e.parameters.retry_after
           ? e.parameters.retry_after < 60
@@ -830,6 +836,8 @@ export class OpenAIBot {
         }
         await sleep(retryAfter * 1000); // wait retryAfter seconds to enable bot
         this.botSuspended = false;
+      } else {
+        this.logger.error(`On method "${e.method}" | ${e.error_code} - ${e.description}`)
       }
     } else if (e instanceof OpenAI.APIError) {
       // 429	RateLimitError

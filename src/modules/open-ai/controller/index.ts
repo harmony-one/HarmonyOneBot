@@ -14,6 +14,7 @@ import {
   getChatModelPrice,
 } from "../api/openAi";
 import config from "../../../config";
+import { GrammyError } from "grammy";
 
 interface ImageGenPayload {
   chatId: number;
@@ -39,28 +40,6 @@ const logger = pino({
     },
   },
 });
-
-export const imgGen = async (
-  data: ImageGenPayload,
-  ctx: OnMessageContext | OnCallBackQueryData
-) => {
-  const { chatId, prompt, numImages, imgSize } = data;
-  try {
-    const imgs = await postGenerateImg(prompt, numImages, imgSize);
-    imgs.map(async (img: any) => {
-      await ctx
-        .replyWithPhoto(img.url, {
-          caption: `/dalle ${prompt}`,
-        })
-        .catch((e) => {
-          throw e;
-        });
-    });
-    return true;
-  } catch (e: any) {
-    throw e;
-  }
-};
 
 export const imgGenEnhanced = async (
   data: ImageGenPayload,
