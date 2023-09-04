@@ -223,7 +223,7 @@ export class OpenAIBot {
 
     if (
       ctx.hasCommand(SupportedCommands.chat.name) ||
-      ctx.message?.text?.startsWith("chat ")
+      (ctx.message?.text?.startsWith("chat ") && ctx.chat?.type === 'private')
     ) {
       await this.onChat(ctx);
       return;
@@ -231,7 +231,7 @@ export class OpenAIBot {
 
     if (
       ctx.hasCommand(SupportedCommands.ask.name) ||
-      ctx.message?.text?.startsWith("ask ")
+      (ctx.message?.text?.startsWith("ask ") && ctx.chat?.type === 'private')
     ) {
       ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_4;
       this.onChat(ctx);
@@ -256,7 +256,7 @@ export class OpenAIBot {
     if (
       ctx.hasCommand(SupportedCommands.dalle.name) ||
       ctx.hasCommand(SupportedCommands.dalleLC.name) ||
-      ctx.message?.text?.startsWith("dalle ")
+      (ctx.message?.text?.startsWith("dalle ") && ctx.chat?.type === 'private')
     ) {
       this.onGenImgCmd(ctx);
       return;
@@ -274,7 +274,7 @@ export class OpenAIBot {
 
     if (
       ctx.hasCommand(SupportedCommands.sum.name) ||
-      ctx.message?.text?.startsWith("sum ")
+      (ctx.message?.text?.startsWith("sum ") && ctx.chat?.type === 'private')
     ) {
       this.onSum(ctx);
       return;
