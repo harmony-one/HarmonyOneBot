@@ -40,6 +40,7 @@ import { autoRetry } from "@grammyjs/auto-retry";
 import { run } from "@grammyjs/runner";
 import { runBotHeartBit } from "./monitoring/monitoring";
 import { BotPaymentLog } from "./database/stats.service";
+import {TelegramPayments} from "./modules/telegram_payment";
 
 const logger = pino({
   name: "bot",
@@ -123,6 +124,7 @@ const schedule = new BotSchedule(bot);
 const openAiBot = new OpenAIBot(payments);
 const oneCountryBot = new OneCountryBot();
 const translateBot = new TranslateBot();
+const telegramPayments = new TelegramPayments()
 
 bot.on("message:new_chat_members:me", async (ctx) => {
   try {
@@ -224,6 +226,9 @@ const writeCommandLog = async (
 
 const onMessage = async (ctx: OnMessageContext) => {
   try {
+    await telegramPayments.onEvent(ctx);
+    return
+
     await assignFreeCredits(ctx);
     if (qrCodeBot.isSupportedEvent(ctx)) {
       const price = qrCodeBot.getEstimatedPrice(ctx);
