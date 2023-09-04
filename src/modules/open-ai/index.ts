@@ -9,7 +9,12 @@ import {
   OnCallBackQueryData,
   ChatConversation,
 } from "../types";
-import { getChatModel, getDalleModel, getDalleModelPrice, postGenerateImg } from "./api/openAi";
+import {
+  getChatModel,
+  getDalleModel,
+  getDalleModelPrice,
+  postGenerateImg,
+} from "./api/openAi";
 import { alterImg, imgGenEnhanced, promptGen } from "./controller";
 import { appText } from "./utils/text";
 import { chatService } from "../../database/services";
@@ -17,50 +22,18 @@ import { ChatGPTModelsEnum } from "./types";
 import config from "../../config";
 import { sleep } from "../sd-images/utils";
 import {
-  isValidUrl,
-  getWebContent,
-  getCrawlerPrice,
-} from "./utils/web-crawler";
+  hasChatPrefix,
+  hasNewPrefix,
+  hasPrefix,
+  hasUrl,
+  hasUsernamePassword,
+  isMentioned,
+  MAX_TRIES,
+  preparePrompt,
+  SupportedCommands,
+} from "./helpers";
+import { getWebContent, getCrawlerPrice } from "./utils/web-crawler";
 
-export const SupportedCommands = {
-  chat: {
-    name: "chat",
-  },
-  ask: {
-    name: "ask",
-  },
-  sum: {
-    name: "sum",
-  },
-  ask35: {
-    name: "ask35",
-  },
-  new: {
-    name: "new",
-  },
-  gpt4: {
-    name: "gpt4",
-  },
-  gpt: {
-    name: "gpt",
-  },
-  last: {
-    name: "last",
-  },
-  dalle: {
-    name: "DALLE",
-  },
-  dalleLC: {
-    name: "dalle",
-  },
-  genImgEn: {
-    name: "genImgEn",
-  }
-};
-
-const MAX_TRIES = 3;
-
-// const payments = new BotPayments();
 export class OpenAIBot {
   private logger: Logger;
   private payments: BotPayments;
@@ -83,85 +56,21 @@ export class OpenAIBot {
     }
   }
 
-  private isMentioned(ctx: OnMessageContext | OnCallBackQueryData): boolean {
-    if (ctx.entities()[0]) {
-      const { offset, text } = ctx.entities()[0];
-      const { username } = ctx.me;
-      if (username === text.slice(1) && offset === 0) {
-        const prompt = ctx.message?.text!.slice(text.length);
-        if (prompt && prompt.split(" ").length > 0) {
-          return true;
-        }
-      }
-    }
-    return false;
-  }
-
   public async isSupportedEvent(
     ctx: OnMessageContext | OnCallBackQueryData
   ): Promise<boolean> {
     const hasCommand = ctx.hasCommand(
       Object.values(SupportedCommands).map((command) => command.name)
     );
-    if (this.isMentioned(ctx)) {
+    if (isMentioned(ctx)) {
       return true;
     }
     const hasReply = this.isSupportedImageReply(ctx);
-    const chatPrefix = this.hasPrefix(ctx.message?.text || "");
+    const chatPrefix = hasPrefix(ctx.message?.text || "");
     if (chatPrefix !== "") {
       return true;
     }
     return hasCommand || hasReply;
-  }
-
-  private hasPrefix(prompt: string): string {
-    return this.hasChatPrefix(prompt) || this.hasDallePrefix(prompt) || this.hasNewPrefix(prompt)
-  }
-
-  private hasChatPrefix(prompt: string): string {
-    const prefixList = config.openAi.chatGpt.prefixes.chatPrefix;
-    for (let i = 0; i < prefixList.length; i++) {
-      if (prompt.toLocaleLowerCase().startsWith(prefixList[i])) {
-        return prefixList[i];
-      }
-    }
-    return "";
-  }
-
-  private hasDallePrefix(prompt: string): string {
-    const prefixList = config.openAi.chatGpt.prefixes.dallePrefix;
-    for (let i = 0; i < prefixList.length; i++) {
-      if (prompt.toLocaleLowerCase().startsWith(prefixList[i])) {
-        return prefixList[i];
-      }
-    }
-    return "";
-  }
-
-  private hasNewPrefix(prompt: string): string {
-    const prefixList = config.openAi.chatGpt.prefixes.newPrefix;
-    for (let i = 0; i < prefixList.length; i++) {
-      if (prompt.toLocaleLowerCase().startsWith(prefixList[i])) {
-        return prefixList[i];
-      }
-    }
-    return "";
-  }
-
-  private hasUrl(prompt: string) {
-    const promptArray = prompt.split(" ");
-    let url = "";
-    for (let i = 0; i < promptArray.length; i++) {
-      if (isValidUrl(promptArray[i])) {
-        url = promptArray[i];
-        promptArray.splice(i, 1);
-        break;
-      }
-    }
-    return {
-      url,
-      newPrompt: promptArray.join(" "),
-    };
   }
 
   public getEstimatedPrice(ctx: any): number {
@@ -229,7 +138,7 @@ export class OpenAIBot {
 
     if (
       ctx.hasCommand(SupportedCommands.chat.name) ||
-      (ctx.message?.text?.startsWith("chat ") && ctx.chat?.type === 'private')
+      (ctx.message?.text?.startsWith("chat ") && ctx.chat?.type === "private")
     ) {
       ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_4;
       await this.onChat(ctx);
@@ -238,17 +147,17 @@ export class OpenAIBot {
 
     if (
       ctx.hasCommand(SupportedCommands.new.name) ||
-      (ctx.message?.text?.startsWith("new ") && ctx.chat?.type === 'private')
+      (ctx.message?.text?.startsWith("new ") && ctx.chat?.type === "private")
     ) {
       ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_4;
-      await this.onEnd(ctx)
+      await this.onEnd(ctx);
       this.onChat(ctx);
       return;
     }
 
     if (
       ctx.hasCommand(SupportedCommands.ask.name) ||
-      (ctx.message?.text?.startsWith("ask ") && ctx.chat?.type === 'private')
+      (ctx.message?.text?.startsWith("ask ") && ctx.chat?.type === "private")
     ) {
       ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_4;
       this.onChat(ctx);
@@ -275,7 +184,7 @@ export class OpenAIBot {
     if (
       ctx.hasCommand(SupportedCommands.dalle.name) ||
       ctx.hasCommand(SupportedCommands.dalleLC.name) ||
-      (ctx.message?.text?.startsWith("dalle ") && ctx.chat?.type === 'private')
+      (ctx.message?.text?.startsWith("dalle ") && ctx.chat?.type === "private")
     ) {
       this.onGenImgCmd(ctx);
       return;
@@ -293,7 +202,7 @@ export class OpenAIBot {
 
     if (
       ctx.hasCommand(SupportedCommands.sum.name) ||
-      (ctx.message?.text?.startsWith("sum ") && ctx.chat?.type === 'private')
+      (ctx.message?.text?.startsWith("sum ") && ctx.chat?.type === "private")
     ) {
       this.onSum(ctx);
       return;
@@ -303,18 +212,18 @@ export class OpenAIBot {
       return;
     }
 
-    if (this.hasChatPrefix(ctx.message?.text || "") !== "") {
+    if (hasChatPrefix(ctx.message?.text || "") !== "") {
       this.onPrefix(ctx);
       return;
     }
 
-    if (this.hasNewPrefix(ctx.message?.text || "") !== "") {
-      await this.onEnd(ctx)
+    if (hasNewPrefix(ctx.message?.text || "") !== "") {
+      await this.onEnd(ctx);
       this.onPrefix(ctx);
       return;
     }
 
-    if (this.isMentioned(ctx)) {
+    if (isMentioned(ctx)) {
       this.onMention(ctx);
       return;
     }
@@ -350,15 +259,16 @@ export class OpenAIBot {
           prompt = config.openAi.dalle.defaultPrompt;
         }
         ctx.chatAction = "upload_photo";
-        const numImages = await ctx.session.openAi.imageGen.numImages
-        const imgSize = await ctx.session.openAi.imageGen.imgSize        
+        const numImages = await ctx.session.openAi.imageGen.numImages;
+        const imgSize = await ctx.session.openAi.imageGen.imgSize;
         const imgs = await postGenerateImg(prompt, numImages, imgSize);
         imgs.map(async (img: any) => {
           await ctx
             .replyWithPhoto(img.url, {
               caption: `/dalle ${prompt}`,
-            }).catch((e) => {
-               this.onError(ctx,e,MAX_TRIES)
+            })
+            .catch((e) => {
+              this.onError(ctx, e, MAX_TRIES);
             });
         });
       } else {
@@ -367,7 +277,12 @@ export class OpenAIBot {
           .catch((e) => this.onError(ctx, e, MAX_TRIES, "Bot disabled"));
       }
     } catch (e) {
-      this.onError(ctx, e, MAX_TRIES, "There was an error while generating the image");
+      this.onError(
+        ctx,
+        e,
+        MAX_TRIES,
+        "There was an error while generating the image"
+      );
     }
   };
 
@@ -431,72 +346,6 @@ export class OpenAIBot {
     }
   };
 
-  // doesn't get all the special characters like !
-  private hasUserPasswordRegex(prompt: string) {
-    const pattern =
-      /\b(user=|password=|user|password)\s*([^\s]+)\b.*\b(user=|password=|user|password)\s*([^\s]+)\b/i;
-    const matches = pattern.exec(prompt);
-
-    let user = "";
-    let password = "";
-
-    if (matches) {
-      const [_, keyword, word, __, word2] = matches;
-      if (
-        keyword.toLowerCase() === "user" ||
-        keyword.toLowerCase() === "user="
-      ) {
-        user = word;
-        password = word2;
-      } else if (
-        keyword.toLowerCase() === "password" ||
-        keyword.toLowerCase() === "password="
-      ) {
-        password = word;
-        user = word2;
-      }
-    }
-
-    return { user, password };
-  }
-
-  private hasUsernamePassword(prompt: string) {
-    let user = "";
-    let password = "";
-    const parts = prompt.split(" ");
-
-    for (let i = 0; i < parts.length; i++) {
-      const part = parts[i].toLowerCase();
-      if (part.includes("=")) {
-        const [keyword, value] = parts[i].split("=");
-        if (keyword === "user" || keyword === "username") {
-          user = value;
-        } else if (keyword === "password" || keyword === "pwd") {
-          password = value;
-        }
-        if (user !== "" && password !== "") {
-          break;
-        }
-      } else if (part === "user") {
-        user = parts[i + 1];
-      } else if (part === "password") {
-        password = parts[i + 1];
-      }
-    }
-    return { user, password };
-  }
-
-  private async preparePrompt(
-    ctx: OnMessageContext | OnCallBackQueryData,
-    prompt: string
-  ) {
-    const msg = await ctx.message?.reply_to_message?.text;
-    if (msg) {
-      return `${prompt} ${msg}`;
-    }
-    return prompt;
-  }
-
   async onSum(ctx: OnMessageContext | OnCallBackQueryData) {
     if (this.botSuspended) {
       await ctx
@@ -506,12 +355,12 @@ export class OpenAIBot {
     }
     try {
       const { prompt } = getCommandNamePrompt(ctx, SupportedCommands);
-      const { url, newPrompt } = this.hasUrl(prompt);
+      const { url, newPrompt } = hasUrl(prompt);
       if (url) {
         let chat: ChatConversation[] = [];
         this.onWebCrawler(
           ctx,
-          await this.preparePrompt(ctx, newPrompt),
+          await preparePrompt(ctx, newPrompt),
           chat,
           url,
           "sum"
@@ -538,7 +387,7 @@ export class OpenAIBot {
       const chatModel = getChatModel(model);
       const webCrawlerMaxTokens =
         chatModel.maxContextTokens - config.openAi.maxTokens * 2;
-      const { user, password } = this.hasUsernamePassword(prompt);
+      const { user, password } = hasUsernamePassword(prompt);
       if (user && password) {
         // && ctx.chat?.type !== 'private'
         const maskedPrompt =
@@ -625,7 +474,7 @@ export class OpenAIBot {
       const { username } = ctx.me;
       const prompt = ctx.message?.text?.slice(username.length + 1) || ""; //@
       ctx.session.openAi.chatGpt.requestQueue.push(
-        await this.preparePrompt(ctx, prompt)
+        await preparePrompt(ctx, prompt)
       );
       if (!ctx.session.openAi.chatGpt.isProcessingQueue) {
         ctx.session.openAi.chatGpt.isProcessingQueue = true;
@@ -650,9 +499,9 @@ export class OpenAIBot {
         ctx,
         SupportedCommands
       );
-      const prefix = this.hasPrefix(prompt);
+      const prefix = hasPrefix(prompt);
       ctx.session.openAi.chatGpt.requestQueue.push(
-        await this.preparePrompt(ctx, prompt.slice(prefix.length))
+        await preparePrompt(ctx, prompt.slice(prefix.length))
       );
       if (!ctx.session.openAi.chatGpt.isProcessingQueue) {
         ctx.session.openAi.chatGpt.isProcessingQueue = true;
@@ -674,7 +523,7 @@ export class OpenAIBot {
         return;
       }
       ctx.session.openAi.chatGpt.requestQueue.push(
-        await this.preparePrompt(ctx, ctx.message?.text!)
+        await preparePrompt(ctx, ctx.message?.text!)
       );
       if (!ctx.session.openAi.chatGpt.isProcessingQueue) {
         ctx.session.openAi.chatGpt.isProcessingQueue = true;
@@ -697,7 +546,7 @@ export class OpenAIBot {
       }
       const prompt = ctx.match ? ctx.match : ctx.message?.text;
       ctx.session.openAi.chatGpt.requestQueue.push(
-        await this.preparePrompt(ctx, prompt as string)
+        await preparePrompt(ctx, prompt as string)
       );
       if (!ctx.session.openAi.chatGpt.isProcessingQueue) {
         ctx.session.openAi.chatGpt.isProcessingQueue = true;
@@ -728,7 +577,7 @@ export class OpenAIBot {
               .catch((e) => this.onError(ctx, e));
             return;
           }
-          const { url, newPrompt } = this.hasUrl(prompt);
+          const { url, newPrompt } = hasUrl(prompt);
           if (url) {
             await this.onWebCrawler(
               ctx,
@@ -784,7 +633,7 @@ export class OpenAIBot {
     ctx.session.openAi.chatGpt.usage = 0;
     ctx.session.openAi.chatGpt.price = 0;
   }
-  
+
   async onNotBalanceMessage(ctx: OnMessageContext | OnCallBackQueryData) {
     const accountId = this.payments.getAccountId(ctx as OnMessageContext);
     const account = await this.payments.getUserAccount(accountId);
@@ -812,8 +661,10 @@ export class OpenAIBot {
       return;
     }
     if (e instanceof GrammyError) {
-      if (e.error_code === 400 && e.description.includes('not enough rights')) {
-          ctx.reply('Error: The bot does not have permission to send photos in chat')
+      if (e.error_code === 400 && e.description.includes("not enough rights")) {
+        ctx.reply(
+          "Error: The bot does not have permission to send photos in chat"
+        );
       } else if (e.error_code === 429) {
         this.botSuspended = true;
         const retryAfter = e.parameters.retry_after
@@ -837,7 +688,9 @@ export class OpenAIBot {
         await sleep(retryAfter * 1000); // wait retryAfter seconds to enable bot
         this.botSuspended = false;
       } else {
-        this.logger.error(`On method "${e.method}" | ${e.error_code} - ${e.description}`)
+        this.logger.error(
+          `On method "${e.method}" | ${e.error_code} - ${e.description}`
+        );
       }
     } else if (e instanceof OpenAI.APIError) {
       // 429	RateLimitError
