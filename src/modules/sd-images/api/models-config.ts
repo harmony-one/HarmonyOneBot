@@ -31,7 +31,7 @@ export const MODELS_CONFIGS: IModel[] = [
         shortName: 'deliberate',
         link: 'https://civitai.com/models/4823/deliberate',
         baseModel: 'SD 1.5',
-        aliases: ['del', '4823', 'h9ab'],
+        aliases: ['d', 'del', '4823', 'h9ab'],
         defaultPrompt: 'a cute kitten made out of metal, (cyborg:1.1), ([tail | detailed wire]:1.3), (intricate details), hdr, (intricate details, hyperdetailed:1.2), cinematic shot, vignette, centered',
     },
     {
@@ -84,7 +84,7 @@ export const MODELS_CONFIGS: IModel[] = [
         shortName: 'anime-pastel-dream',
         link: 'https://civitai.com/models/23521/anime-pastel-dream',
         baseModel: 'SD 1.5',
-        aliases: ['anime', '2352', 'h4be'],
+        aliases: ['n', 'an', 'anime', '2352', 'h4be'],
         defaultPrompt: 'masterpiece, best quality, ultra-detailed, illustration, beautiful detailed eyes, looking at viewer, close up, pink hair, shy, cat ears'
     },
     {

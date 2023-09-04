@@ -1,3 +1,5 @@
+import {TranslateBot} from "./modules/translate/TranslateBot";
+
 require("events").EventEmitter.defaultMaxListeners = 30;
 import express from "express";
 import {
@@ -94,6 +96,10 @@ function createInitialSessionData(): BotSessionData {
     oneCountry: {
       lastDomain: "",
     },
+    translate: {
+      languages: [],
+      enable: false
+    }
   };
 }
 
@@ -117,6 +123,7 @@ const payments = new BotPayments();
 const schedule = new BotSchedule(bot);
 const openAiBot = new OpenAIBot(payments);
 const oneCountryBot = new OneCountryBot();
+const translateBot = new TranslateBot();
 
 bot.on("message:new_chat_members:me", async (ctx) => {
   try {
@@ -258,6 +265,25 @@ const onMessage = async (ctx: OnMessageContext) => {
       }
       return;
     }
+
+    if (translateBot.isSupportedEvent(ctx)) {
+      const price = translateBot.getEstimatedPrice(ctx);
+      const isPaid = await payments.pay(ctx, price);
+
+      if(isPaid) {
+        const response = await translateBot.onEvent(ctx, (reason?: string) => {
+          payments.refundPayment(reason, ctx, price);
+        }).catch((e) => {
+          payments.refundPayment(e.message || "Unknown error", ctx, price);
+          return {next: false};
+        });
+
+        if (!response.next) {
+          return;
+        }
+      }
+    }
+
     if (openAiBot.isSupportedEvent(ctx)) {
       if (ctx.session.openAi.imageGen.isEnabled) {
         const price = openAiBot.getEstimatedPrice(ctx);
