@@ -31,13 +31,10 @@ export const getAddressHistory = async (address: string): Promise<RpcTransaction
   return data ? data.transactions : []
 }
 
-export const getAddressBalance = async (address: string): Promise<number> => {
-  return rpcRequest('hmyv2_getBalance', [address]);
-}
-
-export const getBotFeeStats = async (address: string, daysCount = 7) => {
+export const getBotFeeStats = async (address: string) => {
   let history = await getAddressHistory(address)
 
+  const daysCount = 7
   const startTimestamp = moment().subtract(daysCount,'days').unix()
   const daysAmountMap: Record<string, number> = {}
 
