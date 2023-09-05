@@ -105,9 +105,9 @@ export class StatsService {
 
     const rows = await logRepository.createQueryBuilder('logs')
       .select('logs.command, count(logs.command) as "commandCount", SUM(logs.amountOne) as "oneAmount"')
-      .groupBy('logs.command')
       .where(`logs.createdAt BETWEEN TO_TIMESTAMP(${dateStart}) and TO_TIMESTAMP(${dateEnd})`)
-      .orderBy('"commandCount"', 'DESC').limit(10).execute();
+      .groupBy('logs.command')
+      .orderBy('"commandCount"', 'DESC').execute();
 
     return rows;
   }
