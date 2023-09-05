@@ -139,6 +139,16 @@ export class BotSchedule {
     return report;
   }
 
+  public async generateReportEngagementByCommand(days: number) {
+    const dbRows = await statsService.getUserEngagementByCommand(days);
+
+    const rows = dbRows.map((row) => {
+      return `${abbreviateNumber(+row.commandCount).padEnd(4)} ${row.command}`
+    })
+
+    return "```\n" + rows.join('\n') + "\n```";
+  }
+
   public async generateFullReport() {
     const [
       botFeesReport,
@@ -148,7 +158,8 @@ export class BotSchedule {
       totalCredits,
       weeklyUsers,
       totalMessages,
-      totalSupportedMessages
+      totalSupportedMessages,
+      engagementByCommand,
     ] = await Promise.all([
       this.getBotFeeReport(this.holderAddress),
       getBotFee(this.holderAddress, 7),
@@ -157,7 +168,8 @@ export class BotSchedule {
       statsService.getTotalFreeCredits(),
       statsService.getActiveUsers(7),
       statsService.getTotalMessages(7),
-      statsService.getTotalMessages(7, true)
+      statsService.getTotalMessages(7, true),
+      this.generateReportEngagementByCommand(7),
     ])
 
     const report = `\nBot fees: *${botFeesReport}*` +
@@ -167,7 +179,8 @@ export class BotSchedule {
       `\nTotal fees users pay in free credits: *${abbreviateNumber(totalCredits)}*` +
       `\nWeekly active users: *${abbreviateNumber(weeklyUsers)}*` +
       `\nWeekly user engagement (any commands): *${abbreviateNumber(totalMessages)}*` +
-      `\nWeekly user engagement (commands supported by bot): *${abbreviateNumber(totalSupportedMessages)}*`
+      `\nWeekly user engagement (commands supported by bot): *${abbreviateNumber(totalSupportedMessages)}*` +
+      `\n\n${engagementByCommand}`
     return report;
   }
 

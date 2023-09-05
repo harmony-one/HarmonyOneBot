@@ -272,7 +272,9 @@ export class BotPayments {
       let [command = ''] = text.split(' ')
       if(!command) {
         if(audio || voice) {
-          command = 'voice-memo'
+          command = '/voice-memo'
+        } else {
+          command = '/openai'
         }
       }
 
