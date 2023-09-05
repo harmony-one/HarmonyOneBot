@@ -130,15 +130,18 @@ export class BotSchedule {
 
     const networkUsage =
       `- Network 7-day fees, wallets, price: ` +
-      `${networkFeesSum}, ${walletsCountSum}, ${oneRate}`
+      `*${abbreviateNumber(networkFeesSum)}* ONE, ${abbreviateNumber(walletsCountSum)}, $${oneRate.toFixed(4)}`
+
+    const assetsUpdate =
+      `- Total assets, swaps, stakes: `
 
     const oneBotMetrics =
-      `-Bot total earns, weekly users, daily messages:` +
+      `- Bot total earns, weekly users, daily messages: ` +
       `*${abbreviateNumber(balance / Math.pow(10, 18))}* ONE` +
       `, *${abbreviateNumber(weeklyUsers)}*` +
       `, *${abbreviateNumber(dailyMessages)}*`
 
-    return `${networkUsage}\n${oneBotMetrics}`;
+    return `${networkUsage}\n${assetsUpdate}\n${oneBotMetrics}`;
   }
 
   public async generateReportEngagementByCommand(days: number) {
