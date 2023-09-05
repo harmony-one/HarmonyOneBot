@@ -17,6 +17,7 @@ import {
   DalleGPTModel,
   DalleGPTModels,
 } from "../types";
+import { getMessageExtras } from "../helpers";
 
 const openai = new OpenAI({
   apiKey: config.openAiKey,
@@ -134,6 +135,9 @@ export const streamChatCompletion = async (
     const wordCountMinimum = config.openAi.chatGpt.wordCountBetween;
     return new Promise<string>(async (resolve, reject) => {
       try {
+        // const extras = getMessageExtras({
+        //   topicId: ctx.message?.message_thread_id
+        // })
         const stream = await openai.chat.completions.create({
           model: model,
           messages:
@@ -157,6 +161,9 @@ export const streamChatCompletion = async (
             completion = completion.replaceAll("..", "");
             completion += "..";
             wordCount = 0;
+            // const extras = getMessageExtras({
+            //   topicId: ctx.message?.message_thread_id
+            // })
             await ctx.api
               .editMessageText(ctx.chat?.id!, msgId, completion)
               .catch(async (e: any) => {

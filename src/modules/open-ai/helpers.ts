@@ -1,6 +1,15 @@
 import config from "../../config";
 import { isValidUrl } from "./utils/web-crawler";
-import { OnMessageContext, OnCallBackQueryData } from "../types";
+import {
+  OnMessageContext,
+  OnCallBackQueryData,
+  ChatConversation,
+  ChatCompletion,
+} from "../types";
+import { parse } from "path";
+import { ParseMode } from "grammy/types";
+import { getChatModel, getChatModelPrice, getTokenNumber } from "./api/openAi";
+import { ChatGptPayload } from "./types";
 
 export const SupportedCommands = {
   chat: {
@@ -126,7 +135,7 @@ export const hasUsernamePassword = (prompt: string) => {
     }
   }
   return { user, password };
-}
+};
 
 // doesn't get all the special characters like !
 export const hasUserPasswordRegex = (prompt: string) => {
@@ -139,10 +148,7 @@ export const hasUserPasswordRegex = (prompt: string) => {
 
   if (matches) {
     const [_, keyword, word, __, word2] = matches;
-    if (
-      keyword.toLowerCase() === "user" ||
-      keyword.toLowerCase() === "user="
-    ) {
+    if (keyword.toLowerCase() === "user" || keyword.toLowerCase() === "user=") {
       user = word;
       password = word2;
     } else if (
@@ -154,7 +160,7 @@ export const hasUserPasswordRegex = (prompt: string) => {
     }
   }
   return { user, password };
-}
+};
 
 export const preparePrompt = async (
   ctx: OnMessageContext | OnCallBackQueryData,
@@ -165,24 +171,74 @@ export const preparePrompt = async (
     return `${prompt} ${msg}`;
   }
   return prompt;
+};
+
+export const messageTopic = async (
+  ctx: OnMessageContext | OnCallBackQueryData
+) => {
+  return await ctx.message?.message_thread_id;
+};
+
+export interface MessageExtras {
+  caption?: string;
+  message_thread_id?: number;
+  parse_mode?: ParseMode;
 }
 
-export const messageTopic = async (ctx: OnMessageContext | OnCallBackQueryData) => {
-  return await ctx.message?.message_thread_id
+interface GetMessagesExtras {
+  parseMode?: ParseMode | undefined;
+  topicId?: number | undefined;
+  caption?: string | undefined;
 }
 
-export const sendMessage = async (ctx: OnMessageContext | OnCallBackQueryData, msg: string) => {
-  const topic = await messageTopic(ctx)
-  if (topic) {
-    ctx.reply(msg, {
-      message_thread_id: topic,
-      parse_mode: 'Markdown'
-    })
+export const getMessageExtras = (params: GetMessagesExtras) => {
+  const { parseMode, topicId, caption } = params;
+  let extras: MessageExtras = {};
+  if (parseMode) {
+    extras["parse_mode"] = parseMode;
   }
-}
+  if (topicId) {
+    extras["message_thread_id"] = parseInt(
+      String(topicId)
+    ) as unknown as number;
+  }
+  if (caption) {
+    extras["caption"] = caption;
+  }
+  return extras;
+};
+
+export const sendMessage = async (
+  ctx: OnMessageContext | OnCallBackQueryData,
+  msg: string,
+  msgExtras: GetMessagesExtras
+) => {
+  const extras = getMessageExtras(msgExtras);
+  return await ctx.reply(msg, extras);
+};
 
 export const hasPrefix = (prompt: string): string => {
   return (
     hasChatPrefix(prompt) || hasDallePrefix(prompt) || hasNewPrefix(prompt)
   );
+};
+
+export const getPromptPrice = (completion: string, data: ChatGptPayload) => {
+  const { conversation, ctx, model } = data;
+
+  const prompt = conversation[conversation.length - 1].content;
+  const promptTokens = getTokenNumber(prompt);
+  const completionTokens = getTokenNumber(completion);
+  const modelPrice = getChatModel(model);
+  const price =
+    getChatModelPrice(modelPrice, true, promptTokens, completionTokens) *
+    config.openAi.chatGpt.priceAdjustment;
+  conversation.push({ content: completion, role: "system" });
+  ctx.session.openAi.chatGpt.usage += promptTokens + completionTokens;
+  ctx.session.openAi.chatGpt.price += price;
+  return {
+    price,
+    promptTokens,
+    completionTokens,
+  };
 };

@@ -6,6 +6,7 @@ import {
   type ConversationFlavor,
 } from "@grammyjs/conversations";
 import { AutoChatActionFlavor } from "@grammyjs/auto-chat-action";
+import { ParseMode } from "grammy/types";
 
 export interface ImageGenSessionData {
   numImages: number;
@@ -14,8 +15,9 @@ export interface ImageGenSessionData {
 }
 
 export interface MessageExtras {
-  caption?: string,
-  message_thread_id?: number
+  caption?: string;
+  message_thread_id?: number;
+  parse_mode?: ParseMode;
 }
 export interface ChatCompletion {
   completion: string;
@@ -45,14 +47,14 @@ export interface OneCountryData {
 }
 
 export interface TranslateBotData {
-  languages: string[],
-  enable: boolean,
+  languages: string[];
+  enable: boolean;
 }
 
 export interface BotSessionData {
   oneCountry: OneCountryData;
   openAi: OpenAiSessionData;
-  translate: TranslateBotData
+  translate: TranslateBotData;
 }
 
 export type BotContext = Context &
