@@ -183,16 +183,18 @@ export interface MessageExtras {
   caption?: string;
   message_thread_id?: number;
   parse_mode?: ParseMode;
+  reply_to_message_id?: number
 }
 
 interface GetMessagesExtras {
   parseMode?: ParseMode | undefined;
   topicId?: number | undefined;
   caption?: string | undefined;
+  replyId?: number | undefined
 }
 
 export const getMessageExtras = (params: GetMessagesExtras) => {
-  const { parseMode, topicId, caption } = params;
+  const { parseMode, topicId, caption, replyId } = params;
   let extras: MessageExtras = {};
   if (parseMode) {
     extras["parse_mode"] = parseMode;
@@ -201,6 +203,9 @@ export const getMessageExtras = (params: GetMessagesExtras) => {
     extras["message_thread_id"] = parseInt(
       String(topicId)
     ) as unknown as number;
+  }
+  if (replyId) {
+    extras['reply_to_message_id'] = replyId
   }
   if (caption) {
     extras["caption"] = caption;
