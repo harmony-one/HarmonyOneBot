@@ -217,13 +217,13 @@ export class OpenAIBot {
       return;
     }
 
-    if (hasChatPrefix(ctx.message?.text || "") !== "") {
+    if (hasNewPrefix(ctx.message?.text || "") !== "") {
+      await this.onEnd(ctx);
       this.onPrefix(ctx);
       return;
     }
 
-    if (hasNewPrefix(ctx.message?.text || "") !== "") {
-      await this.onEnd(ctx);
+    if (hasChatPrefix(ctx.message?.text || "") !== "") {
       this.onPrefix(ctx);
       return;
     }

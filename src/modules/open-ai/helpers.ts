@@ -1,11 +1,6 @@
 import config from "../../config";
 import { isValidUrl } from "./utils/web-crawler";
-import {
-  OnMessageContext,
-  OnCallBackQueryData,
-  ChatConversation,
-  ChatCompletion,
-} from "../types";
+import { OnMessageContext, OnCallBackQueryData, MessageExtras } from "../types";
 import { parse } from "path";
 import { ParseMode } from "grammy/types";
 import { getChatModel, getChatModelPrice, getTokenNumber } from "./api/openAi";
@@ -178,13 +173,6 @@ export const messageTopic = async (
 ) => {
   return await ctx.message?.message_thread_id;
 };
-
-export interface MessageExtras {
-  caption?: string;
-  message_thread_id?: number;
-  parse_mode?: ParseMode;
-}
-
 interface GetMessagesExtras {
   parseMode?: ParseMode | undefined;
   topicId?: number | undefined;
