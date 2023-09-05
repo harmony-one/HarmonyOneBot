@@ -27,7 +27,7 @@ export enum MenuIds {
 export const commandsHelpText = {
   start: `Hello, I'm ONE Bot on Telegram from Harmony – for ALL your AI wishes 🧚‍♀️.
 
-/ask act like elon musk, expand our q4 roadmap "telegram ai bot"
+/ask act like elon musk, expand our [q4 roadmap](https://xn--qv9h.s.country/p/generating-roadmap-as-ceo-vs-cto) "telegram ai bot"
 /ask act like mark zuckerberg instead
 
 /image glimpses of a herd of wild elephants crossing a savanna

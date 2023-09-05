@@ -38,9 +38,16 @@ export interface OpenAiSessionData {
 export interface OneCountryData {
   lastDomain: string;
 }
+
+export interface TranslateBotData {
+  languages: string[],
+  enable: boolean,
+}
+
 export interface BotSessionData {
   oneCountry: OneCountryData;
   openAi: OpenAiSessionData;
+  translate: TranslateBotData
 }
 
 export type BotContext = Context &

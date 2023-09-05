@@ -1,3 +1,5 @@
+import {TranslateBot} from "./modules/translate/TranslateBot";
+
 require("events").EventEmitter.defaultMaxListeners = 30;
 import express from "express";
 import {
@@ -38,6 +40,7 @@ import { autoRetry } from "@grammyjs/auto-retry";
 import { run } from "@grammyjs/runner";
 import { runBotHeartBit } from "./monitoring/monitoring";
 import { BotPaymentLog } from "./database/stats.service";
+import { getChatMemberInfo } from "./modules/open-ai/utils/web-crawler";
 
 const logger = pino({
   name: "bot",
@@ -93,6 +96,10 @@ function createInitialSessionData(): BotSessionData {
     oneCountry: {
       lastDomain: "",
     },
+    translate: {
+      languages: [],
+      enable: false
+    }
   };
 }
 
@@ -116,6 +123,7 @@ const payments = new BotPayments();
 const schedule = new BotSchedule(bot);
 const openAiBot = new OpenAIBot(payments);
 const oneCountryBot = new OneCountryBot();
+const translateBot = new TranslateBot();
 
 bot.on("message:new_chat_members:me", async (ctx) => {
   try {
@@ -257,6 +265,25 @@ const onMessage = async (ctx: OnMessageContext) => {
       }
       return;
     }
+
+    if (translateBot.isSupportedEvent(ctx)) {
+      const price = translateBot.getEstimatedPrice(ctx);
+      const isPaid = await payments.pay(ctx, price);
+
+      if(isPaid) {
+        const response = await translateBot.onEvent(ctx, (reason?: string) => {
+          payments.refundPayment(reason, ctx, price);
+        }).catch((e) => {
+          payments.refundPayment(e.message || "Unknown error", ctx, price);
+          return {next: false};
+        });
+
+        if (!response.next) {
+          return;
+        }
+      }
+    }
+
     if (openAiBot.isSupportedEvent(ctx)) {
       if (ctx.session.openAi.imageGen.isEnabled) {
         const price = openAiBot.getEstimatedPrice(ctx);
@@ -411,6 +438,15 @@ bot.command("love", (ctx) => {
   });
 });
 
+bot.command('stop', (ctx) => {
+  logger.info("/stop command");
+  ctx.session.openAi.chatGpt.chatConversation = [];
+  ctx.session.openAi.chatGpt.usage = 0;
+  ctx.session.openAi.chatGpt.price = 0;  
+  ctx.session.translate.enable = false;
+  ctx.session.translate.languages = []
+  ctx.session.oneCountry.lastDomain = ""
+})
 // bot.command("memo", (ctx) => {
 //   ctx.reply(MEMO.text, {
 //     parse_mode: "Markdown",
@@ -424,6 +460,24 @@ bot.command("love", (ctx) => {
 //     reply_markup: mainMenu,
 //   });
 // });
+
+bot.on("msg:new_chat_members", async (ctx) => {
+  try {
+    const newMembers = (await ctx.message?.new_chat_members) || [];
+    newMembers.forEach(async (m) => {
+      const user = await getChatMemberInfo(m.username!);
+      if (user.displayName) {
+        await ctx.reply(
+          `Hi everyone! Welcome to ${user.displayName} (@${user.username})${
+            user.bio && ": " + user.bio
+          }`
+        );
+      }
+    });
+  } catch (e: any) {
+    logger.error(`Error when welcoming new chat memmber ${e.toString()}`);
+  }
+});
 
 bot.on("message", onMessage);
 bot.on("callback_query:data", onCallback);

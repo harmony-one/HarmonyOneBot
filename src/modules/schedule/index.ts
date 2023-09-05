@@ -5,7 +5,7 @@ import { LRUCache } from 'lru-cache'
 import config from '../../config'
 import {BotContext, OnMessageContext} from "../types";
 import {getFeeStats} from "./explorerApi";
-import {getBotFeeStats} from "./harmonyApi";
+import {getAddressBalance, getBotFee, getBotFeeStats} from "./harmonyApi";
 import {getBridgeStats} from "./bridgeAPI";
 import {statsService} from "../../database/services";
 import {abbreviateNumber} from "./utils";
@@ -124,47 +124,63 @@ export class BotSchedule {
 
   public async generateReport() {
     const [
-      botFeesReport,
+      balance,
       weeklyUsers,
       totalSupportedMessages
     ] = await Promise.all([
-      this.getBotFeeReport(this.holderAddress),
+      getAddressBalance(this.holderAddress),
       statsService.getActiveUsers(7),
-      statsService.getTotalMessages(7, true)
+      statsService.getTotalMessages(1, true)
     ])
 
-    const report = `\nBot fees: ${botFeesReport}` +
+    const report = `\nBot fees: *${abbreviateNumber(balance / Math.pow(10, 18))}* ONE` +
       `\nWeekly active users: *${abbreviateNumber(weeklyUsers)}*` +
-      `\nWeekly user engagement: *${abbreviateNumber(totalSupportedMessages)}*`
+      `\nDaily user engagement: *${abbreviateNumber(totalSupportedMessages)}*`
     return report;
+  }
+
+  public async generateReportEngagementByCommand(days: number) {
+    const dbRows = await statsService.getUserEngagementByCommand(days);
+
+    const rows = dbRows.map((row) => {
+      return `${abbreviateNumber(+row.commandCount).padEnd(4)} ${row.command}`
+    })
+
+    return "```\n" + rows.join('\n') + "\n```";
   }
 
   public async generateFullReport() {
     const [
       botFeesReport,
+      botFeesWeekly,
       dau,
       totalOne,
       totalCredits,
       weeklyUsers,
       totalMessages,
-      totalSupportedMessages
+      totalSupportedMessages,
+      engagementByCommand,
     ] = await Promise.all([
       this.getBotFeeReport(this.holderAddress),
+      getBotFee(this.holderAddress, 7),
       statsService.getActiveUsers(0),
       statsService.getTotalONE(),
       statsService.getTotalFreeCredits(),
       statsService.getActiveUsers(7),
       statsService.getTotalMessages(7),
-      statsService.getTotalMessages(7, true)
+      statsService.getTotalMessages(7, true),
+      this.generateReportEngagementByCommand(7),
     ])
 
-    const report = `\nBot fees: ${botFeesReport}` +
+    const report = `\nBot fees: *${botFeesReport}*` +
+      `\nWeekly bot fees collected: *${abbreviateNumber(botFeesWeekly)}*` +
       `\nDaily Active Users: *${abbreviateNumber(dau)}*` +
       `\nTotal fees users pay in ONE: *${abbreviateNumber(totalOne)}*` +
       `\nTotal fees users pay in free credits: *${abbreviateNumber(totalCredits)}*` +
       `\nWeekly active users: *${abbreviateNumber(weeklyUsers)}*` +
       `\nWeekly user engagement (any commands): *${abbreviateNumber(totalMessages)}*` +
-      `\nWeekly user engagement (commands supported by bot): *${abbreviateNumber(totalSupportedMessages)}*`
+      `\nWeekly user engagement (commands supported by bot): *${abbreviateNumber(totalSupportedMessages)}*` +
+      `\n\n${engagementByCommand}`
     return report;
   }
 

@@ -90,7 +90,7 @@ export async function alterGeneratedImg(
   }
 }
 
-export async function chatCompilation(
+export async function chatCompletion(
   conversation: ChatConversation[],
   model = config.openAi.chatGpt.model,
   limitTokens = true
@@ -200,7 +200,7 @@ export async function improvePrompt(promptText: string, model: string) {
   const prompt = `Improve this picture description using max 100 words and don't add additional text to the image: ${promptText} `;
   try {
     const conversation = [{ role: "user", content: prompt }];
-    const response = await chatCompilation(conversation, model);
+    const response = await chatCompletion(conversation, model);
     return response.completion;
   } catch (e: any) {
     throw e;

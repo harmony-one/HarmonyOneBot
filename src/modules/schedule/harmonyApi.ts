@@ -26,15 +26,34 @@ export const getAddressHistory = async (address: string): Promise<RpcTransaction
     pageSize: 1000,
     fullTx: true,
     txType: 'RECEIVED',
-    order: "ASC"
+    order: "DESC"
   }])
   return data ? data.transactions : []
 }
 
-export const getBotFeeStats = async (address: string) => {
+export const getAddressBalance = async (address: string): Promise<number> => {
+  return rpcRequest('hmyv2_getBalance', [address]);
+}
+
+export const getBotFee = async (address: string, daysCount: number): Promise<number> => {
+  let history = await getAddressHistory(address);
+
+  const startTimestamp = moment().subtract(daysCount,'days').unix()
+
+  const total = history.reduce((acc, item) => {
+    if(item.timestamp < startTimestamp) {
+      return acc;
+    }
+
+    return acc + item.value;
+  }, 0)
+
+  return total / Math.pow(10, 18);
+}
+
+export const getBotFeeStats = async (address: string, daysCount = 7) => {
   let history = await getAddressHistory(address)
 
-  const daysCount = 7
   const startTimestamp = moment().subtract(daysCount,'days').unix()
   const daysAmountMap: Record<string, number> = {}
 

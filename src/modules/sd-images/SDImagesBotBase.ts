@@ -1,14 +1,16 @@
 import { SDNodeApi, IModel } from "./api";
 import { OnMessageContext, OnCallBackQueryData } from "../types";
-import { sleep, uuidv4 } from "./utils";
+import { getTelegramFileUrl, loadFile, sleep, uuidv4 } from "./utils";
 import { InputFile } from "grammy";
 import { COMMAND } from './helpers';
+import { ILora } from "./api/loras-config";
 
 export interface ISession {
     id: string;
     author: string;
     prompt: string;
     model: IModel;
+    lora?: ILora;
     all_seeds?: string[];
     seed?: number;
     command: COMMAND;
@@ -30,12 +32,13 @@ export class SDImagesBotBase {
         params: {
             prompt: string;
             model: IModel;
+            lora?: ILora;
             command: COMMAND;
             all_seeds?: string[];
             seed?: string;
         }
     ) => {
-        const { prompt, model, command, all_seeds } = params;
+        const { prompt, model, command, all_seeds, lora } = params;
 
         const authorObj = await ctx.getAuthor();
         const author = `@${authorObj.user.username}`;
@@ -48,6 +51,7 @@ export class SDImagesBotBase {
             author,
             prompt: prompt,
             model,
+            lora,
             command,
             all_seeds,
             message
@@ -83,7 +87,7 @@ export class SDImagesBotBase {
         refundCallback: (reason?: string) => void,
         session: ISession
     ) => {
-        const { model, prompt, seed } = session;
+        const { model, prompt, seed, lora } = session;
         const uuid = uuidv4();
 
         try {
@@ -91,11 +95,12 @@ export class SDImagesBotBase {
 
             ctx.chatAction = "upload_photo";
 
-            const imageBuffer = await this.sdNodeApi.generateImage(
+            const imageBuffer = await this.sdNodeApi.generateImage({
                 prompt,
                 model,
-                seed
-            );
+                seed,
+                lora
+            });
 
             const reqMessage = session.message ?
                 session.message.split(' ').length > 1 ?
@@ -107,6 +112,85 @@ export class SDImagesBotBase {
             await ctx.replyWithPhoto(new InputFile(imageBuffer), {
                 caption: reqMessage,
             });
+
+            if (ctx.chat?.id && queueMessageId) {
+                await ctx.api.deleteMessage(ctx.chat?.id, queueMessageId);
+            }
+        } catch (e) {
+            console.error(e);
+            ctx.reply(`Error: something went wrong... Refunding payments`);
+            refundCallback();
+        }
+
+        this.queue = this.queue.filter((v) => v !== uuid);
+    }
+
+    generateImageByImage = async (
+        ctx: OnMessageContext | OnCallBackQueryData,
+        refundCallback: (reason?: string) => void,
+        session: ISession
+    ) => {
+        const { model, prompt, seed } = session;
+        const uuid = uuidv4();
+
+        try {
+            const queueMessageId = await this.waitingQueue(uuid, ctx);
+
+            ctx.chatAction = "upload_photo";
+
+            let fileBuffer: Buffer;
+            let width, height;
+            let fileName;
+
+            const photos = ctx.message?.photo || ctx.message?.reply_to_message?.photo;
+
+            if (photos) {
+                const photo = photos[photos.length - 1];
+
+                width = photo.width;
+                height = photo.height;
+
+                const file = await ctx.api.getFile(photo.file_id);
+
+                if (file?.file_path) {
+                    const url = getTelegramFileUrl(file?.file_path);
+                    fileName = file?.file_path;
+
+                    fileBuffer = await loadFile(url);
+                } else {
+                    throw new Error("File not found");
+                }
+            } else {
+                throw new Error("User image not found");
+            }
+
+            const imageBuffer = await this.sdNodeApi.generateImageByImage({
+                fileBuffer,
+                fileName,
+                prompt,
+                model,
+                seed,
+            });
+
+            const reqMessage = session.message ?
+                session.message.split(' ').length > 1 ?
+                    session.message :
+                    `${session.message} ${prompt}`
+                :
+                `/${model.aliases[0]} ${prompt}`;
+
+            await ctx.replyWithMediaGroup([
+                {
+                    type: "photo",
+                    media: new InputFile(fileBuffer),
+                    caption: reqMessage,
+                },
+                {
+                    type: "photo",
+                    media: new InputFile(imageBuffer),
+                    // caption: reqMessage,
+                }
+            ]);
 
             if (ctx.chat?.id && queueMessageId) {
                 await ctx.api.deleteMessage(ctx.chat?.id, queueMessageId);

@@ -48,6 +48,7 @@
     "@walletconnect/sign-client": "^2.9.2",
     "axios": "^1.4.0",
     "bignumber.js": "^9.1.1",
+    "cheerio": "^1.0.0-rc.12",
     "dotenv": "^16.0.3",
     "ethers": "^5.7.2",
     "express": "^4.18.2",
