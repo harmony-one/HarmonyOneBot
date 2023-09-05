@@ -25,59 +25,37 @@ import {
 export const SupportedCommands = {
   chat: {
     name: "chat",
-    groupParams: ">0",
-    privateParams: ">0",
   },
   ask: {
     name: "ask",
-    groupParams: ">0",
-    privateParams: ">0",
   },
   sum: {
     name: "sum",
-    groupParams: ">0",
-    privateParams: ">0",
   },
   ask35: {
     name: "ask35",
-    groupParams: ">0",
-    privateParams: ">0",
+  },
+  new: {
+    name: "new",
   },
   gpt4: {
     name: "gpt4",
-    groupParams: ">0",
-    privateParams: ">0",
   },
   gpt: {
     name: "gpt",
-    groupParams: ">0",
-    privateParams: ">0",
   },
   last: {
     name: "last",
-    groupParams: ">0",
-    privateParams: ">0",
   },
   dalle: {
     name: "DALLE",
-    groupParams: ">0",
-    privateParams: ">0",
   },
   dalleLC: {
     name: "dalle",
-    groupParams: ">0",
-    privateParams: ">0",
   },
   genImgEn: {
     name: "genImgEn",
-    groupParams: ">1",
-    privateParams: ">1",
-  },
-  end: {
-    name: "stop",
-    groupParams: ">0",
-    privateParams: ">0",
-  },
+  }
 };
 
 const MAX_TRIES = 3;
@@ -137,7 +115,31 @@ export class OpenAIBot {
   }
 
   private hasPrefix(prompt: string): string {
-    const prefixList = config.openAi.chatGpt.chatPrefix;
+    return this.hasChatPrefix(prompt) || this.hasDallePrefix(prompt) || this.hasNewPrefix(prompt)
+  }
+
+  private hasChatPrefix(prompt: string): string {
+    const prefixList = config.openAi.chatGpt.prefixes.chatPrefix;
+    for (let i = 0; i < prefixList.length; i++) {
+      if (prompt.toLocaleLowerCase().startsWith(prefixList[i])) {
+        return prefixList[i];
+      }
+    }
+    return "";
+  }
+
+  private hasDallePrefix(prompt: string): string {
+    const prefixList = config.openAi.chatGpt.prefixes.dallePrefix;
+    for (let i = 0; i < prefixList.length; i++) {
+      if (prompt.toLocaleLowerCase().startsWith(prefixList[i])) {
+        return prefixList[i];
+      }
+    }
+    return "";
+  }
+
+  private hasNewPrefix(prompt: string): string {
+    const prefixList = config.openAi.chatGpt.prefixes.newPrefix;
     for (let i = 0; i < prefixList.length; i++) {
       if (prompt.toLocaleLowerCase().startsWith(prefixList[i])) {
         return prefixList[i];
@@ -149,7 +151,6 @@ export class OpenAIBot {
   private hasUrl(prompt: string) {
     const promptArray = prompt.split(" ");
     let url = "";
-    let pos = 0;
     for (let i = 0; i < promptArray.length; i++) {
       if (isValidUrl(promptArray[i])) {
         url = promptArray[i];
@@ -226,17 +227,29 @@ export class OpenAIBot {
       return false;
     }
 
-    if (ctx.hasCommand(SupportedCommands.chat.name)) {
+    if (
+      ctx.hasCommand(SupportedCommands.chat.name) ||
+      (ctx.message?.text?.startsWith("chat ") && ctx.chat?.type === 'private')
+    ) {
+      ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_4;
       await this.onChat(ctx);
       return;
     }
 
-    // if (ctx.message!.text === "/ask harmony.one/dear") {
-    //   await ctx.reply(askTemplates.dear).catch((e) => this.onError(ctx, e));
-    //   return;
-    // }
+    if (
+      ctx.hasCommand(SupportedCommands.new.name) ||
+      (ctx.message?.text?.startsWith("new ") && ctx.chat?.type === 'private')
+    ) {
+      ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_4;
+      await this.onEnd(ctx)
+      this.onChat(ctx);
+      return;
+    }
 
-    if (ctx.hasCommand(SupportedCommands.ask.name)) {
+    if (
+      ctx.hasCommand(SupportedCommands.ask.name) ||
+      (ctx.message?.text?.startsWith("ask ") && ctx.chat?.type === 'private')
+    ) {
       ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_4;
       this.onChat(ctx);
       return;
@@ -249,18 +262,20 @@ export class OpenAIBot {
     }
 
     if (ctx.hasCommand(SupportedCommands.gpt4.name)) {
+      ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_4;
       this.onChat(ctx);
       return;
     }
 
     if (ctx.hasCommand(SupportedCommands.gpt.name)) {
+      ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_4;
       this.onChat(ctx);
       return;
     }
-
     if (
       ctx.hasCommand(SupportedCommands.dalle.name) ||
-      ctx.hasCommand(SupportedCommands.dalleLC.name)
+      ctx.hasCommand(SupportedCommands.dalleLC.name) ||
+      (ctx.message?.text?.startsWith("dalle ") && ctx.chat?.type === 'private')
     ) {
       this.onGenImgCmd(ctx);
       return;
@@ -276,22 +291,25 @@ export class OpenAIBot {
       return;
     }
 
-    if (ctx.hasCommand(SupportedCommands.sum.name)) {
+    if (
+      ctx.hasCommand(SupportedCommands.sum.name) ||
+      (ctx.message?.text?.startsWith("sum ") && ctx.chat?.type === 'private')
+    ) {
       this.onSum(ctx);
       return;
     }
-
-    if (ctx.hasCommand(SupportedCommands.end.name)) {
-      this.onEnd(ctx);
-      return;
-    }
-
     if (ctx.hasCommand(SupportedCommands.last.name)) {
       this.onLast(ctx);
       return;
     }
 
-    if (this.hasPrefix(ctx.message?.text || "") !== "") {
+    if (this.hasChatPrefix(ctx.message?.text || "") !== "") {
+      this.onPrefix(ctx);
+      return;
+    }
+
+    if (this.hasNewPrefix(ctx.message?.text || "") !== "") {
+      await this.onEnd(ctx)
       this.onPrefix(ctx);
       return;
     }
@@ -314,7 +332,6 @@ export class OpenAIBot {
 
   private async hasBalance(ctx: OnMessageContext | OnCallBackQueryData) {
     const accountId = this.payments.getAccountId(ctx as OnMessageContext);
-    const account = await this.payments.getUserAccount(accountId);
     const addressBalance = await this.payments.getUserBalance(accountId);
     const creditsBalance = await chatService.getBalance(accountId);
     const balance = addressBalance.plus(creditsBalance);
@@ -328,8 +345,8 @@ export class OpenAIBot {
   onGenImgCmd = async (ctx: OnMessageContext | OnCallBackQueryData) => {
     try {
       if (ctx.session.openAi.imageGen.isEnabled) {
-        let prompt = ctx.match;
-        if (!prompt) {
+        let prompt = (ctx.match ? ctx.match : ctx.message?.text) as string;
+        if (!prompt || prompt.split(" ").length === 1) {
           prompt = config.openAi.dalle.defaultPrompt;
         }
         ctx.chatAction = "upload_photo";
@@ -410,6 +427,61 @@ export class OpenAIBot {
     }
   };
 
+  // doesn't get all the special characters like !
+  private hasUserPasswordRegex(prompt: string) {
+    const pattern =
+      /\b(user=|password=|user|password)\s*([^\s]+)\b.*\b(user=|password=|user|password)\s*([^\s]+)\b/i;
+    const matches = pattern.exec(prompt);
+
+    let user = "";
+    let password = "";
+
+    if (matches) {
+      const [_, keyword, word, __, word2] = matches;
+      if (
+        keyword.toLowerCase() === "user" ||
+        keyword.toLowerCase() === "user="
+      ) {
+        user = word;
+        password = word2;
+      } else if (
+        keyword.toLowerCase() === "password" ||
+        keyword.toLowerCase() === "password="
+      ) {
+        password = word;
+        user = word2;
+      }
+    }
+
+    return { user, password };
+  }
+
+  private hasUsernamePassword(prompt: string) {
+    let user = "";
+    let password = "";
+    const parts = prompt.split(" ");
+
+    for (let i = 0; i < parts.length; i++) {
+      const part = parts[i].toLowerCase();
+      if (part.includes("=")) {
+        const [keyword, value] = parts[i].split("=");
+        if (keyword === "user" || keyword === "username") {
+          user = value;
+        } else if (keyword === "password" || keyword === "pwd") {
+          password = value;
+        }
+        if (user !== "" && password !== "") {
+          break;
+        }
+      } else if (part === "user") {
+        user = parts[i + 1];
+      } else if (part === "password") {
+        password = parts[i + 1];
+      }
+    }
+    return { user, password };
+  }
+
   private async preparePrompt(
     ctx: OnMessageContext | OnCallBackQueryData,
     prompt: string
@@ -443,7 +515,9 @@ export class OpenAIBot {
       } else {
         ctx.reply(`Error: Missing url`);
       }
-    } catch (e) {}
+    } catch (e) {
+      this.onError(ctx, e);
+    }
   }
 
   private async onWebCrawler(
@@ -454,12 +528,28 @@ export class OpenAIBot {
     command = "ask"
   ) {
     try {
-      const { model } = ctx.session.openAi.chatGpt;
-
+      ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_35_TURBO_16K;
+      const model = ChatGPTModelsEnum.GPT_35_TURBO_16K;
+      // const { model } = ctx.session.openAi.chatGpt;
       const chatModel = getChatModel(model);
       const webCrawlerMaxTokens =
-        chatModel.maxContextTokens - config.openAi.maxTokens;
-      const webContent = await getWebContent(url, webCrawlerMaxTokens);
+        chatModel.maxContextTokens - config.openAi.maxTokens * 2;
+      const { user, password } = this.hasUsernamePassword(prompt);
+      if (user && password) {
+        // && ctx.chat?.type !== 'private'
+        const maskedPrompt =
+          ctx.message
+            ?.text!.replaceAll(user, "****")
+            .replaceAll(password, "*****") || "";
+        ctx.api.deleteMessage(ctx.chat?.id!, ctx.message?.message_id!);
+        ctx.reply(maskedPrompt);
+      }
+      const webContent = await getWebContent(
+        url,
+        webCrawlerMaxTokens,
+        user,
+        password
+      );
       if (webContent.urlText !== "") {
         // ctx.reply(`URL downloaded`,
         //   // `${(webContent.networkTraffic / 1048576).toFixed(
@@ -485,7 +575,7 @@ export class OpenAIBot {
             chat.push({
               content: `${
                 command === "sum" && "Summarize this text in 50 words:"
-              } ${webContent.urlText}`,
+              } "${webContent.urlText}"`,
               role: "user",
             });
           }
@@ -503,7 +593,10 @@ export class OpenAIBot {
           }
         }
       } else {
-        ctx.reply("Url not supported or incorrect web site address");
+        ctx.reply(
+          "Url not supported, incorrect web site address or missing user credentials"
+        );
+        return;
       }
       return {
         text: webContent.urlText,
@@ -513,7 +606,7 @@ export class OpenAIBot {
         oneFees: 0.5,
       };
     } catch (e) {
-      throw e;
+      this.onError(ctx, e);
     }
   }
 
@@ -598,8 +691,9 @@ export class OpenAIBot {
           .catch((e) => this.onError(ctx, e));
         return;
       }
+      const prompt = ctx.match ? ctx.match : ctx.message?.text;
       ctx.session.openAi.chatGpt.requestQueue.push(
-        await this.preparePrompt(ctx, ctx.match as string)
+        await this.preparePrompt(ctx, prompt as string)
       );
       if (!ctx.session.openAi.chatGpt.isProcessingQueue) {
         ctx.session.openAi.chatGpt.isProcessingQueue = true;
@@ -682,12 +776,11 @@ export class OpenAIBot {
   }
 
   async onEnd(ctx: OnMessageContext | OnCallBackQueryData) {
-    this.logger.info("/stop command");
     ctx.session.openAi.chatGpt.chatConversation = [];
     ctx.session.openAi.chatGpt.usage = 0;
     ctx.session.openAi.chatGpt.price = 0;
   }
-
+  
   async onNotBalanceMessage(ctx: OnMessageContext | OnCallBackQueryData) {
     const accountId = this.payments.getAccountId(ctx as OnMessageContext);
     const account = await this.payments.getUserAccount(accountId);
@@ -753,7 +846,7 @@ export class OpenAIBot {
           .catch((e) => this.onError(ctx, e, retryCount - 1));
       }
     } else {
-      this.logger.error(`onChat: ${e.toString()}`);
+      this.logger.error(`${e.toString()}`);
       await ctx
         .reply(msg ? msg : "Error handling your request")
         .catch((e) => this.onError(ctx, e, retryCount - 1));

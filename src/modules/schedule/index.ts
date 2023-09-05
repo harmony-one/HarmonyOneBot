@@ -133,7 +133,7 @@ export class BotSchedule {
       statsService.getTotalMessages(1, true)
     ])
 
-    const report = `\nBot fees: ${abbreviateNumber(balance / Math.pow(10, 18))} ONE` +
+    const report = `\nBot fees: *${abbreviateNumber(balance / Math.pow(10, 18))}* ONE` +
       `\nWeekly active users: *${abbreviateNumber(weeklyUsers)}*` +
       `\nDaily user engagement: *${abbreviateNumber(totalSupportedMessages)}*`
     return report;
@@ -160,7 +160,7 @@ export class BotSchedule {
       statsService.getTotalMessages(7, true)
     ])
 
-    const report = `\nBot fees: ${botFeesReport}` +
+    const report = `\nBot fees: *${botFeesReport}*` +
       `\nWeekly bot fees collected: *${abbreviateNumber(botFeesWeekly)}*` +
       `\nDaily Active Users: *${abbreviateNumber(dau)}*` +
       `\nTotal fees users pay in ONE: *${abbreviateNumber(totalOne)}*` +

@@ -1,6 +1,6 @@
 import {OnMessageContext, RefundCallback} from "../types";
 import pino, {Logger} from "pino";
-import {chatCompilation, getChatModel, getChatModelPrice, getTokenNumber} from "../open-ai/api/openAi";
+import {chatCompletion, getChatModel, getChatModelPrice, getTokenNumber} from "../open-ai/api/openAi";
 import config from "../../config";
 
 enum SupportedCommands {
@@ -121,7 +121,7 @@ To disable translation, use the command /translatestop.`)
     const prompt = `Translate the message below into: ${ctx.session.translate.languages.join(', ')}\n Message: ${message}`
     const conversation = [{ role: "user", content: prompt }];
 
-    const response = await chatCompilation(conversation);
+    const response = await chatCompletion(conversation);
 
     return ctx.api.editMessageText(ctx.chat?.id!, progressMessage.message_id, response.completion, {
       parse_mode: "Markdown",

@@ -40,6 +40,7 @@ import { autoRetry } from "@grammyjs/auto-retry";
 import { run } from "@grammyjs/runner";
 import { runBotHeartBit } from "./monitoring/monitoring";
 import { BotPaymentLog } from "./database/stats.service";
+import { getChatMemberInfo } from "./modules/open-ai/utils/web-crawler";
 
 const logger = pino({
   name: "bot",
@@ -437,6 +438,15 @@ bot.command("love", (ctx) => {
   });
 });
 
+bot.command('stop', (ctx) => {
+  logger.info("/stop command");
+  ctx.session.openAi.chatGpt.chatConversation = [];
+  ctx.session.openAi.chatGpt.usage = 0;
+  ctx.session.openAi.chatGpt.price = 0;  
+  ctx.session.translate.enable = false;
+  ctx.session.translate.languages = []
+  ctx.session.oneCountry.lastDomain = ""
+})
 // bot.command("memo", (ctx) => {
 //   ctx.reply(MEMO.text, {
 //     parse_mode: "Markdown",
@@ -450,6 +460,24 @@ bot.command("love", (ctx) => {
 //     reply_markup: mainMenu,
 //   });
 // });
+
+bot.on("msg:new_chat_members", async (ctx) => {
+  try {
+    const newMembers = (await ctx.message?.new_chat_members) || [];
+    newMembers.forEach(async (m) => {
+      const user = await getChatMemberInfo(m.username!);
+      if (user.displayName) {
+        await ctx.reply(
+          `Hi everyone! Welcome to ${user.displayName} (@${user.username})${
+            user.bio && ": " + user.bio
+          }`
+        );
+      }
+    });
+  } catch (e: any) {
+    logger.error(`Error when welcoming new chat memmber ${e.toString()}`);
+  }
+});
 
 bot.on("message", onMessage);
 bot.on("callback_query:data", onCallback);
