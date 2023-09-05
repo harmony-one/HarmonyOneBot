@@ -31,12 +31,8 @@ export class SDNodeApi {
       selectedLora = options.lora;
       loraStrength = 1;
     } else if (params.loraName) {
-      selectedLora = getLoraByParam(params.loraName);
+      selectedLora = getLoraByParam(params.loraName, options.model.baseModel);
       loraStrength = params.loraStrength;
-    }
-
-    if (selectedLora && selectedLora.baseModel !== options.model.baseModel) {
-      selectedLora = undefined;
     }
 
     if (selectedLora?.shortName === 'logo') {
