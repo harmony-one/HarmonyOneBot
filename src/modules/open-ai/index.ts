@@ -8,6 +8,7 @@ import {
   OnMessageContext,
   OnCallBackQueryData,
   ChatConversation,
+  MessageExtras
 } from "../types";
 import {
   getChatModel,
@@ -29,7 +30,9 @@ import {
   hasUsernamePassword,
   isMentioned,
   MAX_TRIES,
+  messageTopic,
   preparePrompt,
+  sendMessage,
   SupportedCommands,
 } from "./helpers";
 import { getWebContent, getCrawlerPrice } from "./utils/web-crawler";
@@ -59,6 +62,7 @@ export class OpenAIBot {
   public async isSupportedEvent(
     ctx: OnMessageContext | OnCallBackQueryData
   ): Promise<boolean> {
+
     const hasCommand = ctx.hasCommand(
       Object.values(SupportedCommands).map((command) => command.name)
     );
@@ -262,11 +266,16 @@ export class OpenAIBot {
         const numImages = await ctx.session.openAi.imageGen.numImages;
         const imgSize = await ctx.session.openAi.imageGen.imgSize;
         const imgs = await postGenerateImg(prompt, numImages, imgSize);
+        const topicId = await messageTopic(ctx)
+        let msgExtras: MessageExtras = {
+          caption: `/dalle ${prompt}`
+        }
+        if (topicId) {
+          msgExtras['message_thread_id'] = topicId
+        }
         imgs.map(async (img: any) => {
           await ctx
-            .replyWithPhoto(img.url, {
-              caption: `/dalle ${prompt}`,
-            })
+            .replyWithPhoto(img.url, msgExtras)
             .catch((e) => {
               this.onError(ctx, e, MAX_TRIES);
             });
@@ -366,7 +375,8 @@ export class OpenAIBot {
           "sum"
         );
       } else {
-        ctx.reply(`Error: Missing url`);
+        await sendMessage(ctx, `Error: Missing url`)
+        // ctx.reply();
       }
     } catch (e) {
       this.onError(ctx, e);
@@ -395,7 +405,7 @@ export class OpenAIBot {
             ?.text!.replaceAll(user, "****")
             .replaceAll(password, "*****") || "";
         ctx.api.deleteMessage(ctx.chat?.id!, ctx.message?.message_id!);
-        ctx.reply(maskedPrompt);
+        sendMessage(ctx,maskedPrompt)
       }
       const webContent = await getWebContent(
         url,
@@ -662,9 +672,7 @@ export class OpenAIBot {
     }
     if (e instanceof GrammyError) {
       if (e.error_code === 400 && e.description.includes("not enough rights")) {
-        ctx.reply(
-          "Error: The bot does not have permission to send photos in chat"
-        );
+        await sendMessage(ctx,  "Error: The bot does not have permission to send photos in chat")
       } else if (e.error_code === 429) {
         this.botSuspended = true;
         const retryAfter = e.parameters.retry_after

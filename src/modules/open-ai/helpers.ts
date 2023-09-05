@@ -167,6 +167,19 @@ export const preparePrompt = async (
   return prompt;
 }
 
+export const messageTopic = async (ctx: OnMessageContext | OnCallBackQueryData) => {
+  return await ctx.message?.message_thread_id
+}
+
+export const sendMessage = async (ctx: OnMessageContext | OnCallBackQueryData, msg: string) => {
+  const topic = await messageTopic(ctx)
+  if (topic) {
+    ctx.reply(msg, {
+      message_thread_id: topic,
+      parse_mode: 'Markdown'
+    })
+  }
+}
 
 export const hasPrefix = (prompt: string): string => {
   return (

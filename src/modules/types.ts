@@ -6,12 +6,17 @@ import {
   type ConversationFlavor,
 } from "@grammyjs/conversations";
 import { AutoChatActionFlavor } from "@grammyjs/auto-chat-action";
+
 export interface ImageGenSessionData {
   numImages: number;
   imgSize: string;
   isEnabled: boolean;
 }
 
+export interface MessageExtras {
+  caption?: string,
+  message_thread_id?: number
+}
 export interface ChatCompletion {
   completion: string;
   usage: number;
