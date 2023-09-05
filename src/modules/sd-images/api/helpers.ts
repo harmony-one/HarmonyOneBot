@@ -123,7 +123,7 @@ export const getParamsFromPrompt = (originalPrompt: string, model: IModel): IPar
 
   if (loraMatch) {
     loraName = loraMatch[1];
-    loraStrength = Number(loraMatch[1]);
+    loraStrength = Number(loraMatch[2]);
     
     prompt = prompt.replace(/<lora:(.*):(.*)>/, '');
   }
