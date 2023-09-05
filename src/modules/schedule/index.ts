@@ -4,11 +4,12 @@ import cron from 'node-cron'
 import { LRUCache } from 'lru-cache'
 import config from '../../config'
 import {BotContext, OnMessageContext} from "../types";
-import {getFeeStats} from "./explorerApi";
+import {getDailyMetrics, getFeeStats, MetricsDailyType} from "./explorerApi";
 import {getAddressBalance, getBotFee, getBotFeeStats} from "./harmonyApi";
 import {getBridgeStats} from "./bridgeAPI";
 import {statsService} from "../../database/services";
 import {abbreviateNumber} from "./utils";
+import {getOneRate} from "./exchangeApi";
 
 enum SupportedCommands {
   BOT_STATS = 'botstats',
@@ -49,26 +50,8 @@ export class BotSchedule {
 
   private async prepareMetricsUpdate(refetchData = false) {
     try {
-      this.logger.info(`Start preparing stats`)
-
-      const networkFeeStats = await getFeeStats()
-      const networkFeesReport = `*${networkFeeStats.value}* ONE (${networkFeeStats.change}%)`
-
-      let bridgeStatsReport = this.cache.get('bridge_report') || ''
-      this.logger.info(`Bridge stats report from cache: "${bridgeStatsReport}"`)
-      if(refetchData || !bridgeStatsReport) {
-        const bridgeStats = await getBridgeStats()
-        bridgeStatsReport =  `*${bridgeStats.value}* USD (${bridgeStats.change}%)`
-        this.cache.set('bridge_report', bridgeStatsReport)
-      }
-
-      const botFeesReport = await this.getBotFeeReport(this.holderAddress);
-
-      const reportMessage =
-        `\nNetwork fees (7-day growth): ${networkFeesReport}` +
-        `\nBridge flow: ${bridgeStatsReport}` +
-        `\nBot fees: ${botFeesReport}`
-
+      this.logger.info(`Start preparing daily stats...`)
+      const reportMessage = await this.generateReport()
       this.logger.info(`Prepared message: "${reportMessage}"`)
       this.reportMessage = reportMessage
       return reportMessage
@@ -94,7 +77,7 @@ export class BotSchedule {
   }
 
   private async runCronJob() {
-    cron.schedule('30 17 * * *', () => {
+    cron.schedule('55 17 * * *', () => {
       this.prepareMetricsUpdate(true)
     }, {
       scheduled: true,
@@ -109,7 +92,7 @@ export class BotSchedule {
       timezone: "Europe/Lisbon"
     });
 
-    await this.prepareMetricsUpdate()
+    // await this.prepareMetricsUpdate()
     // await this.postMetricsUpdate()
   }
 
@@ -123,20 +106,39 @@ export class BotSchedule {
   }
 
   public async generateReport() {
+    this.logger.info(`Start generating report...`)
     const [
+      networkFeesWeekly,
+      walletsCountWeekly,
+      oneRate,
+
       balance,
       weeklyUsers,
-      totalSupportedMessages
+      dailyMessages
     ] = await Promise.all([
+      getDailyMetrics(MetricsDailyType.totalFee, 7),
+      getDailyMetrics(MetricsDailyType.walletsCount, 7),
+      getOneRate(),
+
       getAddressBalance(this.holderAddress),
       statsService.getActiveUsers(7),
       statsService.getTotalMessages(1, true)
     ])
 
-    const report = `\nBot fees: *${abbreviateNumber(balance / Math.pow(10, 18))}* ONE` +
-      `\nWeekly active users: *${abbreviateNumber(weeklyUsers)}*` +
-      `\nDaily user engagement: *${abbreviateNumber(totalSupportedMessages)}*`
-    return report;
+    const networkFeesSum = networkFeesWeekly.reduce((sum, item) => sum + +item.value, 0)
+    const walletsCountSum = walletsCountWeekly.reduce((sum, item) => sum + +item.value, 0)
+
+    const networkUsage =
+      `- Network 7-day fees, wallets, price: ` +
+      `${networkFeesSum}, ${walletsCountSum}, ${oneRate}`
+
+    const oneBotMetrics =
+      `-Bot total earns, weekly users, daily messages:` +
+      `*${abbreviateNumber(balance / Math.pow(10, 18))}* ONE` +
+      `, *${abbreviateNumber(weeklyUsers)}*` +
+      `, *${abbreviateNumber(dailyMessages)}*`
+
+    return `${networkUsage}\n${oneBotMetrics}`;
   }
 
   public async generateFullReport() {
