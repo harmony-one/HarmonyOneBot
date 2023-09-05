@@ -29,7 +29,8 @@ export const getParamsFromPrompt = (originalPrompt: string, model: IModel): IPar
   let prompt = originalPrompt;
 
   // --ar Aspect ratio flag <w>:<h>
-  const aspectRatioMatch = prompt.match(/--ar\s+(\d+:\d+)/);
+  const aspectRatioMatch = prompt.match(/(--|\—)ar\s+(\d+:\d+)/);
+
   let width = model.baseModel === 'SDXL 1.0' ? 1024 : 512;
   let height = model.baseModel === 'SDXL 1.0' ? 1024 : 768;
 
@@ -42,79 +43,79 @@ export const getParamsFromPrompt = (originalPrompt: string, model: IModel): IPar
       height = Math.round(aspectHeight * scaleFactor);
     }
 
-    prompt = prompt.replace(/--ar\s+(\d+:\d+)/, '');
+    prompt = prompt.replace(/(--|\—)ar\s+(\d+:\d+)/, '');
   }
 
   // --d Dimensions flag <w>x<h>
-  const dimensionsMatch = prompt.match(/--d\s+(\d+x\d+)/);
+  const dimensionsMatch = prompt.match(/(--|\—)d\s+(\d+x\d+)/);
 
   if (dimensionsMatch) {
     const dimensions = dimensionsMatch[1];
 
     [width, height] = dimensions.split('x').map(Number);
 
-    prompt = prompt.replace(/--d\s+(\d+x\d+)/, '');
+    prompt = prompt.replace(/(--|\—)d\s+(\d+x\d+)/, '');
   }
 
   // --cfg cfgScale flag <scale>
-  const cfgScaleMatch = prompt.match(/--cfg\s+(\d+(\.\d+)?)/);
+  const cfgScaleMatch = prompt.match(/(--|\—)cfg\s+(\d+(\.\d+)?)/);
   let cfgScale = 7.0;
 
   if (cfgScaleMatch) {
     cfgScale = parseFloat(cfgScaleMatch[1]);
 
-    prompt = prompt.replace(/--cfg\s+(\d+(\.\d+)?)/, '');
+    prompt = prompt.replace(/(--|\—)cfg\s+(\d+(\.\d+)?)/, '');
   }
 
   // --steps Steps flag <steps>
-  const stepsMatch = prompt.match(/--steps\s+(\d+)/);
+  const stepsMatch = prompt.match(/(--|\—)steps\s+(\d+)/);
   let steps = 26;
 
   if (stepsMatch) {
     steps = parseInt(stepsMatch[1]);
 
-    prompt = prompt.replace(/--steps\s+(\d+)/, '');
+    prompt = prompt.replace(/(--|\—)steps\s+(\d+)/, '');
   }
 
-  // --c Controlnet flag <steps>
-  const controlnetVersionMatch = prompt.match(/--c\s+(\d+)/);
+  // --c Controlnet version flag <control_net_version>
+  const controlnetVersionMatch = prompt.match(/(--|\—)c\s+(\d+)/);
   let controlnetVersion = 1;
 
   if (controlnetVersionMatch) {
     controlnetVersion = parseInt(controlnetVersionMatch[1]);
 
-    prompt = prompt.replace(/--c\s+(\d+)/, '');
+    prompt = prompt.replace(/(--|\—)c\s+(\d+)/, '');
   }
 
   let seed;
 
   // --seed cfgScale flag <seed>
-  const seedMatch = prompt.match(/--seed\s+(\d+)/);
+  const seedMatch = prompt.match(/(--|\—)seed\s+(\d+)/);
 
   if (seedMatch) {
     seed = parseInt(seedMatch[1]);
 
-    prompt = prompt.replace(/--seed\s+(\d+)/, '');
+    prompt = prompt.replace(/(--|\—)seed\s+(\d+)/, '');
   }
 
   let denoise;
 
-  // --seed cfgScale flag <seed>
-  const denoiseMatch = prompt.match(/--denoise\s+(\d+\.\d+)/);
+  // --denoise Denoise scale flag <denoise>
+  const denoiseMatch = prompt.match(/(--|\—)denoise\s+(\d+\.\d+)/);
 
   if (denoiseMatch) {
     denoise = Number(denoiseMatch[1]);
 
-    prompt = prompt.replace(/--denoise\s+(\d+\.\d+)/, '');
+    prompt = prompt.replace(/(--|\—)denoise\s+(\d+\.\d+)/, '');
   }
 
   // --no Negative prompt flag <negative_prompts>
-  const noMatch = prompt.match(/--no\s+(.+?)(?=\s+--|$)/);
+  const noMatch = prompt.match(/(--|\—)no\s+(.+?)(?=\s+--|$)/);
   let negativePrompt = NEGATIVE_PROMPT;
 
   if (noMatch) {
     negativePrompt = noMatch[1].trim();
-    prompt = prompt.replace(/--no\s+(.+?)(?=\s+--|$)/, '');
+    prompt = prompt.replace(/(--|\—)no\s+(.+?)(?=\s+--|$)/, '');
   }
 
   const loraMatch = prompt.match(/<lora:(.*):(.*)>/);

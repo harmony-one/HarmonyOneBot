@@ -51,7 +51,10 @@ export class SDImagesBot extends SDImagesBotBase {
       return refundCallback("Unsupported command");
     }
 
-    if (promptHasBadWords(operation.prompt)) {
+    const prompt = operation.prompt
+    let parsedPrompt = prompt.substring(prompt.indexOf(" ") + 1, prompt.indexOf("--")).trim();
+
+    if (promptHasBadWords(parsedPrompt)) {
       console.log(`### promptHasBadWords ${ctx.message?.text}`);
       await ctx.reply("Your prompt has been flagged for potentially generating illegal or malicious content. If you believe there has been a mistake, please reach out to support.");
       return refundCallback("Prompt has bad words");
