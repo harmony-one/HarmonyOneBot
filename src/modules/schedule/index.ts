@@ -141,7 +141,7 @@ export class BotSchedule {
       `, *${abbreviateNumber(weeklyUsers)}*` +
       `, *${abbreviateNumber(dailyMessages)}*`
 
-    return `${networkUsage}\n${assetsUpdate}\n${oneBotMetrics}`;
+    return `${networkUsage}\n${oneBotMetrics}`;
   }
 
   public async generateReportEngagementByCommand(days: number) {
