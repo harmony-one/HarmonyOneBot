@@ -130,7 +130,7 @@ export class SDImagesBotBase {
             if (topicId) {
                 msgExtras['message_thread_id'] = topicId
             }      
-            await ctx.replyWithPhoto(new InputFile(imageBuffer),msgExtras);
+            await ctx.replyWithPhoto(new InputFile(imageBuffer), msgExtras);
 
             if (ctx.chat?.id && queueMessageId) {
                 await ctx.api.deleteMessage(ctx.chat?.id, queueMessageId);
