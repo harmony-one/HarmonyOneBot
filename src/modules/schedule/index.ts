@@ -1,15 +1,15 @@
 import pino from "pino";
 import { Bot } from 'grammy'
 import cron from 'node-cron'
-import { LRUCache } from 'lru-cache'
 import config from '../../config'
 import {BotContext, OnMessageContext} from "../types";
-import {getDailyMetrics, getFeeStats, MetricsDailyType} from "./explorerApi";
+import {getDailyMetrics, MetricsDailyType} from "./explorerApi";
 import {getAddressBalance, getBotFee, getBotFeeStats} from "./harmonyApi";
-import {getBridgeStats, getTotalStakes, getTVL} from "./bridgeAPI";
+import {getTotalStakes, getTVL} from "./bridgeAPI";
 import {statsService} from "../../database/services";
 import {abbreviateNumber} from "./utils";
 import {getOneRate} from "./exchangeApi";
+import {getTradingVolume} from "./subgraphAPI";
 
 enum SupportedCommands {
   BOT_STATS = 'botstats',
@@ -30,9 +30,6 @@ export class BotSchedule {
     }
   })
 
-  private cache = new LRUCache({ max: 100, ttl: 1000 * 60 * 60 * 2 })
-  private reportMessage = ''
-
   constructor(bot: Bot<BotContext>) {
     this.bot = bot
 
@@ -48,19 +45,6 @@ export class BotSchedule {
 
   }
 
-  private async prepareMetricsUpdate() {
-    try {
-      this.logger.info(`Start preparing daily stats...`)
-      const reportMessage = await this.generateReport()
-      this.logger.info(`Prepared message: "${reportMessage}"`)
-      this.reportMessage = reportMessage
-      return reportMessage
-    } catch (e) {
-      console.log('### e', e);
-      this.logger.error(`Cannot generate stats report: ${(e as Error).message}`)
-    }
-  }
-
   private async postMetricsUpdate() {
     const scheduleChatId = config.schedule.chatId
     if(!scheduleChatId) {
@@ -68,24 +52,20 @@ export class BotSchedule {
       return
     }
 
-    if(this.reportMessage) {
-      await this.bot.api.sendMessage(scheduleChatId, this.reportMessage, {
+    const reportMessage = await this.generateReport()
+    if(reportMessage) {
+      await this.bot.api.sendMessage(scheduleChatId, reportMessage, {
         parse_mode: "Markdown",
       })
-      this.logger.info(`Daily metrics posted in chat ${scheduleChatId}: ${this.reportMessage}`)
+      this.logger.info(`Daily metrics posted in chat ${scheduleChatId}: ${reportMessage}`)
+    } else {
+      this.logger.error(`Cannot prepare daily /stats message`)
     }
   }
 
   private async runCronJob() {
-    cron.schedule('55 17 * * *', () => {
-      this.prepareMetricsUpdate()
-    }, {
-      scheduled: true,
-      timezone: "Europe/Lisbon"
-    });
-
     cron.schedule('00 18 * * *', () => {
-      this.logger.info('Posting daily metrics')
+      this.logger.info('Posting daily metrics...')
       this.postMetricsUpdate()
     }, {
       scheduled: true,
@@ -110,6 +90,7 @@ export class BotSchedule {
 
       bridgeTVL,
       totalStakes,
+      swapTradingVolume,
 
       balance,
       weeklyUsers,
@@ -121,6 +102,7 @@ export class BotSchedule {
 
       getTVL(),
       getTotalStakes(),
+      getTradingVolume(),
 
       getAddressBalance(this.holderAddress),
       statsService.getActiveUsers(7),
@@ -129,15 +111,17 @@ export class BotSchedule {
 
     const networkFeesSum = networkFeesWeekly.reduce((sum, item) => sum + +item.value, 0)
     const walletsCountSum = walletsCountWeekly.reduce((sum, item) => sum + +item.value, 0)
+    const walletsCountAvg = Math.round(walletsCountSum / walletsCountWeekly.length)
 
     const networkUsage =
       `- Network 7-day fees, wallets, price: ` +
-      `*${abbreviateNumber(networkFeesSum)}* ONE, ${abbreviateNumber(walletsCountSum)}, $${oneRate.toFixed(4)}`
+      `*${abbreviateNumber(networkFeesSum)}* ONE, ${abbreviateNumber(walletsCountAvg)}, $${oneRate.toFixed(4)}`
 
-    console.log('totalStakes', totalStakes)
+    const swapTradingVolumeSum = swapTradingVolume.reduce((sum, item) => sum + Math.round(+item.volumeUSD), 0)
+
     const assetsUpdate =
       `- Total assets, swaps, stakes: ` +
-      `$${abbreviateNumber(bridgeTVL)}, - ,${abbreviateNumber(totalStakes)} ONE`
+      `$${abbreviateNumber(bridgeTVL)}, $${abbreviateNumber(swapTradingVolumeSum)}, ${abbreviateNumber(totalStakes)} ONE`
 
     const oneBotMetrics =
       `- Bot total earns, weekly users, daily messages: ` +
@@ -197,7 +181,7 @@ export class BotSchedule {
     const { message_id } = ctx.update.message
 
     if(ctx.hasCommand(SupportedCommands.BOT_STATS)) {
-      const report = await this.prepareMetricsUpdate()
+      const report = await this.generateReport()
       if(report) {
         await ctx.reply(report, {
           parse_mode: "Markdown",
