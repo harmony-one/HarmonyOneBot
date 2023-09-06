@@ -1,8 +1,9 @@
 import { SDNodeApi, IModel } from "./api";
-import { OnMessageContext, OnCallBackQueryData } from "../types";
+import { OnMessageContext, OnCallBackQueryData, MessageExtras } from "../types";
 import { getTelegramFileUrl, loadFile, sleep, uuidv4 } from "./utils";
-import { InputFile } from "grammy";
+import { GrammyError, InputFile } from "grammy";
 import { COMMAND } from './helpers';
+import { Logger, pino } from "pino";
 import { ILora } from "./api/loras-config";
 
 export interface ISession {
@@ -19,12 +20,22 @@ export interface ISession {
 
 export class SDImagesBotBase {
     sdNodeApi: SDNodeApi;
+    private logger: Logger;
 
     private sessions: ISession[] = [];
     queue: string[] = [];
 
     constructor() {
         this.sdNodeApi = new SDNodeApi();
+        this.logger = pino({
+            name: "SDImagesBotBase",
+            transport: {
+              target: "pino-pretty",
+              options: {
+                colorize: true,
+              },
+            },
+          });
     }
 
     createSession = async (
@@ -68,9 +79,13 @@ export class SDImagesBotBase {
         this.queue.push(uuid);
 
         let idx = this.queue.findIndex((v) => v === uuid);
-
+        const topicId = await ctx.message?.message_thread_id
+        let msgExtras: MessageExtras = {}
+        if (topicId) {
+            msgExtras['message_thread_id'] = topicId
+        }                
         const { message_id } = await ctx.reply(
-            `You are #${idx + 1}, wait about ${(idx + 1) * 15} seconds`
+            `You are #${idx + 1}, wait about ${(idx + 1) * 15} seconds`, msgExtras
         );
 
         // waiting queue
@@ -108,18 +123,36 @@ export class SDImagesBotBase {
                     `${session.message} ${prompt}`
                 :
                 `/${model.aliases[0]} ${prompt}`;
-
-            await ctx.replyWithPhoto(new InputFile(imageBuffer), {
-                caption: reqMessage,
-            });
+            const topicId = await ctx.message?.message_thread_id
+            let msgExtras: MessageExtras = {
+                caption: reqMessage
+            }
+            if (topicId) {
+                msgExtras['message_thread_id'] = topicId
+            }      
+            await ctx.replyWithPhoto(new InputFile(imageBuffer),msgExtras);
 
             if (ctx.chat?.id && queueMessageId) {
                 await ctx.api.deleteMessage(ctx.chat?.id, queueMessageId);
             }
-        } catch (e) {
-            console.error(e);
-            ctx.reply(`Error: something went wrong... Refunding payments`);
-            refundCallback();
+        } catch (e: any) {
+            ctx.chatAction = null
+            const topicId = await ctx.message?.message_thread_id
+            let msgExtras: MessageExtras = {}
+            if (topicId) {
+                msgExtras['message_thread_id'] = topicId
+            }
+            if (e instanceof GrammyError) {               
+                if (e.error_code === 400 && e.description.includes('not enough rights')) {
+                    ctx.reply(`Error: The bot does not have permission to send photos in chat... Refunding payments`, msgExtras);
+                } else {
+                    ctx.reply(`Error: something went wrong... Refunding payments`, msgExtras)
+                }
+            } else {
+                this.logger.error(e.toString());
+                ctx.reply(`Error: something went wrong... Refunding payments`, msgExtras);
+            }
+            refundCallback()
         }
 
         this.queue = this.queue.filter((v) => v !== uuid);
@@ -178,7 +211,11 @@ export class SDImagesBotBase {
                     `${session.message} ${prompt}`
                 :
                 `/${model.aliases[0]} ${prompt}`;
-
+            const topicId = await ctx.message?.message_thread_id
+            let msgExtras: MessageExtras = {}
+            if (topicId) {
+                msgExtras['message_thread_id'] = topicId
+            } 
             await ctx.replyWithMediaGroup([
                 {
                     type: "photo",
@@ -190,14 +227,27 @@ export class SDImagesBotBase {
                     media: new InputFile(imageBuffer),
                     // caption: reqMessage,
                 }
-            ]);
+            ],msgExtras);
 
             if (ctx.chat?.id && queueMessageId) {
                 await ctx.api.deleteMessage(ctx.chat?.id, queueMessageId);
             }
-        } catch (e) {
-            console.error(e);
-            ctx.reply(`Error: something went wrong... Refunding payments`);
+        } catch (e: any) {
+            const topicId = await ctx.message?.message_thread_id
+            let msgExtras: MessageExtras = {}
+            if (topicId) {
+                msgExtras['message_thread_id'] = topicId
+            }
+            if (e instanceof GrammyError) {               
+                if (e.error_code === 400 && e.description.includes('not enough rights')) {
+                    ctx.reply(`Error: The bot does not have permission to send photos in chat... Refunding payments`, msgExtras);
+                } else {
+                    ctx.reply(`Error: something went wrong... Refunding payments`, msgExtras)
+                }
+            } else {
+                this.logger.error(e.toString());
+                ctx.reply(`Error: something went wrong... Refunding payments`, msgExtras);
+            }
             refundCallback();
         }
 

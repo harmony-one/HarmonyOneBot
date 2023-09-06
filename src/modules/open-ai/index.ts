@@ -9,58 +9,37 @@ import {
   OnCallBackQueryData,
   ChatConversation,
 } from "../types";
-import { getChatModel, getDalleModel, getDalleModelPrice } from "./api/openAi";
-import { alterImg, imgGen, imgGenEnhanced, promptGen } from "./controller";
+import {
+  alterGeneratedImg,
+  getChatModel,
+  getDalleModel,
+  getDalleModelPrice,
+  postGenerateImg,
+  streamChatCompletion,
+} from "./api/openAi";
 import { appText } from "./utils/text";
 import { chatService } from "../../database/services";
-import { ChatGPTModelsEnum } from "./types";
+import { ChatGPTModelsEnum, ChatGptPayload } from "./types";
 import config from "../../config";
 import { sleep } from "../sd-images/utils";
 import {
-  isValidUrl,
-  getWebContent,
-  getCrawlerPrice,
-} from "./utils/web-crawler";
+  getMessageExtras,
+  getPromptPrice,
+  hasChatPrefix,
+  hasNewPrefix,
+  hasPrefix,
+  hasUrl,
+  hasUsernamePassword,
+  isMentioned,
+  limitPrompt,
+  MAX_TRIES,
+  messageTopic,
+  preparePrompt,
+  sendMessage,
+  SupportedCommands,
+} from "./helpers";
+import { getWebContent, getCrawlerPrice } from "./utils/web-crawler";
 
-export const SupportedCommands = {
-  chat: {
-    name: "chat",
-  },
-  ask: {
-    name: "ask",
-  },
-  sum: {
-    name: "sum",
-  },
-  ask35: {
-    name: "ask35",
-  },
-  new: {
-    name: "new",
-  },
-  gpt4: {
-    name: "gpt4",
-  },
-  gpt: {
-    name: "gpt",
-  },
-  last: {
-    name: "last",
-  },
-  dalle: {
-    name: "DALLE",
-  },
-  dalleLC: {
-    name: "dalle",
-  },
-  genImgEn: {
-    name: "genImgEn",
-  }
-};
-
-const MAX_TRIES = 3;
-
-// const payments = new BotPayments();
 export class OpenAIBot {
   private logger: Logger;
   private payments: BotPayments;
@@ -83,85 +62,21 @@ export class OpenAIBot {
     }
   }
 
-  private isMentioned(ctx: OnMessageContext | OnCallBackQueryData): boolean {
-    if (ctx.entities()[0]) {
-      const { offset, text } = ctx.entities()[0];
-      const { username } = ctx.me;
-      if (username === text.slice(1) && offset === 0) {
-        const prompt = ctx.message?.text!.slice(text.length);
-        if (prompt && prompt.split(" ").length > 0) {
-          return true;
-        }
-      }
-    }
-    return false;
-  }
-
-  public isSupportedEvent(
+  public async isSupportedEvent(
     ctx: OnMessageContext | OnCallBackQueryData
-  ): boolean {
+  ): Promise<boolean> {
     const hasCommand = ctx.hasCommand(
       Object.values(SupportedCommands).map((command) => command.name)
     );
-    if (this.isMentioned(ctx)) {
+    if (isMentioned(ctx)) {
       return true;
     }
     const hasReply = this.isSupportedImageReply(ctx);
-    const chatPrefix = this.hasPrefix(ctx.message?.text || "");
+    const chatPrefix = hasPrefix(ctx.message?.text || "");
     if (chatPrefix !== "") {
       return true;
     }
     return hasCommand || hasReply;
-  }
-
-  private hasPrefix(prompt: string): string {
-    return this.hasChatPrefix(prompt) || this.hasDallePrefix(prompt) || this.hasNewPrefix(prompt)
-  }
-
-  private hasChatPrefix(prompt: string): string {
-    const prefixList = config.openAi.chatGpt.prefixes.chatPrefix;
-    for (let i = 0; i < prefixList.length; i++) {
-      if (prompt.toLocaleLowerCase().startsWith(prefixList[i])) {
-        return prefixList[i];
-      }
-    }
-    return "";
-  }
-
-  private hasDallePrefix(prompt: string): string {
-    const prefixList = config.openAi.chatGpt.prefixes.dallePrefix;
-    for (let i = 0; i < prefixList.length; i++) {
-      if (prompt.toLocaleLowerCase().startsWith(prefixList[i])) {
-        return prefixList[i];
-      }
-    }
-    return "";
-  }
-
-  private hasNewPrefix(prompt: string): string {
-    const prefixList = config.openAi.chatGpt.prefixes.newPrefix;
-    for (let i = 0; i < prefixList.length; i++) {
-      if (prompt.toLocaleLowerCase().startsWith(prefixList[i])) {
-        return prefixList[i];
-      }
-    }
-    return "";
-  }
-
-  private hasUrl(prompt: string) {
-    const promptArray = prompt.split(" ");
-    let url = "";
-    for (let i = 0; i < promptArray.length; i++) {
-      if (isValidUrl(promptArray[i])) {
-        url = promptArray[i];
-        promptArray.splice(i, 1);
-        break;
-      }
-    }
-    return {
-      url,
-      newPrompt: promptArray.join(" "),
-    };
   }
 
   public getEstimatedPrice(ctx: any): number {
@@ -229,7 +144,7 @@ export class OpenAIBot {
 
     if (
       ctx.hasCommand(SupportedCommands.chat.name) ||
-      (ctx.message?.text?.startsWith("chat ") && ctx.chat?.type === 'private')
+      (ctx.message?.text?.startsWith("chat ") && ctx.chat?.type === "private")
     ) {
       ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_4;
       await this.onChat(ctx);
@@ -238,17 +153,17 @@ export class OpenAIBot {
 
     if (
       ctx.hasCommand(SupportedCommands.new.name) ||
-      (ctx.message?.text?.startsWith("new ") && ctx.chat?.type === 'private')
+      (ctx.message?.text?.startsWith("new ") && ctx.chat?.type === "private")
     ) {
       ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_4;
-      await this.onEnd(ctx)
+      await this.onEnd(ctx);
       this.onChat(ctx);
       return;
     }
 
     if (
       ctx.hasCommand(SupportedCommands.ask.name) ||
-      (ctx.message?.text?.startsWith("ask ") && ctx.chat?.type === 'private')
+      (ctx.message?.text?.startsWith("ask ") && ctx.chat?.type === "private")
     ) {
       ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_4;
       this.onChat(ctx);
@@ -275,16 +190,16 @@ export class OpenAIBot {
     if (
       ctx.hasCommand(SupportedCommands.dalle.name) ||
       ctx.hasCommand(SupportedCommands.dalleLC.name) ||
-      (ctx.message?.text?.startsWith("dalle ") && ctx.chat?.type === 'private')
+      (ctx.message?.text?.startsWith("dalle ") && ctx.chat?.type === "private")
     ) {
       this.onGenImgCmd(ctx);
       return;
     }
 
-    if (ctx.hasCommand(SupportedCommands.genImgEn.name)) {
-      this.onGenImgEnCmd(ctx);
-      return;
-    }
+    // if (ctx.hasCommand(SupportedCommands.genImgEn.name)) {
+    //   this.onGenImgEnCmd(ctx);
+    //   return;
+    // }
 
     if (this.isSupportedImageReply(ctx)) {
       this.onAlterImage(ctx);
@@ -293,7 +208,7 @@ export class OpenAIBot {
 
     if (
       ctx.hasCommand(SupportedCommands.sum.name) ||
-      (ctx.message?.text?.startsWith("sum ") && ctx.chat?.type === 'private')
+      (ctx.message?.text?.startsWith("sum ") && ctx.chat?.type === "private")
     ) {
       this.onSum(ctx);
       return;
@@ -303,18 +218,18 @@ export class OpenAIBot {
       return;
     }
 
-    if (this.hasChatPrefix(ctx.message?.text || "") !== "") {
+    if (hasNewPrefix(ctx.message?.text || "") !== "") {
+      await this.onEnd(ctx);
       this.onPrefix(ctx);
       return;
     }
 
-    if (this.hasNewPrefix(ctx.message?.text || "") !== "") {
-      await this.onEnd(ctx)
+    if (hasChatPrefix(ctx.message?.text || "") !== "") {
       this.onPrefix(ctx);
       return;
     }
 
-    if (this.isMentioned(ctx)) {
+    if (isMentioned(ctx)) {
       this.onMention(ctx);
       return;
     }
@@ -325,9 +240,9 @@ export class OpenAIBot {
     }
 
     this.logger.warn(`### unsupported command`);
-    await ctx
-      .reply("### unsupported command")
-      .catch((e) => this.onError(ctx, e, MAX_TRIES, "Bot disabled"));
+    sendMessage(ctx, "### unsupported command", {
+      topicId: ctx.message?.message_thread_id,
+    }).catch((e) => this.onError(ctx, e, MAX_TRIES, "### unsupported command"));
   }
 
   private async hasBalance(ctx: OnMessageContext | OnCallBackQueryData) {
@@ -350,52 +265,30 @@ export class OpenAIBot {
           prompt = config.openAi.dalle.defaultPrompt;
         }
         ctx.chatAction = "upload_photo";
-        const payload = {
-          chatId: ctx.chat?.id!,
-          prompt: prompt as string,
-          numImages: await ctx.session.openAi.imageGen.numImages, // lazy load
-          imgSize: await ctx.session.openAi.imageGen.imgSize, // lazy load
-        };
-        await imgGen(payload, ctx);
+        const numImages = await ctx.session.openAi.imageGen.numImages;
+        const imgSize = await ctx.session.openAi.imageGen.imgSize;
+        const imgs = await postGenerateImg(prompt, numImages, imgSize);
+        const msgExtras = getMessageExtras({
+          caption: `/dalle ${prompt}`,
+          topicId: await messageTopic(ctx),
+        });
+        imgs.map(async (img: any) => {
+          await ctx.replyWithPhoto(img.url, msgExtras).catch((e) => {
+            this.onError(ctx, e, MAX_TRIES);
+          });
+        });
       } else {
-        await ctx
-          .reply("Bot disabled")
-          .catch((e) => this.onError(ctx, e, MAX_TRIES, "Bot disabled"));
+        sendMessage(ctx, "Bot disabled", {
+          topicId: ctx.message?.message_thread_id,
+        }).catch((e) => this.onError(ctx, e, MAX_TRIES, "Bot disabled"));
       }
     } catch (e) {
-      this.onError(ctx, e, 3, "There was an error while generating the image");
-    }
-  };
-
-  onGenImgEnCmd = async (ctx: OnMessageContext | OnCallBackQueryData) => {
-    try {
-      if (ctx.session.openAi.imageGen.isEnabled) {
-        const prompt = await ctx.match;
-        if (!prompt) {
-          await ctx
-            .reply("Error: Missing prompt")
-            .catch((e) =>
-              this.onError(ctx, e, MAX_TRIES, "Error: Missing prompt")
-            );
-          return;
-        }
-        const payload = {
-          chatId: await ctx.chat?.id!,
-          prompt: prompt as string,
-          numImages: await ctx.session.openAi.imageGen.numImages,
-          imgSize: await ctx.session.openAi.imageGen.imgSize,
-        };
-        await ctx
-          .reply("generating improved prompt...")
-          .catch((e) => this.onError(ctx, e));
-        await imgGenEnhanced(payload, ctx);
-      } else {
-        await ctx
-          .reply("Bot disabled")
-          .catch((e) => this.onError(ctx, e, MAX_TRIES, "Bot disabled"));
-      }
-    } catch (e) {
-      this.onError(ctx, e);
+      this.onError(
+        ctx,
+        e,
+        MAX_TRIES,
+        "There was an error while generating the image"
+      );
     }
   };
 
@@ -408,14 +301,17 @@ export class OpenAIBot {
         const file_id = photo?.pop()?.file_id; // with pop() get full image quality
         const file = await ctx.api.getFile(file_id!);
         const filePath = `${config.openAi.dalle.telegramFileUrl}${config.telegramBotAuthToken}/${file.file_path}`;
-        const payload = {
-          chatId: ctx.chat?.id!,
-          prompt: prompt as string,
-          numImages: await ctx.session.openAi.imageGen.numImages,
-          imgSize: await ctx.session.openAi.imageGen.imgSize,
-          filePath: filePath,
-        };
-        await alterImg(payload, ctx);
+        const imgSize = await ctx.session.openAi.imageGen.imgSize;
+        ctx.chatAction = "upload_photo";
+        const imgs = await alterGeneratedImg(prompt!, filePath!, ctx, imgSize!);
+        if (imgs) {
+          imgs!.map(async (img: any) => {
+            await ctx.replyWithPhoto(img.url).catch((e) => {
+              throw e;
+            });
+          });
+        }
+        ctx.chatAction = null;
       }
     } catch (e: any) {
       this.onError(
@@ -427,93 +323,68 @@ export class OpenAIBot {
     }
   };
 
-  // doesn't get all the special characters like !
-  private hasUserPasswordRegex(prompt: string) {
-    const pattern =
-      /\b(user=|password=|user|password)\s*([^\s]+)\b.*\b(user=|password=|user|password)\s*([^\s]+)\b/i;
-    const matches = pattern.exec(prompt);
-
-    let user = "";
-    let password = "";
-
-    if (matches) {
-      const [_, keyword, word, __, word2] = matches;
-      if (
-        keyword.toLowerCase() === "user" ||
-        keyword.toLowerCase() === "user="
-      ) {
-        user = word;
-        password = word2;
-      } else if (
-        keyword.toLowerCase() === "password" ||
-        keyword.toLowerCase() === "password="
-      ) {
-        password = word;
-        user = word2;
+  private async promptGen(data: ChatGptPayload, chat: ChatConversation[]) {
+    const { conversation, ctx, model } = data;
+    try {
+      const extras = getMessageExtras({
+        topicId: ctx.message?.message_thread_id,
+      });
+      let msgId = (await ctx.reply("...", extras)).message_id;
+      const isTypingEnabled = config.openAi.chatGpt.isTypingEnabled;
+      if (isTypingEnabled) {
+        ctx.chatAction = "typing";
       }
-    }
-
-    return { user, password };
-  }
-
-  private hasUsernamePassword(prompt: string) {
-    let user = "";
-    let password = "";
-    const parts = prompt.split(" ");
-
-    for (let i = 0; i < parts.length; i++) {
-      const part = parts[i].toLowerCase();
-      if (part.includes("=")) {
-        const [keyword, value] = parts[i].split("=");
-        if (keyword === "user" || keyword === "username") {
-          user = value;
-        } else if (keyword === "password" || keyword === "pwd") {
-          password = value;
-        }
-        if (user !== "" && password !== "") {
-          break;
-        }
-      } else if (part === "user") {
-        user = parts[i + 1];
-      } else if (part === "password") {
-        password = parts[i + 1];
+      const completion = await streamChatCompletion(
+        conversation!,
+        ctx,
+        model,
+        msgId,
+        true // telegram messages has a character limit
+      );
+      if (isTypingEnabled) {
+        ctx.chatAction = null;
       }
+      if (completion) {
+        const price = getPromptPrice(completion, data);
+        this.logger.info(
+          `streamChatCompletion result = tokens: ${
+            price.promptTokens + price.completionTokens
+          } | ${model} | price: ${price}¢`
+        );
+        conversation.push({ content: completion, role: "system" });
+        chat = [...conversation!];
+        return price.price;
+      }
+      return 0;
+    } catch (e: any) {
+      ctx.chatAction = null;
+      throw e;
     }
-    return { user, password };
-  }
-
-  private async preparePrompt(
-    ctx: OnMessageContext | OnCallBackQueryData,
-    prompt: string
-  ) {
-    const msg = await ctx.message?.reply_to_message?.text;
-    if (msg) {
-      return `${prompt} ${msg}`;
-    }
-    return prompt;
   }
 
   async onSum(ctx: OnMessageContext | OnCallBackQueryData) {
     if (this.botSuspended) {
-      await ctx
-        .reply("The bot is suspended")
-        .catch((e) => this.onError(ctx, e));
+      sendMessage(ctx, "The bot is suspended", {
+        topicId: ctx.message?.message_thread_id,
+      }).catch((e) => this.onError(ctx, e));
       return;
     }
     try {
       const { prompt } = getCommandNamePrompt(ctx, SupportedCommands);
-      const { url, newPrompt } = this.hasUrl(prompt);
+      const { url, newPrompt } = hasUrl(prompt);
       if (url) {
         let chat: ChatConversation[] = [];
         this.onWebCrawler(
           ctx,
-          await this.preparePrompt(ctx, newPrompt),
+          await preparePrompt(ctx, newPrompt),
           chat,
           url,
           "sum"
         );
       } else {
-        ctx.reply(`Error: Missing url`);
+        await sendMessage(ctx, `Error: Missing url`, {
+          topicId: ctx.message?.message_thread_id,
+        }).catch((e) => this.onError(ctx, e));
       }
     } catch (e) {
       this.onError(ctx, e);
@@ -533,8 +404,8 @@ export class OpenAIBot {
       // const { model } = ctx.session.openAi.chatGpt;
       const chatModel = getChatModel(model);
       const webCrawlerMaxTokens =
-        chatModel.maxContextTokens - config.openAi.maxTokens * 2;
-      const { user, password } = this.hasUsernamePassword(prompt);
+        chatModel.maxContextTokens - config.openAi.chatGpt.maxTokens * 2;
+      const { user, password } = hasUsernamePassword(prompt);
       if (user && password) {
         // && ctx.chat?.type !== 'private'
         const maskedPrompt =
@@ -542,7 +413,9 @@ export class OpenAIBot {
             ?.text!.replaceAll(user, "****")
             .replaceAll(password, "*****") || "";
         ctx.api.deleteMessage(ctx.chat?.id!, ctx.message?.message_id!);
-        ctx.reply(maskedPrompt);
+        sendMessage(ctx, maskedPrompt, {
+          topicId: ctx.message?.message_thread_id,
+        });
       }
       const webContent = await getWebContent(
         url,
@@ -551,51 +424,55 @@ export class OpenAIBot {
         password
       );
       if (webContent.urlText !== "") {
-        // ctx.reply(`URL downloaded`,
-        //   // `${(webContent.networkTraffic / 1048576).toFixed(
+        // await sendMessage(ctx,`URL downloaded`,
+        //           // `${(webContent.networkTraffic / 1048576).toFixed(
         //   //   2
         //   // )} MB in ${(webContent.elapsedTime / 1000).toFixed(2)} seconds`,
-        //   {
-        //     parse_mode: "Markdown",
-        //   }
-        // );
+        // {
+        //   topicId: ctx.message?.message_thread_id,
+        //   parseMode: "Markdown",
+        // }).catch((e) => this.onError(ctx, e));
         if (
           !(await this.payments.pay(ctx as OnMessageContext, webContent.fees))
         ) {
           this.onNotBalanceMessage(ctx);
         } else {
+          let newPrompt = "";
           if (prompt !== "") {
-            chat.push({
-              content: `${
-                command === "sum" && "Summarize"
-              } ${prompt} this text: ${webContent.urlText}`,
-              role: "user",
-            });
+            newPrompt = `${command === "sum" && "Summarize"} ${limitPrompt(
+              prompt
+            )} this text: ${webContent.urlText}`;
           } else {
-            chat.push({
-              content: `${
-                command === "sum" && "Summarize this text in 50 words:"
-              } "${webContent.urlText}"`,
-              role: "user",
-            });
+            newPrompt = `${
+              command === "sum" &&
+              `Summarize this text in ${config.openAi.chatGpt.wordLimit} words:`
+            } "${webContent.urlText}"`;
           }
-
+          chat.push({
+            content: newPrompt,
+            role: "user",
+          });
           if (prompt || command === "sum") {
             const payload = {
               conversation: chat,
               model: model || config.openAi.chatGpt.model,
               ctx,
             };
-            const price = await promptGen(payload, chat);
+            const price = await this.promptGen(payload, chat);
             if (!(await this.payments.pay(ctx as OnMessageContext, price))) {
               this.onNotBalanceMessage(ctx);
             }
           }
         }
       } else {
-        ctx.reply(
-          "Url not supported, incorrect web site address or missing user credentials"
-        );
+        await sendMessage(
+          ctx,
+          "Url not supported, incorrect web site address or missing user credentials",
+          {
+            topicId: ctx.message?.message_thread_id,
+            parseMode: "Markdown",
+          }
+        ).catch((e) => this.onError(ctx, e));
         return;
       }
       return {
@@ -613,15 +490,15 @@ export class OpenAIBot {
   async onMention(ctx: OnMessageContext | OnCallBackQueryData) {
     try {
       if (this.botSuspended) {
-        await ctx
-          .reply("The bot is suspended")
-          .catch((e) => this.onError(ctx, e));
+        sendMessage(ctx, "The bot is suspended", {
+          topicId: ctx.message?.message_thread_id,
+        }).catch((e) => this.onError(ctx, e));
         return;
       }
       const { username } = ctx.me;
       const prompt = ctx.message?.text?.slice(username.length + 1) || ""; //@
       ctx.session.openAi.chatGpt.requestQueue.push(
-        await this.preparePrompt(ctx, prompt)
+        await preparePrompt(ctx, prompt)
       );
       if (!ctx.session.openAi.chatGpt.isProcessingQueue) {
         ctx.session.openAi.chatGpt.isProcessingQueue = true;
@@ -637,18 +514,18 @@ export class OpenAIBot {
   async onPrefix(ctx: OnMessageContext | OnCallBackQueryData) {
     try {
       if (this.botSuspended) {
-        await ctx
-          .reply("The bot is suspended")
-          .catch((e) => this.onError(ctx, e));
+        sendMessage(ctx, "The bot is suspended", {
+          topicId: ctx.message?.message_thread_id,
+        }).catch((e) => this.onError(ctx, e));
         return;
       }
       const { prompt, commandName } = getCommandNamePrompt(
         ctx,
         SupportedCommands
       );
-      const prefix = this.hasPrefix(prompt);
+      const prefix = hasPrefix(prompt);
       ctx.session.openAi.chatGpt.requestQueue.push(
-        await this.preparePrompt(ctx, prompt.slice(prefix.length))
+        await preparePrompt(ctx, prompt.slice(prefix.length))
       );
       if (!ctx.session.openAi.chatGpt.isProcessingQueue) {
         ctx.session.openAi.chatGpt.isProcessingQueue = true;
@@ -664,13 +541,13 @@ export class OpenAIBot {
   async onPrivateChat(ctx: OnMessageContext | OnCallBackQueryData) {
     try {
       if (this.botSuspended) {
-        await ctx
-          .reply("The bot is suspended")
-          .catch((e) => this.onError(ctx, e));
+        sendMessage(ctx, "The bot is suspended", {
+          topicId: ctx.message?.message_thread_id,
+        }).catch((e) => this.onError(ctx, e));
         return;
       }
       ctx.session.openAi.chatGpt.requestQueue.push(
-        await this.preparePrompt(ctx, ctx.message?.text!)
+        await preparePrompt(ctx, ctx.message?.text!)
       );
       if (!ctx.session.openAi.chatGpt.isProcessingQueue) {
         ctx.session.openAi.chatGpt.isProcessingQueue = true;
@@ -686,14 +563,14 @@ export class OpenAIBot {
   async onChat(ctx: OnMessageContext | OnCallBackQueryData) {
     try {
       if (this.botSuspended) {
-        await ctx
-          .reply("The bot is suspended")
-          .catch((e) => this.onError(ctx, e));
+        sendMessage(ctx, "The bot is suspended", {
+          topicId: ctx.message?.message_thread_id,
+        }).catch((e) => this.onError(ctx, e));
         return;
       }
       const prompt = ctx.match ? ctx.match : ctx.message?.text;
       ctx.session.openAi.chatGpt.requestQueue.push(
-        await this.preparePrompt(ctx, prompt as string)
+        await preparePrompt(ctx, prompt as string)
       );
       if (!ctx.session.openAi.chatGpt.isProcessingQueue) {
         ctx.session.openAi.chatGpt.isProcessingQueue = true;
@@ -719,12 +596,13 @@ export class OpenAIBot {
                     chatConversation[chatConversation.length - 1].content
                   }_`
                 : appText.introText;
-            await ctx
-              .reply(msg, { parse_mode: "Markdown" })
-              .catch((e) => this.onError(ctx, e));
+            await sendMessage(ctx, msg, {
+              topicId: ctx.message?.message_thread_id,
+              parseMode: "Markdown",
+            }).catch((e) => this.onError(ctx, e));
             return;
           }
-          const { url, newPrompt } = this.hasUrl(prompt);
+          const { url, newPrompt } = hasUrl(prompt);
           if (url) {
             await this.onWebCrawler(
               ctx,
@@ -734,16 +612,16 @@ export class OpenAIBot {
               "ask"
             );
           } else {
-            chatConversation.push({
+            const newPrompt = chatConversation.push({
               role: "user",
-              content: prompt,
+              content: limitPrompt(prompt),
             });
             const payload = {
               conversation: chatConversation!,
               model: model || config.openAi.chatGpt.model,
               ctx,
             };
-            const price = await promptGen(payload, chatConversation);
+            const price = await this.promptGen(payload, chatConversation);
             if (!(await this.payments.pay(ctx as OnMessageContext, price))) {
               this.onNotBalanceMessage(ctx);
             }
@@ -761,17 +639,19 @@ export class OpenAIBot {
   async onLast(ctx: OnMessageContext | OnCallBackQueryData) {
     if (ctx.session.openAi.chatGpt.chatConversation.length > 0) {
       const chat = ctx.session.openAi.chatGpt.chatConversation;
-      await ctx
-        .reply(`${appText.gptLast}\n_${chat[chat.length - 1].content}_`, {
-          parse_mode: "Markdown",
-        })
-        .catch((e) => this.onError(ctx, e));
+      await sendMessage(
+        ctx,
+        `${appText.gptLast}\n_${chat[chat.length - 1].content}_`,
+        {
+          topicId: ctx.message?.message_thread_id,
+          parseMode: "Markdown",
+        }
+      ).catch((e) => this.onError(ctx, e));
     } else {
-      await ctx
-        .reply(`To start a conversation please write */ask*`, {
-          parse_mode: "Markdown",
-        })
-        .catch((e) => this.onError(ctx, e));
+      await sendMessage(ctx, `To start a conversation please write */ask*`, {
+        topicId: ctx.message?.message_thread_id,
+        parseMode: "Markdown",
+      }).catch((e) => this.onError(ctx, e));
     }
   }
 
@@ -780,7 +660,7 @@ export class OpenAIBot {
     ctx.session.openAi.chatGpt.usage = 0;
     ctx.session.openAi.chatGpt.price = 0;
   }
-  
+
   async onNotBalanceMessage(ctx: OnMessageContext | OnCallBackQueryData) {
     const accountId = this.payments.getAccountId(ctx as OnMessageContext);
     const account = await this.payments.getUserAccount(accountId);
@@ -791,9 +671,10 @@ export class OpenAIBot {
     const balanceMessage = appText.notEnoughBalance
       .replaceAll("$CREDITS", balanceOne)
       .replaceAll("$WALLET_ADDRESS", account?.address || "");
-    await ctx
-      .reply(balanceMessage, { parse_mode: "Markdown" })
-      .catch((e) => this.onError(ctx, e));
+    await sendMessage(ctx, balanceMessage, {
+      topicId: ctx.message?.message_thread_id,
+      parseMode: "Markdown",
+    }).catch((e) => this.onError(ctx, e));
   }
 
   async onError(
@@ -808,7 +689,15 @@ export class OpenAIBot {
       return;
     }
     if (e instanceof GrammyError) {
-      if (e.error_code === 429) {
+      if (e.error_code === 400 && e.description.includes("not enough rights")) {
+        await sendMessage(
+          ctx,
+          "Error: The bot does not have permission to send photos in chat",
+          {
+            topicId: ctx.message?.message_thread_id,
+          }
+        );
+      } else if (e.error_code === 429) {
         this.botSuspended = true;
         const retryAfter = e.parameters.retry_after
           ? e.parameters.retry_after < 60
@@ -818,38 +707,119 @@ export class OpenAIBot {
         const method = e.method;
         const errorMessage = `On method "${method}" | ${e.error_code} - ${e.description}`;
         this.logger.error(errorMessage);
-        await ctx
-          .reply(
-            `${
-              ctx.from.username ? ctx.from.username : ""
-            } Bot has reached limit, wait ${retryAfter} seconds`
-          )
-          .catch((e) => this.onError(ctx, e, retryCount - 1));
+        await sendMessage(
+          ctx,
+          `${
+            ctx.from.username ? ctx.from.username : ""
+          } Bot has reached limit, wait ${retryAfter} seconds`,
+          {
+            topicId: ctx.message?.message_thread_id,
+          }
+        ).catch((e) => this.onError(ctx, e, retryCount - 1));
         if (method === "editMessageText") {
           ctx.session.openAi.chatGpt.chatConversation.pop(); //deletes last prompt
         }
         await sleep(retryAfter * 1000); // wait retryAfter seconds to enable bot
         this.botSuspended = false;
+      } else {
+        this.logger.error(
+          `On method "${e.method}" | ${e.error_code} - ${e.description}`
+        );
       }
     } else if (e instanceof OpenAI.APIError) {
       // 429	RateLimitError
       // e.status = 400 || e.code = BadRequestError
       this.logger.error(`OPENAI Error ${e.status}(${e.code}) - ${e.message}`);
       if (e.code === "context_length_exceeded") {
-        await ctx
-          .reply(`${e.message}`)
-          .catch((e) => this.onError(ctx, e, retryCount - 1));
+        await sendMessage(ctx, e.message, {
+          topicId: ctx.message?.message_thread_id,
+        }).catch((e) => this.onError(ctx, e, retryCount - 1));
         this.onEnd(ctx);
       } else {
-        await ctx
-          .reply(`Error accessing OpenAI (ChatGPT). Please try later`)
-          .catch((e) => this.onError(ctx, e, retryCount - 1));
+        await sendMessage(
+          ctx,
+          `Error accessing OpenAI (ChatGPT). Please try later`,
+          {
+            topicId: ctx.message?.message_thread_id,
+          }
+        ).catch((e) => this.onError(ctx, e, retryCount - 1));
       }
     } else {
       this.logger.error(`${e.toString()}`);
-      await ctx
-        .reply(msg ? msg : "Error handling your request")
-        .catch((e) => this.onError(ctx, e, retryCount - 1));
+      await sendMessage(ctx, "Error handling your request", {
+        topicId: ctx.message?.message_thread_id,
+      }).catch((e) => this.onError(ctx, e, retryCount - 1));
     }
   }
 }
+
+// onGenImgEnCmd = async (ctx: OnMessageContext | OnCallBackQueryData) => {
+//   try {
+//     if (ctx.session.openAi.imageGen.isEnabled) {
+//       const prompt = await ctx.match;
+//       if (!prompt) {
+//         sendMessage(ctx, "Error: Missing prompt", {
+//           topicId: ctx.message?.message_thread_id,
+//         }).catch((e) =>
+//           this.onError(ctx, e, MAX_TRIES, "Error: Missing prompt")
+//         );
+//         return;
+//       }
+//       const payload = {
+//         chatId: await ctx.chat?.id!,
+//         prompt: prompt as string,
+//         numImages: await ctx.session.openAi.imageGen.numImages,
+//         imgSize: await ctx.session.openAi.imageGen.imgSize,
+//       };
+//       sendMessage(ctx, "generating improved prompt...", {
+//         topicId: ctx.message?.message_thread_id,
+//       }).catch((e) =>
+//         this.onError(ctx, e, MAX_TRIES, "generating improved prompt...")
+//       );
+//       await imgGenEnhanced(payload, ctx);
+//     } else {
+//       sendMessage(ctx, "Bot disabled", {
+//         topicId: ctx.message?.message_thread_id,
+//       }).catch((e) => this.onError(ctx, e, MAX_TRIES, "Bot disabled"));
+//     }
+//   } catch (e) {
+//     this.onError(ctx, e);
+//   }
+// };
+
+// private async imgGenEnhanced(
+//   data: ImageGenPayload,
+//   ctx: OnMessageContext | OnCallBackQueryData
+// ) {
+//   const { chatId, prompt, numImages, imgSize, model } = data;
+//   try {
+//     const upgratedPrompt = await improvePrompt(prompt, model!);
+//     if (upgratedPrompt) {
+//       await ctx
+//         .reply(
+//           `The following description was added to your prompt: ${upgratedPrompt}`
+//         )
+//         .catch((e) => {
+//           throw e;
+//         });
+//     }
+//     // bot.api.sendMessage(chatId, "generating the output...");
+//     const imgs = await postGenerateImg(
+//       upgratedPrompt || prompt,
+//       numImages,
+//       imgSize
+//     );
+//     imgs.map(async (img: any) => {
+//       await ctx
+//         .replyWithPhoto(img.url, {
+//           caption: `/DALLE ${upgratedPrompt || prompt}`,
+//         })
+//         .catch((e) => {
+//           throw e;
+//         });
+//     });
+//     return true;
+//   } catch (e) {
+//     throw e;
+//   }
+// };

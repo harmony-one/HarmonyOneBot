@@ -26,10 +26,6 @@ export default {
     ? parseInt(process.env.SESSION_TIMEOUT)
     : 48, // in hours
   openAi: {
-    maxTokens:
-      (process.env.OPENAI_MAX_TOKENS &&
-        parseInt(process.env.OPENAI_MAX_TOKENS)) ||
-      800, // telegram messages has a char limit
     dalle: {
       isEnabled: Boolean(parseInt(process.env.IMAGE_GEN_ENABLED || "1")),
       telegramFileUrl: "https://api.telegram.org/file/bot",
@@ -48,6 +44,11 @@ export default {
       },
     },
     chatGpt: {
+      maxTokens:
+        (process.env.OPENAI_MAX_TOKENS &&
+          parseInt(process.env.OPENAI_MAX_TOKENS)) ||
+        800, // telegram messages has a char limit
+      wordLimit: 50,
       wordCountBetween: process.env.WORD_COUNT_BETWEEN
         ? parseInt(process.env.WORD_COUNT_BETWEEN)
         : 100,
@@ -64,13 +65,13 @@ export default {
       prefixes: {
         chatPrefix: process.env.ASK_PREFIX
           ? process.env.ASK_PREFIX.split(",")
-          : ["a.","?",">","."],
+          : ["a.", "?", ">", "."],
         dallePrefix: process.env.DALLE_PREFIX
           ? process.env.DALLE_PREFIX.split(",")
           : ["d."],
         newPrefix: process.env.NEW_PREFIX
           ? process.env.NEW_PREFIX.split(",")
-          : ["n."],
+          : ["n.", ".."],
       },
       minimumBalance: process.env.MIN_BALANCE
         ? parseInt(process.env.MIN_BALANCE)
