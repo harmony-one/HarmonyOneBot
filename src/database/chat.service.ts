@@ -64,7 +64,7 @@ export class ChatService {
     const newAmount = bn(chat.creditAmount).minus(bn(amount))
 
     if(newAmount.lt(0)) {
-      throw new Error(`${accountId} Insufficient credits: can not withdraw ${amount}, current balance ${chat.creditAmount}`)
+      throw new Error(`${accountId} Insufficient credits: cannot withdraw ${amount}, current balance ${chat.creditAmount}`)
     }
 
     return chatRepository.update({
