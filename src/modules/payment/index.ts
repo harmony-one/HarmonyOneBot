@@ -276,11 +276,13 @@ export class BotPayments {
     const { from, text = "", audio, voice = "", chat } = ctx.update.message;
 
     try {
-      const accountId = this.getAccountId(ctx);
-      let [command = ""] = text.split(" ");
-      if (!command) {
-        if (audio || voice) {
-          command = "voice-memo";
+      const accountId = this.getAccountId(ctx)
+      let [command = ''] = text.split(' ')
+      if(!command) {
+        if(audio || voice) {
+          command = '/voice-memo'
+        } else {
+          command = '/openai'
         }
       }
 

@@ -1,11 +1,6 @@
 import config from "../../config";
 import { isValidUrl } from "./utils/web-crawler";
-import {
-  OnMessageContext,
-  OnCallBackQueryData,
-  ChatConversation,
-  ChatCompletion,
-} from "../types";
+import { OnMessageContext, OnCallBackQueryData, MessageExtras } from "../types";
 import { parse } from "path";
 import { ParseMode } from "grammy/types";
 import { getChatModel, getChatModelPrice, getTokenNumber } from "./api/openAi";
@@ -246,4 +241,15 @@ export const getPromptPrice = (completion: string, data: ChatGptPayload) => {
     promptTokens,
     completionTokens,
   };
+};
+
+export const limitPrompt = (prompt: string) => {
+  const wordCountPattern = /(\d+)\s*word(s)?/g;
+  const match = wordCountPattern.exec(prompt);
+
+  if (match) {
+    return `${prompt}`;
+  }
+
+  return `${prompt} in around ${config.openAi.chatGpt.wordLimit} words`;
 };

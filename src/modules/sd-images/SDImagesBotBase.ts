@@ -123,25 +123,25 @@ export class SDImagesBotBase {
                     `${session.message} ${prompt}`
                 :
                 `/${model.aliases[0]} ${prompt}`;
-
             const topicId = await ctx.message?.message_thread_id
             let msgExtras: MessageExtras = {
                 caption: reqMessage
             }
             if (topicId) {
                 msgExtras['message_thread_id'] = topicId
-            }                
+            }      
             await ctx.replyWithPhoto(new InputFile(imageBuffer),msgExtras);
 
             if (ctx.chat?.id && queueMessageId) {
                 await ctx.api.deleteMessage(ctx.chat?.id, queueMessageId);
             }
         } catch (e: any) {
+            ctx.chatAction = null
             const topicId = await ctx.message?.message_thread_id
             let msgExtras: MessageExtras = {}
             if (topicId) {
                 msgExtras['message_thread_id'] = topicId
-            } 
+            }
             if (e instanceof GrammyError) {               
                 if (e.error_code === 400 && e.description.includes('not enough rights')) {
                     ctx.reply(`Error: The bot does not have permission to send photos in chat... Refunding payments`, msgExtras);
@@ -151,8 +151,8 @@ export class SDImagesBotBase {
             } else {
                 this.logger.error(e.toString());
                 ctx.reply(`Error: something went wrong... Refunding payments`, msgExtras);
-                refundCallback();
             }
+            refundCallback()
         }
 
         this.queue = this.queue.filter((v) => v !== uuid);
@@ -237,9 +237,17 @@ export class SDImagesBotBase {
             let msgExtras: MessageExtras = {}
             if (topicId) {
                 msgExtras['message_thread_id'] = topicId
-            } 
-            this.logger.error(e.toString());
-            ctx.reply(`Error: something went wrong... Refunding payments`, msgExtras);
+            }
+            if (e instanceof GrammyError) {               
+                if (e.error_code === 400 && e.description.includes('not enough rights')) {
+                    ctx.reply(`Error: The bot does not have permission to send photos in chat... Refunding payments`, msgExtras);
+                } else {
+                    ctx.reply(`Error: something went wrong... Refunding payments`, msgExtras)
+                }
+            } else {
+                this.logger.error(e.toString());
+                ctx.reply(`Error: something went wrong... Refunding payments`, msgExtras);
+            }
             refundCallback();
         }
 
