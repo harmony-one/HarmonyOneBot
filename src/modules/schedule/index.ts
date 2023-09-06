@@ -142,8 +142,8 @@ export class BotSchedule {
     const oneBotMetrics =
       `- Bot total earns, weekly users, daily messages: ` +
       `*${abbreviateNumber(balance / Math.pow(10, 18))}* ONE` +
-      `, *${abbreviateNumber(weeklyUsers)}*` +
-      `, *${abbreviateNumber(dailyMessages)}*`
+      `, ${abbreviateNumber(weeklyUsers)}` +
+      `, ${abbreviateNumber(dailyMessages)}`
 
     return `${networkUsage}\n${assetsUpdate}\n${oneBotMetrics}`;
   }
