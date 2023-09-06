@@ -232,7 +232,7 @@ export const getPromptPrice = (completion: string, data: ChatGptPayload) => {
 };
 
 export const limitPrompt = (prompt: string) => {
-  const wordCountPattern = /(\d+)\s*word/g;
+  const wordCountPattern = /(\d+)\s*word(s)?/g;
   const match = wordCountPattern.exec(prompt);
 
   if (match) {
