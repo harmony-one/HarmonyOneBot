@@ -174,13 +174,6 @@ export const messageTopic = async (
   return await ctx.message?.message_thread_id;
 };
 
-export interface MessageExtras {
-  caption?: string;
-  message_thread_id?: number;
-  parse_mode?: ParseMode;
-  reply_to_message_id?: number
-}
-
 interface GetMessagesExtras {
   parseMode?: ParseMode | undefined;
   topicId?: number | undefined;
