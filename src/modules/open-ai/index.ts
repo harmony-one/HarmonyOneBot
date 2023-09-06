@@ -33,7 +33,6 @@ import {
   isMentioned,
   limitPrompt,
   MAX_TRIES,
-  messageTopic,
   preparePrompt,
   sendMessage,
   SupportedCommands,
@@ -400,9 +399,20 @@ export class OpenAIBot {
     prompt: string,
     chat: ChatConversation[],
     url: string,
-    command = "ask"
+    command = "ask",
+    retryCount = MAX_TRIES
   ) {
     try {
+      if (retryCount === 0) {
+        await sendMessage(
+          ctx,
+          "Url not supported, incorrect web site address or missing user credentials",
+          {
+            parseMode: "Markdown",
+          }
+        ).catch((e) => this.onError(ctx, e));
+        return;
+      }
       ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_35_TURBO_16K;
       const model = ChatGPTModelsEnum.GPT_35_TURBO_16K;
       // const { model } = ctx.session.openAi.chatGpt;
@@ -470,13 +480,7 @@ export class OpenAIBot {
           }
         }
       } else {
-        await sendMessage(
-          ctx,
-          "Url not supported, incorrect web site address or missing user credentials",
-          {
-            parseMode: "Markdown",
-          }
-        ).catch((e) => this.onError(ctx, e));
+        this.onWebCrawler(ctx, prompt, chat, url, command, retryCount - 1);
         return;
       }
       return {
@@ -683,7 +687,7 @@ export class OpenAIBot {
   async onError(
     ctx: OnMessageContext | OnCallBackQueryData,
     e: any,
-    retryCount: number = 3,
+    retryCount: number = MAX_TRIES,
     msg?: string
   ) {
     if (retryCount === 0) {
