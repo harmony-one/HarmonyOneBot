@@ -1,4 +1,4 @@
-import {TranslateBot} from "./modules/translate/TranslateBot";
+import { TranslateBot } from "./modules/translate/TranslateBot";
 
 require("events").EventEmitter.defaultMaxListeners = 30;
 import express from "express";
@@ -98,8 +98,8 @@ function createInitialSessionData(): BotSessionData {
     },
     translate: {
       languages: [],
-      enable: false
-    }
+      enable: false,
+    },
   };
 }
 
@@ -270,13 +270,15 @@ const onMessage = async (ctx: OnMessageContext) => {
       const price = translateBot.getEstimatedPrice(ctx);
       const isPaid = await payments.pay(ctx, price);
 
-      if(isPaid) {
-        const response = await translateBot.onEvent(ctx, (reason?: string) => {
-          payments.refundPayment(reason, ctx, price);
-        }).catch((e) => {
-          payments.refundPayment(e.message || "Unknown error", ctx, price);
-          return {next: false};
-        });
+      if (isPaid) {
+        const response = await translateBot
+          .onEvent(ctx, (reason?: string) => {
+            payments.refundPayment(reason, ctx, price);
+          })
+          .catch((e) => {
+            payments.refundPayment(e.message || "Unknown error", ctx, price);
+            return { next: false };
+          });
 
         if (!response.next) {
           return;
@@ -284,7 +286,7 @@ const onMessage = async (ctx: OnMessageContext) => {
       }
     }
 
-    if (openAiBot.isSupportedEvent(ctx)) {
+    if (await openAiBot.isSupportedEvent(ctx)) {
       if (ctx.session.openAi.imageGen.isEnabled) {
         const price = openAiBot.getEstimatedPrice(ctx);
         const isPaid = await payments.pay(ctx, price!);
@@ -438,15 +440,15 @@ bot.command("love", (ctx) => {
   });
 });
 
-bot.command('stop', (ctx) => {
+bot.command("stop", (ctx) => {
   logger.info("/stop command");
   ctx.session.openAi.chatGpt.chatConversation = [];
   ctx.session.openAi.chatGpt.usage = 0;
-  ctx.session.openAi.chatGpt.price = 0;  
+  ctx.session.openAi.chatGpt.price = 0;
   ctx.session.translate.enable = false;
-  ctx.session.translate.languages = []
-  ctx.session.oneCountry.lastDomain = ""
-})
+  ctx.session.translate.languages = [];
+  ctx.session.oneCountry.lastDomain = "";
+});
 // bot.command("memo", (ctx) => {
 //   ctx.reply(MEMO.text, {
 //     parse_mode: "Markdown",

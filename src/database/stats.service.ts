@@ -18,6 +18,12 @@ export interface BotPaymentLog {
   amountCredits: number
 }
 
+export interface EngagementByCommand {
+  command: string,
+  commandCount: string,
+  oneAmount: string,
+}
+
 export class StatsService {
   public writeLog(log: BotPaymentLog) {
     let paymentLog = new BotLog()
@@ -85,6 +91,25 @@ export class StatsService {
     const rows = await query.execute()
 
     return rows.length ? +rows[0].count : 0
+  }
+
+  public async getUserEngagementByCommand(daysPeriod = 7): Promise<EngagementByCommand[]> {
+    const currentTime = moment();
+    const dateStart = moment()
+      .tz('America/Los_Angeles')
+      .set({ hour: 0, minute: 0, second: 0 })
+      .subtract(daysPeriod,'days')
+      .unix()
+
+    const dateEnd = currentTime.unix();
+
+    const rows = await logRepository.createQueryBuilder('logs')
+      .select('logs.command, count(logs.command) as "commandCount", SUM(logs.amountOne) as "oneAmount"')
+      .where(`logs.createdAt BETWEEN TO_TIMESTAMP(${dateStart}) and TO_TIMESTAMP(${dateEnd})`)
+      .groupBy('logs.command')
+      .orderBy('"commandCount"', 'DESC').execute();
+
+    return rows;
   }
 
   public addCommandStat({tgUserId, rawMessage, command}: {tgUserId: number, rawMessage: string, command: string}) {

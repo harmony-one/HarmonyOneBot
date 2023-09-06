@@ -105,8 +105,8 @@ export const parseCtx = (ctx: Context): IOperation | false => {
             hasCommand(ctx, 'logo') || hasCommand(ctx, 'l')
         ) {
             command = COMMAND.TEXT_TO_IMAGE;
-            lora = getLoraByParam('logo');
             model = getModelByParam('xl');
+            lora = getLoraByParam('logo', model?.baseModel || 'SDXL 1.0');
         }
 
         if (hasCommand(ctx, 'images')) {
@@ -140,8 +140,8 @@ export const parseCtx = (ctx: Context): IOperation | false => {
         }
 
         if (messageText.startsWith('l.')) {
-            lora = getLoraByParam('logo');
             model = getModelByParam('xl');
+            lora = getLoraByParam('logo', model?.baseModel || 'SDXL 1.0');
         }
 
         if (!model) {
