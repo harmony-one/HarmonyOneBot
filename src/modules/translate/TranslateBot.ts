@@ -56,7 +56,9 @@ export class TranslateBot {
 
   public async onEvent(ctx: OnMessageContext, refundCallback: RefundCallback) {
     if (!this.isSupportedEvent(ctx)) {
-      await ctx.reply(`Unsupported command: ${ctx.message?.text}`)
+      await ctx.reply(`Unsupported command: ${ctx.message?.text}`, {
+        message_thread_id: ctx.message?.message_thread_id,
+      })
       await refundCallback('Unsupported command')
       return {next: true};
     }
@@ -97,7 +99,9 @@ export class TranslateBot {
     }
 
     return ctx.reply(`Got it. I will translate the following messages into these languages:
-${langList.join(', ')}
+${langList.join(', '), {
+  message_thread_id: ctx.message?.message_thread_id,
+}}
 
 To disable translation, use the command /translatestop.`)
   }
@@ -105,13 +109,17 @@ To disable translation, use the command /translatestop.`)
   public async stopTranslate(ctx: OnMessageContext) {
     ctx.chatAction = 'typing';
     ctx.session.translate.enable = false;
-    return ctx.reply('Translation is disabled');
+    return ctx.reply('Translation is disabled', {
+      message_thread_id: ctx.message?.message_thread_id,
+    });
   }
 
   public async onTranslate(ctx: OnMessageContext) {
     const message = ctx.message.text;
 
-    const progressMessage = await ctx.reply('...');
+    const progressMessage = await ctx.reply('...', {
+      message_thread_id: ctx.message?.message_thread_id,
+    });
     ctx.chatAction = 'typing';
 
     if (!message) {

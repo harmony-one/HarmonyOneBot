@@ -78,6 +78,7 @@ export class WalletConnect {
 
       await ctx.reply('Swap Pools Info', {
         reply_markup: keyboard,
+        message_thread_id: ctx.message?.message_thread_id,
       });
       return;
     }
@@ -94,7 +95,9 @@ export class WalletConnect {
       return this.getBalance(ctx);
     }
 
-    await ctx.reply('Unsupported command');
+    await ctx.reply('Unsupported command', {
+      message_thread_id: ctx.message?.message_thread_id,
+    });
   }
 
   async requestProposal() {
@@ -142,7 +145,8 @@ export class WalletConnect {
 
     const message = await ctx.replyWithPhoto(new InputFile(qrImgBuffer, `wallet_connect_${Date.now()}.png`), {
       caption: 'Scan this QR Code to use Wallet Connect with your MetaMask / Gnosis Safe / Timeless wallets\n\nEnter /connecthex to see Web Address',
-      parse_mode: 'Markdown'
+      parse_mode: 'Markdown',
+      message_thread_id: ctx.message?.message_thread_id,
     });
 
     this.requestApproval(ctx, approval, message);
@@ -151,7 +155,10 @@ export class WalletConnect {
   async connecthex(ctx: OnMessageContext) {
     const {uri, approval} = await this.requestProposal();
 
-    const message = await ctx.reply(`Copy this connection link to use Wallet Connect with your MetaMask / Gnosis Safe / Timeless wallets:\n\n\`${uri}\` `, {parse_mode: 'Markdown'});
+    const message = await ctx.reply(`Copy this connection link to use Wallet Connect with your MetaMask / Gnosis Safe / Timeless wallets:\n\n\`${uri}\` `, {
+      parse_mode: 'Markdown',
+      message_thread_id: ctx.message?.message_thread_id,
+  });
 
     this.requestApproval(ctx, approval, message);
   }
@@ -172,7 +179,9 @@ export class WalletConnect {
           return;
         }
 
-        await ctx.reply('Error while connection');
+        await ctx.reply('Error while connection', {
+          message_thread_id: ctx.message?.message_thread_id,
+        });
       } else {
         this.logger.error('error wc connect ' + ex)
       }
@@ -186,14 +195,18 @@ export class WalletConnect {
     const sessionId = sessionMap[userId];
 
     if (!sessionId) {
-      await ctx.reply('Link wallet with /connect');
+      await ctx.reply('Link wallet with /connect', {
+        message_thread_id: ctx.message?.message_thread_id,
+      });
       return
     }
 
     const session = signClient.session.get(sessionId);
 
     if (!session) {
-      await ctx.reply('Link wallet with /connect');
+      await ctx.reply('Link wallet with /connect', {
+        message_thread_id: ctx.message?.message_thread_id,
+      });
       return
     }
 
@@ -237,14 +250,18 @@ export class WalletConnect {
       const sessionId = sessionMap[userId];
 
       if (!sessionId) {
-        await ctx.reply('Link wallet with /connect');
+        await ctx.reply('Link wallet with /connect', {
+          message_thread_id: ctx.message?.message_thread_id,
+        });
         return
       }
 
       const session = signClient.session.get(sessionId);
 
       if (!session) {
-        await ctx.reply('Link wallet with /connect');
+        await ctx.reply('Link wallet with /connect', {
+          message_thread_id: ctx.message?.message_thread_id,
+        });
         return
       }
 
@@ -262,9 +279,12 @@ export class WalletConnect {
 `
       await ctx.reply(message, {
         parse_mode: "Markdown",
+        message_thread_id: ctx.message?.message_thread_id,
       })
     } catch (ex) {
-      await ctx.reply('Unknown error');
+      await ctx.reply('Unknown error', {
+        message_thread_id: ctx.message?.message_thread_id,
+      });
     }
   }
 }
