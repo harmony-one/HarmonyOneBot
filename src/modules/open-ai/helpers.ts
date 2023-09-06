@@ -90,24 +90,26 @@ export const hasNewPrefix = (prompt: string): string => {
   return "";
 };
 
-export const hasUrl = (ctx: OnMessageContext | OnCallBackQueryData, prompt: string) => {
-  const urls = ctx.entities('url')
-  let url = ''
-  let newPrompt = ''
+export const hasUrl = (
+  ctx: OnMessageContext | OnCallBackQueryData,
+  prompt: string
+) => {
+  const urls = ctx.entities("url");
+  let url = "";
+  let newPrompt = "";
   if (urls.length > 0) {
-    const { text } = urls[0]
-    url = text
-    newPrompt = prompt.replace(url,"")
-    console.log(url,newPrompt)
+    const { text } = urls[0];
+    url = text;
+    newPrompt = prompt.replace(url, "");
     return {
       url,
-      newPrompt
-    }
+      newPrompt,
+    };
   }
   return {
     url,
-    newPrompt : prompt
-  }
+    newPrompt: prompt,
+  };
 };
 
 export const hasUsernamePassword = (prompt: string) => {
@@ -180,24 +182,18 @@ export const messageTopic = async (
 
 interface GetMessagesExtras {
   parseMode?: ParseMode | undefined;
-  topicId?: number | undefined;
   caption?: string | undefined;
-  replyId?: number | undefined
+  replyId?: number | undefined;
 }
 
 export const getMessageExtras = (params: GetMessagesExtras) => {
-  const { parseMode, topicId, caption, replyId } = params;
+  const { parseMode, caption, replyId } = params;
   let extras: MessageExtras = {};
   if (parseMode) {
     extras["parse_mode"] = parseMode;
   }
-  if (topicId) {
-    extras["message_thread_id"] = parseInt(
-      String(topicId)
-    ) as unknown as number;
-  }
   if (replyId) {
-    extras['reply_to_message_id'] = replyId
+    extras["reply_to_message_id"] = replyId;
   }
   if (caption) {
     extras["caption"] = caption;
@@ -208,9 +204,16 @@ export const getMessageExtras = (params: GetMessagesExtras) => {
 export const sendMessage = async (
   ctx: OnMessageContext | OnCallBackQueryData,
   msg: string,
-  msgExtras: GetMessagesExtras
+  msgExtras?: GetMessagesExtras
 ) => {
-  const extras = getMessageExtras(msgExtras);
+  let extras: MessageExtras = {};
+  if (msgExtras) {
+    extras = getMessageExtras(msgExtras);
+  }
+  const topicId = ctx.message?.message_thread_id;
+  if (topicId) {
+    extras["message_thread_id"] = topicId
+  }
   return await ctx.reply(msg, extras);
 };
 

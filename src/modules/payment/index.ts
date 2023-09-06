@@ -276,13 +276,13 @@ export class BotPayments {
     const { from, text = "", audio, voice = "", chat } = ctx.update.message;
 
     try {
-      const accountId = this.getAccountId(ctx)
-      let [command = ''] = text.split(' ')
-      if(!command) {
-        if(audio || voice) {
-          command = '/voice-memo'
+      const accountId = this.getAccountId(ctx);
+      let [command = ""] = text.split(" ");
+      if (!command) {
+        if (audio || voice) {
+          command = "/voice-memo";
         } else {
-          command = '/openai'
+          command = "/openai";
         }
       }
 
@@ -313,10 +313,7 @@ export class BotPayments {
     if (!userAccount) {
       sendMessage(
         ctx,
-        `Cannot get @${from.username}(${from.id}) blockchain account`,
-        {
-          topicId: ctx.message.message_thread_id,
-        }
+        `Cannot get @${from.username}(${from.id}) blockchain account`
       );
       return false;
     }
@@ -386,7 +383,6 @@ export class BotPayments {
             )}"`
           );
           sendMessage(ctx, "Payment error, try again later", {
-            topicId: ctx.message.message_thread_id,
             parseMode: "Markdown",
             replyId: message_id,
           });
@@ -403,7 +399,6 @@ export class BotPayments {
         ctx,
         `Your credits: ${balanceOne} ONE tokens. To recharge, send to \`${userAccount.address}\`.`,
         {
-          topicId: ctx.message.message_thread_id,
           parseMode: "Markdown",
           replyId: message_id,
         }
@@ -484,15 +479,12 @@ export class BotPayments {
 
 To recharge: \`${account.address}\``,
           {
-            topicId: ctx.message.message_thread_id,
             parseMode: "Markdown",
           }
         );
       } catch (e) {
         this.logger.error(e);
-        sendMessage(ctx,`Error retrieving credits`, {
-          topicId: ctx.message.message_thread_id,
-        });
+        sendMessage(ctx, `Error retrieving credits`);
       }
     } else if (text === "/migrate") {
       const amount = await this.migrateFunds(accountId);
@@ -510,8 +502,7 @@ To recharge: \`${account.address}\``,
           2
         )} ONE`;
       }
-      sendMessage(ctx,replyText, {
-        topicId: ctx.message.message_thread_id,
+      sendMessage(ctx, replyText, {
         parseMode: "Markdown",
       });
     }

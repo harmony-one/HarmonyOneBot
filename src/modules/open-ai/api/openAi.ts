@@ -135,7 +135,6 @@ export const streamChatCompletion = async (
     const wordCountMinimum = config.openAi.chatGpt.wordCountBetween;
     return new Promise<string>(async (resolve, reject) => {
       try {
-        console.log('streamChatCompletion',conversation)
         const stream = await openai.chat.completions.create({
           model: model,
           messages:
