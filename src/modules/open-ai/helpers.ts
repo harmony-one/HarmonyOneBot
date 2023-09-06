@@ -230,3 +230,14 @@ export const getPromptPrice = (completion: string, data: ChatGptPayload) => {
     completionTokens,
   };
 };
+
+export const limitPrompt = (prompt: string) => {
+  const wordCountPattern = /(\d+)\s*word/g;
+  const match = wordCountPattern.exec(prompt);
+
+  if (match) {
+    return `${prompt}`;
+  }
+
+  return `${prompt} in around ${config.openAi.chatGpt.wordLimit} words`;
+};

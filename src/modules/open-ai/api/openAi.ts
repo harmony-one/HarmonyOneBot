@@ -99,7 +99,7 @@ export async function chatCompletion(
   try {
     const payload = {
       model: model,
-      max_tokens: limitTokens ? config.openAi.maxTokens : undefined,
+      max_tokens: limitTokens ? config.openAi.chatGpt.maxTokens : undefined,
       temperature: config.openAi.dalle.completions.temperature,
       messages: conversation,
     };
@@ -143,7 +143,7 @@ export const streamChatCompletion = async (
           messages:
             conversation as OpenAI.Chat.Completions.CreateChatCompletionRequestMessage[],
           stream: true,
-          max_tokens: limitTokens ? config.openAi.maxTokens : undefined,
+          max_tokens: limitTokens ? config.openAi.chatGpt.maxTokens : undefined,
           temperature: config.openAi.dalle.completions.temperature,
         });
         let wordCount = 0;

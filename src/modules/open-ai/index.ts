@@ -31,6 +31,7 @@ import {
   hasUrl,
   hasUsernamePassword,
   isMentioned,
+  limitPrompt,
   MAX_TRIES,
   messageTopic,
   preparePrompt,
@@ -403,7 +404,7 @@ export class OpenAIBot {
       // const { model } = ctx.session.openAi.chatGpt;
       const chatModel = getChatModel(model);
       const webCrawlerMaxTokens =
-        chatModel.maxContextTokens - config.openAi.maxTokens * 2;
+        chatModel.maxContextTokens - config.openAi.chatGpt.maxTokens * 2;
       const { user, password } = hasUsernamePassword(prompt);
       if (user && password) {
         // && ctx.chat?.type !== 'private'
@@ -436,22 +437,21 @@ export class OpenAIBot {
         ) {
           this.onNotBalanceMessage(ctx);
         } else {
+          let newPrompt = "";
           if (prompt !== "") {
-            chat.push({
-              content: `${
-                command === "sum" && "Summarize"
-              } ${prompt} this text: ${webContent.urlText}`,
-              role: "user",
-            });
+            newPrompt = `${command === "sum" && "Summarize"} ${limitPrompt(
+              prompt
+            )} this text: ${webContent.urlText}`;
           } else {
-            chat.push({
-              content: `${
-                command === "sum" && "Summarize this text in 50 words:"
-              } "${webContent.urlText}"`,
-              role: "user",
-            });
+            newPrompt = `${
+              command === "sum" &&
+              `Summarize this text in ${config.openAi.chatGpt.wordLimit} words:`
+            } "${webContent.urlText}"`;
           }
-
+          chat.push({
+            content: newPrompt,
+            role: "user",
+          });
           if (prompt || command === "sum") {
             const payload = {
               conversation: chat,
@@ -612,9 +612,9 @@ export class OpenAIBot {
               "ask"
             );
           } else {
-            chatConversation.push({
+            const newPrompt = chatConversation.push({
               role: "user",
-              content: prompt,
+              content: limitPrompt(prompt),
             });
             const payload = {
               conversation: chatConversation!,
