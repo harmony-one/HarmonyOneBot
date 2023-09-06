@@ -323,7 +323,7 @@ export class OpenAIBot {
     }
   };
 
-  private async promptGen(data: ChatGptPayload, chat: ChatConversation[]) {
+  private async promptGen(data: ChatGptPayload) {
     const { conversation, ctx, model } = data;
     try {
       const extras = getMessageExtras({
@@ -351,11 +351,15 @@ export class OpenAIBot {
             price.promptTokens + price.completionTokens
           } | ${model} | price: ${price}¢`
         );
-        conversation.push({ content: completion, role: "system" });
-        chat = [...conversation!];
-        return price.price;
+        return {
+          price: price.price,
+          chat: conversation,
+        };
       }
-      return 0;
+      return {
+        price: 0,
+        chat: conversation,
+      };
     } catch (e: any) {
       ctx.chatAction = null;
       throw e;
@@ -371,7 +375,7 @@ export class OpenAIBot {
     }
     try {
       const { prompt } = getCommandNamePrompt(ctx, SupportedCommands);
-      const { url, newPrompt } = hasUrl(prompt);
+      const { url, newPrompt } = hasUrl(ctx, prompt);
       if (url) {
         let chat: ChatConversation[] = [];
         this.onWebCrawler(
@@ -438,10 +442,11 @@ export class OpenAIBot {
           this.onNotBalanceMessage(ctx);
         } else {
           let newPrompt = "";
+          // console.log(webContent.urlText)
           if (prompt !== "") {
-            newPrompt = `${command === "sum" && "Summarize"} ${limitPrompt(
+            newPrompt = `${command === "sum" ? "Summarize" : ""} ${limitPrompt(
               prompt
-            )} this text: ${webContent.urlText}`;
+            )}. This is the web crawl text: ${webContent.urlText}`;
           } else {
             newPrompt = `${
               command === "sum" &&
@@ -458,8 +463,11 @@ export class OpenAIBot {
               model: model || config.openAi.chatGpt.model,
               ctx,
             };
-            const price = await this.promptGen(payload, chat);
-            if (!(await this.payments.pay(ctx as OnMessageContext, price))) {
+            const result = await this.promptGen(payload);
+            chat = [...result.chat];
+            if (
+              !(await this.payments.pay(ctx as OnMessageContext, result.price))
+            ) {
               this.onNotBalanceMessage(ctx);
             }
           }
@@ -602,7 +610,7 @@ export class OpenAIBot {
             }).catch((e) => this.onError(ctx, e));
             return;
           }
-          const { url, newPrompt } = hasUrl(prompt);
+          const { url, newPrompt } = hasUrl(ctx, prompt);
           if (url) {
             await this.onWebCrawler(
               ctx,
@@ -621,8 +629,11 @@ export class OpenAIBot {
               model: model || config.openAi.chatGpt.model,
               ctx,
             };
-            const price = await this.promptGen(payload, chatConversation);
-            if (!(await this.payments.pay(ctx as OnMessageContext, price))) {
+            const result = await this.promptGen(payload);
+            ctx.session.openAi.chatGpt.chatConversation = [...result.chat];
+            if (
+              !(await this.payments.pay(ctx as OnMessageContext, result.price))
+            ) {
               this.onNotBalanceMessage(ctx);
             }
           }

@@ -90,20 +90,24 @@ export const hasNewPrefix = (prompt: string): string => {
   return "";
 };
 
-export const hasUrl = (prompt: string) => {
-  const promptArray = prompt.split(" ");
-  let url = "";
-  for (let i = 0; i < promptArray.length; i++) {
-    if (isValidUrl(promptArray[i])) {
-      url = promptArray[i];
-      promptArray.splice(i, 1);
-      break;
+export const hasUrl = (ctx: OnMessageContext | OnCallBackQueryData, prompt: string) => {
+  const urls = ctx.entities('url')
+  let url = ''
+  let newPrompt = ''
+  if (urls.length > 0) {
+    const { text } = urls[0]
+    url = text
+    newPrompt = prompt.replace(url,"")
+    console.log(url,newPrompt)
+    return {
+      url,
+      newPrompt
     }
   }
   return {
     url,
-    newPrompt: promptArray.join(" "),
-  };
+    newPrompt : prompt
+  }
 };
 
 export const hasUsernamePassword = (prompt: string) => {
