@@ -6,7 +6,7 @@ import config from '../../config'
 import {BotContext, OnMessageContext} from "../types";
 import {getDailyMetrics, getFeeStats, MetricsDailyType} from "./explorerApi";
 import {getAddressBalance, getBotFee, getBotFeeStats} from "./harmonyApi";
-import {getBridgeStats} from "./bridgeAPI";
+import {getBridgeStats, getTotalStakes, getTVL} from "./bridgeAPI";
 import {statsService} from "../../database/services";
 import {abbreviateNumber} from "./utils";
 import {getOneRate} from "./exchangeApi";
@@ -48,7 +48,7 @@ export class BotSchedule {
 
   }
 
-  private async prepareMetricsUpdate(refetchData = false) {
+  private async prepareMetricsUpdate() {
     try {
       this.logger.info(`Start preparing daily stats...`)
       const reportMessage = await this.generateReport()
@@ -57,7 +57,7 @@ export class BotSchedule {
       return reportMessage
     } catch (e) {
       console.log('### e', e);
-      this.logger.error(`Cannot get stats: ${(e as Error).message}`)
+      this.logger.error(`Cannot generate stats report: ${(e as Error).message}`)
     }
   }
 
@@ -78,7 +78,7 @@ export class BotSchedule {
 
   private async runCronJob() {
     cron.schedule('55 17 * * *', () => {
-      this.prepareMetricsUpdate(true)
+      this.prepareMetricsUpdate()
     }, {
       scheduled: true,
       timezone: "Europe/Lisbon"
@@ -91,9 +91,6 @@ export class BotSchedule {
       scheduled: true,
       timezone: "Europe/Lisbon"
     });
-
-    // await this.prepareMetricsUpdate()
-    // await this.postMetricsUpdate()
   }
 
   public isSupportedEvent(ctx: OnMessageContext) {
@@ -106,11 +103,13 @@ export class BotSchedule {
   }
 
   public async generateReport() {
-    this.logger.info(`Start generating report...`)
     const [
       networkFeesWeekly,
       walletsCountWeekly,
       oneRate,
+
+      bridgeTVL,
+      totalStakes,
 
       balance,
       weeklyUsers,
@@ -119,6 +118,9 @@ export class BotSchedule {
       getDailyMetrics(MetricsDailyType.totalFee, 7),
       getDailyMetrics(MetricsDailyType.walletsCount, 7),
       getOneRate(),
+
+      getTVL(),
+      getTotalStakes(),
 
       getAddressBalance(this.holderAddress),
       statsService.getActiveUsers(7),
@@ -132,8 +134,10 @@ export class BotSchedule {
       `- Network 7-day fees, wallets, price: ` +
       `*${abbreviateNumber(networkFeesSum)}* ONE, ${abbreviateNumber(walletsCountSum)}, $${oneRate.toFixed(4)}`
 
+    console.log('totalStakes', totalStakes)
     const assetsUpdate =
-      `- Total assets, swaps, stakes: `
+      `- Total assets, swaps, stakes: ` +
+      `$${abbreviateNumber(bridgeTVL)}, - ,${abbreviateNumber(totalStakes)} ONE`
 
     const oneBotMetrics =
       `- Bot total earns, weekly users, daily messages: ` +
@@ -141,7 +145,7 @@ export class BotSchedule {
       `, *${abbreviateNumber(weeklyUsers)}*` +
       `, *${abbreviateNumber(dailyMessages)}*`
 
-    return `${networkUsage}\n${oneBotMetrics}`;
+    return `${networkUsage}\n${assetsUpdate}\n${oneBotMetrics}`;
   }
 
   public async generateReportEngagementByCommand(days: number) {

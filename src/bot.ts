@@ -442,7 +442,7 @@ bot.command('stop', (ctx) => {
   logger.info("/stop command");
   ctx.session.openAi.chatGpt.chatConversation = [];
   ctx.session.openAi.chatGpt.usage = 0;
-  ctx.session.openAi.chatGpt.price = 0;  
+  ctx.session.openAi.chatGpt.price = 0;
   ctx.session.translate.enable = false;
   ctx.session.translate.languages = []
   ctx.session.oneCountry.lastDomain = ""
