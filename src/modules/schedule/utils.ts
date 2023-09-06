@@ -5,6 +5,10 @@ export const getPercentDiff = function(v1: number, v2: number) {
   return ((v2 - v1) / Math.abs(v1)) * 100
 }
 
+export const formatValue = (value: number) => {
+  return (Math.round(value / Math.pow(10, 18)));
+}
+
 export const abbreviateNumber = (value: number) => {
   if (Math.abs(value) < 100) {
     const decimalPart = Math.round(value)

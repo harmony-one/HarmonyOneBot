@@ -16,6 +16,13 @@ enum SupportedCommands {
   ALL_STATS = 'allstats'
 }
 
+interface BotFeesReport {
+  daily: string;
+  weekly: string;
+  monthly: string;
+  change: string;
+}
+
 export class BotSchedule {
   private readonly holderAddress = config.payment.holderAddress
   private bot: Bot<BotContext>
@@ -117,9 +124,9 @@ export class BotSchedule {
     return config.schedule.isEnabled && ctx.hasCommand(Object.values(SupportedCommands));
   }
 
-  public async getBotFeeReport(address: string): Promise<string> {
-    const botFees = await getBotFeeStats(this.holderAddress)
-    return `*${botFees.value}* ONE (${botFees.change}%)`
+  public async getBotFeeReport(address: string): Promise<object> {
+    const botFees = await getBotFeeStats(address)
+    return botFees;
   }
 
   public async generateReport() {
@@ -160,9 +167,14 @@ export class BotSchedule {
     return "```\n" + rows.join('\n') + "\n```";
   }
 
+
+
   public async generateFullReport() {
+
+    const botFeesReport = (await this.getBotFeeReport(this.holderAddress)) as BotFeesReport;
+
     const [
-      botFeesReport,
+      // botFeesReport,
       botFeesWeekly,
       dau,
       totalOne,
@@ -172,7 +184,7 @@ export class BotSchedule {
       totalSupportedMessages,
       engagementByCommand,
     ] = await Promise.all([
-      this.getBotFeeReport(this.holderAddress),
+      // this.getBotFeeReport(this.holderAddress),
       getBotFee(this.holderAddress, 7),
       statsService.getActiveUsers(0),
       statsService.getTotalONE(),
@@ -183,14 +195,22 @@ export class BotSchedule {
       this.generateReportEngagementByCommand(7),
     ])
 
-    const report = `\nBot fees: *${botFeesReport}*` +
-      `\nWeekly bot fees collected: *${abbreviateNumber(botFeesWeekly)}*` +
-      `\nDaily Active Users: *${abbreviateNumber(dau)}*` +
+    const report =
+      `*BOT FEES*` +
+      `\nDaily: *${botFeesReport.daily}*` +
+      `\nWeekly: *${botFeesReport.weekly}*` +
+      `\nMonthly: *${botFeesReport.monthly}*` +
+
+      `\n\nWeekly Bot Fees Collected: *${abbreviateNumber(botFeesWeekly)}*` +
       `\nTotal fees users pay in ONE: *${abbreviateNumber(totalOne)}*` +
       `\nTotal fees users pay in free credits: *${abbreviateNumber(totalCredits)}*` +
+
+      `\n\nDaily Active Users: *${abbreviateNumber(dau)}*` +
       `\nWeekly active users: *${abbreviateNumber(weeklyUsers)}*` +
-      `\nWeekly user engagement (any commands): *${abbreviateNumber(totalMessages)}*` +
+
+      `\n\nWeekly user engagement (any commands): *${abbreviateNumber(totalMessages)}*` +
       `\nWeekly user engagement (commands supported by bot): *${abbreviateNumber(totalSupportedMessages)}*` +
+
       `\n\n${engagementByCommand}`
     return report;
   }

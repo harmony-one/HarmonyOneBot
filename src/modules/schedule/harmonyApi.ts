@@ -1,6 +1,6 @@
 import axios from 'axios'
 import moment from "moment/moment";
-import {abbreviateNumber, getPercentDiff} from "./utils";
+import {abbreviateNumber, getPercentDiff, formatValue} from "./utils";
 
 const rpcUrl = 'https://rpc.s0.t.hmny.io'
 
@@ -23,11 +23,20 @@ export const getAddressHistory = async (address: string): Promise<RpcTransaction
   const data = await rpcRequest('hmyv2_getTransactionsHistory', [{
     address,
     pageIndex: 0,
-    pageSize: 1000,
+    pageSize: 10000,
     fullTx: true,
     txType: 'RECEIVED',
     order: "DESC"
   }])
+
+  // if (data) {
+  //   console.log("Page size:", data.transactions.length);
+  //   return data.transactions;
+  // } else {
+  //   console.log("Data is null or undefined");
+  //   return [];
+  // }
+
   return data ? data.transactions : []
 }
 
@@ -49,14 +58,16 @@ export const getBotFee = async (address: string, daysCount: number): Promise<num
   }, 0)
 
   return total / Math.pow(10, 18);
+
+  
 }
 
-export const getBotFeeStats = async (address: string, daysCount = 7) => {
+export const getBotFeeStats = async (address: string, daysCount = 30) => {
   let history = await getAddressHistory(address)
 
   const startTimestamp = moment().subtract(daysCount,'days').unix()
   const daysAmountMap: Record<string, number> = {}
-
+ 
   history.forEach((item) => {
     const { timestamp, value } = item
     if(timestamp >= startTimestamp) {
@@ -74,17 +85,21 @@ export const getBotFeeStats = async (address: string, daysCount = 7) => {
     .map(([_, value]) => value)
 
   const value = daysAmountList[0]
-  const valueTotal = daysAmountList.reduce((sum, item) => sum += item, 0)
-  const average = valueTotal / daysCount
+  const value7 = daysAmountList.slice(0,7).reduce((sum, item) => sum + item)
+  const value30 = daysAmountList.slice(0,30).reduce((sum, item) => sum + item)
+  // const valueTotal = daysAmountList.reduce((sum, item) => sum += item, 0)
+
+  const average = value7 / daysCount
   let change = getPercentDiff(average, value).toFixed(1)
   if(+change > 0) {
     change = `+${change}`
   }
-  const valueFormatted = Math.round(value / Math.pow(10, 18))
 
   return {
-    value: abbreviateNumber(valueFormatted),
-    change
+    daily: (abbreviateNumber(formatValue(value))).toString(),
+    weekly: (abbreviateNumber(formatValue(value7))).toString(),
+    monthly: (abbreviateNumber(formatValue(value30))).toString(),
+    change: change.toString()
   }
 }
 
