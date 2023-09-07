@@ -70,6 +70,16 @@ export const LORAS_CONFIGS: ILora[] = [
         baseModel: 'SDXL 1.0',
         aliases: ['pixel-art-xl', 'pixel'],
     },
+    {
+        path: 'KoreanDollLikeness.safetensors',
+        name: 'KoreanDollLikeness',
+        id: '26124',
+        hash: '00483A2A78',
+        shortName: 'korean_doll',
+        link: 'https://civitai.com/models/26124/koreandolllikeness-v20',
+        baseModel: 'SD 1.5',
+        aliases: ['koreanDollLikeness_v20', 'korean_doll'],
+    },
 ];
 
 export const getLoraByParam = (param: string, baseModel: 'SD 1.5' | 'SDXL 1.0') => {
