@@ -28,6 +28,18 @@ export const NEGATIVE_PROMPT = '(deformed, distorted, disfigured:1.3), poorly dr
 export const getParamsFromPrompt = (originalPrompt: string, model: IModel): IParams => {
   let prompt = originalPrompt;
 
+  // lora match
+  const loraMatch = prompt.match(/<lora:(.*):(.*)>/);
+  let loraStrength;
+  let loraName;
+
+  if (loraMatch) {
+    loraName = loraMatch[1];
+    loraStrength = Number(loraMatch[2]);
+    
+    prompt = prompt.replace(/<lora:(.*):(.*)>/, '');
+  }
+
   // --ar Aspect ratio flag <w>:<h>
   const aspectRatioMatch = prompt.match(/(--|\—)ar\s+(\d+:\d+)/);
 
@@ -118,16 +130,7 @@ export const getParamsFromPrompt = (originalPrompt: string, model: IModel): IPar
     prompt = prompt.replace(/(--|\—)no\s+(.+?)(?=\s+--|$)/, '');
   }
 
-  const loraMatch = prompt.match(/<lora:(.*):(.*)>/);
-  let loraStrength;
-  let loraName;
-
-  if (loraMatch) {
-    loraName = loraMatch[1];
-    loraStrength = Number(loraMatch[2]);
-    
-    prompt = prompt.replace(/<lora:(.*):(.*)>/, '');
-  }
+  prompt = prompt.trim()
 
   return {
     negativePrompt,
