@@ -1,4 +1,4 @@
-import { Context, SessionFlavor } from "grammy";
+import {Context, SessionFlavor, CommandContext, HearsContext, CallbackQueryMiddleware} from "grammy";
 import { Filter, FilterQuery } from "grammy/out/filter";
 import { MenuFlavor } from "@grammyjs/menu/out/menu";
 import {
@@ -58,6 +58,7 @@ export type BotContext = Context &
 export type CustomContext<Q extends FilterQuery> = Filter<BotContext, Q>;
 export type OnMessageContext = CustomContext<"message">;
 export type OnPreCheckoutContext = CustomContext<"pre_checkout_query">;
+export type OnSuccessfullPayment = CustomContext<"message:successful_payment">;
 export type OnCallBackQueryData = CustomContext<"callback_query:data">;
 export type MenuContext = Filter<BotContext, "callback_query:data"> &
   MenuFlavor;

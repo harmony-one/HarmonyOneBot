@@ -124,7 +124,7 @@ const schedule = new BotSchedule(bot);
 const openAiBot = new OpenAIBot(payments);
 const oneCountryBot = new OneCountryBot();
 const translateBot = new TranslateBot();
-const telegramPayments = new TelegramPayments()
+const telegramPayments = new TelegramPayments(payments)
 
 bot.on("message:new_chat_members:me", async (ctx) => {
   try {
