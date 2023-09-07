@@ -4,6 +4,7 @@ import { sleep } from '../utils';
 import {
     buildImgPromptLora,
     buildImgPrompt,
+    buildImg2ImgLoraPrompt,
     buildImg2ImgPrompt,
     buildImg2ImgControlnetPrompt,
     buildImg2ImgControlnetV2Prompt,
@@ -100,34 +101,46 @@ export class Client {
 
             let prompt;
 
-            switch (options.controlnetVersion) {
-                case 1:
-                    prompt = buildImg2ImgPrompt({
-                        ...options,
-                        seed,
-                        clientId: comfyClient.clientId,
-                        fileName: uploadResult.name,
-                    });
-                    break;
+            if (options.loraPath) {
+                prompt = buildImg2ImgLoraPrompt({
+                    ...options,
+                    seed,
+                    clientId: comfyClient.clientId,
+                    fileName: uploadResult.name,
+                    steps: 30,
+                    denoise: 1,
+                    cfgScale: 8
+                });
+            } else {
+                switch (options.controlnetVersion) {
+                    case 1:
+                        prompt = buildImg2ImgPrompt({
+                            ...options,
+                            seed,
+                            clientId: comfyClient.clientId,
+                            fileName: uploadResult.name,
+                        });
+                        break;
 
-                case 2:
-                    prompt = buildImg2ImgControlnetPrompt({
-                        ...options,
-                        seed,
-                        clientId: comfyClient.clientId,
-                        fileName: uploadResult.name,
-                    });
-                    break;
+                    case 2:
+                        prompt = buildImg2ImgControlnetPrompt({
+                            ...options,
+                            seed,
+                            clientId: comfyClient.clientId,
+                            fileName: uploadResult.name,
+                        });
+                        break;
 
-                case 3:
-                    prompt = buildImg2ImgControlnetV2Prompt({
-                        ...options,
-                        seed,
-                        clientId: comfyClient.clientId,
-                        fileName: uploadResult.name,
-                        cfgScale: 7
-                    });
-                    break;
+                    case 3:
+                        prompt = buildImg2ImgControlnetV2Prompt({
+                            ...options,
+                            seed,
+                            clientId: comfyClient.clientId,
+                            fileName: uploadResult.name,
+                            cfgScale: 7
+                        });
+                        break;
+                }
             }
 
             const r = await comfyClient.queuePrompt(prompt);
