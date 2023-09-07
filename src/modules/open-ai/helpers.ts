@@ -211,9 +211,11 @@ export const sendMessage = async (
     extras = getMessageExtras(msgExtras);
   }
   const topicId = ctx.message?.message_thread_id;
+
   if (topicId) {
     extras["message_thread_id"] = topicId
   }
+  
   return await ctx.reply(msg, extras);
 };
 

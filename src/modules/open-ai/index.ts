@@ -304,7 +304,9 @@ export class OpenAIBot {
         const imgs = await alterGeneratedImg(prompt!, filePath!, ctx, imgSize!);
         if (imgs) {
           imgs!.map(async (img: any) => {
-            await ctx.replyWithPhoto(img.url).catch((e) => {
+            await ctx.replyWithPhoto(img.url, {
+              message_thread_id: ctx.message?.message_thread_id,
+            }).catch((e) => {
               throw e;
             });
           });

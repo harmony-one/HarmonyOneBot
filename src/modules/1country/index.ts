@@ -182,12 +182,16 @@ export class OneCountryBot {
     // }
 
     this.logger.warn(`### unsupported command`);
-    ctx.reply("### unsupported command");
+    ctx.reply("### unsupported command", {
+      message_thread_id: ctx.message?.message_thread_id,
+    });
   }
 
   onVistitCmd = async (ctx: OnMessageContext | OnCallBackQueryData) => {
     if (!ctx.match) {
-      ctx.reply("Error: Missing 1.country domain");
+      ctx.reply("Error: Missing 1.country domain", {
+        message_thread_id: ctx.message?.message_thread_id,
+      });
       return;
     }
 
@@ -196,12 +200,15 @@ export class OneCountryBot {
 
     ctx.reply(`Visit ${url}`, {
       reply_markup: keyboard,
+      message_thread_id: ctx.message?.message_thread_id,
     });
   };
 
   onRenewCmd = (ctx: OnMessageContext | OnCallBackQueryData) => {
     if (!ctx.match) {
-      ctx.reply("Error: Missing 1.country domain");
+      ctx.reply("Error: Missing 1.country domain", {
+        message_thread_id: ctx.message?.message_thread_id,
+      });
       return;
     }
     const url = getUrl(ctx.match as string);
@@ -215,13 +222,16 @@ export class OneCountryBot {
 
     ctx.reply(`Renew ${url}`, {
       reply_markup: keyboard,
+      message_thread_id: ctx.message?.message_thread_id,
     });
   };
 
   onNotionCmd = async (ctx: OnMessageContext | OnCallBackQueryData) => {
     const prompt: any = ctx.match;
     if (!prompt) {
-      ctx.reply("Error: Missing alias and url");
+      ctx.reply("Error: Missing alias and url", {
+        message_thread_id: ctx.message?.message_thread_id,
+      });
       return;
     }
     const [domain = "", alias = "", url = ""] = prompt.split(" ");
@@ -236,16 +246,22 @@ export class OneCountryBot {
           );
           ctx.reply(`Renew ${url}`, {
             reply_markup: keyboard,
+            message_thread_id: ctx.message?.message_thread_id,
           });
         } else {
-          ctx.reply(`The domain doesn't exist`);
+          ctx.reply(`The domain doesn't exist`, {
+            message_thread_id: ctx.message?.message_thread_id,
+          });
         }
       } else {
-        ctx.reply(`Invalid url`);
+        ctx.reply(`Invalid url`, {
+          message_thread_id: ctx.message?.message_thread_id,
+        });
       }
     } else {
       ctx.reply(appText.notion.promptMissing, {
         parse_mode: "Markdown",
+        message_thread_id: ctx.message?.message_thread_id,
       });
     }
   };
@@ -253,27 +269,37 @@ export class OneCountryBot {
   onCertCmd = async (ctx: OnMessageContext | OnCallBackQueryData) => {
     if (await isAdmin(ctx, false, true)) {
       if (!ctx.match) {
-        ctx.reply("Error: Missing 1.country domain");
+        ctx.reply("Error: Missing 1.country domain", {
+          message_thread_id: ctx.message?.message_thread_id,
+        });
         return;
       }
       const url = getUrl(ctx.match as string);
       try {
         const response = await relayApi().createCert({ domain: url });
         if (!response.error) {
-          ctx.reply(`The SSL certificate of ${url} was renewed`);
+          ctx.reply(`The SSL certificate of ${url} was renewed`, {
+            message_thread_id: ctx.message?.message_thread_id,
+          });
         } else {
-          ctx.reply(`${response.error}`);
+          ctx.reply(`${response.error}`, {
+            message_thread_id: ctx.message?.message_thread_id,
+          });
         }
       } catch (e) {
         this.logger.error(
           e instanceof AxiosError ? e.response?.data.error : appText.axiosError
         );
         ctx.reply(
-          e instanceof AxiosError ? e.response?.data.error : appText.axiosError
+          e instanceof AxiosError ? e.response?.data.error : appText.axiosError, {
+            message_thread_id: ctx.message?.message_thread_id,
+          }
         );
       }
     } else {
-      ctx.reply("This command is reserved");
+      ctx.reply("This command is reserved", {
+        message_thread_id: ctx.message?.message_thread_id,
+      });
     }
   };
 
@@ -282,7 +308,9 @@ export class OneCountryBot {
     if (await isAdmin(ctx, false, true)) {
       try {
         const response = await relayApi().genNFT({ domain: url });
-        ctx.reply("NFT metadata generated");
+        ctx.reply("NFT metadata generated", {
+          message_thread_id: ctx.message?.message_thread_id,
+        });
       } catch (e) {
         this.logger.error(
           e instanceof AxiosError
@@ -292,11 +320,15 @@ export class OneCountryBot {
         ctx.reply(
           e instanceof AxiosError
             ? e.response?.data.error
-            : "There was an error processing your request"
-        );
+            : "There was an error processing your request",
+            {
+              message_thread_id: ctx.message?.message_thread_id,
+            });
       }
     } else {
-      ctx.reply("This command is reserved");
+      ctx.reply("This command is reserved", {
+        message_thread_id: ctx.message?.message_thread_id,
+      });
     }
   };
 
@@ -320,9 +352,12 @@ export class OneCountryBot {
       }
       ctx.reply(msg, {
         parse_mode: "Markdown",
+        message_thread_id: ctx.message?.message_thread_id,
       });
     } else {
-      ctx.reply("This command is reserved");
+      ctx.reply("This command is reserved", {
+        message_thread_id: ctx.message?.message_thread_id,
+      });
     }
   };
 
@@ -331,7 +366,9 @@ export class OneCountryBot {
     const lastDomain = ctx.session.oneCountry.lastDomain;
     let msgId = 0;
     if (!prompt && !lastDomain) {
-      await ctx.reply(`Write a domain name`);
+      await ctx.reply(`Write a domain name`, {
+        message_thread_id: ctx.message?.message_thread_id,
+      });
       return;
     }
     if (!prompt && lastDomain) {
@@ -341,6 +378,7 @@ export class OneCountryBot {
       );
       await ctx.reply(`Rent ${lastDomain}`, {
         reply_markup: keyboard,
+        message_thread_id: ctx.message?.message_thread_id,
       });
       return;
     }
@@ -351,6 +389,7 @@ export class OneCountryBot {
     if (!validate.valid) {
       ctx.reply(validate.error, {
         parse_mode: "Markdown",
+        message_thread_id: ctx.message?.message_thread_id,
       });
       return;
     }
@@ -388,7 +427,9 @@ export class OneCountryBot {
       domain = getUrl(domain, false);
       const isAvailable = await isDomainAvailable(domain);
       if (!isAvailable.isAvailable) {
-        ctx.reply("Processing the request...");
+        ctx.reply("Processing the request...", {
+          message_thread_id: ctx.message?.message_thread_id,
+        });
         try {
           await relayApi().enableSubdomains(domain);
         } catch (e) {
@@ -397,11 +438,15 @@ export class OneCountryBot {
               ? e.response?.data
               : "There was an error processing your request"
           );
-          ctx.reply("There was an error processing your request");
+          ctx.reply("There was an error processing your request", {
+            message_thread_id: ctx.message?.message_thread_id,
+          });
         }
       }
     } else {
-      ctx.reply("This command is reserved");
+      ctx.reply("This command is reserved", {
+        message_thread_id: ctx.message?.message_thread_id,
+      });
     }
   };
 
