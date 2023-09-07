@@ -3,6 +3,7 @@ import moment from 'moment'
 import {abbreviateNumber, getPercentDiff} from "./utils";
 
 const bridgeUrl = 'https://hmy-lz-api-token.fly.dev'
+const stakeApiUrl = 'https://api.stake.hmny.io'
 
 interface BridgeOperation {
   id: number
@@ -61,6 +62,11 @@ export const getOperations = async (page = 0, size = 10000): Promise<BridgeOpera
 export const getTokensList = async (): Promise<BridgeToken[]> => {
   const { data } = await axios.get<BridgeTokensResponse>(`${bridgeUrl}/tokens?size=1000`)
   return data.content
+}
+
+export const getStakingStats = async () => {
+  const { data } = await axios.get<{ "total-staking": string }>(`${stakeApiUrl}/networks/harmony/network_info_lite`)
+  return data
 }
 
 export const getBridgeStats = async () => {
@@ -128,4 +134,14 @@ export const getBridgeStats = async () => {
     value: abbreviateNumber(value),
     change
   }
+}
+
+export const getTVL = async () => {
+  const tokens = await getTokensList()
+  return tokens.reduce((acc, item) => acc + +item.totalLockedUSD, 0)
+}
+
+export const getTotalStakes = async () => {
+  const { "total-staking": totalStaking } = await getStakingStats()
+  return Math.round(+totalStaking / 10**18)
 }
