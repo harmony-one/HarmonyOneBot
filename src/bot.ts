@@ -1,5 +1,3 @@
-import { TranslateBot } from "./modules/translate/TranslateBot";
-
 require("events").EventEmitter.defaultMaxListeners = 30;
 import express from "express";
 import {
@@ -22,6 +20,7 @@ import {
   OnMessageContext,
 } from "./modules/types";
 import { mainMenu } from "./pages";
+import { TranslateBot } from "./modules/translate/TranslateBot";
 import { VoiceMemo } from "./modules/voice-memo";
 import { QRCodeBot } from "./modules/qrcode/QRCodeBot";
 import { SDImagesBot } from "./modules/sd-images";
@@ -30,6 +29,7 @@ import { OneCountryBot } from "./modules/1country";
 import { WalletConnect } from "./modules/walletconnect";
 import { BotPayments } from "./modules/payment";
 import { BotSchedule } from "./modules/schedule";
+import { DocumentHandler } from "./modules/document-handler";
 import config from "./config";
 import { commandsHelpText, TERMS, SUPPORT, FEEDBACK, LOVE } from "./constants";
 import prometheusRegister, { PrometheusMetrics } from "./metrics/prometheus";
@@ -124,6 +124,7 @@ const schedule = new BotSchedule(bot);
 const openAiBot = new OpenAIBot(payments);
 const oneCountryBot = new OneCountryBot();
 const translateBot = new TranslateBot();
+const documentBot = new DocumentHandler();
 
 bot.on("message:new_chat_members:me", async (ctx) => {
   try {
@@ -224,6 +225,7 @@ const writeCommandLog = async (
 };
 
 const onMessage = async (ctx: OnMessageContext) => {
+  // console.log(ctx.update.message.document);
   try {
     await assignFreeCredits(ctx);
     if (qrCodeBot.isSupportedEvent(ctx)) {
@@ -264,6 +266,28 @@ const onMessage = async (ctx: OnMessageContext) => {
         });
       }
       return;
+    }
+
+    if (documentBot.isSupportedEvent(ctx)) {
+      const price = 1;
+      const isPaid = await payments.pay(ctx, price);
+      
+      if (isPaid) {
+        // const file = await bot.getFile();
+        const response = await documentBot
+          .onEvent(ctx, (reason?: string) => {
+            payments.refundPayment(reason, ctx, price);
+          })
+          .catch((e) => {
+            payments.refundPayment(e.message || "Unknown error", ctx, price);
+            return { next: false };
+          });
+
+        if (!response) {
+          return;
+        }
+      }
+      
     }
 
     if (translateBot.isSupportedEvent(ctx)) {
