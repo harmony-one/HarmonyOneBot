@@ -55,6 +55,7 @@
     "gpt-tokenizer": "^2.1.1",
     "grammy": "^1.17.1",
     "jsqr": "^1.4.0",
+    "litllm": "^3.0.0",
     "lokijs": "^1.5.12",
     "lru-cache": "^10.0.0",
     "moment": "^2.29.4",
