@@ -1,45 +1,17 @@
 import config from "../../config";
-import { isValidUrl } from "./utils/web-crawler";
 import { OnMessageContext, OnCallBackQueryData, MessageExtras } from "../types";
 import { parse } from "path";
 import { ParseMode } from "grammy/types";
-import { getChatModel, getChatModelPrice, getTokenNumber } from "./api/openAi";
+// import { getChatModel, getChatModelPrice, getTokenNumber } from "./api/openAi";
 import { ChatPayload } from "../types";
 
 export const SupportedCommands = {
-  chat: {
-    name: "chat",
+  palm: {
+    name: "v"
   },
-  ask: {
-    name: "ask",
-  },
-  sum: {
-    name: "sum",
-  },
-  ask35: {
-    name: "ask35",
-  },
-  new: {
-    name: "new",
-  },
-  gpt4: {
-    name: "gpt4",
-  },
-  gpt: {
-    name: "gpt",
-  },
-  last: {
-    name: "last",
-  },
-  dalle: {
-    name: "DALLE",
-  },
-  dalleLC: {
-    name: "dalle",
-  },
-  genImgEn: {
-    name: "genImgEn",
-  },
+  bard: {
+    name: "b"
+  }
 };
 
 export const MAX_TRIES = 3;
@@ -226,22 +198,10 @@ export const hasPrefix = (prompt: string): string => {
 };
 
 export const getPromptPrice = (completion: string, data: ChatPayload) => {
-  const { conversation, ctx, model } = data;
-
-  const prompt = conversation[conversation.length - 1].content;
-  const promptTokens = getTokenNumber(prompt);
-  const completionTokens = getTokenNumber(completion);
-  const modelPrice = getChatModel(model);
-  const price =
-    getChatModelPrice(modelPrice, true, promptTokens, completionTokens) *
-    config.openAi.chatGpt.priceAdjustment;
-  conversation.push({ content: completion, role: "system" });
-  ctx.session.openAi.chatGpt.usage += promptTokens + completionTokens;
-  ctx.session.openAi.chatGpt.price += price;
   return {
-    price,
-    promptTokens,
-    completionTokens,
+    price: 0,
+    promptTokens: 10,
+    completionTokens: 60,
   };
 };
 
