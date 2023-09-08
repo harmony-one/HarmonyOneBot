@@ -226,10 +226,13 @@ const writeCommandLog = async (
 
 const onMessage = async (ctx: OnMessageContext) => {
   try {
-    await telegramPayments.onEvent(ctx);
-    return
-
     await assignFreeCredits(ctx);
+
+    if (telegramPayments.isSupportedEvent(ctx)) {
+      await telegramPayments.onEvent(ctx);
+      return;
+    }
+
     if (qrCodeBot.isSupportedEvent(ctx)) {
       const price = qrCodeBot.getEstimatedPrice(ctx);
       const isPaid = await payments.pay(ctx, price);
@@ -389,7 +392,8 @@ bot.command(["start", "help", "menu"], async (ctx) => {
 
   const addressBalance = await payments.getAddressBalance(account.address);
   const credits = await chatService.getBalance(accountId);
-  const balance = addressBalance.plus(credits);
+  const fiatCredits = await chatService.getFiatBalance(accountId);
+  const balance = addressBalance.plus(credits).plus(fiatCredits);
   const balanceOne = payments.toONE(balance, false).toFixed(2);
   const startText = commandsHelpText.start
     .replaceAll("$CREDITS", balanceOne + "")

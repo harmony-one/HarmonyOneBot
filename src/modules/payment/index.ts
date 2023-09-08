@@ -314,11 +314,13 @@ export class BotPayments {
     amountToPay = amountToPay.plus(fee)
     const balance = await this.getUserBalance(accountId);
     const credits = await chatService.getBalance(accountId)
-    const balanceWithCredits = balance.plus(credits)
-    const balanceDelta = balanceWithCredits.minus(amountToPay);
+    const fiatCredits = await chatService.getFiatBalance(accountId);
+    const balanceTotal = balance.plus(credits).plus(fiatCredits);
+    const balanceDelta = balanceTotal.minus(amountToPay);
 
-    const creditsPayAmount = bn.min(amountToPay, credits)
-    const oneTokensPayAmount = amountToPay.minus(creditsPayAmount)
+    const creditsPayAmount = bn.min(amountToPay, credits);
+    const fiatCreditsPayAmount = bn.min(amountToPay.minus(creditsPayAmount), fiatCredits);
+    const oneTokensPayAmount = bn.min(amountToPay.minus(creditsPayAmount).minus(fiatCreditsPayAmount), balance);
 
     if (this.skipPayment(ctx, amountUSD)) {
       await this.writePaymentLog(ctx, BigNumber(0), BigNumber(0))
@@ -333,6 +335,13 @@ export class BotPayments {
         freeCreditsFeeCounter.inc(this.convertBigNumber(creditsPayAmount))
         this.logger.info(`[@${from.username}] paid from credits: ${creditsPayAmount.toFixed()}, left to pay: ${amountToPay.toFixed()}`)
       }
+
+      if (amountToPay.gt(0) && fiatCredits.gte(0)) {
+        await chatService.withdrawFiatAmount(accountId, fiatCreditsPayAmount.toFixed());
+        amountToPay = amountToPay.minus(fiatCreditsPayAmount);
+        this.logger.info(`[@${from.username}] paid from fiat credits: ${fiatCreditsPayAmount.toFixed()}, left to pay: ${amountToPay.toFixed()}`)
+      }
+
       if(amountToPay.gt(0)) {
         try {
           const tx = await this.transferFunds(
@@ -367,7 +376,8 @@ export class BotPayments {
     } else {
       const addressBalance = await this.getAddressBalance(userAccount.address)
       const creditsBalance = await chatService.getBalance(accountId)
-      const balance = addressBalance.plus(creditsBalance)
+      const fiatCreditsBalance = await chatService.getFiatBalance(accountId)
+      const balance = addressBalance.plus(creditsBalance).plus(fiatCreditsBalance)
       const balanceOne  = this.toONE(balance, false).toFixed(2)
       ctx.reply(
         `Your credits: ${balanceOne} ONE tokens. To recharge, send to \`${userAccount.address}\`.`,
@@ -435,8 +445,9 @@ export class BotPayments {
     if (text === '/credits') {
       try {
         const freeCredits = await chatService.getBalance(accountId)
+        const fiatCredits = await chatService.getFiatBalance(accountId)
         const addressBalance = await this.getAddressBalance(account.address);
-        const balance = addressBalance.plus(freeCredits)
+        const balance = addressBalance.plus(freeCredits).plus(fiatCredits)
         const balanceOne = this.toONE(balance, false);
         ctx.reply(
           `Your credits in ONE tokens: ${balanceOne.toFixed(2)}
