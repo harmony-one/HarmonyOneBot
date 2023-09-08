@@ -16,6 +16,12 @@ export interface DalleGPTModel {
   price: number;
 }
 
+export interface ChatGptPayload {
+  conversation: ChatConversation[];
+  model: string;
+  ctx: OnMessageContext | OnCallBackQueryData;
+}
+
 export enum ChatGPTModelsEnum {
   GPT_4 = "gpt-4",
   GPT_4_32K = "gpt-4-32k",

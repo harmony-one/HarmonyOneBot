@@ -30,7 +30,6 @@ import { OneCountryBot } from "./modules/1country";
 import { WalletConnect } from "./modules/walletconnect";
 import { BotPayments } from "./modules/payment";
 import { BotSchedule } from "./modules/schedule";
-import { VertexPalmBot } from './modules/vertex'
 import config from "./config";
 import { commandsHelpText, TERMS, SUPPORT, FEEDBACK, LOVE } from "./constants";
 import prometheusRegister, { PrometheusMetrics } from "./metrics/prometheus";
@@ -101,15 +100,6 @@ function createInitialSessionData(): BotSessionData {
       languages: [],
       enable: false,
     },
-    vertex: {
-      model: config.openAi.chatGpt.model,
-      isEnabled: config.openAi.chatGpt.isEnabled,
-      chatConversation: [],
-      price: 0,
-      usage: 0,
-      isProcessingQueue: false,
-      requestQueue: [],
-    },
   };
 }
 
@@ -134,7 +124,6 @@ const schedule = new BotSchedule(bot);
 const openAiBot = new OpenAIBot(payments);
 const oneCountryBot = new OneCountryBot();
 const translateBot = new TranslateBot();
-const vertexBot = new VertexPalmBot(payments);
 
 bot.on("message:new_chat_members:me", async (ctx) => {
   try {
@@ -294,24 +283,6 @@ const onMessage = async (ctx: OnMessageContext) => {
         if (!response.next) {
           return;
         }
-      }
-    }
-    if (await vertexBot.isSupportedEvent(ctx)) {
-      if (ctx.session.openAi.imageGen.isEnabled) {
-        const price = vertexBot.getEstimatedPrice(ctx);
-        const isPaid = await payments.pay(ctx, price!);
-        if (isPaid) {
-          await vertexBot
-            .onEvent(ctx)
-            .catch((e) => payments.refundPayment(e, ctx, price!));
-          return;
-        }
-        return;
-      } else {
-        await ctx.reply("Bot disabled", {
-          message_thread_id: ctx.message?.message_thread_id,
-        });
-        return;
       }
     }
 

@@ -25,28 +25,11 @@ export interface ChatCompletion {
   usage: number;
   price: number;
 }
-export interface ChatPayload {
-  conversation: ChatConversation[];
-  model: string;
-  ctx: OnMessageContext | OnCallBackQueryData;
-}
 export interface ChatConversation {
-  role?: string;
-  author?: string;
+  role: string;
   content: string;
-  citationMetadata?: any;
 }
 export interface ChatGptSessionData {
-  model: string;
-  isEnabled: boolean;
-  chatConversation: ChatConversation[];
-  usage: number;
-  price: number;
-  requestQueue: string[];
-  isProcessingQueue: boolean;
-}
-
-export interface VertexSessionData {
   model: string;
   isEnabled: boolean;
   chatConversation: ChatConversation[];
@@ -73,7 +56,6 @@ export interface BotSessionData {
   oneCountry: OneCountryData;
   openAi: OpenAiSessionData;
   translate: TranslateBotData;
-  vertex: VertexSessionData;
 }
 
 export type BotContext = Context &

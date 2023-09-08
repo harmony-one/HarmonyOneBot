@@ -8,7 +8,6 @@ import {
   OnMessageContext,
   OnCallBackQueryData,
   ChatConversation,
-  ChatPayload,
 } from "../types";
 import {
   alterGeneratedImg,
@@ -20,7 +19,7 @@ import {
 } from "./api/openAi";
 import { appText } from "./utils/text";
 import { chatService } from "../../database/services";
-import { ChatGPTModelsEnum } from "./types";
+import { ChatGPTModelsEnum, ChatGptPayload } from "./types";
 import config from "../../config";
 import { sleep } from "../sd-images/utils";
 import {
@@ -187,7 +186,6 @@ export class OpenAIBot {
       this.onChat(ctx);
       return;
     }
-
     if (
       ctx.hasCommand(SupportedCommands.dalle.name) ||
       ctx.hasCommand(SupportedCommands.dalleLC.name) ||
@@ -325,7 +323,7 @@ export class OpenAIBot {
     }
   };
 
-  private async promptGen(data: ChatPayload) {
+  private async promptGen(data: ChatGptPayload) {
     const { conversation, ctx, model } = data;
     try {
       let msgId = (
@@ -623,7 +621,7 @@ export class OpenAIBot {
               "ask"
             );
           } else {
-            chatConversation.push({
+            const newPrompt = chatConversation.push({
               role: "user",
               content: limitPrompt(prompt),
             });
