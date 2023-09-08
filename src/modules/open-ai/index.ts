@@ -443,25 +443,21 @@ export class OpenAIBot {
               prompt
             )} this text: ${webContent.urlText}`;
           } else {
-            newPrompt = `${
-              command === "sum" &&
-              `Summarize this text in ${config.openAi.chatGpt.wordLimit} words:`
+            newPrompt = `Summarize this text in ${config.openAi.chatGpt.wordLimit} words:
             } "${webContent.urlText}"`;
           }
           chat.push({
             content: newPrompt,
             role: "user",
           });
-          if (prompt || command === "sum") {
-            const payload = {
-              conversation: chat,
-              model: model || config.openAi.chatGpt.model,
-              ctx,
-            };
-            const price = await this.promptGen(payload, chat);
-            if (!(await this.payments.pay(ctx as OnMessageContext, price))) {
-              this.onNotBalanceMessage(ctx);
-            }
+          const payload = {
+            conversation: chat,
+            model: model || config.openAi.chatGpt.model,
+            ctx,
+          };
+          const price = await this.promptGen(payload, chat);
+          if (!(await this.payments.pay(ctx as OnMessageContext, price))) {
+            this.onNotBalanceMessage(ctx);
           }
         }
       } else {
