@@ -59,7 +59,7 @@ export default {
         (process.env.OPENAI_MAX_TOKENS &&
           parseInt(process.env.OPENAI_MAX_TOKENS)) ||
         800, // telegram messages has a char limit
-      wordLimit: 50,
+      wordLimit: 30,
       wordCountBetween: process.env.WORD_COUNT_BETWEEN
         ? parseInt(process.env.WORD_COUNT_BETWEEN)
         : 100,
