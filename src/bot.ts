@@ -487,23 +487,23 @@ bot.command("stop", (ctx) => {
 //   });
 // });
 
-bot.on("msg:new_chat_members", async (ctx) => {
-  try {
-    const newMembers = (await ctx.message?.new_chat_members) || [];
-    newMembers.forEach(async (m) => {
-      const user = await getChatMemberInfo(m.username!);
-      if (user.displayName) {
-        await ctx.reply(
-          `Hi everyone! Welcome to ${user.displayName} (@${user.username})${
-            user.bio && ": " + user.bio
-          }`
-        );
-      }
-    });
-  } catch (e: any) {
-    logger.error(`Error when welcoming new chat memmber ${e.toString()}`);
-  }
-});
+// bot.on("msg:new_chat_members", async (ctx) => {
+//   try {
+//     const newMembers = (await ctx.message?.new_chat_members) || [];
+//     newMembers.forEach(async (m) => {
+//       const user = await getChatMemberInfo(m.username!);
+//       if (user.displayName && user.displayName !== "undefined") {
+//         await ctx.reply(
+//           `Hi everyone! Welcome to ${user.displayName} (@${user.username})${
+//             user.bio && ": " + user.bio
+//           }`
+//         );
+//       }
+//     });
+//   } catch (e: any) {
+//     logger.error(`Error when welcoming new chat memmber ${e.toString()}`);
+//   }
+// });
 
 bot.on("message", onMessage);
 bot.on("callback_query:data", onCallback);
