@@ -31,7 +31,7 @@ import { BotPayments } from "./modules/payment";
 import { BotSchedule } from "./modules/schedule";
 import { DocumentHandler } from "./modules/document-handler";
 import config from "./config";
-import { commandsHelpText, TERMS, SUPPORT, FEEDBACK, LOVE } from "./constants";
+import { commandsHelpText, TERMS, SUPPORT, FEEDBACK, LOVE, MODELS } from "./constants";
 import prometheusRegister, { PrometheusMetrics } from "./metrics/prometheus";
 
 import { chatService, statsService } from "./database/services";
@@ -443,6 +443,14 @@ bot.command("terms", (ctx) => {
 bot.command("support", (ctx) => {
   writeCommandLog(ctx as OnMessageContext);
   return ctx.reply(SUPPORT.text, {
+    parse_mode: "Markdown",
+    disable_web_page_preview: true,
+  });
+});
+
+bot.command("models", (ctx) => {
+  writeCommandLog(ctx as OnMessageContext);
+  return ctx.reply(MODELS.text, {
     parse_mode: "Markdown",
     disable_web_page_preview: true,
   });
