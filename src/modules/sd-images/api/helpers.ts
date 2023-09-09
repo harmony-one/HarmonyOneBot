@@ -30,6 +30,39 @@ export const NEGATIVE_PROMPT = '(deformed, distorted, disfigured:1.3), poorly dr
 export const getParamsFromPrompt = (originalPrompt: string, model: IModel): IParams => {
   let prompt = originalPrompt;
 
+  // Civit generation data
+  if (prompt.includes("Negative prompt:")) {
+    let param_blob = prompt.split("Negative prompt: ")[1] || '';
+    let c_prompt = prompt.split("Negative prompt: ")[0].trim() || '';
+    let c_negativePrompt = param_blob.split("Steps: ")[0].trim() || '';
+    let step_match = param_blob.match(/Steps:\s+(\d+)/);
+    let c_steps = step_match ? step_match[1] : '20';
+    let dim_match = param_blob.match(/Size:\s+(\d+x\d+)/);
+    let c_dimensions = dim_match ? dim_match[1] : '512x512';
+    let cfg_match = param_blob.match(/CFG scale:\s+(\d+(\.\d+)?)/);
+    let c_cfg = cfg_match ? cfg_match[1] : '7';
+    let seed_match = param_blob.match(/Seed:\s+(\d+)/);
+    let c_seed = seed_match ? seed_match[1] : '1234567890';
+
+    let sampler_match = param_blob.match(/Sampler:\s(.*?),\s/);
+    let sampler_full = sampler_match ? sampler_match[1] : 'dpmpp_2m karras';
+    sampler_full = sampler_full.toLowerCase();
+    sampler_full = sampler_full.replaceAll("+", "p");
+    let c_sampler = 'dpmpp_2m'
+    let c_scheduler = 'karras'
+    if (sampler_full.includes("karras")) {
+      c_scheduler = 'karras'
+      sampler_full = sampler_full.replaceAll(" karras", '');
+      c_sampler = sampler_full.replaceAll(" ", '_')
+    } else {
+      c_scheduler = 'normal'
+      c_sampler = sampler_full
+    }
+
+
+    prompt = c_prompt + ' --no ' + c_negativePrompt + ' --steps ' + c_steps + ' --d ' + c_dimensions + ' --cfg ' + c_cfg + ' --seed ' + c_seed + ' --sampler ' + c_sampler + ' --scheduler ' + c_scheduler;
+  }
+
   // lora match
   const loraMatch = prompt.match(/<lora:(.*):(.*)>/);
   let loraStrength;
