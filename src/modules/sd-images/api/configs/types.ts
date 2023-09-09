@@ -30,4 +30,6 @@ export type Txt2ImgOptions = {
     loraStrength?: number;
     loraName?: string;
     loraPath?: string;
+    sampler_name?: string;
+    scheduler?: string;
 }

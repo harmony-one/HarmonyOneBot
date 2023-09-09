@@ -122,7 +122,7 @@ export class BotSchedule {
 
     const assetsUpdate =
       `- Total assets, swaps, stakes: ` +
-      `$${abbreviateNumber(bridgeTVL)}, $${abbreviateNumber(swapTradingVolumeSum)}, $${abbreviateNumber(totalStakeUSD)}`
+      `*$${abbreviateNumber(bridgeTVL)}*, $${abbreviateNumber(swapTradingVolumeSum)}, $${abbreviateNumber(totalStakeUSD)}`
 
     const oneBotMetrics =
       `- Bot total earns, weekly users, daily messages: ` +
