@@ -23,27 +23,23 @@ export class DocumentHandler {
   private jobsQueue = new LRUCache<string, TranslationJob>({ max: 100, ttl: 1000 * 60 * 5 })
 
   public isSupportedEvent(ctx: OnMessageContext): boolean {
-
     let documentType = ctx.message.document?.mime_type;
 
     if(documentType !== undefined) {
-
       return Object.values(SupportedDocuments).includes(documentType);
-
     }
 
     return false;
-
   }
 
 
   public async onEvent(ctx: OnMessageContext, refundCallback: RefundCallback) {
     
-    const { from, document } = ctx.update.message;
-    const fileSize = document?.file_size;
-    const requestKey = `${from.id}_${fileSize}_${Math.random()*10000}`;
+    // const { from, document } = ctx.update.message;
+    // const fileSize = document?.file_size;
+    // const requestKey = `${from.id}_${fileSize}_${Math.random()*10000}`;
 
-    this.requestsQueue.set(requestKey, Date.now())
+    // this.requestsQueue.set(requestKey, Date.now())
 
     // this.logger.info(`onEvent message @${from.username} (${from.id}): ${requestKey}`)
 
@@ -53,7 +49,7 @@ export class DocumentHandler {
 
       console.log(file);
 
-      const filePath = this.getTempFilePath(filename)
+      // const filePath = this.getTempFilePath(filename)
 
       await ctx.reply("you did it kid");
 
