@@ -114,18 +114,18 @@ export class BotSchedule {
     const walletsCountAvg = Math.round(walletsCountSum / walletsCountWeekly.length)
 
     const networkUsage =
-      `- Network 7-day fees, wallets, price: ` +
+      `Network 7-day fees, wallets, price: ` +
       `*${abbreviateNumber(networkFeesSum)}* ONE, ${abbreviateNumber(walletsCountAvg)}, $${oneRate.toFixed(4)}`
 
     const swapTradingVolumeSum = swapTradingVolume.reduce((sum, item) => sum + Math.round(+item.volumeUSD), 0)
     const totalStakeUSD = Math.round(oneRate * totalStakes)
 
     const assetsUpdate =
-      `- Total assets, swaps, stakes: ` +
+      `Current assets, 30-day swap volume, stakes: ` +
       `*$${abbreviateNumber(bridgeTVL)}*, $${abbreviateNumber(swapTradingVolumeSum)}, $${abbreviateNumber(totalStakeUSD)}`
 
     const oneBotMetrics =
-      `- Bot total earns, weekly users, daily messages: ` +
+      `Bot total earns, weekly users, daily messages: ` +
       `*${abbreviateNumber(balance / Math.pow(10, 18))}* ONE` +
       `, ${abbreviateNumber(weeklyUsers)}` +
       `, ${abbreviateNumber(dailyMessages)}`
