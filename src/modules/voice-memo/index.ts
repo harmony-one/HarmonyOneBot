@@ -195,7 +195,9 @@ export class VoiceMemo {
               caption: summary.slice(0, 1024)
             })
           } else {
-            await ctx.reply(text)
+            await ctx.reply(text, {
+              message_thread_id: ctx.message?.message_thread_id,
+            })
           }
         }
       } catch (e) {

@@ -33,7 +33,6 @@ import {
   isMentioned,
   limitPrompt,
   MAX_TRIES,
-  messageTopic,
   preparePrompt,
   sendMessage,
   SupportedCommands,
@@ -240,9 +239,9 @@ export class OpenAIBot {
     }
 
     this.logger.warn(`### unsupported command`);
-    sendMessage(ctx, "### unsupported command", {
-      topicId: ctx.message?.message_thread_id,
-    }).catch((e) => this.onError(ctx, e, MAX_TRIES, "### unsupported command"));
+    sendMessage(ctx, "### unsupported command").catch((e) =>
+      this.onError(ctx, e, MAX_TRIES, "### unsupported command")
+    );
   }
 
   private async hasBalance(ctx: OnMessageContext | OnCallBackQueryData) {
@@ -270,7 +269,6 @@ export class OpenAIBot {
         const imgs = await postGenerateImg(prompt, numImages, imgSize);
         const msgExtras = getMessageExtras({
           caption: `/dalle ${prompt}`,
-          topicId: await messageTopic(ctx),
         });
         imgs.map(async (img: any) => {
           await ctx.replyWithPhoto(img.url, msgExtras).catch((e) => {
@@ -278,9 +276,9 @@ export class OpenAIBot {
           });
         });
       } else {
-        sendMessage(ctx, "Bot disabled", {
-          topicId: ctx.message?.message_thread_id,
-        }).catch((e) => this.onError(ctx, e, MAX_TRIES, "Bot disabled"));
+        sendMessage(ctx, "Bot disabled").catch((e) =>
+          this.onError(ctx, e, MAX_TRIES, "Bot disabled")
+        );
       }
     } catch (e) {
       this.onError(
@@ -306,7 +304,9 @@ export class OpenAIBot {
         const imgs = await alterGeneratedImg(prompt!, filePath!, ctx, imgSize!);
         if (imgs) {
           imgs!.map(async (img: any) => {
-            await ctx.replyWithPhoto(img.url).catch((e) => {
+            await ctx.replyWithPhoto(img.url, {
+              message_thread_id: ctx.message?.message_thread_id,
+            }).catch((e) => {
               throw e;
             });
           });
@@ -323,13 +323,14 @@ export class OpenAIBot {
     }
   };
 
-  private async promptGen(data: ChatGptPayload, chat: ChatConversation[]) {
+  private async promptGen(data: ChatGptPayload) {
     const { conversation, ctx, model } = data;
     try {
-      const extras = getMessageExtras({
-        topicId: ctx.message?.message_thread_id,
-      });
-      let msgId = (await ctx.reply("...", extras)).message_id;
+      let msgId = (
+        await ctx.reply("...", {
+          message_thread_id: ctx.message?.message_thread_id,
+        })
+      ).message_id;
       const isTypingEnabled = config.openAi.chatGpt.isTypingEnabled;
       if (isTypingEnabled) {
         ctx.chatAction = "typing";
@@ -351,11 +352,15 @@ export class OpenAIBot {
             price.promptTokens + price.completionTokens
           } | ${model} | price: ${price}¢`
         );
-        conversation.push({ content: completion, role: "system" });
-        chat = [...conversation!];
-        return price.price;
+        return {
+          price: price.price,
+          chat: conversation,
+        };
       }
-      return 0;
+      return {
+        price: 0,
+        chat: conversation,
+      };
     } catch (e: any) {
       ctx.chatAction = null;
       throw e;
@@ -364,14 +369,14 @@ export class OpenAIBot {
 
   async onSum(ctx: OnMessageContext | OnCallBackQueryData) {
     if (this.botSuspended) {
-      sendMessage(ctx, "The bot is suspended", {
-        topicId: ctx.message?.message_thread_id,
-      }).catch((e) => this.onError(ctx, e));
+      sendMessage(ctx, "The bot is suspended").catch((e) =>
+        this.onError(ctx, e)
+      );
       return;
     }
     try {
       const { prompt } = getCommandNamePrompt(ctx, SupportedCommands);
-      const { url, newPrompt } = hasUrl(prompt);
+      const { url, newPrompt } = hasUrl(ctx, prompt);
       if (url) {
         let chat: ChatConversation[] = [];
         this.onWebCrawler(
@@ -382,9 +387,9 @@ export class OpenAIBot {
           "sum"
         );
       } else {
-        await sendMessage(ctx, `Error: Missing url`, {
-          topicId: ctx.message?.message_thread_id,
-        }).catch((e) => this.onError(ctx, e));
+        await sendMessage(ctx, `Error: Missing url`).catch((e) =>
+          this.onError(ctx, e)
+        );
       }
     } catch (e) {
       this.onError(ctx, e);
@@ -396,9 +401,20 @@ export class OpenAIBot {
     prompt: string,
     chat: ChatConversation[],
     url: string,
-    command = "ask"
+    command = "ask",
+    retryCount = MAX_TRIES
   ) {
     try {
+      if (retryCount === 0) {
+        await sendMessage(
+          ctx,
+          "Url not supported, incorrect web site address or missing user credentials",
+          {
+            parseMode: "Markdown",
+          }
+        ).catch((e) => this.onError(ctx, e));
+        return;
+      }
       ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_35_TURBO_16K;
       const model = ChatGPTModelsEnum.GPT_35_TURBO_16K;
       // const { model } = ctx.session.openAi.chatGpt;
@@ -413,9 +429,7 @@ export class OpenAIBot {
             ?.text!.replaceAll(user, "****")
             .replaceAll(password, "*****") || "";
         ctx.api.deleteMessage(ctx.chat?.id!, ctx.message?.message_id!);
-        sendMessage(ctx, maskedPrompt, {
-          topicId: ctx.message?.message_thread_id,
-        });
+        sendMessage(ctx, maskedPrompt);
       }
       const webContent = await getWebContent(
         url,
@@ -439,9 +453,9 @@ export class OpenAIBot {
         } else {
           let newPrompt = "";
           if (prompt !== "") {
-            newPrompt = `${command === "sum" && "Summarize"} ${limitPrompt(
+            newPrompt = `${command === "sum" ? "Summarize" : ""} ${limitPrompt(
               prompt
-            )} this text: ${webContent.urlText}`;
+            )}. This is the web crawl text: ${webContent.urlText}`;
           } else {
             newPrompt = `${
               command === "sum" &&
@@ -458,21 +472,17 @@ export class OpenAIBot {
               model: model || config.openAi.chatGpt.model,
               ctx,
             };
-            const price = await this.promptGen(payload, chat);
-            if (!(await this.payments.pay(ctx as OnMessageContext, price))) {
+            const result = await this.promptGen(payload);
+            chat = [...result.chat];
+            if (
+              !(await this.payments.pay(ctx as OnMessageContext, result.price))
+            ) {
               this.onNotBalanceMessage(ctx);
             }
           }
         }
       } else {
-        await sendMessage(
-          ctx,
-          "Url not supported, incorrect web site address or missing user credentials",
-          {
-            topicId: ctx.message?.message_thread_id,
-            parseMode: "Markdown",
-          }
-        ).catch((e) => this.onError(ctx, e));
+        this.onWebCrawler(ctx, prompt, chat, url, command, retryCount - 1);
         return;
       }
       return {
@@ -490,9 +500,9 @@ export class OpenAIBot {
   async onMention(ctx: OnMessageContext | OnCallBackQueryData) {
     try {
       if (this.botSuspended) {
-        sendMessage(ctx, "The bot is suspended", {
-          topicId: ctx.message?.message_thread_id,
-        }).catch((e) => this.onError(ctx, e));
+        sendMessage(ctx, "The bot is suspended").catch((e) =>
+          this.onError(ctx, e)
+        );
         return;
       }
       const { username } = ctx.me;
@@ -514,9 +524,9 @@ export class OpenAIBot {
   async onPrefix(ctx: OnMessageContext | OnCallBackQueryData) {
     try {
       if (this.botSuspended) {
-        sendMessage(ctx, "The bot is suspended", {
-          topicId: ctx.message?.message_thread_id,
-        }).catch((e) => this.onError(ctx, e));
+        sendMessage(ctx, "The bot is suspended").catch((e) =>
+          this.onError(ctx, e)
+        );
         return;
       }
       const { prompt, commandName } = getCommandNamePrompt(
@@ -541,9 +551,9 @@ export class OpenAIBot {
   async onPrivateChat(ctx: OnMessageContext | OnCallBackQueryData) {
     try {
       if (this.botSuspended) {
-        sendMessage(ctx, "The bot is suspended", {
-          topicId: ctx.message?.message_thread_id,
-        }).catch((e) => this.onError(ctx, e));
+        sendMessage(ctx, "The bot is suspended").catch((e) =>
+          this.onError(ctx, e)
+        );
         return;
       }
       ctx.session.openAi.chatGpt.requestQueue.push(
@@ -563,9 +573,9 @@ export class OpenAIBot {
   async onChat(ctx: OnMessageContext | OnCallBackQueryData) {
     try {
       if (this.botSuspended) {
-        sendMessage(ctx, "The bot is suspended", {
-          topicId: ctx.message?.message_thread_id,
-        }).catch((e) => this.onError(ctx, e));
+        sendMessage(ctx, "The bot is suspended").catch((e) =>
+          this.onError(ctx, e)
+        );
         return;
       }
       const prompt = ctx.match ? ctx.match : ctx.message?.text;
@@ -597,12 +607,11 @@ export class OpenAIBot {
                   }_`
                 : appText.introText;
             await sendMessage(ctx, msg, {
-              topicId: ctx.message?.message_thread_id,
               parseMode: "Markdown",
             }).catch((e) => this.onError(ctx, e));
             return;
           }
-          const { url, newPrompt } = hasUrl(prompt);
+          const { url, newPrompt } = hasUrl(ctx, prompt);
           if (url) {
             await this.onWebCrawler(
               ctx,
@@ -621,8 +630,11 @@ export class OpenAIBot {
               model: model || config.openAi.chatGpt.model,
               ctx,
             };
-            const price = await this.promptGen(payload, chatConversation);
-            if (!(await this.payments.pay(ctx as OnMessageContext, price))) {
+            const result = await this.promptGen(payload);
+            ctx.session.openAi.chatGpt.chatConversation = [...result.chat];
+            if (
+              !(await this.payments.pay(ctx as OnMessageContext, result.price))
+            ) {
               this.onNotBalanceMessage(ctx);
             }
           }
@@ -643,13 +655,11 @@ export class OpenAIBot {
         ctx,
         `${appText.gptLast}\n_${chat[chat.length - 1].content}_`,
         {
-          topicId: ctx.message?.message_thread_id,
           parseMode: "Markdown",
         }
       ).catch((e) => this.onError(ctx, e));
     } else {
       await sendMessage(ctx, `To start a conversation please write */ask*`, {
-        topicId: ctx.message?.message_thread_id,
         parseMode: "Markdown",
       }).catch((e) => this.onError(ctx, e));
     }
@@ -672,7 +682,6 @@ export class OpenAIBot {
       .replaceAll("$CREDITS", balanceOne)
       .replaceAll("$WALLET_ADDRESS", account?.address || "");
     await sendMessage(ctx, balanceMessage, {
-      topicId: ctx.message?.message_thread_id,
       parseMode: "Markdown",
     }).catch((e) => this.onError(ctx, e));
   }
@@ -680,7 +689,7 @@ export class OpenAIBot {
   async onError(
     ctx: OnMessageContext | OnCallBackQueryData,
     e: any,
-    retryCount: number = 3,
+    retryCount: number = MAX_TRIES,
     msg?: string
   ) {
     if (retryCount === 0) {
@@ -692,10 +701,7 @@ export class OpenAIBot {
       if (e.error_code === 400 && e.description.includes("not enough rights")) {
         await sendMessage(
           ctx,
-          "Error: The bot does not have permission to send photos in chat",
-          {
-            topicId: ctx.message?.message_thread_id,
-          }
+          "Error: The bot does not have permission to send photos in chat"
         );
       } else if (e.error_code === 429) {
         this.botSuspended = true;
@@ -711,10 +717,7 @@ export class OpenAIBot {
           ctx,
           `${
             ctx.from.username ? ctx.from.username : ""
-          } Bot has reached limit, wait ${retryAfter} seconds`,
-          {
-            topicId: ctx.message?.message_thread_id,
-          }
+          } Bot has reached limit, wait ${retryAfter} seconds`
         ).catch((e) => this.onError(ctx, e, retryCount - 1));
         if (method === "editMessageText") {
           ctx.session.openAi.chatGpt.chatConversation.pop(); //deletes last prompt
@@ -731,24 +734,21 @@ export class OpenAIBot {
       // e.status = 400 || e.code = BadRequestError
       this.logger.error(`OPENAI Error ${e.status}(${e.code}) - ${e.message}`);
       if (e.code === "context_length_exceeded") {
-        await sendMessage(ctx, e.message, {
-          topicId: ctx.message?.message_thread_id,
-        }).catch((e) => this.onError(ctx, e, retryCount - 1));
+        await sendMessage(ctx, e.message).catch((e) =>
+          this.onError(ctx, e, retryCount - 1)
+        );
         this.onEnd(ctx);
       } else {
         await sendMessage(
           ctx,
-          `Error accessing OpenAI (ChatGPT). Please try later`,
-          {
-            topicId: ctx.message?.message_thread_id,
-          }
+          `Error accessing OpenAI (ChatGPT). Please try later`
         ).catch((e) => this.onError(ctx, e, retryCount - 1));
       }
     } else {
       this.logger.error(`${e.toString()}`);
-      await sendMessage(ctx, "Error handling your request", {
-        topicId: ctx.message?.message_thread_id,
-      }).catch((e) => this.onError(ctx, e, retryCount - 1));
+      await sendMessage(ctx, "Error handling your request").catch((e) =>
+        this.onError(ctx, e, retryCount - 1)
+      );
     }
   }
 }
