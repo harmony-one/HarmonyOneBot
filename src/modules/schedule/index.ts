@@ -64,7 +64,7 @@ export class BotSchedule {
   }
 
   private async runCronJob() {
-    cron.schedule('00 18 * * *', () => {
+    cron.schedule('00 16 * * *', () => {
       this.logger.info('Posting daily metrics...')
       this.postMetricsUpdate()
     }, {
