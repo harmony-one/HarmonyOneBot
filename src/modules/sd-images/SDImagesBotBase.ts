@@ -1,16 +1,10 @@
 import { SDNodeApi, IModel, getModelByParam, MODELS_CONFIGS } from "./api";
-import { OnMessageContext, OnCallBackQueryData } from "../types";
+import { OnMessageContext, OnCallBackQueryData, MessageExtras } from "../types";
 import { getTelegramFileUrl, loadFile, sleep, uuidv4 } from "./utils";
 import { GrammyError, InputFile } from "grammy";
 import { COMMAND } from './helpers';
 import { Logger, pino } from "pino";
 import { ILora } from "./api/loras-config";
-
-export interface MessageExtras {
-    caption?: string;
-    message_thread_id?: number;
-    parse_mode?: any;
-}
 
 export interface ISession {
     id: string;
