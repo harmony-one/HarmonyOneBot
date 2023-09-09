@@ -322,7 +322,9 @@ const onMessage = async (ctx: OnMessageContext) => {
         }
         return;
       } else {
-        await ctx.reply("Bot disabled");
+        await ctx.reply("Bot disabled", {
+          message_thread_id: ctx.message?.message_thread_id,
+        });
         return;
       }
     }
@@ -421,6 +423,7 @@ bot.command(["start", "help", "menu"], async (ctx) => {
     parse_mode: "Markdown",
     reply_markup: mainMenu,
     disable_web_page_preview: true,
+    message_thread_id: ctx.message?.message_thread_id,
   });
 });
 
@@ -429,6 +432,7 @@ bot.command("more", async (ctx) => {
   return ctx.reply(commandsHelpText.more, {
     parse_mode: "Markdown",
     disable_web_page_preview: true,
+    message_thread_id: ctx.message?.message_thread_id,
   });
 });
 
@@ -437,6 +441,7 @@ bot.command("terms", (ctx) => {
   return ctx.reply(TERMS.text, {
     parse_mode: "Markdown",
     disable_web_page_preview: true,
+    message_thread_id: ctx.message?.message_thread_id,
   });
 });
 
@@ -445,6 +450,7 @@ bot.command("support", (ctx) => {
   return ctx.reply(SUPPORT.text, {
     parse_mode: "Markdown",
     disable_web_page_preview: true,
+    message_thread_id: ctx.message?.message_thread_id,
   });
 });
 
@@ -461,6 +467,7 @@ bot.command("feedback", (ctx) => {
   return ctx.reply(FEEDBACK.text, {
     parse_mode: "Markdown",
     disable_web_page_preview: true,
+    message_thread_id: ctx.message?.message_thread_id,
   });
 });
 
@@ -469,6 +476,7 @@ bot.command("love", (ctx) => {
   return ctx.reply(LOVE.text, {
     parse_mode: "Markdown",
     disable_web_page_preview: true,
+    message_thread_id: ctx.message?.message_thread_id,
   });
 });
 
@@ -495,6 +503,7 @@ bot.command("stop", (ctx) => {
 //   });
 // });
 
+
 // bot.on("msg:new_chat_members", async (ctx) => {
 //   try {
 //     const newMembers = (await ctx.message?.new_chat_members) || [];
@@ -512,6 +521,7 @@ bot.command("stop", (ctx) => {
 //     logger.error(`Error when welcoming new chat memmber ${e.toString()}`);
 //   }
 // });
+
 
 bot.on("message", onMessage);
 bot.on("callback_query:data", onCallback);

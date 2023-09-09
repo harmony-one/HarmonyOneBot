@@ -197,6 +197,7 @@ export class BotSchedule {
       if(report) {
         await ctx.reply(report, {
           parse_mode: "Markdown",
+          message_thread_id: ctx.message?.message_thread_id,
         });
       }
     }
@@ -205,6 +206,7 @@ export class BotSchedule {
       const report = await this.generateReport()
       ctx.reply(report, {
         parse_mode: "Markdown",
+        message_thread_id: ctx.message?.message_thread_id,
       });
     }
 
@@ -212,6 +214,7 @@ export class BotSchedule {
       const report = await this.generateFullReport()
       ctx.reply(report, {
         parse_mode: "Markdown",
+        message_thread_id: ctx.message?.message_thread_id,
       });
     }
   }
