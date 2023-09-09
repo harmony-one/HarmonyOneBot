@@ -21,6 +21,8 @@ export interface IParams {
   seed?: number;
   denoise?: number;
   controlnetVersion: number;
+  sampler_name?: string;
+  scheduler?: string;
 }
 
 export const NEGATIVE_PROMPT = '(deformed, distorted, disfigured:1.3), poorly drawn, bad anatomy, wrong anatomy, extra limb, missing limb, floating limbs, (mutated hands and fingers:1.4), disconnected limbs, mutation, mutated, ugly, disgusting, blurry, amputation';
@@ -37,7 +39,7 @@ export const getParamsFromPrompt = (originalPrompt: string, model: IModel): IPar
     loraName = loraMatch[1];
     loraStrength = Number(loraMatch[2]);
     
-    prompt = prompt.replace(/<lora:(.*):(.*)>/, '');
+    // prompt = prompt.replace(/<lora:(.*):(.*)>/, '');
   }
 
   // --ar Aspect ratio flag <w>:<h>
@@ -130,6 +132,29 @@ export const getParamsFromPrompt = (originalPrompt: string, model: IModel): IPar
     prompt = prompt.replace(/(--|\—)no\s+(.+?)(?=\s+--|$)/, '');
   }
 
+  // --sampler Sampler name flag <sampler_name>
+  const samplerMatch = prompt.match(/(--|\—)sampler\s+(\w+)/);
+  let sampler_name = 'dpmpp_2m';
+
+  if (samplerMatch) {
+    sampler_name = samplerMatch[2].trim();
+    prompt = prompt.replace(/(--|\—)sampler\s+(\w+)/, '');
+  }
+
+  // --scheduler Scheduler name flag <scheduler_name>
+  const schedulerMatch = prompt.match(/(--|\—)scheduler\s+(\w+)/);
+  let scheduler = 'karras';
+
+  if (schedulerMatch) {
+    scheduler = schedulerMatch[2].trim();
+    prompt = prompt.replace(/(--|\—)scheduler\s+(\w+)/, '');
+  }
+
+  // Add 'leogirl' to trigger /leo model
+  if (model.name == 'leosams_helloworld' && !prompt.includes('leogirl')) {
+    prompt = 'leogirl ' + prompt
+  }
+
   prompt = prompt.trim()
 
   return {
@@ -143,6 +168,8 @@ export const getParamsFromPrompt = (originalPrompt: string, model: IModel): IPar
     promptWithoutParams: prompt,
     seed,
     denoise,
-    controlnetVersion
+    controlnetVersion,
+    sampler_name,
+    scheduler,
   }
 }
