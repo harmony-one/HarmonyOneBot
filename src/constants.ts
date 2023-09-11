@@ -110,16 +110,23 @@ export const NEGATIVE_PROMPT = {
 };
 
 export const MODELS = {
+//   text: "\
+// -----------MODELS-----------\n\
+// /image  Broad application and styles\n\
+// /real      Realistic vivid precision\n\
+// /anime  Anime inspired designs\n\
+// /magic  Magical dreamlike fantasy\n\
+// /nsfw    18+ Sensual imagery\n\
+// ----------EXAMPLES----------\n\
+// [Full list of models with examples](https://j.h.country/harmony1bot-full-list-of-custom-models-c2219c4222ff421b8388a2c2a03e22ff)\n\
+//   ",
   text: "\
------------MODELS-----------\n\
-/image  Broad application and styles\n\
-/real      Realistic vivid precision\n\
-/anime  Anime inspired designs\n\
-/magic  Magical dreamlike fantasy\n\
-/nsfw    18+ Sensual imagery\n\
-----------EXAMPLES----------\n\
-[Full list of models with examples](https://j.h.country/harmony1bot-full-list-of-custom-models-c2219c4222ff421b8388a2c2a03e22ff)\n\
-  ",
+  /xl extra-large XL, high resolution, short prompts, embedded words. [/1](https://civitai.com/models/101055/sd-xl)\n\
+/real photography realism, film-like portrait, landscape sketches. [/2](https://civitai.com/models/43977/moonmix)\n\
+/dream cartoon characters, dreamlike fantasy, anime portrait. [/3](https://civitai.com/models/4384/dreamshaper)\n\
+/mature adult themes, explicit content, Japanese manga, age 18+ only. [/4](https://civitai.com/models/8281/perfect-world)\n\
+/5 /6 /7… more on [harmony.one/models](https://harmony.one/models)\n\
+",
 };
 
 export const TERMS = {
