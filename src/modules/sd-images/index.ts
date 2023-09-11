@@ -66,6 +66,11 @@ export class SDImagesBot extends SDImagesBotBase {
       return refundCallback("Prompt has bad words");
     }
 
+    if (prompt.length > 1000) {
+      await ctx.reply("Your prompt is too long. Please shorten your prompt and try again.");
+      return refundCallback("Prompt is too long");
+    }
+
     switch (operation.command) {
       case COMMAND.TEXT_TO_IMAGE:
         this.generateImage(

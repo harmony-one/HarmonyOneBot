@@ -184,10 +184,11 @@ interface GetMessagesExtras {
   parseMode?: ParseMode | undefined;
   caption?: string | undefined;
   replyId?: number | undefined;
+  disable_web_page_preview?: boolean;
 }
 
 export const getMessageExtras = (params: GetMessagesExtras) => {
-  const { parseMode, caption, replyId } = params;
+  const { parseMode, caption, replyId, disable_web_page_preview } = params;
   let extras: MessageExtras = {};
   if (parseMode) {
     extras["parse_mode"] = parseMode;
@@ -197,6 +198,9 @@ export const getMessageExtras = (params: GetMessagesExtras) => {
   }
   if (caption) {
     extras["caption"] = caption;
+  }
+  if (disable_web_page_preview) {
+    extras["disable_web_page_preview"] = disable_web_page_preview;
   }
   return extras;
 };

@@ -7,7 +7,7 @@ import {getDailyMetrics, MetricsDailyType} from "./explorerApi";
 import {getAddressBalance, getBotFee, getBotFeeStats} from "./harmonyApi";
 import {getTotalStakes, getTVL} from "./bridgeAPI";
 import {statsService} from "../../database/services";
-import {abbreviateNumber} from "./utils";
+import {abbreviateNumber, lessThan100, precise} from "./utils";
 import {getOneRate} from "./exchangeApi";
 import {getTradingVolume} from "./subgraphAPI";
 
@@ -64,7 +64,7 @@ export class BotSchedule {
   }
 
   private async runCronJob() {
-    cron.schedule('00 18 * * *', () => {
+    cron.schedule('00 16 * * *', () => {
       this.logger.info('Posting daily metrics...')
       this.postMetricsUpdate()
     }, {
@@ -114,21 +114,21 @@ export class BotSchedule {
     const walletsCountAvg = Math.round(walletsCountSum / walletsCountWeekly.length)
 
     const networkUsage =
-      `- Network 7-day fees, wallets, price: ` +
-      `*${abbreviateNumber(networkFeesSum)}* ONE, ${abbreviateNumber(walletsCountAvg)}, $${oneRate.toFixed(4)}`
+      `Network weekly fees, wallets, price: ` +
+      `*${abbreviateNumber(networkFeesSum)}* ONE, ${abbreviateNumber(walletsCountAvg)}, $${precise(oneRate)}`
 
     const swapTradingVolumeSum = swapTradingVolume.reduce((sum, item) => sum + Math.round(+item.volumeUSD), 0)
     const totalStakeUSD = Math.round(oneRate * totalStakes)
 
     const assetsUpdate =
-      `- Total assets, swaps, stakes: ` +
-      `*$${abbreviateNumber(bridgeTVL)}*, $${abbreviateNumber(swapTradingVolumeSum)}, $${abbreviateNumber(totalStakeUSD)}`
+      `Current assets, total stakes, monthly swaps: ` +
+      `*$${abbreviateNumber(bridgeTVL)}*, $${abbreviateNumber(totalStakeUSD)}, $${abbreviateNumber(swapTradingVolumeSum)}`
 
     const oneBotMetrics =
-      `- Bot total earns, weekly users, daily messages: ` +
+      `Bot total earns, weekly users, daily messages: ` +
       `*${abbreviateNumber(balance / Math.pow(10, 18))}* ONE` +
-      `, ${abbreviateNumber(weeklyUsers)}` +
-      `, ${abbreviateNumber(dailyMessages)}`
+      `, ${lessThan100(abbreviateNumber(weeklyUsers))}` +
+      `, ${lessThan100(abbreviateNumber(dailyMessages))}`
 
     return `${networkUsage}\n${assetsUpdate}\n${oneBotMetrics}`;
   }

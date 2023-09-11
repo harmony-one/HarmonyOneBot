@@ -250,7 +250,8 @@ export class OpenAIBot {
     const accountId = this.payments.getAccountId(ctx as OnMessageContext);
     const addressBalance = await this.payments.getUserBalance(accountId);
     const creditsBalance = await chatService.getBalance(accountId);
-    const balance = addressBalance.plus(creditsBalance);
+    const fiatCreditsBalance = await chatService.getFiatBalance(accountId);
+    const balance = addressBalance.plus(creditsBalance).plus(fiatCreditsBalance);
     const balanceOne = (await this.payments.toONE(balance, false)).toFixed(2);
     return (
       +balanceOne > +config.openAi.chatGpt.minimumBalance ||
@@ -677,7 +678,8 @@ export class OpenAIBot {
     const account = await this.payments.getUserAccount(accountId);
     const addressBalance = await this.payments.getUserBalance(accountId);
     const creditsBalance = await chatService.getBalance(accountId);
-    const balance = addressBalance.plus(creditsBalance);
+    const fiatCreditsBalance = await chatService.getFiatBalance(accountId);
+    const balance = addressBalance.plus(creditsBalance).plus(fiatCreditsBalance);
     const balanceOne = (await this.payments.toONE(balance, false)).toFixed(2);
     const balanceMessage = appText.notEnoughBalance
       .replaceAll("$CREDITS", balanceOne)

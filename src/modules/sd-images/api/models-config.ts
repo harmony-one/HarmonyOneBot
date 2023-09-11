@@ -20,7 +20,7 @@ export const MODELS_CONFIGS: IModel[] = [
         shortName: 'sd-xl',
         link: 'https://civitai.com/models/101055/sd-xl',
         baseModel: 'SDXL 1.0',
-        aliases: ['xl', '1010', 'he6b'],
+        aliases: ['xl', '1010', 'he6b', '1'],
         defaultPrompt: 'A bunny is sitting in a kimono, in the style of renaissance - inspired chiaroscuro, hyper - realistic portraiture, nicolas mignard, old master influenced fantasy, portraitures with hidden meanings, dom qwek, art of burma',
     },
     {
@@ -31,7 +31,7 @@ export const MODELS_CONFIGS: IModel[] = [
         shortName: 'deliberate',
         link: 'https://civitai.com/models/4823/deliberate',
         baseModel: 'SD 1.5',
-        aliases: ['d', 'del', '4823', 'h9ab'],
+        aliases: ['d', 'del', '4823', 'h9ab', '5'],
         defaultPrompt: 'a cute kitten made out of metal, (cyborg:1.1), ([tail | detailed wire]:1.3), (intricate details), hdr, (intricate details, hyperdetailed:1.2), cinematic shot, vignette, centered',
     },
     {
@@ -42,7 +42,7 @@ export const MODELS_CONFIGS: IModel[] = [
         shortName: 'dreamshaper',
         link: 'https://civitai.com/models/4384/dreamshaper',
         baseModel: 'SD 1.5',
-        aliases: ['dream', '4384', 'h879'],
+        aliases: ['dream', '4384', 'h879', '3'],
         defaultPrompt: '8k portrait of beautiful cyborg with brown hair, intricate, elegant, highly detailed, majestic, digital photography, art by artgerm and ruan jia and greg rutkowski surreal painting gold butterfly filigree, broken glass, (masterpiece, sidelighting, finely detailed beautiful eyes: 1.2), hdr, <lora:more_details:0.36>'
     },
     {
@@ -53,7 +53,7 @@ export const MODELS_CONFIGS: IModel[] = [
         shortName: 'majicmix-realistic',
         link: 'https://civitai.com/models/43331/majicmix-realistic',
         baseModel: 'SD 1.5',
-        aliases: ['majic', '4333', 'h7e2'],
+        aliases: ['majic', '4333', 'h7e2', '6'],
         defaultPrompt: '1girl,sitting on a cozy couch,crossing legs,soft light'
     },
     {
@@ -117,7 +117,7 @@ export const MODELS_CONFIGS: IModel[] = [
         shortName: 'sdxl-unstable-diffusers-yamermix',
         link: 'https://civitai.com/models/84040/sdxl-unstable-diffusers-yamermix',
         baseModel: 'SDXL 1.0',
-        aliases: ['xl_dif', '8404', 'hef9'],
+        aliases: ['xl_dif', '8404', 'hef9', '7'],
         defaultPrompt: 'pastel color, from above, upper body, depth of field, masterpiece, best quality, best quality, girl sitting on a swing, school uniform, black hair, blue eyes, autumn, park'
     },
     {
@@ -139,7 +139,7 @@ export const MODELS_CONFIGS: IModel[] = [
         shortName: 'helloworld',
         link: 'https://civitai.com/models/43977/moonmix',
         baseModel: 'SDXL 1.0',
-        aliases: ['leo', 'real'],
+        aliases: ['leo', 'real', '2'],
         defaultPrompt: 'leogirl, realistic photography, The Joker, shrouded in carnival-esque, multicolored spotlights, stands in the middle of a chaotic circus tent. His manic grin becomes even more unsettling under the harsh, unnatural lighting, close up, perfecteyes --no (worst quality, low quality), deformed, distorted, disfigured, doll, poorly drawn, bad anatomy, wrong anatomy --cfg 7 --steps 40 --seed 3912625479 --d 832x1344',
     },
     {
@@ -150,7 +150,7 @@ export const MODELS_CONFIGS: IModel[] = [
         shortName: 'perfect_world',
         link: 'https://civitai.com/models/8281/perfect-world',
         baseModel: 'SDXL 1.0', // baseModel is listed as 'other'
-        aliases: ['nsfw', 'perf'],
+        aliases: ['nsfw', 'perf', '4'],
         defaultPrompt: '(masterpiece:1.2), (best quality:1.2), 1woman, 1boy, short hair, blonde hair, breast focus, slim and petite body, nude, black stockings, black high heels, silver necklace, orgasm, mouth open, aroused, <lora:murkysSuspendedOn_1:0.9>, suspendedonpenisms, sex, arm grab, sex from behind, dangling legs, size difference, in the luxurious living room, --no (worst quality:1.2), (bad quality:1.2), (poor quality:1.2), bad artist, extra limbs, bad anatomy, missing legs --seed 780544502378871 --steps 20 --sampler euler --cfg 8 --d 512x512'
     },
     {
