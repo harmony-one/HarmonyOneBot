@@ -407,7 +407,7 @@ export class BotPayments {
       const fiatCreditsBalance = await chatService.getFiatBalance(accountId)
       const balance = addressBalance.plus(creditsBalance).plus(fiatCreditsBalance)
       const balanceOne  = this.toONE(balance, false).toFixed(2)
-      ctx.reply(
+      sendMessage(ctx,
         `Your credits: ${balanceOne} ONE tokens. To recharge, send to \`${userAccount.address}\`.`,
         {
           parseMode: "Markdown",
