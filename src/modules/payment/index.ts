@@ -487,11 +487,12 @@ export class BotPayments {
         const balanceOne = this.toONE(balance, false);
         sendMessage(
           ctx,
-          `Your credits in ONE tokens: ${balanceOne.toFixed(2)}
+          `Your 1Bot credits in ONE tokens: ${balanceOne.toFixed(2)}
 
 To recharge, send to: \`${account.address}\`. Buy tokens on harmony.one/buy.`,
           {
             parseMode: "Markdown",
+            disable_web_page_preview: true
           }
         );
       } catch (e) {

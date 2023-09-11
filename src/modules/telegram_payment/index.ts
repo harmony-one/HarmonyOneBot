@@ -96,8 +96,8 @@ export class TelegramPayments {
     const amount = Math.ceil(fixedUsdAmount * 100); // cents
 
     const chatId = ctx.message.chat.id;
-    const title = 'Buy Harmony1bot Credits'
-    const description = 'Recharging harmony1bot description'
+    const title = 'Buy AI Credits'
+    const description = 'Purchase up to $10 of AI Credits'
     const providerToken = config.telegramPayments.token;
     const currency = 'USD';
     const creditsAmount = await this.payments.getPriceInONE(amount);

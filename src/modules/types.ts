@@ -19,6 +19,7 @@ export interface MessageExtras {
   message_thread_id?: number;
   parse_mode?: ParseMode;
   reply_to_message_id?: number;
+  disable_web_page_preview?: boolean;
 }
 export interface ChatCompletion {
   completion: string;

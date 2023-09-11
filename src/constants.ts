@@ -36,7 +36,7 @@ export const commandsHelpText = {
 
 /help Show this message. Join user group @onebotlove or read docs at harmony.one/bot.
   
-Your credits in ONE tokens: $CREDITS
+Your 1Bot credits in ONE tokens: $CREDITS
 
 To recharge, send to: \`$WALLET_ADDRESS\`. Buy tokens on harmony.one/buy.
 `,
