@@ -46,7 +46,7 @@ export interface ChatGptSessionData {
   isProcessingQueue: boolean;
 }
 
-export interface VertexSessionData {
+export interface LmmsSessionData {
   model: string;
   isEnabled: boolean;
   chatConversation: ChatConversation[];
@@ -73,7 +73,7 @@ export interface BotSessionData {
   oneCountry: OneCountryData;
   openAi: OpenAiSessionData;
   translate: TranslateBotData;
-  vertex: VertexSessionData;
+  llms: LmmsSessionData;
 }
 
 export type BotContext = Context &

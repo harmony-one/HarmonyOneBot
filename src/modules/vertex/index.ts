@@ -24,6 +24,7 @@ import {
   SupportedCommands,
 } from "./helpers";
 import { vertexCompletion } from "./api/vertex";
+import { llmCompletion } from './api/liteLlm'
 
 export class VertexPalmBot {
   private logger: Logger;
@@ -93,7 +94,7 @@ export class VertexPalmBot {
     const balance = addressBalance.plus(creditsBalance);
     const balanceOne = (await this.payments.toONE(balance, false)).toFixed(2);
     return (
-      +balanceOne > +config.vertex.minimumBalance ||
+      +balanceOne > +config.llms.minimumBalance ||
       (await this.payments.isUserInWhitelist(ctx.from.id, ctx.from.username))
     );
   }
@@ -108,14 +109,11 @@ export class VertexPalmBot {
       ).message_id;
       ctx.chatAction = "typing";
 
-      const completion = await vertexCompletion(conversation, "chat-bison@001");
-      console.log("HELLOOO", completion);
-      if (completion) {
-        ctx.api.editMessageText(ctx.chat?.id!, msgId, completion.completion);
-        conversation.push({
-          content: completion.completion,
-          author: "bot",
-        });
+      // const completion = await vertexCompletion(conversation, "chat-bison@001");
+      const response = await vertexCompletion(conversation, model) // "chat-bison@001");
+      if (response.completion) {
+        ctx.api.editMessageText(ctx.chat?.id!, msgId, response.completion.content);
+        conversation.push(response.completion);
         // const price = getPromptPrice(completion, data);
         // this.logger.info(
         //   `streamChatCompletion result = tokens: ${
@@ -152,13 +150,13 @@ export class VertexPalmBot {
         SupportedCommands
       );
       const prefix = hasPrefix(prompt);
-      ctx.session.vertex.requestQueue.push(
+      ctx.session.llms.requestQueue.push(
         await preparePrompt(ctx, prompt.slice(prefix.length))
       );
-      if (!ctx.session.vertex.isProcessingQueue) {
-        ctx.session.vertex.isProcessingQueue = true;
+      if (!ctx.session.llms.isProcessingQueue) {
+        ctx.session.llms.isProcessingQueue = true;
         this.onChatRequestHandler(ctx).then(() => {
-          ctx.session.vertex.isProcessingQueue = false;
+          ctx.session.llms.isProcessingQueue = false;
         });
       }
     } catch (e) {
@@ -175,13 +173,13 @@ export class VertexPalmBot {
         return;
       }
       const prompt = ctx.match ? ctx.match : ctx.message?.text;
-      ctx.session.vertex.requestQueue.push(
+      ctx.session.llms.requestQueue.push(
         await preparePrompt(ctx, prompt as string)
       );
-      if (!ctx.session.vertex.isProcessingQueue) {
-        ctx.session.vertex.isProcessingQueue = true;
+      if (!ctx.session.llms.isProcessingQueue) {
+        ctx.session.llms.isProcessingQueue = true;
         this.onChatRequestHandler(ctx).then(() => {
-          ctx.session.vertex.isProcessingQueue = false;
+          ctx.session.llms.isProcessingQueue = false;
         });
       }
     } catch (e: any) {
@@ -190,10 +188,10 @@ export class VertexPalmBot {
   }
 
   async onChatRequestHandler(ctx: OnMessageContext | OnCallBackQueryData) {
-    while (ctx.session.vertex.requestQueue.length > 0) {
+    while (ctx.session.llms.requestQueue.length > 0) {
       try {
-        const prompt = ctx.session.vertex.requestQueue.shift() || "";
-        const { chatConversation, model } = ctx.session.vertex;
+        const prompt = ctx.session.llms.requestQueue.shift() || "";
+        const { chatConversation, model } = ctx.session.llms;
         if (await this.hasBalance(ctx)) {
           if (prompt === "") {
             const msg =
@@ -213,11 +211,11 @@ export class VertexPalmBot {
           });
           const payload = {
             conversation: chatConversation!,
-            model: model || config.vertex.model,
+            model: model || config.llms.model,
             ctx,
           };
           const result = await this.promptGen(payload);
-          ctx.session.vertex.chatConversation = [...result.chat];
+          ctx.session.llms.chatConversation = [...result.chat];
           if (
             !(await this.payments.pay(ctx as OnMessageContext, result.price))
           ) {
@@ -234,9 +232,9 @@ export class VertexPalmBot {
   }
 
   async onEnd(ctx: OnMessageContext | OnCallBackQueryData) {
-    ctx.session.vertex.chatConversation = [];
-    ctx.session.vertex.usage = 0;
-    ctx.session.vertex.price = 0;
+    ctx.session.llms.chatConversation = [];
+    ctx.session.llms.usage = 0;
+    ctx.session.llms.price = 0;
   }
 
   async onNotBalanceMessage(ctx: OnMessageContext | OnCallBackQueryData) {
@@ -288,7 +286,7 @@ export class VertexPalmBot {
           } Bot has reached limit, wait ${retryAfter} seconds`
         ).catch((e) => this.onError(ctx, e, retryCount - 1));
         if (method === "editMessageText") {
-          ctx.session.vertex.chatConversation.pop(); //deletes last prompt
+          ctx.session.llms.chatConversation.pop(); //deletes last prompt
         }
         await sleep(retryAfter * 1000); // wait retryAfter seconds to enable bot
         this.botSuspended = false;

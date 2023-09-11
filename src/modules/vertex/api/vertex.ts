@@ -1,68 +1,45 @@
 import axios, { AxiosError } from "axios";
 import config from "../../../config";
 import { ChatConversation } from "../../types";
+import { LlmCompletion } from "./liteLlm";
 
-const API_ENDPOINT = config.vertex.apiEndpoint;
-const PROJECT_ID = config.vertex.projectId;
+const API_ENDPOINT = config.llms.apiEndpoint;
 
 export const vertexCompletion = async (
   conversation: ChatConversation[],
-  model = config.vertex.model
-) => {
+  model = config.llms.model
+): Promise<LlmCompletion> => {
   try {
-    const accessToken = await getAccessToken();
-    const headers = {
-      Authorization: `Bearer ${accessToken}`,
-      "Content-Type": "application/json",
-    };
     const data = {
-      instances: [
-        {
-          context: "",
-          examples: [],
-          messages: conversation,
-        },
-      ],
-      parameters: {
-        candidateCount: 1,
-        maxOutputTokens: 256,
-        temperature: 0.2,
-        topP: 0.8,
-        topK: 40,
-      },
+      model: model, //chat-bison@001 'chat-bison', //'gpt-3.5-turbo',
+      stream: false,
+      messages: conversation,
     };
-    const url = `https://${API_ENDPOINT}/v1/projects/${PROJECT_ID}/locations/us-central1/publishers/google/models/${model}:predict`;
-
-    const response = await axios.post(url, data, { headers });
+    const url = `${API_ENDPOINT}/vertex/completions`
+    const response = await axios.post(url, data);
     if (response) {
-      const inputTokenCount =
-        response.data.metadata.tokenMetadata.inputTokenCount;
-      const totalInputTokens = inputTokenCount.totalTokens;
-      const outputTokenCount =
-        response.data.metadata.tokenMetadata.outputTokenCount;
-      const totalOutputTokens = outputTokenCount.totalTokens;
-      const candidates = response.data.predictions[0].candidates;
+      const totalInputTokens = 4; //response.data.usage.prompt_tokens;
+      const totalOutputTokens = 5; // response.data.usage.completion_tokens;
       return {
-        completion: candidates[0].content,
+        completion: {
+          content: response.data,
+          author: "bot",
+        },
         usage: totalOutputTokens + totalInputTokens,
         price: 0,
       };
-    } else {
-      return {
-        completion: "",
-        usage: 0,
-        price: 0,
-      };
     }
+    return {
+      completion: undefined,
+      usage: 0,
+      price: 0,
+    };
   } catch (error: any) {
     if (error instanceof AxiosError) {
       console.log(error.code);
       console.log(error.message);
       console.log(error.stack);
     }
+    throw error;
   }
 };
-
-async function getAccessToken() {
-  return config.vertex.accessToken;
-}

@@ -25,17 +25,12 @@ export default {
   sessionTimeout: process.env.SESSION_TIMEOUT
     ? parseInt(process.env.SESSION_TIMEOUT)
     : 48, // in hours
-  vertex: {
-    apiEndpoint: process.env.VERTEX_API_ENDPOINT || '', 
-    projectId: process.env.VERTEX_PROJECT_ID || '', 
-    accessToken: process.env.VERTEX_ACCESS_TOKEN,
-    maxTokens:
-    (process.env.OPENAI_MAX_TOKENS &&
-      parseInt(process.env.OPENAI_MAX_TOKENS)) ||
-    800, // telegram messages has a char limit
+  llms: {
+    apiEndpoint: process.env.LLMS_ENDPOINT || "",
     wordLimit: 50,
-    model: 'chat-bison',
-    minimumBalance: 0
+    model: "chat-bison",
+    minimumBalance: 0,
+    isEnabled: Boolean(parseInt(process.env.LLMS_ENABLED || "1")),
   },
   openAi: {
     dalle: {

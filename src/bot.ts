@@ -30,7 +30,7 @@ import { OneCountryBot } from "./modules/1country";
 import { WalletConnect } from "./modules/walletconnect";
 import { BotPayments } from "./modules/payment";
 import { BotSchedule } from "./modules/schedule";
-import { VertexPalmBot } from './modules/vertex'
+import { VertexPalmBot } from "./modules/vertex";
 import config from "./config";
 import { commandsHelpText, TERMS, SUPPORT, FEEDBACK, LOVE } from "./constants";
 import prometheusRegister, { PrometheusMetrics } from "./metrics/prometheus";
@@ -101,9 +101,9 @@ function createInitialSessionData(): BotSessionData {
       languages: [],
       enable: false,
     },
-    vertex: {
-      model: config.openAi.chatGpt.model,
-      isEnabled: config.openAi.chatGpt.isEnabled,
+    llms: {
+      model: config.llms.model,
+      isEnabled: config.llms.isEnabled,
       chatConversation: [],
       price: 0,
       usage: 0,
@@ -509,7 +509,8 @@ bot.on("msg:new_chat_members", async (ctx) => {
         await ctx.reply(
           `Hi everyone! Welcome to ${user.displayName} (@${user.username})${
             user.bio && ": " + user.bio
-          }`, {
+          }`,
+          {
             message_thread_id: ctx.message?.message_thread_id,
           }
         );
