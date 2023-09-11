@@ -477,7 +477,7 @@ export class BotPayments {
           ctx,
           `Your credits in ONE tokens: ${balanceOne.toFixed(2)}
 
-To recharge: \`${account.address}\``,
+To recharge, send to: \`${account.address}\`. Buy tokens on harmony.one/buy.`,
           {
             parseMode: "Markdown",
           }

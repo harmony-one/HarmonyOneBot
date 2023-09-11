@@ -38,7 +38,7 @@ export const commandsHelpText = {
   
 Your credits in ONE tokens: $CREDITS
 
-Send to: \`$WALLET_ADDRESS\`
+To recharge, send to: \`$WALLET_ADDRESS\`. Buy tokens on harmony.one/buy.
 `,
   more: `/ explain like i am 5, what is a superconductor?
 . explain like i have a phd, what is category theory?
