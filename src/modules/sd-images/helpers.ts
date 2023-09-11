@@ -105,7 +105,7 @@ export const parseCtx = (ctx: Context): IOperation | false => {
             hasCommand(ctx, 'logo') || hasCommand(ctx, 'l')
         ) {
             command = COMMAND.TEXT_TO_IMAGE;
-            model = getModelByParam('xl');
+            model = model || getModelByParam('xl');
             lora = getLoraByParam('logo', model?.baseModel || 'SDXL 1.0');
         }
 
@@ -161,6 +161,11 @@ export const parseCtx = (ctx: Context): IOperation | false => {
 
         if (command === COMMAND.TEXT_TO_IMAGE && messageHasPhoto) {
             command = COMMAND.IMAGE_TO_IMAGE;
+
+            // TODO: img + lora + controlneet  don't support Xl
+            if(lora && model.baseModel !== 'SD 1.5') {
+                model = getModelByParam('rev') || MODELS_CONFIGS[0];
+            }
         }
 
         if (command) {

@@ -70,6 +70,46 @@ export const LORAS_CONFIGS: ILora[] = [
         baseModel: 'SDXL 1.0',
         aliases: ['pixel-art-xl', 'pixel'],
     },
+    {
+        path: 'KoreanDollLikeness.safetensors',
+        name: 'KoreanDollLikeness',
+        id: '26124',
+        hash: '00483A2A78',
+        shortName: 'korean_doll',
+        link: 'https://civitai.com/models/26124/koreandolllikeness-v20',
+        baseModel: 'SD 1.5',
+        aliases: ['koreanDollLikeness_v20', 'korean_doll'],
+    },
+    {
+        path: 'murkysSuspendedOn_1.safetensors',
+        name: 'murkysSuspendedOn_1',
+        id: '18419',
+        hash: 'D402E6A3AF',
+        shortName: 'murkysSuspendedOn',
+        link: 'https://civitai.com/models/18419/murkys-suspended-on-penis-lora?modelVersionId=21845',
+        baseModel: 'SD 1.5', // Other
+        aliases: ['murkysSuspendedOn_1'],
+    },
+    {
+        path: 'DDcowfeet_v1.safetensors',
+        name: 'DDcowfeet_v1',
+        id: '28281',
+        hash: 'A62F284720',
+        shortName: 'DDcowfeet',
+        link: 'https://civitai.com/models/28281/dd-reverse-cowgirl-with-soles-feet-on-lap?modelVersionId=33915',
+        baseModel: 'SD 1.5', // Other
+        aliases: ['DDcowfeet_v1'],
+    },
+    {
+        path: 'TTF_v4.safetensors',
+        name: 'TTF_v4',
+        id: '20824',
+        hash: '1B6C2C5CAD',
+        shortName: 'TTF',
+        link: 'https://civitai.com/models/20824/dd-tiptoes-standing-doggy?modelVersionId=74299',
+        baseModel: 'SD 1.5',
+        aliases: ['TTF_v4'],
+    },
 ];
 
 export const getLoraByParam = (param: string, baseModel: 'SD 1.5' | 'SDXL 1.0') => {
