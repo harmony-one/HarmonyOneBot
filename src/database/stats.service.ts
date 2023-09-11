@@ -15,7 +15,8 @@ export interface BotPaymentLog {
   message: string
   isSupportedCommand: boolean
   amountOne: number
-  amountCredits: number
+  amountCredits: number,
+  amountFiatCredits: number
 }
 
 export class StatsService {

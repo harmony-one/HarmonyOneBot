@@ -258,7 +258,7 @@ export class BotPayments {
     return +value.div(BigNumber(10).pow(18)).toFormat(precision)
   }
 
-  private async writePaymentLog(ctx: OnMessageContext, amountCredits: BigNumber, amountOne: BigNumber) {
+  private async writePaymentLog(ctx: OnMessageContext, amountCredits: BigNumber, amountOne: BigNumber, amountFiatCredits: BigNumber) {
     const {
       from,
       text = '',
@@ -286,6 +286,7 @@ export class BotPayments {
         isSupportedCommand: true,
         amountCredits: this.convertBigNumber(amountCredits),
         amountOne: this.convertBigNumber(amountOne),
+        amountFiatCredits: this.convertBigNumber(amountFiatCredits)
       }
       await statsService.writeLog(log)
     } catch (e) {
@@ -323,7 +324,7 @@ export class BotPayments {
     const oneTokensPayAmount = bn.min(amountToPay.minus(creditsPayAmount).minus(fiatCreditsPayAmount), balance);
 
     if (this.skipPayment(ctx, amountUSD)) {
-      await this.writePaymentLog(ctx, BigNumber(0), BigNumber(0))
+      await this.writePaymentLog(ctx, BigNumber(0), BigNumber(0), BigNumber(0))
       return true;
     }
 
@@ -371,7 +372,7 @@ export class BotPayments {
           });
         }
       }
-      await this.writePaymentLog(ctx, creditsPayAmount, oneTokensPayAmount)
+      await this.writePaymentLog(ctx, creditsPayAmount, oneTokensPayAmount, fiatCreditsPayAmount)
       return true
     } else {
       const addressBalance = await this.getAddressBalance(userAccount.address)

@@ -215,6 +215,7 @@ const writeCommandLog = async (
       isSupportedCommand,
       amountCredits: 0,
       amountOne: 0,
+      amountFiatCredits: 0
     };
     await statsService.writeLog(log);
   } catch (e) {
