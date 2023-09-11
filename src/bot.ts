@@ -30,7 +30,7 @@ import { OneCountryBot } from "./modules/1country";
 import { WalletConnect } from "./modules/walletconnect";
 import { BotPayments } from "./modules/payment";
 import { BotSchedule } from "./modules/schedule";
-import { VertexPalmBot } from "./modules/vertex";
+import { LlmsBot } from "./modules/llms";
 import config from "./config";
 import { commandsHelpText, TERMS, SUPPORT, FEEDBACK, LOVE } from "./constants";
 import prometheusRegister, { PrometheusMetrics } from "./metrics/prometheus";
@@ -134,7 +134,7 @@ const schedule = new BotSchedule(bot);
 const openAiBot = new OpenAIBot(payments);
 const oneCountryBot = new OneCountryBot();
 const translateBot = new TranslateBot();
-const vertexBot = new VertexPalmBot(payments);
+const llmsBot = new LlmsBot(payments);
 
 bot.on("message:new_chat_members:me", async (ctx) => {
   try {
@@ -296,12 +296,12 @@ const onMessage = async (ctx: OnMessageContext) => {
         }
       }
     }
-    if (await vertexBot.isSupportedEvent(ctx)) {
+    if (await llmsBot.isSupportedEvent(ctx)) {
       if (ctx.session.openAi.imageGen.isEnabled) {
-        const price = vertexBot.getEstimatedPrice(ctx);
+        const price = llmsBot.getEstimatedPrice(ctx);
         const isPaid = await payments.pay(ctx, price!);
         if (isPaid) {
-          await vertexBot
+          await llmsBot
             .onEvent(ctx)
             .catch((e) => payments.refundPayment(e, ctx, price!));
           return;

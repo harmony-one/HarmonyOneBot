@@ -26,14 +26,14 @@ import {
 import { vertexCompletion } from "./api/vertex";
 import { llmCompletion } from './api/liteLlm'
 
-export class VertexPalmBot {
+export class LlmsBot {
   private logger: Logger;
   private payments: BotPayments;
   private botSuspended: boolean;
 
   constructor(payments: BotPayments) {
     this.logger = pino({
-      name: "VertexPalmBot",
+      name: "LlmsBot",
       transport: {
         target: "pino-pretty",
         options: {
