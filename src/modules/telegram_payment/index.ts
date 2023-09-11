@@ -83,11 +83,20 @@ export class TelegramPayments {
       }
     }
 
-    const itemId = 'recharging2usd';
-    const amount = 200; // cents
+    let [cmd, usdAmountText = '10'] = ctx.message?.text?.split(' ') || [];
+
+    let usdAmount = parseFloat(usdAmountText);
+    if (isNaN(usdAmount)) {
+      return ctx.reply('The value should be a valid number: 10 or 10.45');
+    }
+
+    const fixedUsdAmount = parseFloat(usdAmount.toFixed(2));
+
+    const itemId = 'recharging-usd-' + fixedUsdAmount.toString();
+    const amount = Math.ceil(fixedUsdAmount * 100); // cents
 
     const chatId = ctx.message.chat.id;
-    const title = 'Recharging harmony1bot'
+    const title = 'Buy Harmony1bot Credits'
     const description = 'Recharging harmony1bot description'
     const providerToken = config.telegramPayments.token;
     const currency = 'USD';
@@ -99,6 +108,8 @@ export class TelegramPayments {
 
     const invoice = await invoiceService.create({tgUserId, accountId, itemId, amount});
     const payload = JSON.stringify({uuid: invoice.uuid});
-    await ctx.api.sendInvoice(chatId, title, description, payload, providerToken, currency, prices, {start_parameter: itemId});
+    this.logger.info(`Send invoice: ${JSON.stringify({tgUserId, accountId, itemId, amount})}`)
+    const photo_url = 'https://pbs.twimg.com/media/F5SofMsbgAApd2Y?format=png&name=small';
+    await ctx.api.sendInvoice(chatId, title, description, payload, providerToken, currency, prices, {start_parameter: 'createInvoice', photo_url, photo_width: 502, photo_height: 502 });
   }
 }
