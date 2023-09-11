@@ -109,6 +109,19 @@ export const NEGATIVE_PROMPT = {
     "(KHFB, AuroraNegative),(Worst Quality, Low Quality:1.4), ugly, tiling, poorly drawn hands, poorly drawn feet, poorly drawn face, out of frame, extra limbs, disfigured, deformed, body out of frame, bad anatomy, watermark, signature, cut off, low contrast, underexposed, overexposed, bad art, beginner, amateur, distorted face, blurry, draft, grainy, boobs, penis, nudity, mohammad, prophet mohammad, sex, porn, sexual",
 };
 
+export const MODELS = {
+  text: "\
+-----------MODELS-----------\n\
+/image  Broad application and styles\n\
+/real      Realistic vivid precision\n\
+/anime  Anime inspired designs\n\
+/magic  Magical dreamlike fantasy\n\
+/nsfw    18+ Sensual imagery\n\
+----------EXAMPLES----------\n\
+[Full list of models with examples](https://j.h.country/harmony1bot-full-list-of-custom-models-c2219c4222ff421b8388a2c2a03e22ff)\n\
+  ",
+};
+
 export const TERMS = {
   text: `1. Overview
 Welcome to our Telegram Bot. The following Terms of Service ("Terms") outline your rights and responsibilities when using our Bot ("Service"), which is owned and operated by Harmony ONE. By engaging with our Service, you are accepting and agreeing to abide by these Terms.

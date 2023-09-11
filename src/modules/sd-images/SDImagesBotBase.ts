@@ -152,7 +152,7 @@ export class SDImagesBotBase {
         refundCallback: (reason?: string) => void,
         session: ISession
     ) => {
-        const { model, prompt, seed } = session;
+        const { model, prompt, seed, lora } = session;
         const uuid = uuidv4();
 
         try {
@@ -192,6 +192,7 @@ export class SDImagesBotBase {
                 prompt,
                 model,
                 seed,
+                lora
             });
 
             const reqMessage = session.message ?

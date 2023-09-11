@@ -21,12 +21,26 @@ export interface IParams {
   seed?: number;
   denoise?: number;
   controlnetVersion: number;
+  sampler_name?: string;
+  scheduler?: string;
 }
 
 export const NEGATIVE_PROMPT = '(deformed, distorted, disfigured:1.3), poorly drawn, bad anatomy, wrong anatomy, extra limb, missing limb, floating limbs, (mutated hands and fingers:1.4), disconnected limbs, mutation, mutated, ugly, disgusting, blurry, amputation';
 
 export const getParamsFromPrompt = (originalPrompt: string, model: IModel): IParams => {
   let prompt = originalPrompt;
+
+  // lora match
+  const loraMatch = prompt.match(/<lora:(.*):(.*)>/);
+  let loraStrength;
+  let loraName;
+
+  if (loraMatch) {
+    loraName = loraMatch[1];
+    loraStrength = Number(loraMatch[2]);
+    
+    // prompt = prompt.replace(/<lora:(.*):(.*)>/, '');
+  }
 
   // --ar Aspect ratio flag <w>:<h>
   const aspectRatioMatch = prompt.match(/(--|\—)ar\s+(\d+:\d+)/);
@@ -35,7 +49,7 @@ export const getParamsFromPrompt = (originalPrompt: string, model: IModel): IPar
   let height = model.baseModel === 'SDXL 1.0' ? 1024 : 768;
 
   if (aspectRatioMatch) {
-    const aspectRatio = aspectRatioMatch[1];
+    const aspectRatio = aspectRatioMatch[2];
     const [aspectWidth, aspectHeight] = aspectRatio.split(':').map(Number);
 
     if (!isNaN(aspectWidth) && !isNaN(aspectHeight) && aspectHeight !== 0) {
@@ -50,7 +64,7 @@ export const getParamsFromPrompt = (originalPrompt: string, model: IModel): IPar
   const dimensionsMatch = prompt.match(/(--|\—)d\s+(\d+x\d+)/);
 
   if (dimensionsMatch) {
-    const dimensions = dimensionsMatch[1];
+    const dimensions = dimensionsMatch[2];
 
     [width, height] = dimensions.split('x').map(Number);
 
@@ -62,7 +76,7 @@ export const getParamsFromPrompt = (originalPrompt: string, model: IModel): IPar
   let cfgScale = 7.0;
 
   if (cfgScaleMatch) {
-    cfgScale = parseFloat(cfgScaleMatch[1]);
+    cfgScale = parseFloat(cfgScaleMatch[2]);
 
     prompt = prompt.replace(/(--|\—)cfg\s+(\d+(\.\d+)?)/, '');
   }
@@ -72,7 +86,7 @@ export const getParamsFromPrompt = (originalPrompt: string, model: IModel): IPar
   let steps = 26;
 
   if (stepsMatch) {
-    steps = parseInt(stepsMatch[1]);
+    steps = parseInt(stepsMatch[2]);
 
     prompt = prompt.replace(/(--|\—)steps\s+(\d+)/, '');
   }
@@ -82,7 +96,7 @@ export const getParamsFromPrompt = (originalPrompt: string, model: IModel): IPar
   let controlnetVersion = 1;
 
   if (controlnetVersionMatch) {
-    controlnetVersion = parseInt(controlnetVersionMatch[1]);
+    controlnetVersion = parseInt(controlnetVersionMatch[2]);
 
     prompt = prompt.replace(/(--|\—)c\s+(\d+)/, '');
   }
@@ -93,7 +107,7 @@ export const getParamsFromPrompt = (originalPrompt: string, model: IModel): IPar
   const seedMatch = prompt.match(/(--|\—)seed\s+(\d+)/);
 
   if (seedMatch) {
-    seed = parseInt(seedMatch[1]);
+    seed = parseInt(seedMatch[2]);
 
     prompt = prompt.replace(/(--|\—)seed\s+(\d+)/, '');
   }
@@ -104,7 +118,7 @@ export const getParamsFromPrompt = (originalPrompt: string, model: IModel): IPar
   const denoiseMatch = prompt.match(/(--|\—)denoise\s+(\d+\.\d+)/);
 
   if (denoiseMatch) {
-    denoise = Number(denoiseMatch[1]);
+    denoise = Number(denoiseMatch[2]);
 
     prompt = prompt.replace(/(--|\—)denoise\s+(\d+\.\d+)/, '');
   }
@@ -114,20 +128,34 @@ export const getParamsFromPrompt = (originalPrompt: string, model: IModel): IPar
   let negativePrompt = NEGATIVE_PROMPT;
 
   if (noMatch) {
-    negativePrompt = noMatch[1].trim();
+    negativePrompt = noMatch[2].trim();
     prompt = prompt.replace(/(--|\—)no\s+(.+?)(?=\s+--|$)/, '');
   }
 
-  const loraMatch = prompt.match(/<lora:(.*):(.*)>/);
-  let loraStrength;
-  let loraName;
+  // --sampler Sampler name flag <sampler_name>
+  const samplerMatch = prompt.match(/(--|\—)sampler\s+(\w+)/);
+  let sampler_name = 'dpmpp_2m';
 
-  if (loraMatch) {
-    loraName = loraMatch[1];
-    loraStrength = Number(loraMatch[2]);
-    
-    prompt = prompt.replace(/<lora:(.*):(.*)>/, '');
+  if (samplerMatch) {
+    sampler_name = samplerMatch[2].trim();
+    prompt = prompt.replace(/(--|\—)sampler\s+(\w+)/, '');
   }
+
+  // --scheduler Scheduler name flag <scheduler_name>
+  const schedulerMatch = prompt.match(/(--|\—)scheduler\s+(\w+)/);
+  let scheduler = 'karras';
+
+  if (schedulerMatch) {
+    scheduler = schedulerMatch[2].trim();
+    prompt = prompt.replace(/(--|\—)scheduler\s+(\w+)/, '');
+  }
+
+  // Add 'leogirl' to trigger /leo model
+  if (model.name == 'leosams_helloworld' && !prompt.includes('leogirl')) {
+    prompt = 'leogirl ' + prompt
+  }
+
+  prompt = prompt.trim()
 
   return {
     negativePrompt,
@@ -140,6 +168,8 @@ export const getParamsFromPrompt = (originalPrompt: string, model: IModel): IPar
     promptWithoutParams: prompt,
     seed,
     denoise,
-    controlnetVersion
+    controlnetVersion,
+    sampler_name,
+    scheduler,
   }
 }

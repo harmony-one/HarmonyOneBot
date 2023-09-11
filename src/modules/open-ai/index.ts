@@ -459,15 +459,14 @@ export class OpenAIBot {
               prompt
             )}. This is the web crawl text: ${webContent.urlText}`;
           } else {
-            newPrompt = `${
-              command === "sum" &&
-              `Summarize this text in ${config.openAi.chatGpt.wordLimit} words:`
+            newPrompt = `Summarize this text in ${config.openAi.chatGpt.wordLimit} words:
             } "${webContent.urlText}"`;
           }
           chat.push({
             content: newPrompt,
             role: "user",
           });
+
           if (prompt || command === "sum") {
             const payload = {
               conversation: chat,

@@ -62,6 +62,21 @@ export class SDNodeApi {
   ) => {
     const params = getParamsFromPrompt(options.prompt, options.model);
 
+    let selectedLora;
+    let loraStrength;
+
+    if (options.lora) {
+      selectedLora = options.lora;
+      loraStrength = 1;
+    } else if (params.loraName) {
+      selectedLora = getLoraByParam(params.loraName, options.model.baseModel);
+      loraStrength = params.loraStrength;
+    }
+
+    if (selectedLora?.shortName === 'logo') {
+      params.promptWithoutParams = `logo, ${params.promptWithoutParams}, LogoRedAF`;
+    }
+
     const { images } = await this.client.img2img(
       options.fileBuffer,
       {
@@ -71,8 +86,9 @@ export class SDNodeApi {
         height: options.height || params.height,
         steps: params.steps,
         cfgScale: params.cfgScale,
+        loraPath: selectedLora?.path,
         loraName: params.loraName,
-        loraStrength: params.loraStrength,
+        loraStrength,
         seed: options.seed || params.seed,
         denoise: params.denoise,
         model: options.model.path,

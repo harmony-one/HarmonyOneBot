@@ -2,6 +2,13 @@ import axios from 'axios'
 import config from "../../config";
 import {abbreviateNumber, getPercentDiff} from "./utils";
 
+export interface MetricsDaily {
+  date: string
+  value: string
+}
+
+const { explorerRestApiUrl: apiUrl, explorerRestApiKey: apiKey } = config.schedule
+
 export enum MetricsDailyType {
   walletsCount = 'wallets_count',
   transactionsCount = 'transactions_count',
@@ -10,14 +17,7 @@ export enum MetricsDailyType {
   totalFee = 'total_fee',
 }
 
-export interface MetricsDaily {
-  date: string
-  value: string
-}
-
-const { explorerRestApiUrl: apiUrl, explorerRestApiKey: apiKey } = config.schedule
-
-const getDailyMetrics = async (type: string, limit: number) => {
+export const getDailyMetrics = async (type: MetricsDailyType, limit: number) => {
   const feesUrl = `${apiUrl}/v0/metrics?type=${type}&limit=${limit}`
   const { data } = await axios.get<MetricsDaily[]>(feesUrl, {
     headers: {
@@ -28,7 +28,7 @@ const getDailyMetrics = async (type: string, limit: number) => {
 }
 
 export const getFeeStats = async () => {
-  const metrics = await getDailyMetrics('total_fee', 14)
+  const metrics = await getDailyMetrics(MetricsDailyType.totalFee, 14)
 
   let feesWeek1 = 0, feesWeek2 = 0
 

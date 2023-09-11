@@ -1,14 +1,15 @@
 import pino from "pino";
 import { Bot } from 'grammy'
 import cron from 'node-cron'
-import { LRUCache } from 'lru-cache'
 import config from '../../config'
 import {BotContext, OnMessageContext} from "../types";
-import {getFeeStats} from "./explorerApi";
+import {getDailyMetrics, MetricsDailyType} from "./explorerApi";
 import {getAddressBalance, getBotFee, getBotFeeStats} from "./harmonyApi";
-import {getBridgeStats} from "./bridgeAPI";
+import {getTotalStakes, getTVL} from "./bridgeAPI";
 import {statsService} from "../../database/services";
 import {abbreviateNumber} from "./utils";
+import {getOneRate} from "./exchangeApi";
+import {getTradingVolume} from "./subgraphAPI";
 
 enum SupportedCommands {
   BOT_STATS = 'botstats',
@@ -29,9 +30,6 @@ export class BotSchedule {
     }
   })
 
-  private cache = new LRUCache({ max: 100, ttl: 1000 * 60 * 60 * 2 })
-  private reportMessage = ''
-
   constructor(bot: Bot<BotContext>) {
     this.bot = bot
 
@@ -47,37 +45,6 @@ export class BotSchedule {
 
   }
 
-  private async prepareMetricsUpdate(refetchData = false) {
-    try {
-      this.logger.info(`Start preparing stats`)
-
-      const networkFeeStats = await getFeeStats()
-      const networkFeesReport = `*${networkFeeStats.value}* ONE (${networkFeeStats.change}%)`
-
-      let bridgeStatsReport = this.cache.get('bridge_report') || ''
-      this.logger.info(`Bridge stats report from cache: "${bridgeStatsReport}"`)
-      if(refetchData || !bridgeStatsReport) {
-        const bridgeStats = await getBridgeStats()
-        bridgeStatsReport =  `*${bridgeStats.value}* USD (${bridgeStats.change}%)`
-        this.cache.set('bridge_report', bridgeStatsReport)
-      }
-
-      const botFeesReport = await this.getBotFeeReport(this.holderAddress);
-
-      const reportMessage =
-        `\nNetwork fees (7-day growth): ${networkFeesReport}` +
-        `\nBridge flow: ${bridgeStatsReport}` +
-        `\nBot fees: ${botFeesReport}`
-
-      this.logger.info(`Prepared message: "${reportMessage}"`)
-      this.reportMessage = reportMessage
-      return reportMessage
-    } catch (e) {
-      console.log('### e', e);
-      this.logger.error(`Cannot get stats: ${(e as Error).message}`)
-    }
-  }
-
   private async postMetricsUpdate() {
     const scheduleChatId = config.schedule.chatId
     if(!scheduleChatId) {
@@ -85,32 +52,25 @@ export class BotSchedule {
       return
     }
 
-    if(this.reportMessage) {
-      await this.bot.api.sendMessage(scheduleChatId, this.reportMessage, {
+    const reportMessage = await this.generateReport()
+    if(reportMessage) {
+      await this.bot.api.sendMessage(scheduleChatId, reportMessage, {
         parse_mode: "Markdown",
       })
-      this.logger.info(`Daily metrics posted in chat ${scheduleChatId}: ${this.reportMessage}`)
+      this.logger.info(`Daily metrics posted in chat ${scheduleChatId}: ${reportMessage}`)
+    } else {
+      this.logger.error(`Cannot prepare daily /stats message`)
     }
   }
 
   private async runCronJob() {
-    cron.schedule('30 17 * * *', () => {
-      this.prepareMetricsUpdate(true)
-    }, {
-      scheduled: true,
-      timezone: "Europe/Lisbon"
-    });
-
     cron.schedule('00 18 * * *', () => {
-      this.logger.info('Posting daily metrics')
+      this.logger.info('Posting daily metrics...')
       this.postMetricsUpdate()
     }, {
       scheduled: true,
       timezone: "Europe/Lisbon"
     });
-
-    await this.prepareMetricsUpdate()
-    // await this.postMetricsUpdate()
   }
 
   public isSupportedEvent(ctx: OnMessageContext) {
@@ -124,19 +84,53 @@ export class BotSchedule {
 
   public async generateReport() {
     const [
+      networkFeesWeekly,
+      walletsCountWeekly,
+      oneRate,
+
+      bridgeTVL,
+      totalStakes,
+      swapTradingVolume,
+
       balance,
       weeklyUsers,
-      totalSupportedMessages
+      dailyMessages
     ] = await Promise.all([
+      getDailyMetrics(MetricsDailyType.totalFee, 7),
+      getDailyMetrics(MetricsDailyType.walletsCount, 7),
+      getOneRate(),
+
+      getTVL(),
+      getTotalStakes(),
+      getTradingVolume(),
+
       getAddressBalance(this.holderAddress),
       statsService.getActiveUsers(7),
       statsService.getTotalMessages(1, true)
     ])
 
-    const report = `\nBot fees: *${abbreviateNumber(balance / Math.pow(10, 18))}* ONE` +
-      `\nWeekly active users: *${abbreviateNumber(weeklyUsers)}*` +
-      `\nDaily user engagement: *${abbreviateNumber(totalSupportedMessages)}*`
-    return report;
+    const networkFeesSum = networkFeesWeekly.reduce((sum, item) => sum + +item.value, 0)
+    const walletsCountSum = walletsCountWeekly.reduce((sum, item) => sum + +item.value, 0)
+    const walletsCountAvg = Math.round(walletsCountSum / walletsCountWeekly.length)
+
+    const networkUsage =
+      `- Network 7-day fees, wallets, price: ` +
+      `*${abbreviateNumber(networkFeesSum)}* ONE, ${abbreviateNumber(walletsCountAvg)}, $${oneRate.toFixed(4)}`
+
+    const swapTradingVolumeSum = swapTradingVolume.reduce((sum, item) => sum + Math.round(+item.volumeUSD), 0)
+    const totalStakeUSD = Math.round(oneRate * totalStakes)
+
+    const assetsUpdate =
+      `- Total assets, swaps, stakes: ` +
+      `*$${abbreviateNumber(bridgeTVL)}*, $${abbreviateNumber(swapTradingVolumeSum)}, $${abbreviateNumber(totalStakeUSD)}`
+
+    const oneBotMetrics =
+      `- Bot total earns, weekly users, daily messages: ` +
+      `*${abbreviateNumber(balance / Math.pow(10, 18))}* ONE` +
+      `, ${abbreviateNumber(weeklyUsers)}` +
+      `, ${abbreviateNumber(dailyMessages)}`
+
+    return `${networkUsage}\n${assetsUpdate}\n${oneBotMetrics}`;
   }
 
   public async generateReportEngagementByCommand(days: number) {
@@ -199,7 +193,7 @@ export class BotSchedule {
     const { message_id } = ctx.update.message
 
     if(ctx.hasCommand(SupportedCommands.BOT_STATS)) {
-      const report = await this.prepareMetricsUpdate()
+      const report = await this.generateReport()
       if(report) {
         await ctx.reply(report, {
           parse_mode: "Markdown",
