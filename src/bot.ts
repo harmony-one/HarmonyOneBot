@@ -32,7 +32,14 @@ import { BotSchedule } from "./modules/schedule";
 import { LlmsBot } from "./modules/llms";
 import { DocumentHandler } from "./modules/document-handler";
 import config from "./config";
-import { commandsHelpText, TERMS, SUPPORT, FEEDBACK, LOVE, MODELS } from "./constants";
+import {
+  commandsHelpText,
+  TERMS,
+  SUPPORT,
+  FEEDBACK,
+  LOVE,
+  MODELS,
+} from "./constants";
 import prometheusRegister, { PrometheusMetrics } from "./metrics/prometheus";
 
 import { chatService, statsService } from "./database/services";
@@ -282,7 +289,7 @@ const onMessage = async (ctx: OnMessageContext) => {
     if (documentBot.isSupportedEvent(ctx)) {
       const price = 1;
       const isPaid = await payments.pay(ctx, price);
-      
+
       if (isPaid) {
         // const file = await bot.getFile();
         const response = await documentBot
@@ -298,7 +305,6 @@ const onMessage = async (ctx: OnMessageContext) => {
           return;
         }
       }
-      
     }
 
     if (translateBot.isSupportedEvent(ctx)) {
@@ -517,6 +523,9 @@ bot.command("stop", (ctx) => {
   ctx.session.translate.enable = false;
   ctx.session.translate.languages = [];
   ctx.session.oneCountry.lastDomain = "";
+  ctx.session.llms.chatConversation = [];
+  ctx.session.llms.usage = 0;
+  ctx.session.llms.price = 0;
 });
 // bot.command("memo", (ctx) => {
 //   ctx.reply(MEMO.text, {
@@ -531,7 +540,6 @@ bot.command("stop", (ctx) => {
 //     reply_markup: mainMenu,
 //   });
 // });
-
 
 // bot.on("msg:new_chat_members", async (ctx) => {
 //   try {
