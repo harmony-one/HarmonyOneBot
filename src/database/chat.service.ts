@@ -74,6 +74,27 @@ export class ChatService {
     })
   }
 
+  public async withdrawFiatAmount(accountId: number, amount: string) {
+    const chat = await this.getAccountById(accountId)
+    if(!chat) {
+      throw new Error(`${accountId} Cannot find fiat credits account`)
+    }
+    if(bn(amount).lt(0)) {
+      throw new Error(`${accountId} Amount cant be less than zero: ${amount}`)
+    }
+    const newAmount = bn(chat.fiatCreditAmount).minus(bn(amount))
+
+    if(newAmount.lt(0)) {
+      throw new Error(`${accountId} Insufficient fiat credits: cannot withdraw ${amount}, current balance ${chat.fiatCreditAmount}`)
+    }
+
+    return chatRepository.update({
+      accountId
+    }, {
+      fiatCreditAmount: newAmount.toFixed()
+    })
+  }
+
   public async setAmount(accountId: number, amount: string) {
     const account = await this.getAccountById(accountId)
     if(!account) {
@@ -86,10 +107,34 @@ export class ChatService {
     })
   }
 
+  public async depositFiatCredits(accountId: number, amount: string) {
+    const account = await this.getAccountById(accountId)
+    if(!account) {
+      throw new Error(`${accountId} Cannot find credits account`)
+    }
+
+    const oldValue = BigInt(account.fiatCreditAmount);
+    const newValue = oldValue + BigInt(amount);
+
+    return chatRepository.update({
+      accountId
+    }, {
+      fiatCreditAmount: newValue.toString()
+    })
+  }
+
   public async getBalance(accountId: number) {
     const account = await this.getAccountById(accountId)
     if(account) {
       return bn(account.creditAmount)
+    }
+    return bn(0)
+  }
+
+  public async getFiatBalance(accountId: number) {
+    const account = await this.getAccountById(accountId)
+    if(account) {
+      return bn(account.fiatCreditAmount)
     }
     return bn(0)
   }
