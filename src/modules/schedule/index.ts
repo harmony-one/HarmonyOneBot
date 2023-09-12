@@ -5,7 +5,7 @@ import config from '../../config'
 import {BotContext, OnMessageContext} from "../types";
 import {getDailyMetrics, MetricsDailyType} from "./explorerApi";
 import {getAddressBalance, getBotFee, getBotFeeStats} from "./harmonyApi";
-import {getTotalStakes, getTVL} from "./bridgeAPI";
+import {getAvgStakes, getTotalStakes, getTVL} from "./bridgeAPI";
 import {statsService} from "../../database/services";
 import {abbreviateNumber, lessThan100, precise} from "./utils";
 import {getOneRate} from "./exchangeApi";
@@ -101,7 +101,7 @@ export class BotSchedule {
       getOneRate(),
 
       getTVL(),
-      getTotalStakes(),
+      getAvgStakes(),
       getTradingVolume(7),
 
       getAddressBalance(this.holderAddress),
