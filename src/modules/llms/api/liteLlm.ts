@@ -3,7 +3,6 @@ import config from "../../../config";
 import { ChatConversation } from "../../types";
 
 const API_ENDPOINT = config.llms.apiEndpoint;
-
 export interface LlmCompletion {
   completion: ChatConversation | undefined
   usage: number
@@ -21,18 +20,18 @@ export const llmCompletion = async (
           stream: false,
           messages: conversation,
         }    
-    const url = `${API_ENDPOINT}/chat/completions`
+    const url = `${API_ENDPOINT}/llms/completions`
     const response = await axios.post(url, data);
 
     if (response) {
-      const totalInputTokens = 4 //response.data.usage.prompt_tokens;  
-      const totalOutputTokens = 5 // response.data.usage.completion_tokens;
-      // const completion = response.data //.data.choices;
+      const totalInputTokens = response.data.usage.prompt_tokens;  
+      const totalOutputTokens = response.data.usage.completion_tokens;
+      const completion = response.data.choices;
       return {
         completion: {
-          content: response.data,
+          content: completion[0].message?.content!,
           role: 'system'
-        }, // [0].message?.content!,
+        },
         usage: totalOutputTokens + totalInputTokens,
         price: 0,
       };

@@ -109,7 +109,7 @@ export class LlmsBot {
       ).message_id;
       ctx.chatAction = "typing";
 
-      // const completion = await vertexCompletion(conversation, "chat-bison@001");
+      // const response = await llmCompletion(conversation, 'gpt-3.5-turbo') 
       const response = await vertexCompletion(conversation, model) // "chat-bison@001");
       if (response.completion) {
         ctx.api.editMessageText(ctx.chat?.id!, msgId, response.completion.content);
