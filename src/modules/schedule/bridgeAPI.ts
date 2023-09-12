@@ -66,6 +66,7 @@ export const getTokensList = async (): Promise<BridgeToken[]> => {
 
 export const getStakingStats = async () => {
   const { data } = await axios.get<{ "total-staking": string }>(`${stakeApiUrl}/networks/harmony/network_info_lite`)
+  console.log(data);
   return data
 }
 
