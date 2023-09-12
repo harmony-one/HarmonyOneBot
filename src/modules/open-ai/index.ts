@@ -249,7 +249,9 @@ export class OpenAIBot {
     const addressBalance = await this.payments.getUserBalance(accountId);
     const creditsBalance = await chatService.getBalance(accountId);
     const fiatCreditsBalance = await chatService.getFiatBalance(accountId);
-    const balance = addressBalance.plus(creditsBalance).plus(fiatCreditsBalance);
+    const balance = addressBalance
+      .plus(creditsBalance)
+      .plus(fiatCreditsBalance);
     const balanceOne = (await this.payments.toONE(balance, false)).toFixed(2);
     return (
       +balanceOne > +config.openAi.chatGpt.minimumBalance ||
@@ -305,11 +307,20 @@ export class OpenAIBot {
         const imgs = await alterGeneratedImg(prompt!, filePath!, ctx, imgSize!);
         if (imgs) {
           imgs!.map(async (img: any) => {
-            await ctx.replyWithPhoto(img.url, {
-              message_thread_id: ctx.message?.message_thread_id,
-            }).catch((e) => {
-              throw e;
-            });
+            if (img && img.url) {
+              await ctx
+              .replyWithPhoto(img.url, {
+                message_thread_id: ctx.message?.message_thread_id,
+              })
+              .catch((e) => {
+                this.onError(
+                  ctx,
+                  e,
+                  MAX_TRIES,
+                  "There was an error while generating the image"
+                );
+              });
+            }
           });
         }
         ctx.chatAction = null;
@@ -329,7 +340,9 @@ export class OpenAIBot {
     try {
       let msgId = (
         await ctx.reply("...", {
-          message_thread_id: ctx.message?.message_thread_id,
+          message_thread_id:
+            ctx.message?.message_thread_id ||
+            ctx.message?.reply_to_message?.message_thread_id,
         })
       ).message_id;
       const isTypingEnabled = config.openAi.chatGpt.isTypingEnabled;
@@ -677,7 +690,9 @@ export class OpenAIBot {
     const addressBalance = await this.payments.getUserBalance(accountId);
     const creditsBalance = await chatService.getBalance(accountId);
     const fiatCreditsBalance = await chatService.getFiatBalance(accountId);
-    const balance = addressBalance.plus(creditsBalance).plus(fiatCreditsBalance);
+    const balance = addressBalance
+      .plus(creditsBalance)
+      .plus(fiatCreditsBalance);
     const balanceOne = (await this.payments.toONE(balance, false)).toFixed(2);
     const balanceMessage = appText.notEnoughBalance
       .replaceAll("$CREDITS", balanceOne)
