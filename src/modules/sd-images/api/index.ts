@@ -150,9 +150,13 @@ export class SDNodeApi {
 
   train = async (
     fileBuffers: Buffer[],
-    loraName: string,
+    prompt: string,
     ctx: OnMessageContext | OnCallBackQueryData,
   ): Promise<void> => {
-    return this.client.train(fileBuffers, loraName, ctx);
+    const params = getParamsFromPrompt(prompt);
+
+    const [loraName] = prompt.split(' ');
+
+    return this.client.train(fileBuffers, loraName, params.modelAlias, ctx);
   }
 }

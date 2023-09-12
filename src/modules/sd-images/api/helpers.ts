@@ -21,18 +21,19 @@ export interface IParams {
   seed?: number;
   denoise?: number;
   controlnetVersion: number;
+  modelAlias: string;
 }
 
 export const NEGATIVE_PROMPT = '(deformed, distorted, disfigured:1.3), poorly drawn, bad anatomy, wrong anatomy, extra limb, missing limb, floating limbs, (mutated hands and fingers:1.4), disconnected limbs, mutation, mutated, ugly, disgusting, blurry, amputation';
 
-export const getParamsFromPrompt = (originalPrompt: string, model: IModel): IParams => {
+export const getParamsFromPrompt = (originalPrompt: string, model?: IModel): IParams => {
   let prompt = originalPrompt;
 
   // --ar Aspect ratio flag <w>:<h>
   const aspectRatioMatch = prompt.match(/(--|\—)ar\s+(\d+:\d+)/);
 
-  let width = model.baseModel === 'SDXL 1.0' ? 1024 : 512;
-  let height = model.baseModel === 'SDXL 1.0' ? 1024 : 768;
+  let width = model?.baseModel === 'SDXL 1.0' ? 1024 : 512;
+  let height = model?.baseModel === 'SDXL 1.0' ? 1024 : 768;
 
   if (aspectRatioMatch) {
     const aspectRatio = aspectRatioMatch[2];
@@ -129,6 +130,15 @@ export const getParamsFromPrompt = (originalPrompt: string, model: IModel): IPar
     prompt = prompt.replace(/<lora:(.*):(.*)>/, '');
   }
 
+  const modelMatch = prompt.match(/--model (.*)/);
+  let modelAlias = '';
+
+  if (modelMatch) {
+    modelAlias = modelMatch[1];
+    
+    prompt = prompt.replace(/--model (.*)/, '');
+  }
+
   return {
     negativePrompt,
     width,
@@ -140,6 +150,7 @@ export const getParamsFromPrompt = (originalPrompt: string, model: IModel): IPar
     promptWithoutParams: prompt,
     seed,
     denoise,
-    controlnetVersion
+    controlnetVersion,
+    modelAlias
   }
 }

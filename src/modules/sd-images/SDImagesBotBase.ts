@@ -18,10 +18,16 @@ export interface ISession {
     message: string;
 }
 
+export interface IMediaGroup {
+    mediaGroupId: string;
+    photosIds: string[];
+    caption: string;
+}
+
 export class SDImagesBotBase {
     sdNodeApi: SDNodeApi;
     private logger: Logger;
-    private mediaGroupCache: Record<string, string[]> = {};
+    private mediaGroupCache: IMediaGroup[] = [];
 
     private sessions: ISession[] = [];
     queue: string[] = [];
@@ -39,16 +45,19 @@ export class SDImagesBotBase {
         });
     }
 
-    addMediaGroupPhoto = (photoId: string, mediaGroupId: string) => {
-        if (!this.mediaGroupCache[mediaGroupId]) {
-            this.mediaGroupCache[mediaGroupId] = [photoId];
-        } else {
-            this.mediaGroupCache[mediaGroupId].push(photoId);
-        }
-    }
+    addMediaGroupPhoto = (params: { photoId: string, mediaGroupId: string, caption: string }) => {
+        const mediaGroup = this.mediaGroupCache.find(m => m.mediaGroupId === params.mediaGroupId);
 
-    getMediaGroupPhotosIds = (mediaGroupId: string) => {
-        return this.mediaGroupCache[mediaGroupId];
+        if (mediaGroup) {
+            mediaGroup.caption = mediaGroup.caption || params.caption;
+            mediaGroup.photosIds.push(params.photoId);
+        } else {
+            this.mediaGroupCache.push({
+                photosIds: [params.photoId],
+                mediaGroupId: params.mediaGroupId,
+                caption: params.caption
+            });
+        }
     }
 
     createSession = async (
@@ -278,16 +287,14 @@ export class SDImagesBotBase {
         try {
             ctx.chatAction = "upload_photo";
 
-            let photosIds;
+            let photosIds: string[] = [];
             let filesBuffer: Buffer[];
 
-            const mediaGroupId = ctx.message?.media_group_id || ctx.message?.reply_to_message?.media_group_id;
+            const [,caption] = (ctx.message?.text || '').split(' ');
 
-            if (mediaGroupId) {
-                photosIds = this.getMediaGroupPhotosIds(mediaGroupId);
-            } else {
-                throw new Error("Media group Id not found");
-            }
+            this.mediaGroupCache
+                .filter(m => m.caption.replace('/train ', '') === caption)
+                .forEach(m => photosIds = photosIds.concat(m.photosIds))
 
             if (photosIds) {
                 filesBuffer = await Promise.all(photosIds.map(async file_id => {

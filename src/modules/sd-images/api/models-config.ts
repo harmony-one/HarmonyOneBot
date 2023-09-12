@@ -67,15 +67,17 @@ export const MODELS_CONFIGS: IModel[] = [
         aliases: ['rev', '7371', 'h419'],
         defaultPrompt: '((best quality)), ((masterpiece)), (detailed), alluring succubus, ethereal beauty, perched on a cloud, (fantasy illustration:1.3), enchanting gaze, captivating pose, delicate wings, otherworldly charm, mystical sky, (Luis Royo:1.2), (Yoshitaka Amano:1.1), moonlit night, soft colors, (detailed cloudscape:1.3), (high-resolution:1.2)'
     },
-    // {
-    //     path: "v1-5-pruned-emaonly.safetensors",
-    //     name: '',
-    //     id: '',
-    //     hash: '',
-    //     shortName: '',
-    //     link: '',
-    //     baseModel: 'SD 1.5'
-    // },
+    {
+        path: "v1-5-pruned-emaonly.safetensors",
+        name: 'v1-5-pruned-emaonly',
+        id: '',
+        hash: '',
+        shortName: 'pruned-emaonly',
+        link: '',
+        baseModel: 'SD 1.5',
+        aliases: ['p', 'prune'],
+        defaultPrompt: 'masterpiece, best quality, ultra-detailed, illustration, beautiful detailed eyes, looking at viewer, close up, pink hair, shy, cat ears'
+    },
     {
         path: "animePastelDream_softBakedVae.safetensors",
         name: 'Anime Pastel Dream',

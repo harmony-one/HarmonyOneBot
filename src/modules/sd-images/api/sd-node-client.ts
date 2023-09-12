@@ -172,6 +172,7 @@ export class Client {
     train = async (
         fileBuffers: Buffer[],
         loraName: string,
+        modelAlias: string,
         ctx: OnMessageContext | OnCallBackQueryData,
         serverConfig?: { host: string, wsHost: string }
     ): Promise<void> => {
@@ -198,10 +199,16 @@ export class Client {
                 await comfyClient.uploadImage({ filename, fileBuffer: fileBuffers[i], override: true });
             }
 
-            let res = await axios.get(`${trainServer}/add/${loraName}`);
+            const modelPath = modelAlias || 'base';
+
+            if(!fileBuffers.length) {
+                return;
+            }
+
+            let res = await axios.get(`${trainServer}/add/${loraName}/${modelPath}`);
             let train = res.data;
 
-            ctx.reply(`Starting training, your number is ${train.numberInQueue}`);
+            ctx.reply(`Starting training with ${fileBuffers.length} images, your number is ${train.numberInQueue}`);
 
             while (train.status === 'IN_PROGRESS' || train.status === 'WAITING') {
                 await sleep(1000);

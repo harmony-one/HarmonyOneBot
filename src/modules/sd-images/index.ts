@@ -12,10 +12,11 @@ export class SDImagesBot extends SDImagesBotBase {
     const photos = ctx.message?.photo;
 
     if (photos && ctx.message?.media_group_id) {
-      this.addMediaGroupPhoto(
-        photos[photos.length - 1].file_id,
-        ctx.message.media_group_id
-      );
+      this.addMediaGroupPhoto({
+        photoId: photos[photos.length - 1].file_id,
+        mediaGroupId: ctx.message.media_group_id,
+        caption: ctx.message.caption || ''
+      });
     }
 
     const operation = !!parseCtx(ctx);
