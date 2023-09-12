@@ -27,7 +27,7 @@ module.exports = {
       'import/extensions': 'off',
       'object-curly-newline': ['error', { multiline: true }],
       '@typescript-eslint/restrict-template-expressions': 0,
-      '@typescript-eslint/no-misused-promises': 0,
+    //   '@typescript-eslint/no-misused-promises': 0,
       '@typescript-eslint/strict-boolean-expressions': 0,
       '@typescript-eslint/no-explicit-any': 0,
     },
@@ -38,7 +38,6 @@ module.exports = {
       tsconfigRootDir: __dirname,
       createDefaultProgram: true,
     },
-    plugins: ['compat'],
     settings: {
       'import/parsers': { '@typescript-eslint/parser': ['.ts', '.tsx'] },
     },
