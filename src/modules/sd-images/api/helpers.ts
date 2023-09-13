@@ -22,12 +22,59 @@ export interface IParams {
   denoise?: number;
   controlnetVersion: number;
   modelAlias: string;
+  sampler_name?: string;
+  scheduler?: string;
 }
 
 export const NEGATIVE_PROMPT = '(deformed, distorted, disfigured:1.3), poorly drawn, bad anatomy, wrong anatomy, extra limb, missing limb, floating limbs, (mutated hands and fingers:1.4), disconnected limbs, mutation, mutated, ugly, disgusting, blurry, amputation';
 
 export const getParamsFromPrompt = (originalPrompt: string, model?: IModel): IParams => {
   let prompt = originalPrompt;
+
+  // Civit generation data
+  if (prompt.includes("Negative prompt:")) {
+    let param_blob = prompt.split("Negative prompt: ")[1] || '';
+    let c_prompt = prompt.split("Negative prompt: ")[0].trim() || '';
+    let c_negativePrompt = param_blob.split("Steps: ")[0].trim() || '';
+    let step_match = param_blob.match(/Steps:\s+(\d+)/);
+    let c_steps = step_match ? step_match[1] : '20';
+    let dim_match = param_blob.match(/Size:\s+(\d+x\d+)/);
+    let c_dimensions = dim_match ? dim_match[1] : '512x512';
+    let cfg_match = param_blob.match(/CFG scale:\s+(\d+(\.\d+)?)/);
+    let c_cfg = cfg_match ? cfg_match[1] : '7';
+    let seed_match = param_blob.match(/Seed:\s+(\d+)/);
+    let c_seed = seed_match ? seed_match[1] : '1234567890';
+
+    let sampler_match = param_blob.match(/Sampler:\s(.*?),\s/);
+    let sampler_full = sampler_match ? sampler_match[1] : 'dpmpp_2m karras';
+    sampler_full = sampler_full.toLowerCase();
+    sampler_full = sampler_full.replaceAll("+", "p");
+    let c_sampler = 'dpmpp_2m'
+    let c_scheduler = 'karras'
+    if (sampler_full.includes("karras")) {
+      c_scheduler = 'karras'
+      sampler_full = sampler_full.replaceAll(" karras", '');
+      c_sampler = sampler_full.replaceAll(" ", '_')
+    } else {
+      c_scheduler = 'normal'
+      c_sampler = sampler_full
+    }
+
+
+    prompt = c_prompt + ' --no ' + c_negativePrompt + ' --steps ' + c_steps + ' --d ' + c_dimensions + ' --cfg ' + c_cfg + ' --seed ' + c_seed + ' --sampler ' + c_sampler + ' --scheduler ' + c_scheduler;
+  }
+
+  // lora match
+  const loraMatch = prompt.match(/<lora:(.*):(.*)>/);
+  let loraStrength;
+  let loraName;
+
+  if (loraMatch) {
+    loraName = loraMatch[1];
+    loraStrength = Number(loraMatch[2]);
+    
+    // prompt = prompt.replace(/<lora:(.*):(.*)>/, '');
+  }
 
   // --ar Aspect ratio flag <w>:<h>
   const aspectRatioMatch = prompt.match(/(--|\—)ar\s+(\d+:\d+)/);
@@ -119,15 +166,22 @@ export const getParamsFromPrompt = (originalPrompt: string, model?: IModel): IPa
     prompt = prompt.replace(/(--|\—)no\s+(.+?)(?=\s+--|$)/, '');
   }
 
-  const loraMatch = prompt.match(/<lora:(.*):(.*)>/);
-  let loraStrength;
-  let loraName;
+  // --sampler Sampler name flag <sampler_name>
+  const samplerMatch = prompt.match(/(--|\—)sampler\s+(\w+)/);
+  let sampler_name = 'dpmpp_2m';
 
-  if (loraMatch) {
-    loraName = loraMatch[1];
-    loraStrength = Number(loraMatch[2]);
-    
-    prompt = prompt.replace(/<lora:(.*):(.*)>/, '');
+  if (samplerMatch) {
+    sampler_name = samplerMatch[2].trim();
+    prompt = prompt.replace(/(--|\—)sampler\s+(\w+)/, '');
+  }
+
+  // --scheduler Scheduler name flag <scheduler_name>
+  const schedulerMatch = prompt.match(/(--|\—)scheduler\s+(\w+)/);
+  let scheduler = 'karras';
+
+  if (schedulerMatch) {
+    scheduler = schedulerMatch[2].trim();
+    prompt = prompt.replace(/(--|\—)scheduler\s+(\w+)/, '');
   }
 
   const modelMatch = prompt.match(/--model (.*)/);
@@ -138,6 +192,13 @@ export const getParamsFromPrompt = (originalPrompt: string, model?: IModel): IPa
     
     prompt = prompt.replace(/--model (.*)/, '');
   }
+
+  // Add 'leogirl' to trigger /leo model
+  if (model && model.name == 'leosams_helloworld' && !prompt.includes('leogirl')) {
+    prompt = 'leogirl ' + prompt
+  }
+
+  prompt = prompt.trim()
 
   return {
     negativePrompt,
@@ -151,6 +212,8 @@ export const getParamsFromPrompt = (originalPrompt: string, model?: IModel): IPa
     seed,
     denoise,
     controlnetVersion,
-    modelAlias
+    modelAlias,
+    sampler_name,
+    scheduler,
   }
 }

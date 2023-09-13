@@ -32,6 +32,9 @@ export class BotLog {
   @Column({ type: 'decimal', precision: 10, scale: 8, default: 0 })
   amountCredits: number;
 
+  @Column({ type: 'decimal', precision: 10, scale: 8, default: 0 })
+  amountFiatCredits: number;
+
   @CreateDateColumn()
   createdAt: Date;
 }

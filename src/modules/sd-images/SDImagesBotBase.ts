@@ -106,17 +106,13 @@ export class SDImagesBotBase {
 
     waitingQueue = async (uuid: string, ctx: OnMessageContext | OnCallBackQueryData,): Promise<number> => {
         this.queue.push(uuid);
+        let idx = this.queue.findIndex((v) => v === uuid);              
 
-        let idx = this.queue.findIndex((v) => v === uuid);
-        const topicId = await ctx.message?.message_thread_id
-        let msgExtras: MessageExtras = {}
-        if (topicId) {
-            msgExtras['message_thread_id'] = topicId
-        }
         const { message_id } = await ctx.reply(
-            `You are #${idx + 1}, wait about ${(idx + 1) * 15} seconds`, msgExtras
+            `You are #${idx + 1} in line for making images. The wait time is about ${(idx + 1) * 15} seconds.`, {
+                message_thread_id: ctx.message?.message_thread_id
+            }
         );
-
         // waiting queue
         while (idx !== 0) {
             await sleep(3000 * this.queue.findIndex((v) => v === uuid));
@@ -153,24 +149,17 @@ export class SDImagesBotBase {
                     `${session.message} ${prompt}`
                 :
                 `/${model.aliases[0]} ${prompt}`;
-            const topicId = await ctx.message?.message_thread_id
-            let msgExtras: MessageExtras = {
-                caption: specialMessage || reqMessage
-            }
-            if (topicId) {
-                msgExtras['message_thread_id'] = topicId
-            }
-            await ctx.replyWithPhoto(new InputFile(imageBuffer), msgExtras);
-
+            await ctx.replyWithPhoto(new InputFile(imageBuffer), {
+                caption: reqMessage,
+                message_thread_id: ctx.message?.message_thread_id
+            });
             if (ctx.chat?.id && queueMessageId) {
                 await ctx.api.deleteMessage(ctx.chat?.id, queueMessageId);
             }
         } catch (e: any) {
             ctx.chatAction = null
-            const topicId = await ctx.message?.message_thread_id
-            let msgExtras: MessageExtras = {}
-            if (topicId) {
-                msgExtras['message_thread_id'] = topicId
+            const msgExtras: MessageExtras = {
+                message_thread_id: ctx.message?.message_thread_id
             }
             if (e instanceof GrammyError) {
                 if (e.error_code === 400 && e.description.includes('not enough rights')) {
@@ -242,10 +231,8 @@ export class SDImagesBotBase {
                     `${session.message} ${prompt}`
                 :
                 `/${model.aliases[0]} ${prompt}`;
-            const topicId = await ctx.message?.message_thread_id
-            let msgExtras: MessageExtras = {}
-            if (topicId) {
-                msgExtras['message_thread_id'] = topicId
+            let msgExtras: MessageExtras = {
+                message_thread_id: ctx.message?.message_thread_id
             }
             await ctx.replyWithMediaGroup([
                 {
@@ -264,10 +251,8 @@ export class SDImagesBotBase {
                 await ctx.api.deleteMessage(ctx.chat?.id, queueMessageId);
             }
         } catch (e: any) {
-            const topicId = await ctx.message?.message_thread_id
-            let msgExtras: MessageExtras = {}
-            if (topicId) {
-                msgExtras['message_thread_id'] = topicId
+            let msgExtras: MessageExtras = {
+                message_thread_id: ctx.message?.message_thread_id
             }
             if (e instanceof GrammyError) {
                 if (e.error_code === 400 && e.description.includes('not enough rights')) {
