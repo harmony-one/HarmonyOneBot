@@ -12,7 +12,7 @@ import {
 } from "../../types";
 import { pino } from "pino";
 import {
-  ChatGPTModel,
+  ChatModel,
   ChatGPTModels,
   DalleGPTModel,
   DalleGPTModels,
@@ -217,7 +217,7 @@ export const getChatModel = (modelName: string) => {
 };
 
 export const getChatModelPrice = (
-  model: ChatGPTModel,
+  model: ChatModel,
   inCents = true,
   inputTokens: number,
   outPutTokens?: number
@@ -240,7 +240,7 @@ export const getDalleModelPrice = (
   inCents = true,
   numImages = 1,
   hasEnhacedPrompt = false,
-  chatModel?: ChatGPTModel
+  chatModel?: ChatModel
 ) => {
   let price = model.price * numImages || 0;
   if (hasEnhacedPrompt && chatModel) {
