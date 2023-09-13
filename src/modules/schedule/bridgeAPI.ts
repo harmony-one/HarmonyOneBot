@@ -146,3 +146,11 @@ export const getTotalStakes = async () => {
   const { "total-staking": totalStaking } = await getStakingStats()
   return Math.round(+totalStaking / 10**18)
 }
+
+
+
+
+
+
+
+

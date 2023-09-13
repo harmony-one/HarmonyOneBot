@@ -5,6 +5,7 @@ import config from '../../config'
 import {BotContext, OnMessageContext} from "../types";
 import {getDailyMetrics, MetricsDailyType} from "./explorerApi";
 import {getAddressBalance, getBotFee, getBotFeeStats} from "./harmonyApi";
+import * as audit from "./harmonyApi";
 import {getTotalStakes, getTVL} from "./bridgeAPI";
 import {statsService} from "../../database/services";
 import {abbreviateNumber, lessThan100, precise} from "./utils";
@@ -14,7 +15,8 @@ import {getTradingVolume} from "./subgraphAPI";
 enum SupportedCommands {
   BOT_STATS = 'botstats',
   STATS = 'stats',
-  ALL_STATS = 'allstats'
+  ALL_STATS = 'allstats',
+  AUDIT = 'audit'
 }
 
 export class BotSchedule {
@@ -188,7 +190,16 @@ export class BotSchedule {
       `\n\n${engagementByCommand}`
     return report;
   }
-
+/*---------------------------------------------------------------------------------*/
+  public async generateAudit() {
+    const botFeesAudit = await audit.getBotFeeAudit(this.holderAddress);
+    const report = `
+    ${abbreviateNumber(botFeesAudit.total)}
+    ${abbreviateNumber(botFeesAudit.maxFeeDay)}
+    `
+    return report
+  }
+/*-------------------------------------------------------------------------------------*/
   public async onEvent(ctx: OnMessageContext) {
     const { message_id } = ctx.update.message
 
@@ -217,5 +228,14 @@ export class BotSchedule {
         message_thread_id: ctx.message?.message_thread_id,
       });
     }
+
+    if (ctx.hasCommand(SupportedCommands.AUDIT)) {
+      const report = await this.generateAudit()
+      ctx.reply(report, {
+        parse_mode: "Markdown",
+        message_thread_id: ctx.message?.message_thread_id,
+      });
+    }
+
   }
 }

@@ -23,7 +23,7 @@ export const getAddressHistory = async (address: string): Promise<RpcTransaction
   const data = await rpcRequest('hmyv2_getTransactionsHistory', [{
     address,
     pageIndex: 0,
-    pageSize: 1000,
+    pageSize: 10000,
     fullTx: true,
     txType: 'RECEIVED',
     order: "DESC"
@@ -88,3 +88,55 @@ export const getBotFeeStats = async (address: string, daysCount = 7) => {
   }
 }
 
+
+/*--------------------------------------------------------------------------------------------------*/
+// AUDIT
+//
+
+const getBotFeeAudit = async (address: string, daysCount = 30): Promise<Record<string,number>> => {
+  let history = await getAddressHistory(address);
+  const startTimestamp = moment().subtract(daysCount,'days').unix()
+
+  const daysAmountMap: Record<string, number> = {}
+
+  history.forEach((item) => {
+    const { timestamp, value } = item
+    if(timestamp >= startTimestamp) {
+      const date = moment(timestamp * 1000).format('YYYYMMDD')
+      if(daysAmountMap[date]) {
+        daysAmountMap[date] += value
+      } else {
+        daysAmountMap[date] = value
+      }
+    }
+  })
+
+  let total = totalFeesAudit(daysAmountMap) / Math.pow(10, 18)
+  const { maxFeeDay } = maxFeesAudit(daysAmountMap);
+
+  return {
+    total,
+    maxFeeDay,
+  }
+}
+
+const totalFeesAudit = (daysAmountMap: Record<string,number>): number => {
+  return Object.values(daysAmountMap).reduce((acc, fee) => acc + fee, 0);
+}
+
+const maxFeesAudit = (daysAmountMap: Record<string, number>): Record<string,number> => {
+  let maxFee = 0;
+  let maxFeeDay = "";
+  for (const [day, fee] of Object.entries(daysAmountMap)) {
+    if (fee > maxFee) {
+      maxFee = fee;
+      maxFeeDay = day;
+    }
+  }
+  return { maxFeeDay: maxFee };
+}
+
+export {
+  getBotFeeAudit,
+  totalFeesAudit
+}
