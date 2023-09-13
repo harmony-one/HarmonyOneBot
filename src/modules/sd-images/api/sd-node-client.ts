@@ -193,6 +193,11 @@ export class Client {
                 attempts--;
             }
 
+            if(!fileBuffers.length) {
+                ctx.reply(`No files found for ${loraName}`);
+                throw new Error('No files found');
+            }
+
             for (let i = 0; i < fileBuffers.length; i++) {
                 const filename = `${loraName}_${i}.png`;
 
@@ -200,10 +205,6 @@ export class Client {
             }
 
             const modelPath = modelAlias || 'base';
-
-            if(!fileBuffers.length) {
-                return;
-            }
 
             let res = await axios.get(`${trainServer}/add/${loraName}/${modelPath}`);
             let train = res.data;

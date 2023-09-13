@@ -121,7 +121,29 @@ export const MODELS_CONFIGS: IModel[] = [
         baseModel: 'SDXL 1.0',
         aliases: ['xl_dif', '8404', 'hef9'],
         defaultPrompt: 'pastel color, from above, upper body, depth of field, masterpiece, best quality, best quality, girl sitting on a swing, school uniform, black hair, blue eyes, autumn, park'
-    }
+    },
+    {
+        path: 'ayonimix_V4.safetensors',
+        name: 'AyoniMix',
+        id: '4550',
+        hash: 'F3A242FCAA',
+        shortName: 'ayonimix',
+        link: 'https://civitai.com/models/4550/ayonimix',
+        baseModel: 'SD 1.5',
+        aliases: ['mix'],
+        defaultPrompt: '<lora:LowRA:0.6> (8k, RAW photo, highest quality), beautiful girl, close up, dress, (detailed eyes:0.8), defiance512, (looking at the camera:1.4), (highest quality), (best shadow), intricate details, interior, ginger hair:1.3, dark studio, muted colors, freckles   <lora:epiNoiseoffset_v2Pynoise:1.2>',
+    },
+    {
+        path: 'ayonimixAnime_ayonimixAnimeV4.safetensors',
+        name: 'AyoniMix Anime',
+        id: '4949',
+        hash: 'E2F5FBE48D',
+        shortName: 'mix-anime',
+        link: 'https://civitai.com/models/4949/ayonimix-anime',
+        baseModel: 'SD 1.5',
+        aliases: ['mix-anime', 'ma'],
+        defaultPrompt: '<lora:LowRA:0.6> (8k, RAW photo, highest quality), beautiful girl, close up, dress, (detailed eyes:0.8), defiance512, (looking at the camera:1.4), (highest quality), (best shadow), intricate details, interior, ginger hair:1.3, dark studio, muted colors, freckles   <lora:epiNoiseoffset_v2Pynoise:1.2>',
+    },
 ];
 
 export const getModelByParam = (param: string) => {

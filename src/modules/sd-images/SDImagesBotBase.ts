@@ -1,10 +1,17 @@
 import { SDNodeApi, IModel, getModelByParam, MODELS_CONFIGS } from "./api";
-import { OnMessageContext, OnCallBackQueryData, MessageExtras } from "../types";
+import { OnMessageContext, OnCallBackQueryData } from "../types";
 import { getTelegramFileUrl, loadFile, sleep, uuidv4 } from "./utils";
 import { GrammyError, InputFile } from "grammy";
 import { COMMAND } from './helpers';
 import { Logger, pino } from "pino";
 import { ILora } from "./api/loras-config";
+import { getParamsFromPrompt } from "./api/helpers";
+
+export interface MessageExtras {
+    caption?: string;
+    message_thread_id?: number;
+    parse_mode?: any;
+}
 
 export interface ISession {
     id: string;
@@ -320,15 +327,20 @@ export class SDImagesBotBase {
                 ctx
             );
 
+            const params = getParamsFromPrompt(prompt);
+            const [loraName] = prompt.split(' ');
+
+            const modelAlias = params.modelAlias || 'del';
+
             return this.generateImage(
                 ctx,
                 refundCallback,
                 await this.createSession(ctx, {
-                    model: getModelByParam('del') || model,
-                    prompt: `<lora:${prompt}:1> art`,
+                    model: getModelByParam(modelAlias) || model,
+                    prompt: `<lora:${loraName}:1>`,
                     command: COMMAND.TEXT_TO_IMAGE
                 }),
-                `/del <lora:${prompt}:1> art`
+                `/${modelAlias} <lora:${loraName}:1>`
             );
         } catch (e: any) {
             const topicId = await ctx.message?.message_thread_id
