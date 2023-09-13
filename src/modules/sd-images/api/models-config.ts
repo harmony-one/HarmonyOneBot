@@ -188,6 +188,28 @@ export const MODELS_CONFIGS: IModel[] = [
         aliases: ['chill'],
         defaultPrompt: '(RAW photo, best quality), (realistic, photo-realistic:1.3), masterpiece, an extremely delicate and beautiful, extremely detailed, CG, unity , 2k wallpaper, Amazing, finely detail, light smile, extremely detailed CG unity 8k wallpaper, huge filesize, ultra-detailed, highres, absurdres, soft light, (((medium hair:1.3), short bang, pink hair, floating hair novafrogstyle)), beautiful detailed girl, detailed fingers, extremely detailed eyes and face, beautiful detailed nose, beautiful detailed eyes, long eyelashes, light on face, looking at viewer, (closed mouth:1.2), 1girl, cute, young, mature face, (full body:1.3), ((small breasts)), realistic face, realistic body, beautiful detailed thigh, (ulzzang-6500-v1.1:0.8), <lora:koreanDollLikeness_v15:0.4>, business suit, cross-laced clothes, collared shirt, open clothes, in office, detailed office, open cardigan, black thighhighs, miniskirt, black underwear, unbuttoned shirt,',
     },
+    {
+        path: 'ayonimix_V4.safetensors',
+        name: 'AyoniMix',
+        id: '4550',
+        hash: 'F3A242FCAA',
+        shortName: 'ayonimix',
+        link: 'https://civitai.com/models/4550/ayonimix',
+        baseModel: 'SD 1.5',
+        aliases: ['mix'],
+        defaultPrompt: '<lora:LowRA:0.6> (8k, RAW photo, highest quality), beautiful girl, close up, dress, (detailed eyes:0.8), defiance512, (looking at the camera:1.4), (highest quality), (best shadow), intricate details, interior, ginger hair:1.3, dark studio, muted colors, freckles   <lora:epiNoiseoffset_v2Pynoise:1.2>',
+    },
+    {
+        path: 'ayonimixAnime_ayonimixAnimeV4.safetensors',
+        name: 'AyoniMix Anime',
+        id: '4949',
+        hash: 'E2F5FBE48D',
+        shortName: 'mix-anime',
+        link: 'https://civitai.com/models/4949/ayonimix-anime',
+        baseModel: 'SD 1.5',
+        aliases: ['mix-anime', 'ma'],
+        defaultPrompt: '<lora:LowRA:0.6> (8k, RAW photo, highest quality), beautiful girl, close up, dress, (detailed eyes:0.8), defiance512, (looking at the camera:1.4), (highest quality), (best shadow), intricate details, interior, ginger hair:1.3, dark studio, muted colors, freckles   <lora:epiNoiseoffset_v2Pynoise:1.2>',
+    },
 ];
 
 export const getModelByParam = (param: string) => {
