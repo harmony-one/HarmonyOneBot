@@ -145,7 +145,7 @@ export class OpenAIBot {
       ctx.hasCommand(SupportedCommands.chat.name) ||
       (ctx.message?.text?.startsWith("chat ") && ctx.chat?.type === "private")
     ) {
-      ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_4;
+      ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_4_32K;
       await this.onChat(ctx);
       return;
     }
@@ -154,7 +154,7 @@ export class OpenAIBot {
       ctx.hasCommand(SupportedCommands.new.name) ||
       (ctx.message?.text?.startsWith("new ") && ctx.chat?.type === "private")
     ) {
-      ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_4;
+      ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_4_32K;
       await this.onEnd(ctx);
       this.onChat(ctx);
       return;
@@ -164,7 +164,7 @@ export class OpenAIBot {
       ctx.hasCommand(SupportedCommands.ask.name) ||
       (ctx.message?.text?.startsWith("ask ") && ctx.chat?.type === "private")
     ) {
-      ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_4;
+      ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_4_32K;
       this.onChat(ctx);
       return;
     }
@@ -176,13 +176,13 @@ export class OpenAIBot {
     }
 
     if (ctx.hasCommand(SupportedCommands.gpt4.name)) {
-      ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_4;
+      ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_4_32K;
       this.onChat(ctx);
       return;
     }
 
     if (ctx.hasCommand(SupportedCommands.gpt.name)) {
-      ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_4;
+      ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_4_32K;
       this.onChat(ctx);
       return;
     }
@@ -429,8 +429,8 @@ export class OpenAIBot {
         ).catch((e) => this.onError(ctx, e));
         return;
       }
-      ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_35_TURBO_16K;
-      const model = ChatGPTModelsEnum.GPT_35_TURBO_16K;
+      ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_35_TURBO_16K; // .GPT_4_32K;
+      const model = ChatGPTModelsEnum.GPT_35_TURBO_16K // GPT_4_32K;
       // const { model } = ctx.session.openAi.chatGpt;
       const chatModel = getChatModel(model);
       const webCrawlerMaxTokens =
@@ -485,6 +485,7 @@ export class OpenAIBot {
               model: model || config.openAi.chatGpt.model,
               ctx,
             };
+            console.log(payload)
             const result = await this.promptGen(payload);
             chat = [...result.chat];
             if (

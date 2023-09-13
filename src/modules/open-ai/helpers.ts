@@ -1,7 +1,5 @@
 import config from "../../config";
-import { isValidUrl } from "./utils/web-crawler";
 import { OnMessageContext, OnCallBackQueryData, MessageExtras } from "../types";
-import { parse } from "path";
 import { ParseMode } from "grammy/types";
 import { getChatModel, getChatModelPrice, getTokenNumber } from "./api/openAi";
 import { ChatGptPayload } from "./types";
