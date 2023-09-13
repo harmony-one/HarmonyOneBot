@@ -1,4 +1,5 @@
 import { ComfyClient } from '../../qrcode/comfy/ComfyClient';
+import { OnMessageContext, OnCallBackQueryData } from "../../types";
 import config from "../../../config";
 import { sleep } from '../utils';
 import {
@@ -12,6 +13,7 @@ import {
     Img2ImgOptions
 } from './configs';
 import { NEGATIVE_PROMPT, waitingExecute } from './helpers';
+import axios from 'axios';
 
 export type Txt2ImgResponse = {
     images: Buffer[]
@@ -161,6 +163,68 @@ export class Client {
                 all_seeds: [String(seed)],
                 info: ''
             } as Txt2ImgResponse;
+        } catch (e) {
+            comfyClient.abortWebsocket();
+            throw e;
+        }
+    }
+
+    train = async (
+        fileBuffers: Buffer[],
+        loraName: string,
+        modelAlias: string,
+        ctx: OnMessageContext | OnCallBackQueryData,
+        serverConfig?: { host: string, wsHost: string }
+    ): Promise<void> => {
+        const comfyClient = new ComfyClient({
+            host: config.comfyHost,
+            wsHost: config.comfyWsHost,
+            ...serverConfig
+        });
+
+        //TODO
+        const trainServer = config.comfyHost.split(':')[0] + ':7860';
+
+        try {
+            let attempts = 3;
+
+            while (attempts > 0 && !comfyClient.wsConnection) {
+                await sleep(1000);
+                attempts--;
+            }
+
+            if(!fileBuffers.length) {
+                ctx.reply(`No files found for ${loraName}`);
+                throw new Error('No files found');
+            }
+
+            for (let i = 0; i < fileBuffers.length; i++) {
+                const filename = `${loraName}_${i}.png`;
+
+                await comfyClient.uploadImage({ filename, fileBuffer: fileBuffers[i], override: true });
+            }
+
+            const modelPath = modelAlias || 'base';
+
+            let res = await axios.get(`${trainServer}/add/${loraName}/${modelPath}`);
+            let train = res.data;
+
+            ctx.reply(`Starting training with ${fileBuffers.length} images, your number is ${train.numberInQueue}`);
+
+            while (train.status === 'IN_PROGRESS' || train.status === 'WAITING') {
+                await sleep(1000);
+
+                res = await axios.get(`${trainServer}/status/${loraName}`);
+                train = res.data;
+            }
+
+            if (train.status === 'ERROR' || train.status === 'CANCELED') {
+                throw new Error(`Training finished with ${train.status} status`);
+            }
+
+            ctx.reply(`Training for <lora:${loraName}:1> completed successfully`);
+
+            comfyClient.abortWebsocket();
         } catch (e) {
             comfyClient.abortWebsocket();
             throw e;

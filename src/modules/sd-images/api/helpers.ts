@@ -21,13 +21,14 @@ export interface IParams {
   seed?: number;
   denoise?: number;
   controlnetVersion: number;
+  modelAlias: string;
   sampler_name?: string;
   scheduler?: string;
 }
 
 export const NEGATIVE_PROMPT = '(deformed, distorted, disfigured:1.3), poorly drawn, bad anatomy, wrong anatomy, extra limb, missing limb, floating limbs, (mutated hands and fingers:1.4), disconnected limbs, mutation, mutated, ugly, disgusting, blurry, amputation';
 
-export const getParamsFromPrompt = (originalPrompt: string, model: IModel): IParams => {
+export const getParamsFromPrompt = (originalPrompt: string, model?: IModel): IParams => {
   let prompt = originalPrompt;
 
   // Civit generation data
@@ -78,8 +79,8 @@ export const getParamsFromPrompt = (originalPrompt: string, model: IModel): IPar
   // --ar Aspect ratio flag <w>:<h>
   const aspectRatioMatch = prompt.match(/(--|\—)ar\s+(\d+:\d+)/);
 
-  let width = model.baseModel === 'SDXL 1.0' ? 1024 : 512;
-  let height = model.baseModel === 'SDXL 1.0' ? 1024 : 768;
+  let width = model?.baseModel === 'SDXL 1.0' ? 1024 : 512;
+  let height = model?.baseModel === 'SDXL 1.0' ? 1024 : 768;
 
   if (aspectRatioMatch) {
     const aspectRatio = aspectRatioMatch[2];
@@ -183,8 +184,17 @@ export const getParamsFromPrompt = (originalPrompt: string, model: IModel): IPar
     prompt = prompt.replace(/(--|\—)scheduler\s+(\w+)/, '');
   }
 
+  const modelMatch = prompt.match(/--model (.*)/);
+  let modelAlias = '';
+
+  if (modelMatch) {
+    modelAlias = modelMatch[1];
+    
+    prompt = prompt.replace(/--model (.*)/, '');
+  }
+
   // Add 'leogirl' to trigger /leo model
-  if (model.name == 'leosams_helloworld' && !prompt.includes('leogirl')) {
+  if (model && model.name == 'leosams_helloworld' && !prompt.includes('leogirl')) {
     prompt = 'leogirl ' + prompt
   }
 
@@ -202,6 +212,7 @@ export const getParamsFromPrompt = (originalPrompt: string, model: IModel): IPar
     seed,
     denoise,
     controlnetVersion,
+    modelAlias,
     sampler_name,
     scheduler,
   }

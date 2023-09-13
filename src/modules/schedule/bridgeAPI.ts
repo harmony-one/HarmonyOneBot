@@ -1,6 +1,7 @@
 import axios from 'axios'
 import moment from 'moment'
 import {abbreviateNumber, getPercentDiff} from "./utils";
+import { BigNumber } from "bignumber.js";
 
 const bridgeUrl = 'https://hmy-lz-api-token.fly.dev'
 const stakeApiUrl = 'https://api.stake.hmny.io'
@@ -64,8 +65,17 @@ export const getTokensList = async (): Promise<BridgeToken[]> => {
   return data.content
 }
 
+interface StakingHistoryItem {
+  "total-staking": number,
+  current_epoch: number
+}
+
+interface StakingHistory {
+  [key: string]: StakingHistoryItem
+}
+
 export const getStakingStats = async () => {
-  const { data } = await axios.get<{ "total-staking": string }>(`${stakeApiUrl}/networks/harmony/network_info_lite`)
+  const { data } = await axios.get<{ "total-staking": string, history: StakingHistory }>(`${stakeApiUrl}/networks/harmony/network_info_lite`)
   return data
 }
 
@@ -144,4 +154,20 @@ export const getTVL = async () => {
 export const getTotalStakes = async () => {
   const { "total-staking": totalStaking } = await getStakingStats()
   return Math.round(+totalStaking / 10**18)
+}
+
+export const getAvgStakes = async () => {
+  const { history } = await getStakingStats()
+  const sortedHistory = Object.values(history).sort((a, b) => b.current_epoch - a.current_epoch);
+
+  const epochCount = 30;
+  const values = []
+  for (let i = 0; i < sortedHistory.length || i < epochCount; i++) {
+    values.push(sortedHistory[i]["total-staking"])
+  }
+
+  // calc avg total / values.length
+  return values.reduce((acc, item) => {
+    return acc.plus(item);
+  }, BigNumber(0)).div(values.length).div(10**18).toNumber();
 }

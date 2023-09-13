@@ -2,6 +2,7 @@ import { Client } from './sd-node-client'
 import { MODELS_CONFIGS, getModelByParam, IModel, modelsAliases } from './models-config';
 import { getLoraByParam, ILora } from './loras-config';
 import { getParamsFromPrompt, NEGATIVE_PROMPT } from './helpers';
+import { OnMessageContext, OnCallBackQueryData } from "../../types";
 
 export * from './models-config';
 
@@ -33,6 +34,16 @@ export class SDNodeApi {
     } else if (params.loraName) {
       selectedLora = getLoraByParam(params.loraName, options.model.baseModel);
       loraStrength = params.loraStrength;
+
+      //For trained Loras
+      if (!selectedLora) {
+        selectedLora = {
+          path: `${params.loraName}.safetensors`,
+          name: params.loraName
+        } as ILora;
+
+        params.promptWithoutParams = `${params.loraName}, ${params.promptWithoutParams}`;
+      }
     }
 
     if (selectedLora?.shortName === 'logo') {
@@ -62,7 +73,7 @@ export class SDNodeApi {
   ) => {
     const params = getParamsFromPrompt(options.prompt, options.model);
 
-    let selectedLora;
+    let selectedLora: ILora | undefined;
     let loraStrength;
 
     if (options.lora) {
@@ -71,6 +82,16 @@ export class SDNodeApi {
     } else if (params.loraName) {
       selectedLora = getLoraByParam(params.loraName, options.model.baseModel);
       loraStrength = params.loraStrength;
+
+      //For trained Loras
+      if (!selectedLora) {
+        selectedLora = {
+          path: `${params.loraName}.safetensors`,
+          name: params.loraName
+        } as ILora;
+
+        params.promptWithoutParams = `${params.loraName}, ${params.promptWithoutParams}`;
+      }
     }
 
     if (selectedLora?.shortName === 'logo') {
@@ -125,5 +146,17 @@ export class SDNodeApi {
       all_seeds: res.map(r => r.all_seeds[0]),
       info: ''
     };
+  }
+
+  train = async (
+    fileBuffers: Buffer[],
+    prompt: string,
+    ctx: OnMessageContext | OnCallBackQueryData,
+  ): Promise<void> => {
+    const params = getParamsFromPrompt(prompt);
+
+    const [loraName] = prompt.split(' ');
+
+    return this.client.train(fileBuffers, loraName, params.modelAlias, ctx);
   }
 }

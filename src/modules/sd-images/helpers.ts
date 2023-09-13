@@ -9,7 +9,8 @@ export enum COMMAND {
     IMAGE_TO_IMAGE = 'img2img',
     TEXT_TO_IMAGES = 'images',
     CONSTRUCTOR = 'constructor',
-    HELP = 'help'
+    HELP = 'help',
+    TRAIN = 'train'
 }
 
 export interface IOperation {
@@ -17,6 +18,11 @@ export interface IOperation {
     prompt: string;
     model: IModel;
     lora?: ILora;
+}
+
+export interface IMediaGroup {
+    media_group_id: string;
+    photos_ids: string[];
 }
 
 const removeSpaceFromBegin = (text: string) => {
@@ -121,6 +127,10 @@ export const parseCtx = (ctx: Context): IOperation | false => {
             command = COMMAND.HELP;
         }
 
+        if (ctx.hasCommand('train')) {
+            command = COMMAND.TRAIN;
+        }
+
         const startWithCmdSymbol = !!messageText?.startsWith('/');
 
         if (startWithCmdSymbol) {
@@ -163,7 +173,7 @@ export const parseCtx = (ctx: Context): IOperation | false => {
             command = COMMAND.IMAGE_TO_IMAGE;
 
             // TODO: img + lora + controlneet  don't support Xl
-            if(lora && model.baseModel !== 'SD 1.5') {
+            if (lora && model.baseModel !== 'SD 1.5') {
                 model = getModelByParam('rev') || MODELS_CONFIGS[0];
             }
         }
