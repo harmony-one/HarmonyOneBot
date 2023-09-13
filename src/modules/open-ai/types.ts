@@ -1,14 +1,9 @@
-import {
-  ChatConversation,
-  OnCallBackQueryData,
-  OnMessageContext,
-} from "../types";
-
-export interface ChatGPTModel {
+export interface ChatModel {
   name: string;
   inputPrice: number;
   outputPrice: number;
   maxContextTokens: number;
+  chargeType: "TOKEN" | "CHAR";
 }
 
 export interface DalleGPTModel {
@@ -23,30 +18,34 @@ export enum ChatGPTModelsEnum {
   GPT_35_TURBO_16K = "gpt-3.5-turbo-16k",
 }
 
-export const ChatGPTModels: Record<string, ChatGPTModel> = {
+export const ChatGPTModels: Record<string, ChatModel> = {
   "gpt-4": {
     name: "gpt-4",
     inputPrice: 0.03,
     outputPrice: 0.06,
     maxContextTokens: 8192,
+    chargeType: "TOKEN",
   },
   "gpt-4-32k": {
     name: "gpt-4-32k",
     inputPrice: 0.06,
     outputPrice: 0.12,
     maxContextTokens: 32000,
+    chargeType: "TOKEN",
   },
   "gpt-3.5-turbo": {
     name: "gpt-3.5-turbo",
     inputPrice: 0.0015,
     outputPrice: 0.002,
     maxContextTokens: 4000,
+    chargeType: "TOKEN",
   },
   "gpt-3.5-turbo-16k": {
     name: "gpt-3.5-turbo-16k",
     inputPrice: 0.003,
     outputPrice: 0.004,
     maxContextTokens: 16000,
+    chargeType: "TOKEN",
   },
 };
 

@@ -15,7 +15,7 @@ export const vertexCompletion = async (
       stream: false,
       messages: conversation,
     };
-    const url = `${API_ENDPOINT}/vertex/completions`
+    const url = `${API_ENDPOINT}/vertex/completions`;
     const response = await axios.post(url, data);
     if (response) {
       const totalInputTokens = 4; //response.data.usage.prompt_tokens;
@@ -24,6 +24,7 @@ export const vertexCompletion = async (
         completion: {
           content: response.data,
           author: "bot",
+          model: model,
         },
         usage: totalOutputTokens + totalInputTokens,
         price: 0,

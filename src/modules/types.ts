@@ -1,4 +1,10 @@
-import {Context, SessionFlavor, CommandContext, HearsContext, CallbackQueryMiddleware} from "grammy";
+import {
+  Context,
+  SessionFlavor,
+  CommandContext,
+  HearsContext,
+  CallbackQueryMiddleware,
+} from "grammy";
 import { Filter, FilterQuery } from "grammy/out/filter";
 import { MenuFlavor } from "@grammyjs/menu/out/menu";
 import {
@@ -35,7 +41,7 @@ export interface ChatConversation {
   role?: string;
   author?: string;
   content: string;
-  citationMetadata?: any;
+  model?: string;
 }
 export interface ChatGptSessionData {
   model: string;
@@ -53,7 +59,7 @@ export interface LmmsSessionData {
   chatConversation: ChatConversation[];
   usage: number;
   price: number;
-  requestQueue: string[];
+  requestQueue: ChatConversation[];
   isProcessingQueue: boolean;
 }
 export interface OpenAiSessionData {

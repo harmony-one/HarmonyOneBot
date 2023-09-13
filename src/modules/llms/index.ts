@@ -19,13 +19,14 @@ import {
   isMentioned,
   limitPrompt,
   MAX_TRIES,
+  prepareConversation,
   preparePrompt,
   sendMessage,
   SupportedCommands,
 } from "./helpers";
 import { vertexCompletion } from "./api/vertex";
-import { llmCompletion } from './api/liteLlm'
-
+import { LlmCompletion, llmCompletion } from "./api/liteLlm";
+import { LlmsModelsEnum } from "./types";
 export class LlmsBot {
   private logger: Logger;
   private payments: BotPayments;
@@ -72,12 +73,12 @@ export class LlmsBot {
     }
 
     if (ctx.hasCommand(SupportedCommands.palm.name)) {
-      this.onChat(ctx);
+      this.onChat(ctx, LlmsModelsEnum.BISON);
       return;
     }
 
     if (ctx.hasCommand(SupportedCommands.bard.name)) {
-      this.onChat(ctx);
+      this.onChat(ctx, LlmsModelsEnum.BISON);
       return;
     }
 
@@ -108,11 +109,23 @@ export class LlmsBot {
         })
       ).message_id;
       ctx.chatAction = "typing";
-
-      // const response = await llmCompletion(conversation, 'gpt-3.5-turbo') 
-      const response = await vertexCompletion(conversation, model) // "chat-bison@001");
+      let response: LlmCompletion = {
+        completion: undefined,
+        usage: 0,
+        price: 0,
+      };
+      const chat = prepareConversation(conversation, model);
+      if (model === LlmsModelsEnum.BISON) {
+        response = await vertexCompletion(chat, model); // "chat-bison@001");
+      } else {
+        response = await llmCompletion(chat, model);
+      }
       if (response.completion) {
-        ctx.api.editMessageText(ctx.chat?.id!, msgId, response.completion.content);
+        ctx.api.editMessageText(
+          ctx.chat?.id!,
+          msgId,
+          response.completion.content
+        );
         conversation.push(response.completion);
         // const price = getPromptPrice(completion, data);
         // this.logger.info(
@@ -137,7 +150,7 @@ export class LlmsBot {
     }
   }
 
-  async onPrefix(ctx: OnMessageContext | OnCallBackQueryData) {
+  async onPrefix(ctx: OnMessageContext | OnCallBackQueryData, model: string) {
     try {
       if (this.botSuspended) {
         sendMessage(ctx, "The bot is suspended").catch((e) =>
@@ -150,9 +163,10 @@ export class LlmsBot {
         SupportedCommands
       );
       const prefix = hasPrefix(prompt);
-      ctx.session.llms.requestQueue.push(
-        await preparePrompt(ctx, prompt.slice(prefix.length))
-      );
+      ctx.session.llms.requestQueue.push({
+        content: await preparePrompt(ctx, prompt.slice(prefix.length)),
+        model: model,
+      });
       if (!ctx.session.llms.isProcessingQueue) {
         ctx.session.llms.isProcessingQueue = true;
         this.onChatRequestHandler(ctx).then(() => {
@@ -164,7 +178,7 @@ export class LlmsBot {
     }
   }
 
-  async onChat(ctx: OnMessageContext | OnCallBackQueryData) {
+  async onChat(ctx: OnMessageContext | OnCallBackQueryData, model: string) {
     try {
       if (this.botSuspended) {
         sendMessage(ctx, "The bot is suspended").catch((e) =>
@@ -173,9 +187,10 @@ export class LlmsBot {
         return;
       }
       const prompt = ctx.match ? ctx.match : ctx.message?.text;
-      ctx.session.llms.requestQueue.push(
-        await preparePrompt(ctx, prompt as string)
-      );
+      ctx.session.llms.requestQueue.push({
+        model: model,
+        content: await preparePrompt(ctx, prompt as string),
+      });
       if (!ctx.session.llms.isProcessingQueue) {
         ctx.session.llms.isProcessingQueue = true;
         this.onChatRequestHandler(ctx).then(() => {
@@ -190,8 +205,10 @@ export class LlmsBot {
   async onChatRequestHandler(ctx: OnMessageContext | OnCallBackQueryData) {
     while (ctx.session.llms.requestQueue.length > 0) {
       try {
-        const prompt = ctx.session.llms.requestQueue.shift() || "";
-        const { chatConversation, model } = ctx.session.llms;
+        const msg = ctx.session.llms.requestQueue.shift();
+        const prompt = msg?.content;
+        const model = msg?.model;
+        const { chatConversation } = ctx.session.llms;
         if (await this.hasBalance(ctx)) {
           if (prompt === "") {
             const msg =
@@ -205,10 +222,16 @@ export class LlmsBot {
             }).catch((e) => this.onError(ctx, e));
             return;
           }
-          chatConversation.push({
-            author: "user",
-            content: limitPrompt(prompt),
-          });
+          const chat: ChatConversation = {
+            content: limitPrompt(prompt!),
+            model: model,
+          };
+          if (model === LlmsModelsEnum.BISON) {
+            chat["author"] = "user";
+          } else {
+            chat["role"] = "user";
+          }
+          chatConversation.push(chat);
           const payload = {
             conversation: chatConversation!,
             model: model || config.llms.model,

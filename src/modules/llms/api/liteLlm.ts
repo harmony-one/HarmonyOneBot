@@ -4,9 +4,9 @@ import { ChatConversation } from "../../types";
 
 const API_ENDPOINT = config.llms.apiEndpoint;
 export interface LlmCompletion {
-  completion: ChatConversation | undefined
-  usage: number
-  price: number
+  completion: ChatConversation | undefined;
+  usage: number;
+  price: number;
 }
 
 export const llmCompletion = async (
@@ -14,28 +14,28 @@ export const llmCompletion = async (
   model = config.llms.model
 ): Promise<LlmCompletion> => {
   try {
-    const data = 
-        {
-          model: model, //chat-bison@001 'chat-bison', //'gpt-3.5-turbo',
-          stream: false,
-          messages: conversation,
-        }    
-    const url = `${API_ENDPOINT}/llms/completions`
+    const data = {
+      model: model, //chat-bison@001 'chat-bison', //'gpt-3.5-turbo',
+      stream: false,
+      messages: conversation,
+    };
+    const url = `${API_ENDPOINT}/llms/completions`;
     const response = await axios.post(url, data);
 
     if (response) {
-      const totalInputTokens = response.data.usage.prompt_tokens;  
+      const totalInputTokens = response.data.usage.prompt_tokens;
       const totalOutputTokens = response.data.usage.completion_tokens;
       const completion = response.data.choices;
       return {
         completion: {
           content: completion[0].message?.content!,
-          role: 'system'
+          role: "system",
+          model: model,
         },
         usage: totalOutputTokens + totalInputTokens,
         price: 0,
       };
-    } 
+    }
     return {
       completion: undefined,
       usage: 0,
@@ -47,6 +47,6 @@ export const llmCompletion = async (
       console.log(error.message);
       console.log(error.stack);
     }
-    throw error
+    throw error;
   }
 };
