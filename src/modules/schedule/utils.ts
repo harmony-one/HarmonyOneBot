@@ -39,3 +39,17 @@ export const abbreviateNumber = (value: number) => {
     .toFixed(fractionalDigits)
     .replace(/\.0$/, '') + suffix[index - 1];
 }
+
+export const lessThan100 = (value: string): string => {
+
+  if(+value < 10) return `${+value}.00`
+
+  if(+value < 100) return `${+value}.0`
+
+  return value
+
+}
+
+export const precise = (value: number): string => {
+  return value.toPrecision(3).toString();
+}

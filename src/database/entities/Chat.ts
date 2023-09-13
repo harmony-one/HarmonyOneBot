@@ -9,6 +9,9 @@ export class Chat {
   @Column({type: 'bigint'})
   accountId!: number; // chatId or tgUserId
 
+  @Column({default: '0'})
+  fiatCreditAmount!: string;
+
   @Column()
   creditAmount!: string;
 

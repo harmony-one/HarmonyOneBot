@@ -30,7 +30,6 @@ export default {
       isEnabled: Boolean(parseInt(process.env.IMAGE_GEN_ENABLED || "1")),
       telegramFileUrl: "https://api.telegram.org/file/bot",
       completions: {
-        model: process.env.OPENAI_MODEL || "text-davinci-003",
         temperature:
           (process.env.OPENAI_TEMPERATURE &&
             parseInt(process.env.OPENAI_TEMPERATURE)) ||
@@ -145,4 +144,7 @@ export default {
   betteruptime: {
     botHeartBitId: process.env.BOT_HEARTBIT_ID || "",
   },
+  telegramPayments: {
+    token: process.env.TELEGRAM_PAYMENTS_TOKEN || ''
+  }
 };

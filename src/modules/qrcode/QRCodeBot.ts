@@ -60,7 +60,9 @@ export class QRCodeBot {
     refundCallback: RefundCallback
   ) {
     if (!this.isSupportedEvent(ctx)) {
-      await ctx.reply(`Unsupported command: ${ctx.message?.text}`);
+      await ctx.reply(`Unsupported command: ${ctx.message?.text}`, {
+        message_thread_id: ctx.message?.message_thread_id,
+      });
       return refundCallback("Unsupported command");
     }
 
@@ -85,7 +87,9 @@ export class QRCodeBot {
         const cmd = this.parseQrCommand(msg);
 
         if (cmd.error || !cmd.command || !cmd.url || !cmd.prompt) {
-          await ctx.reply("Message haven't contain command: " + msg);
+          await ctx.reply("Message haven't contain command: " + msg, {
+            message_thread_id: ctx.message?.message_thread_id,
+          });
           return refundCallback("Message haven't contain command: ");
         }
 
@@ -107,7 +111,9 @@ export class QRCodeBot {
       return refundCallback("Unknown error");
     }
 
-    await ctx.reply("Unsupported command");
+    await ctx.reply("Unsupported command", {
+      message_thread_id: ctx.message?.message_thread_id,
+    });
     this.logger.info("Unsupported command");
     return refundCallback("Unsupported command");
   }
@@ -186,7 +192,9 @@ export class QRCodeBot {
     } catch (ex) {
       ctx.chatAction = null;
       this.logger.error(`ex ${ex}`);
-      await ctx.reply("Internal error");
+      await ctx.reply("Internal error", {
+        message_thread_id: ctx.message?.message_thread_id,
+      });
       throw new Error("Internal error");
     }
 
@@ -201,6 +209,7 @@ export class QRCodeBot {
         {
           caption: `/qr ${command.url} ${command.prompt}`,
           reply_markup: regenButton,
+          message_thread_id: ctx.message?.message_thread_id,
         }
       );
       this.logger.info("sent qr code");

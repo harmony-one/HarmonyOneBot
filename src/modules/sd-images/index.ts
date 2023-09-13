@@ -1,9 +1,10 @@
 import { InlineKeyboard, InputFile } from "grammy";
 import { OnMessageContext, OnCallBackQueryData } from "../types";
-import { SDImagesBotBase } from './SDImagesBotBase';
-import { COMMAND, IOperation, parseCtx, promptHasBadWords } from './helpers';
+import { SDImagesBotBase } from "./SDImagesBotBase";
+import { COMMAND, IOperation, parseCtx, promptHasBadWords } from "./helpers";
 import { getModelByParam, IModel, MODELS_CONFIGS } from "./api";
 import { uuidv4 } from "./utils";
+import { sendMessage } from "../open-ai/helpers";
 
 export class SDImagesBot extends SDImagesBotBase {
   public isSupportedEvent(
@@ -57,17 +58,27 @@ export class SDImagesBot extends SDImagesBotBase {
 
     if (!operation) {
       console.log(`### unsupported command ${ctx.message?.text}`);
-      ctx.reply("### unsupported command");
+      await sendMessage(ctx, "### unsupported command");
       return refundCallback("Unsupported command");
     }
 
-    const prompt = operation.prompt
-    let parsedPrompt = prompt.substring(prompt.indexOf(" ") + 1, prompt.indexOf("--")).trim();
+    const prompt = operation.prompt;
+    let parsedPrompt = prompt
+      .substring(prompt.indexOf(" ") + 1, prompt.indexOf("--"))
+      .trim();
 
     if (promptHasBadWords(parsedPrompt)) {
       console.log(`### promptHasBadWords ${ctx.message?.text}`);
-      await ctx.reply("Your prompt has been flagged for potentially generating illegal or malicious content. If you believe there has been a mistake, please reach out to support.");
+      await sendMessage(
+        ctx,
+        "Your prompt has been flagged for potentially generating illegal or malicious content. If you believe there has been a mistake, please reach out to support."
+      );
       return refundCallback("Prompt has bad words");
+    }
+
+    if (prompt.length > 1000) {
+      await ctx.reply("Your prompt is too long. Please shorten your prompt and try again.");
+      return refundCallback("Prompt is too long");
     }
 
     switch (operation.command) {
@@ -96,34 +107,29 @@ export class SDImagesBot extends SDImagesBotBase {
         return;
 
       case COMMAND.TEXT_TO_IMAGES:
-        this.onImagesCmd(
-          ctx,
-          refundCallback,
-          operation
-        );
+        this.onImagesCmd(ctx, refundCallback, operation);
         return;
 
       case COMMAND.CONSTRUCTOR:
-        this.onConstructorCmd(
-          ctx,
-          refundCallback,
-          operation
-        );
+        this.onConstructorCmd(ctx, refundCallback, operation);
         return;
 
       case COMMAND.HELP:
-        await ctx.reply('Stable Diffusion Models: \n');
+        await sendMessage(ctx, "Stable Diffusion Models: \n");
 
         for (let i = 0; i < MODELS_CONFIGS.length; i++) {
           const model = MODELS_CONFIGS[i];
 
-          await ctx.reply(`${model.name}: ${model.link} \n \nUsing: /${model.aliases[0]} /${model.aliases[1]} /${model.aliases[2]} \n`);
+          await sendMessage(
+            ctx,
+            `${model.name}: ${model.link} \n \nUsing: /${model.aliases[0]} /${model.aliases[1]} /${model.aliases[2]} \n`
+          );
         }
         return;
     }
 
     console.log(`### unsupported command`);
-    ctx.reply("### unsupported command");
+    sendMessage(ctx, "### unsupported command");
   }
 
   onImagesCmd = async (
@@ -137,33 +143,43 @@ export class SDImagesBot extends SDImagesBotBase {
       await this.waitingQueue(uuid, ctx);
       const { prompt, model } = operation;
 
-      const res = await this.sdNodeApi.generateImagesPreviews({ prompt, model });
+      const res = await this.sdNodeApi.generateImagesPreviews({
+        prompt,
+        model,
+      });
 
       const newSession = await this.createSession(ctx, {
         ...operation,
         all_seeds: res.all_seeds,
       });
-
+      const extras = {
+        message_thread_id: ctx.message?.message_thread_id,
+      };
       await ctx.replyWithMediaGroup(
         res.images.map((img, idx) => ({
           type: "photo",
           media: new InputFile(img),
           caption: String(idx + 1),
-        }))
+        })),
+        extras
       );
 
-      await ctx.reply("Please choose 1 of 4 images for next high quality generation", {
-        parse_mode: "HTML",
-        reply_markup: new InlineKeyboard()
-          .text("1", `${newSession.id}_1`)
-          .text("2", `${newSession.id}_2`)
-          .text("3", `${newSession.id}_3`)
-          .text("4", `${newSession.id}_4`)
-          .row()
-      });
+      await ctx.reply(
+        "Please choose 1 of 4 images for next high quality generation",
+        {
+          parse_mode: "HTML",
+          reply_markup: new InlineKeyboard()
+            .text("1", `${newSession.id}_1`)
+            .text("2", `${newSession.id}_2`)
+            .text("3", `${newSession.id}_3`)
+            .text("4", `${newSession.id}_4`)
+            .row(),
+          message_thread_id: ctx.message?.message_thread_id,
+        }
+      );
     } catch (e: any) {
       console.log(e);
-      ctx.reply(`Error: something went wrong...`);
+      sendMessage(ctx, `Error: something went wrong...`);
       refundCallback(e.message);
     }
 
@@ -186,7 +202,7 @@ export class SDImagesBot extends SDImagesBotBase {
 
       const [sessionId, ...paramsArray] = ctx.callbackQuery.data.split("_");
 
-      const params = paramsArray.join('_');
+      const params = paramsArray.join("_");
 
       if (!sessionId || !params) {
         refundCallback("Wrong params");
@@ -211,30 +227,22 @@ export class SDImagesBot extends SDImagesBotBase {
           return;
         }
 
-        this.generateImage(
-          ctx,
-          refundCallback,
-          { ...session, model }
-        );
+        this.generateImage(ctx, refundCallback, { ...session, model });
 
         return;
       }
 
       if (session.command === COMMAND.TEXT_TO_IMAGES) {
-        this.generateImage(
-          ctx,
-          refundCallback,
-          {
-            ...session,
-            seed: session?.all_seeds && Number(session.all_seeds[+params - 1])
-          }
-        );
+        this.generateImage(ctx, refundCallback, {
+          ...session,
+          seed: session?.all_seeds && Number(session.all_seeds[+params - 1]),
+        });
 
         return;
       }
     } catch (e: any) {
       console.log(e);
-      ctx.reply(`Error: something went wrong...`);
+      sendMessage(ctx, `Error: something went wrong...`);
       refundCallback(e.message);
     }
   }
@@ -252,7 +260,10 @@ export class SDImagesBot extends SDImagesBotBase {
       const keyboard = new InlineKeyboard();
 
       for (let i = 0; i < MODELS_CONFIGS.length; i++) {
-        keyboard.text(MODELS_CONFIGS[i].name, `${newSession.id}_${MODELS_CONFIGS[i].hash}`);
+        keyboard.text(
+          MODELS_CONFIGS[i].name,
+          `${newSession.id}_${MODELS_CONFIGS[i].hash}`
+        );
 
         rowCount--;
 
@@ -266,11 +277,12 @@ export class SDImagesBot extends SDImagesBotBase {
 
       await ctx.reply(newSession.message, {
         parse_mode: "HTML",
-        reply_markup: keyboard
+        reply_markup: keyboard,
+        message_thread_id: ctx.message?.message_thread_id,
       });
     } catch (e: any) {
       console.log(e);
-      ctx.reply(`Error: something went wrong...`);
+      sendMessage(ctx, `Error: something went wrong...`);
       refundCallback(e);
     }
   };

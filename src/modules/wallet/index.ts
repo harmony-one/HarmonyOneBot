@@ -44,7 +44,8 @@ export class Wallet {
     }
 
     await ctx.reply('Harmony ONE Wallet', {
-      reply_markup: keyboard
+      reply_markup: keyboard,
+      message_thread_id: ctx.message?.message_thread_id,
     });
   }
 }

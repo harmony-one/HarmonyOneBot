@@ -5,9 +5,9 @@ import config from '../../config'
 import {BotContext, OnMessageContext} from "../types";
 import {getDailyMetrics, MetricsDailyType} from "./explorerApi";
 import {getAddressBalance, getBotFee, getBotFeeStats} from "./harmonyApi";
-import {getTotalStakes, getTVL} from "./bridgeAPI";
+import {getAvgStakes, getTotalStakes, getTVL} from "./bridgeAPI";
 import {statsService} from "../../database/services";
-import {abbreviateNumber} from "./utils";
+import {abbreviateNumber, lessThan100, precise} from "./utils";
 import {getOneRate} from "./exchangeApi";
 import {getTradingVolume} from "./subgraphAPI";
 
@@ -64,7 +64,7 @@ export class BotSchedule {
   }
 
   private async runCronJob() {
-    cron.schedule('00 18 * * *', () => {
+    cron.schedule('00 16 * * *', () => {
       this.logger.info('Posting daily metrics...')
       this.postMetricsUpdate()
     }, {
@@ -101,8 +101,8 @@ export class BotSchedule {
       getOneRate(),
 
       getTVL(),
-      getTotalStakes(),
-      getTradingVolume(),
+      getAvgStakes(),
+      getTradingVolume(7),
 
       getAddressBalance(this.holderAddress),
       statsService.getActiveUsers(7),
@@ -114,21 +114,21 @@ export class BotSchedule {
     const walletsCountAvg = Math.round(walletsCountSum / walletsCountWeekly.length)
 
     const networkUsage =
-      `- Network 7-day fees, wallets, price: ` +
-      `*${abbreviateNumber(networkFeesSum)}* ONE, ${abbreviateNumber(walletsCountAvg)}, $${oneRate.toFixed(4)}`
+      `Network weekly fees, wallets, price: ` +
+      `*${abbreviateNumber(networkFeesSum)}* ONE, ${abbreviateNumber(walletsCountAvg)}, $${precise(oneRate)}`
 
     const swapTradingVolumeSum = swapTradingVolume.reduce((sum, item) => sum + Math.round(+item.volumeUSD), 0)
-    const totalStakeUSD = Math.round(oneRate * totalStakes)
+    const totalStakeONE = totalStakes
 
     const assetsUpdate =
-      `- Total assets, swaps, stakes: ` +
-      `$${abbreviateNumber(bridgeTVL)}, $${abbreviateNumber(swapTradingVolumeSum)}, $${abbreviateNumber(totalStakeUSD)}`
+      `Total assets, monthly stakes, weekly swaps: ` +
+      `*$${abbreviateNumber(bridgeTVL)}*, ${abbreviateNumber(totalStakeONE)}, $${abbreviateNumber(swapTradingVolumeSum)}`
 
     const oneBotMetrics =
-      `- Bot total earns, weekly users, daily messages: ` +
+      `Bot total earns, weekly users, daily messages: ` +
       `*${abbreviateNumber(balance / Math.pow(10, 18))}* ONE` +
-      `, ${abbreviateNumber(weeklyUsers)}` +
-      `, ${abbreviateNumber(dailyMessages)}`
+      `, ${lessThan100(abbreviateNumber(weeklyUsers))}` +
+      `, ${lessThan100(abbreviateNumber(dailyMessages))}`
 
     return `${networkUsage}\n${assetsUpdate}\n${oneBotMetrics}`;
   }
@@ -197,6 +197,7 @@ export class BotSchedule {
       if(report) {
         await ctx.reply(report, {
           parse_mode: "Markdown",
+          message_thread_id: ctx.message?.message_thread_id,
         });
       }
     }
@@ -205,6 +206,7 @@ export class BotSchedule {
       const report = await this.generateReport()
       ctx.reply(report, {
         parse_mode: "Markdown",
+        message_thread_id: ctx.message?.message_thread_id,
       });
     }
 
@@ -212,6 +214,7 @@ export class BotSchedule {
       const report = await this.generateFullReport()
       ctx.reply(report, {
         parse_mode: "Markdown",
+        message_thread_id: ctx.message?.message_thread_id,
       });
     }
   }
