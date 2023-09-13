@@ -67,15 +67,17 @@ export const MODELS_CONFIGS: IModel[] = [
         aliases: ['magic', 'rev', '7371', 'h419'],
         defaultPrompt: 'best quality, ultra high res, photorealistic, sfw, armored wizard, magical tattoos, apprentice, 1girl, looking at viewer, upper body, slender, small breasts, purple hair with white stripes, white croptop, (dark and moody universe:1.3), (elden ring style:1.3), (warhammer style:1.1), floating rocks, glowing pebbles, fiery dust, concept artist, global illumination, depth of field, gloomy, unsettling, splash art, art by artgerm and greg rutkowski and viktoria gavrilenko, scary smile, purple light, rule of the thirds --cfg 8.5 --steps 30 --seed 1463146050 --d 1280x853 --no girls, (worst quality:1.2), (low quality:1.2), (lowres:1.1), (monochrome:1.1), (greyscale), multiple views, comic, sketch, (((bad anatomy))), (((deformed))), (((disfigured))), watermark, multiple_views, mutation hands, mutation fingers, extra fingers, missing fingers, watermark'
     },
-    // {
-    //     path: "v1-5-pruned-emaonly.safetensors",
-    //     name: '',
-    //     id: '',
-    //     hash: '',
-    //     shortName: '',
-    //     link: '',
-    //     baseModel: 'SD 1.5'
-    // },
+    {
+        path: "v1-5-pruned-emaonly.safetensors",
+        name: 'v1-5-pruned-emaonly',
+        id: '',
+        hash: '',
+        shortName: 'pruned-emaonly',
+        link: '',
+        baseModel: 'SD 1.5',
+        aliases: ['p', 'prune'],
+        defaultPrompt: 'masterpiece, best quality, ultra-detailed, illustration, beautiful detailed eyes, looking at viewer, close up, pink hair, shy, cat ears'
+    },
     {
         path: "animePastelDream_softBakedVae.safetensors",
         name: 'Anime Pastel Dream',
@@ -185,6 +187,28 @@ export const MODELS_CONFIGS: IModel[] = [
         baseModel: 'SD 1.5',
         aliases: ['chill'],
         defaultPrompt: '(RAW photo, best quality), (realistic, photo-realistic:1.3), masterpiece, an extremely delicate and beautiful, extremely detailed, CG, unity , 2k wallpaper, Amazing, finely detail, light smile, extremely detailed CG unity 8k wallpaper, huge filesize, ultra-detailed, highres, absurdres, soft light, (((medium hair:1.3), short bang, pink hair, floating hair novafrogstyle)), beautiful detailed girl, detailed fingers, extremely detailed eyes and face, beautiful detailed nose, beautiful detailed eyes, long eyelashes, light on face, looking at viewer, (closed mouth:1.2), 1girl, cute, young, mature face, (full body:1.3), ((small breasts)), realistic face, realistic body, beautiful detailed thigh, (ulzzang-6500-v1.1:0.8), <lora:koreanDollLikeness_v15:0.4>, business suit, cross-laced clothes, collared shirt, open clothes, in office, detailed office, open cardigan, black thighhighs, miniskirt, black underwear, unbuttoned shirt,',
+    },
+    {
+        path: 'ayonimix_V4.safetensors',
+        name: 'AyoniMix',
+        id: '4550',
+        hash: 'F3A242FCAA',
+        shortName: 'ayonimix',
+        link: 'https://civitai.com/models/4550/ayonimix',
+        baseModel: 'SD 1.5',
+        aliases: ['mix'],
+        defaultPrompt: '<lora:LowRA:0.6> (8k, RAW photo, highest quality), beautiful girl, close up, dress, (detailed eyes:0.8), defiance512, (looking at the camera:1.4), (highest quality), (best shadow), intricate details, interior, ginger hair:1.3, dark studio, muted colors, freckles   <lora:epiNoiseoffset_v2Pynoise:1.2>',
+    },
+    {
+        path: 'ayonimixAnime_ayonimixAnimeV4.safetensors',
+        name: 'AyoniMix Anime',
+        id: '4949',
+        hash: 'E2F5FBE48D',
+        shortName: 'mix-anime',
+        link: 'https://civitai.com/models/4949/ayonimix-anime',
+        baseModel: 'SD 1.5',
+        aliases: ['mix-anime', 'ma'],
+        defaultPrompt: '<lora:LowRA:0.6> (8k, RAW photo, highest quality), beautiful girl, close up, dress, (detailed eyes:0.8), defiance512, (looking at the camera:1.4), (highest quality), (best shadow), intricate details, interior, ginger hair:1.3, dark studio, muted colors, freckles   <lora:epiNoiseoffset_v2Pynoise:1.2>',
     },
 ];
 
