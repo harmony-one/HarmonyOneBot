@@ -194,7 +194,7 @@ export const getParamsFromPrompt = (originalPrompt: string, model?: IModel): IPa
   }
 
   // Add 'leogirl' to trigger /leo model
-  if (model.name == 'leosams_helloworld' && !prompt.includes('leogirl')) {
+  if (model && model.name == 'leosams_helloworld' && !prompt.includes('leogirl')) {
     prompt = 'leogirl ' + prompt
   }
 
@@ -212,7 +212,7 @@ export const getParamsFromPrompt = (originalPrompt: string, model?: IModel): IPa
     seed,
     denoise,
     controlnetVersion,
-    modelAlias
+    modelAlias,
     sampler_name,
     scheduler,
   }
