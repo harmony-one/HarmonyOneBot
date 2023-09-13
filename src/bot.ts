@@ -248,7 +248,7 @@ const writeCommandLog = async (
 const onMessage = async (ctx: OnMessageContext) => {
   try {
     // bot doesn't handle forwarded messages
-    if (!ctx.message.forward_from) { 
+    if (!ctx.message.forward_from) {
       await assignFreeCredits(ctx);
 
       if (telegramPayments.isSupportedEvent(ctx)) {
@@ -321,7 +321,6 @@ const onMessage = async (ctx: OnMessageContext) => {
         const price = translateBot.getEstimatedPrice(ctx);
         const isPaid = await payments.pay(ctx, price);
 
-
         if (isPaid) {
           const response = await translateBot
             .onEvent(ctx, (reason?: string) => {
@@ -356,63 +355,61 @@ const onMessage = async (ctx: OnMessageContext) => {
           return;
         }
       }
+      if (await llmsBot.isSupportedEvent(ctx)) {
+        if (ctx.session.openAi.imageGen.isEnabled) {
+          const price = llmsBot.getEstimatedPrice(ctx);
+          const isPaid = await payments.pay(ctx, price!);
+          if (isPaid) {
+            await llmsBot
+              .onEvent(ctx)
+              .catch((e) => payments.refundPayment(e, ctx, price!));
+            return;
+          }
+          return;
+        } else {
+          await ctx.reply("Bot disabled", {
+            message_thread_id: ctx.message?.message_thread_id,
+          });
+          return;
+        }
+      }
 
-    }
-    if (await llmsBot.isSupportedEvent(ctx)) {
-      if (ctx.session.openAi.imageGen.isEnabled) {
-        const price = llmsBot.getEstimatedPrice(ctx);
-        const isPaid = await payments.pay(ctx, price!);
-        if (isPaid) {
-          await llmsBot
-            .onEvent(ctx)
-            .catch((e) => payments.refundPayment(e, ctx, price!));
+      if (await openAiBot.isSupportedEvent(ctx)) {
+        if (ctx.session.openAi.imageGen.isEnabled) {
+          const price = openAiBot.getEstimatedPrice(ctx);
+          const isPaid = await payments.pay(ctx, price!);
+          if (isPaid) {
+            await openAiBot
+              .onEvent(ctx)
+              .catch((e) => payments.refundPayment(e, ctx, price!));
+            return;
+          }
+          return;
+        } else {
+          await ctx.reply("Bot disabled", {
+            message_thread_id: ctx.message?.message_thread_id,
+          });
           return;
         }
-        return;
-      } else {
-        await ctx.reply("Bot disabled", {
-          message_thread_id: ctx.message?.message_thread_id,
-        });
-        return;
       }
-    }
-
-    if (await openAiBot.isSupportedEvent(ctx)) {
-      if (ctx.session.openAi.imageGen.isEnabled) {
-        const price = openAiBot.getEstimatedPrice(ctx);
-        const isPaid = await payments.pay(ctx, price!);
-        if (isPaid) {
-          await openAiBot
-            .onEvent(ctx)
-            .catch((e) => payments.refundPayment(e, ctx, price!));
+      if (oneCountryBot.isSupportedEvent(ctx)) {
+        if (oneCountryBot.isValidCommand(ctx)) {
+          const price = oneCountryBot.getEstimatedPrice(ctx);
+          // if (price > 0) {
+          //   await ctx.reply(`Processing withdraw for ${price.toFixed(2)}¢...`);
+          // }
+          const isPaid = await payments.pay(ctx, price);
+          if (isPaid) {
+            await oneCountryBot
+              .onEvent(ctx)
+              .catch((e) => payments.refundPayment(e, ctx, price));
+            return;
+          }
+          return;
+        } else {
           return;
         }
-        return;
-      } else {
-        await ctx.reply("Bot disabled", {
-          message_thread_id: ctx.message?.message_thread_id,
-        });
-        return;
       }
-    }
-    if (oneCountryBot.isSupportedEvent(ctx)) {
-      if (oneCountryBot.isValidCommand(ctx)) {
-        const price = oneCountryBot.getEstimatedPrice(ctx);
-        // if (price > 0) {
-        //   await ctx.reply(`Processing withdraw for ${price.toFixed(2)}¢...`);
-        // }
-        const isPaid = await payments.pay(ctx, price);
-        if (isPaid) {
-          await oneCountryBot
-            .onEvent(ctx)
-            .catch((e) => payments.refundPayment(e, ctx, price));
-          return;
-        }
-        return;
-      } else {
-        return;
-      }
-    }
 
       if (walletConnect.isSupportedEvent(ctx)) {
         await walletConnect.onEvent(ctx);
@@ -426,15 +423,9 @@ const onMessage = async (ctx: OnMessageContext) => {
         await schedule.onEvent(ctx);
         return;
       }
-      // if (ctx.update.message.text && ctx.update.message.text.startsWith("/", 0)) {
-      //  const command = ctx.update.message.text.split(' ')[0].slice(1)
-      // only for private chats
+      // Any message interacts with ChatGPT (only for private chats)
       if (ctx.update.message.chat && ctx.chat.type === "private") {
         await openAiBot.onEvent(ctx);
-        // await ctx.reply(`Unsupported, type */help* for commands.`, {
-        //   parse_mode: "Markdown",
-        // });
-        // await writeCommandLog(ctx, false);
         return;
       }
       if (ctx.update.message.chat) {
