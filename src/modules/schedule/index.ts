@@ -5,7 +5,7 @@ import config from '../../config'
 import {BotContext, OnMessageContext} from "../types";
 import {getDailyMetrics, MetricsDailyType} from "./explorerApi";
 import {getAddressBalance, getBotFee, getBotFeeStats} from "./harmonyApi";
-import {getTotalStakes, getTVL} from "./bridgeAPI";
+import {getAvgStakes, getTotalStakes, getTVL} from "./bridgeAPI";
 import {statsService} from "../../database/services";
 import {abbreviateNumber, lessThan100, precise} from "./utils";
 import {getOneRate} from "./exchangeApi";
@@ -101,8 +101,8 @@ export class BotSchedule {
       getOneRate(),
 
       getTVL(),
-      getTotalStakes(),
-      getTradingVolume(),
+      getAvgStakes(),
+      getTradingVolume(7),
 
       getAddressBalance(this.holderAddress),
       statsService.getActiveUsers(7),
@@ -118,11 +118,11 @@ export class BotSchedule {
       `*${abbreviateNumber(networkFeesSum)}* ONE, ${abbreviateNumber(walletsCountAvg)}, $${precise(oneRate)}`
 
     const swapTradingVolumeSum = swapTradingVolume.reduce((sum, item) => sum + Math.round(+item.volumeUSD), 0)
-    const totalStakeUSD = Math.round(oneRate * totalStakes)
+    const totalStakeONE = totalStakes
 
     const assetsUpdate =
-      `Current assets, total stakes, monthly swaps: ` +
-      `*$${abbreviateNumber(bridgeTVL)}*, $${abbreviateNumber(totalStakeUSD)}, $${abbreviateNumber(swapTradingVolumeSum)}`
+      `Total assets, monthly stakes, weekly swaps: ` +
+      `*$${abbreviateNumber(bridgeTVL)}*, ${abbreviateNumber(totalStakeONE)}, $${abbreviateNumber(swapTradingVolumeSum)}`
 
     const oneBotMetrics =
       `Bot total earns, weekly users, daily messages: ` +
