@@ -10,6 +10,16 @@ export class SDImagesBot extends SDImagesBotBase {
   public isSupportedEvent(
     ctx: OnMessageContext | OnCallBackQueryData
   ): boolean {
+    const photos = ctx.message?.photo;
+
+    if (photos && ctx.message?.media_group_id) {
+      this.addMediaGroupPhoto({
+        photoId: photos[photos.length - 1].file_id,
+        mediaGroupId: ctx.message.media_group_id,
+        caption: ctx.message.caption || ''
+      });
+    }
+
     const operation = !!parseCtx(ctx);
 
     const hasCallbackQuery = this.isSupportedCallbackQuery(ctx);
@@ -74,6 +84,14 @@ export class SDImagesBot extends SDImagesBotBase {
     switch (operation.command) {
       case COMMAND.TEXT_TO_IMAGE:
         this.generateImage(
+          ctx,
+          refundCallback,
+          await this.createSession(ctx, operation)
+        );
+        return;
+
+      case COMMAND.TRAIN:
+        this.trainLoraByImages(
           ctx,
           refundCallback,
           await this.createSession(ctx, operation)

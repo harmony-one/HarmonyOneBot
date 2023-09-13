@@ -25,6 +25,13 @@ export default {
   sessionTimeout: process.env.SESSION_TIMEOUT
     ? parseInt(process.env.SESSION_TIMEOUT)
     : 48, // in hours
+  llms: {
+    apiEndpoint: process.env.LLMS_ENDPOINT || "",
+    wordLimit: 50,
+    model: "chat-bison",
+    minimumBalance: 0,
+    isEnabled: Boolean(parseInt(process.env.LLMS_ENABLED || "1")),
+  },
   openAi: {
     dalle: {
       isEnabled: Boolean(parseInt(process.env.IMAGE_GEN_ENABLED || "1")),
@@ -47,7 +54,7 @@ export default {
         (process.env.OPENAI_MAX_TOKENS &&
           parseInt(process.env.OPENAI_MAX_TOKENS)) ||
         800, // telegram messages has a char limit
-      wordLimit: 50,
+      wordLimit: 30,
       wordCountBetween: process.env.WORD_COUNT_BETWEEN
         ? parseInt(process.env.WORD_COUNT_BETWEEN)
         : 100,

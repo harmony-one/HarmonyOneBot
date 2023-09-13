@@ -1,42 +1,22 @@
 import config from "../../config";
-import { OnMessageContext, OnCallBackQueryData, MessageExtras } from "../types";
+import {
+  OnMessageContext,
+  OnCallBackQueryData,
+  MessageExtras,
+  ChatConversation,
+} from "../types";
+import { parse } from "path";
 import { ParseMode } from "grammy/types";
-import { getChatModel, getChatModelPrice, getTokenNumber } from "./api/openAi";
+// import { getChatModel, getChatModelPrice, getTokenNumber } from "./api/openAi";
 import { ChatPayload } from "../types";
+import { LlmsModelsEnum } from "./types";
 
 export const SupportedCommands = {
-  chat: {
-    name: "chat",
+  palm: {
+    name: "v",
   },
-  ask: {
-    name: "ask",
-  },
-  sum: {
-    name: "sum",
-  },
-  ask35: {
-    name: "ask35",
-  },
-  new: {
-    name: "new",
-  },
-  gpt4: {
-    name: "gpt4",
-  },
-  gpt: {
-    name: "gpt",
-  },
-  last: {
-    name: "last",
-  },
-  dalle: {
-    name: "DALLE",
-  },
-  dalleLC: {
-    name: "dalle",
-  },
-  genImgEn: {
-    name: "genImgEn",
+  bard: {
+    name: "b",
   },
 };
 
@@ -182,11 +162,10 @@ interface GetMessagesExtras {
   parseMode?: ParseMode | undefined;
   caption?: string | undefined;
   replyId?: number | undefined;
-  disable_web_page_preview?: boolean;
 }
 
 export const getMessageExtras = (params: GetMessagesExtras) => {
-  const { parseMode, caption, replyId, disable_web_page_preview } = params;
+  const { parseMode, caption, replyId } = params;
   let extras: MessageExtras = {};
   if (parseMode) {
     extras["parse_mode"] = parseMode;
@@ -196,9 +175,6 @@ export const getMessageExtras = (params: GetMessagesExtras) => {
   }
   if (caption) {
     extras["caption"] = caption;
-  }
-  if (disable_web_page_preview) {
-    extras["disable_web_page_preview"] = disable_web_page_preview;
   }
   return extras;
 };
@@ -215,9 +191,9 @@ export const sendMessage = async (
   const topicId = ctx.message?.message_thread_id;
 
   if (topicId) {
-    extras["message_thread_id"] = topicId
+    extras["message_thread_id"] = topicId;
   }
-  
+
   return await ctx.reply(msg, extras);
 };
 
@@ -228,22 +204,10 @@ export const hasPrefix = (prompt: string): string => {
 };
 
 export const getPromptPrice = (completion: string, data: ChatPayload) => {
-  const { conversation, ctx, model } = data;
-
-  const prompt = conversation[conversation.length - 1].content;
-  const promptTokens = getTokenNumber(prompt);
-  const completionTokens = getTokenNumber(completion);
-  const modelPrice = getChatModel(model);
-  const price =
-    getChatModelPrice(modelPrice, true, promptTokens, completionTokens) *
-    config.openAi.chatGpt.priceAdjustment;
-  conversation.push({ content: completion, role: "system" });
-  ctx.session.openAi.chatGpt.usage += promptTokens + completionTokens;
-  ctx.session.openAi.chatGpt.price += price;
   return {
-    price,
-    promptTokens,
-    completionTokens,
+    price: 0,
+    promptTokens: 10,
+    completionTokens: 60,
   };
 };
 
@@ -256,4 +220,23 @@ export const limitPrompt = (prompt: string) => {
   }
 
   return `${prompt} in around ${config.openAi.chatGpt.wordLimit} words`;
+};
+
+export const prepareConversation = (
+  conversation: ChatConversation[],
+  model: string
+) => {
+  return conversation
+    .filter((msg) => msg.model === model)
+    .map((msg) => {
+      const msgFiltered: ChatConversation = {
+        content: msg.content,
+      };
+      if (model === LlmsModelsEnum.BISON) {
+        msgFiltered["author"] = msg.author;
+      } else {
+        msgFiltered["role"] = msg.role;
+      }
+      return msgFiltered;
+    });
 };

@@ -29,6 +29,7 @@ import { OneCountryBot } from "./modules/1country";
 import { WalletConnect } from "./modules/walletconnect";
 import { BotPayments } from "./modules/payment";
 import { BotSchedule } from "./modules/schedule";
+import { LlmsBot } from "./modules/llms";
 import { DocumentHandler } from "./modules/document-handler";
 import config from "./config";
 import {
@@ -108,6 +109,15 @@ function createInitialSessionData(): BotSessionData {
       languages: [],
       enable: false,
     },
+    llms: {
+      model: config.llms.model,
+      isEnabled: config.llms.isEnabled,
+      chatConversation: [],
+      price: 0,
+      usage: 0,
+      isProcessingQueue: false,
+      requestQueue: [],
+    },
   };
 }
 
@@ -132,6 +142,7 @@ const schedule = new BotSchedule(bot);
 const openAiBot = new OpenAIBot(payments);
 const oneCountryBot = new OneCountryBot();
 const translateBot = new TranslateBot();
+const llmsBot = new LlmsBot(payments);
 const documentBot = new DocumentHandler();
 const telegramPayments = new TelegramPayments(payments);
 
@@ -237,7 +248,7 @@ const writeCommandLog = async (
 const onMessage = async (ctx: OnMessageContext) => {
   try {
     // bot doesn't handle forwarded messages
-    if (!ctx.message.forward_from) { 
+    if (!ctx.message.forward_from) {
       await assignFreeCredits(ctx);
 
       if (telegramPayments.isSupportedEvent(ctx)) {
@@ -344,6 +355,43 @@ const onMessage = async (ctx: OnMessageContext) => {
           return;
         }
       }
+      if (await llmsBot.isSupportedEvent(ctx)) {
+        if (ctx.session.openAi.imageGen.isEnabled) {
+          const price = llmsBot.getEstimatedPrice(ctx);
+          const isPaid = await payments.pay(ctx, price!);
+          if (isPaid) {
+            await llmsBot
+              .onEvent(ctx)
+              .catch((e) => payments.refundPayment(e, ctx, price!));
+            return;
+          }
+          return;
+        } else {
+          await ctx.reply("Bot disabled", {
+            message_thread_id: ctx.message?.message_thread_id,
+          });
+          return;
+        }
+      }
+
+      if (await openAiBot.isSupportedEvent(ctx)) {
+        if (ctx.session.openAi.imageGen.isEnabled) {
+          const price = openAiBot.getEstimatedPrice(ctx);
+          const isPaid = await payments.pay(ctx, price!);
+          if (isPaid) {
+            await openAiBot
+              .onEvent(ctx)
+              .catch((e) => payments.refundPayment(e, ctx, price!));
+            return;
+          }
+          return;
+        } else {
+          await ctx.reply("Bot disabled", {
+            message_thread_id: ctx.message?.message_thread_id,
+          });
+          return;
+        }
+      }
       if (oneCountryBot.isSupportedEvent(ctx)) {
         if (oneCountryBot.isValidCommand(ctx)) {
           const price = oneCountryBot.getEstimatedPrice(ctx);
@@ -375,15 +423,9 @@ const onMessage = async (ctx: OnMessageContext) => {
         await schedule.onEvent(ctx);
         return;
       }
-      // if (ctx.update.message.text && ctx.update.message.text.startsWith("/", 0)) {
-      //  const command = ctx.update.message.text.split(' ')[0].slice(1)
-      // only for private chats
+      // Any message interacts with ChatGPT (only for private chats)
       if (ctx.update.message.chat && ctx.chat.type === "private") {
         await openAiBot.onEvent(ctx);
-        // await ctx.reply(`Unsupported, type */help* for commands.`, {
-        //   parse_mode: "Markdown",
-        // });
-        // await writeCommandLog(ctx, false);
         return;
       }
       if (ctx.update.message.chat) {
@@ -508,6 +550,9 @@ bot.command("stop", (ctx) => {
   ctx.session.translate.enable = false;
   ctx.session.translate.languages = [];
   ctx.session.oneCountry.lastDomain = "";
+  ctx.session.llms.chatConversation = [];
+  ctx.session.llms.usage = 0;
+  ctx.session.llms.price = 0;
 });
 // bot.command("memo", (ctx) => {
 //   ctx.reply(MEMO.text, {
