@@ -23,6 +23,9 @@ export const SupportedCommands = {
   gpt4: {
     name: "gpt4",
   },
+  ask32: {
+    name: "ask32",
+  },
   gpt: {
     name: "gpt",
   },

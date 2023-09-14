@@ -146,7 +146,7 @@ export class OpenAIBot {
       ctx.hasCommand(SupportedCommands.chat.name) ||
       (ctx.message?.text?.startsWith("chat ") && ctx.chat?.type === "private")
     ) {
-      ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_4_32K;
+      ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_4;
       await this.onChat(ctx);
       return;
     }
@@ -155,7 +155,7 @@ export class OpenAIBot {
       ctx.hasCommand(SupportedCommands.new.name) ||
       (ctx.message?.text?.startsWith("new ") && ctx.chat?.type === "private")
     ) {
-      ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_4_32K;
+      ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_4;
       await this.onEnd(ctx);
       this.onChat(ctx);
       return;
@@ -165,7 +165,7 @@ export class OpenAIBot {
       ctx.hasCommand(SupportedCommands.ask.name) ||
       (ctx.message?.text?.startsWith("ask ") && ctx.chat?.type === "private")
     ) {
-      ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_4_32K;
+      ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_4;
       this.onChat(ctx);
       return;
     }
@@ -177,12 +177,18 @@ export class OpenAIBot {
     }
 
     if (ctx.hasCommand(SupportedCommands.gpt4.name)) {
-      ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_4_32K;
+      ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_4;
       this.onChat(ctx);
       return;
     }
 
     if (ctx.hasCommand(SupportedCommands.gpt.name)) {
+      ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_4;
+      this.onChat(ctx);
+      return;
+    }
+
+    if (ctx.hasCommand(SupportedCommands.ask32.name)) {
       ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_4_32K;
       this.onChat(ctx);
       return;
