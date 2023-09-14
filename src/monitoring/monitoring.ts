@@ -1,4 +1,4 @@
-import cron from 'node-cron'
+import cron, { type ScheduledTask } from 'node-cron'
 import axios from 'axios'
 import { type RunnerHandle } from '@grammyjs/runner'
 import { pino } from 'pino'
@@ -11,8 +11,8 @@ const logger = pino({
   }
 })
 
-export const runBotHeartBit = (runner: RunnerHandle, heartBitId: string) => {
-  const action = () => {
+export const runBotHeartBit = async (runner: RunnerHandle, heartBitId: string): Promise<ScheduledTask> => {
+  const action = (): void => {
     logger.info('heartbit')
     if (!runner.isRunning()) {
       logger.error('bot runner is stopped')

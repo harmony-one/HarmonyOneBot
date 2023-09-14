@@ -10,9 +10,11 @@ import { BotPayments } from './modules/payment'
 
 const payments = new BotPayments()
 
-export const getStartMenuText = async (ctx: any) => {
-  const userWalletAddress =
-    (await payments.getUserAccount(ctx.from?.id!)?.address) || ''
+export const getStartMenuText = async (ctx: BotContext): Promise<string> => {
+  if (!ctx.from?.id) {
+    throw new Error('Context has no user id')
+  }
+  const userWalletAddress = (payments.getUserAccount(ctx.from?.id)?.address) ?? ''
   const balance = await payments.getAddressBalance(userWalletAddress)
   const balanceOne = payments.toONE(balance, false).toFixed(2)
   const startText = commandsHelpText.start

@@ -19,7 +19,7 @@ const {
 
 const stringSession = new StringSession()
 
-export const initTelegramClient = async () => {
+export const initTelegramClient = async (): Promise<TelegramClient> => {
   const client = new TelegramClient(
     stringSession,
     telegramApiId,
@@ -30,6 +30,7 @@ export const initTelegramClient = async () => {
     botAuthToken: telegramBotAuthToken,
     onError: (err) => { logger.error(err) }
   })
-  logger.info('Telegram session:', client.session.save())
+  const s = (client.session as StringSession).save()
+  logger.info('Telegram session:', s)
   return client
 }
