@@ -23,7 +23,7 @@ const defaultProvider = new ethers.providers.JsonRpcProvider(
   config.country.defaultRPC
 )
 
-const getUserAddr = (session: SessionTypes.Struct) => {
+const getUserAddr = (session: SessionTypes.Struct): string => {
   const acc = session.namespaces.eip155.accounts[0]
   return acc.split(':')[2]
 }
@@ -44,15 +44,15 @@ export class WalletConnect {
     )
   }
 
-  public getEstimatedPrice (ctx: any) {
+  public getEstimatedPrice (ctx: any): number {
     return 0
   }
 
-  public isSupportedEvent (ctx: OnMessageContext) {
+  public isSupportedEvent (ctx: OnMessageContext): boolean {
     return ctx.hasCommand(Object.values(SupportedCommands))
   }
 
-  public async onEvent (ctx: OnMessageContext) {
+  public async onEvent (ctx: OnMessageContext): Promise<void> {
     const {
       text,
       from: { id: userId, username }
@@ -95,7 +95,10 @@ export class WalletConnect {
     await ctx.reply('Unsupported command', { message_thread_id: ctx.message?.message_thread_id })
   }
 
-  async requestProposal () {
+  async requestProposal (): Promise<{
+    uri?: string
+    approval: () => Promise<SessionTypes.Struct>
+  }> {
     const signClient = await getSignClient()
 
     return await signClient.connect({
@@ -134,9 +137,9 @@ export class WalletConnect {
     })
   }
 
-  async connect (ctx: OnMessageContext) {
+  async connect (ctx: OnMessageContext): Promise<void> {
     const { uri, approval } = await this.requestProposal()
-    const qrImgBuffer = await generateWcQr(uri || '', 480)
+    const qrImgBuffer = await generateWcQr(uri ?? '', 480)
 
     const message = await ctx.replyWithPhoto(new InputFile(qrImgBuffer, `wallet_connect_${Date.now()}.png`), {
       caption: 'Scan this QR Code to use Wallet Connect with your MetaMask / Gnosis Safe / Timeless wallets\n\nEnter /connecthex to see Web Address',
@@ -147,7 +150,7 @@ export class WalletConnect {
     this.requestApproval(ctx, approval, message)
   }
 
-  async connecthex (ctx: OnMessageContext) {
+  async connecthex (ctx: OnMessageContext): Promise<void> {
     const { uri, approval } = await this.requestProposal()
 
     const message = await ctx.reply(`Copy this connection link to use Wallet Connect with your MetaMask / Gnosis Safe / Timeless wallets:\n\n\`${uri}\` `, {
@@ -158,7 +161,7 @@ export class WalletConnect {
     this.requestApproval(ctx, approval, message)
   }
 
-  async requestApproval (ctx: OnMessageContext, approval: () => Promise<SessionTypes.Struct>, message: Message.TextMessage | Message.PhotoMessage) {
+  async requestApproval (ctx: OnMessageContext, approval: () => Promise<SessionTypes.Struct>, message: Message.TextMessage | Message.PhotoMessage): Promise<void> {
     try {
       const session = await approval()
 
@@ -166,7 +169,7 @@ export class WalletConnect {
 
       await ctx.api.deleteMessage(ctx.chat.id, message.message_id)
       // ctx.reply('wallet connected: ' + getUserAddr(session));
-    } catch (ex) {
+    } catch (ex: any) {
       await ctx.api.deleteMessage(ctx.chat.id, message.message_id)
       if (ex instanceof Error) {
         this.logger.error('error wc connect ' + ex.message)
@@ -176,12 +179,12 @@ export class WalletConnect {
 
         await ctx.reply('Error while connection', { message_thread_id: ctx.message?.message_thread_id })
       } else {
-        this.logger.error('error wc connect ' + ex)
+        this.logger.error('error wc connect ' + ex.toString())
       }
     }
   }
 
-  async send (ctx: OnMessageContext, addr: string, amount: string) {
+  async send (ctx: OnMessageContext, addr: string, amount: string): Promise<void> {
     const signClient = await getSignClient()
     const userId = ctx.from.id
 
@@ -222,15 +225,15 @@ export class WalletConnect {
             }
           ]
         }
-      }).catch((ex) => {
-        console.log('### ex', ex)
       }).then(() => {
         console.log('### sent')
+      }).catch((ex) => {
+        console.log('### ex', ex)
       })
     }, 1000)
   }
 
-  async getBalance (ctx: OnMessageContext) {
+  async getBalance (ctx: OnMessageContext): Promise<void> {
     try {
       const signClient = await getSignClient()
       const userId = ctx.from.id

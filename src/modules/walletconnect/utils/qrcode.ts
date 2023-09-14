@@ -7,7 +7,7 @@ const CONNECTING_ERROR_MARGIN = 0.1
 const CIRCLE_SIZE_MODIFIER = 2.5
 const QRCODE_MATRIX_MARGIN = 7
 
-function isAdjecentDots (cy: number, otherCy: number, cellSize: number) {
+function isAdjecentDots (cy: number, otherCy: number, cellSize: number): boolean {
   if (cy === otherCy) {
     return false
   }
@@ -16,7 +16,7 @@ function isAdjecentDots (cy: number, otherCy: number, cellSize: number) {
   return diff <= cellSize + CONNECTING_ERROR_MARGIN
 }
 
-function getMatrix (value: string, errorCorrectionLevel: QRCodeUtil.QRCodeErrorCorrectionLevel) {
+function getMatrix (value: string, errorCorrectionLevel: QRCodeUtil.QRCodeErrorCorrectionLevel): QRCodeUtil.QRCode[][] {
   const arr = Array.prototype.slice.call(
     QRCodeUtil.create(value, { errorCorrectionLevel }).modules.data,
     0
@@ -179,7 +179,7 @@ export const QrCodeUtil = {
   }
 }
 
-export async function generateWcQr (uri: string, size = 480) {
+export async function generateWcQr (uri: string, size = 480): Promise<Buffer> {
   const logoSize = size / 4
   const qrCodeStrings = QrCodeUtil.generate(uri || '', size, logoSize)
 
