@@ -41,13 +41,19 @@ function parseWebContent(
   maxTokens: number
 ): string {
   let concatenatedText = "";
-  let currentTokenCount = 0;
+  let currentTokenCount = 0; 
+
+
   for (const item of inputArray) {
     if (item.tagName !== "a" && item.tagName !== "code") {
       const text = item.text;
       const tokenCount = getTokenNumber(text);
       if (currentTokenCount + tokenCount <= maxTokens) {
-        concatenatedText += text + " ";
+        if (item.tagName === 'div' || item.tagName === 'p') {
+          concatenatedText += text + "\n";
+        } else {
+          concatenatedText += text + " ";
+        }
         currentTokenCount += tokenCount;
       } else {
         break;
@@ -116,7 +122,6 @@ export const getWebContent = async (
       fees: await getCrawlerPrice(result.networkTraffic),
       oneFees: 0.5,
     };
-    // return { price: formatUSDAmount(Number(onePrice) * usdPrice), error: null };
   } catch (e) {
     throw e;
   }
