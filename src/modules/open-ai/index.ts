@@ -12,6 +12,7 @@ import {
 } from "../types";
 import {
   alterGeneratedImg,
+  chatCompletion,
   getChatModel,
   getDalleModel,
   getDalleModelPrice,
@@ -32,7 +33,6 @@ import {
   hasUrl,
   hasUsernamePassword,
   isMentioned,
-  limitPrompt,
   MAX_TRIES,
   preparePrompt,
   sendMessage,
@@ -188,6 +188,12 @@ export class OpenAIBot {
       return;
     }
 
+    if (ctx.hasCommand(SupportedCommands.ask32.name)) {
+      ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_4_32K;
+      this.onChat(ctx);
+      return;
+    }
+
     if (
       ctx.hasCommand(SupportedCommands.dalle.name) ||
       ctx.hasCommand(SupportedCommands.dalleLC.name) ||
@@ -311,17 +317,17 @@ export class OpenAIBot {
           imgs!.map(async (img: any) => {
             if (img && img.url) {
               await ctx
-              .replyWithPhoto(img.url, {
-                message_thread_id: ctx.message?.message_thread_id,
-              })
-              .catch((e) => {
-                this.onError(
-                  ctx,
-                  e,
-                  MAX_TRIES,
-                  "There was an error while generating the image"
-                );
-              });
+                .replyWithPhoto(img.url, {
+                  message_thread_id: ctx.message?.message_thread_id,
+                })
+                .catch((e) => {
+                  this.onError(
+                    ctx,
+                    e,
+                    MAX_TRIES,
+                    "There was an error while generating the image"
+                  );
+                });
             }
           });
         }
@@ -337,16 +343,18 @@ export class OpenAIBot {
     }
   };
 
-  private async promptGen(data: ChatPayload) {
+  private async promptGen(data: ChatPayload, msgId?: number) {
     const { conversation, ctx, model } = data;
     try {
-      let msgId = (
-        await ctx.reply("...", {
-          message_thread_id:
-            ctx.message?.message_thread_id ||
-            ctx.message?.reply_to_message?.message_thread_id,
-        })
-      ).message_id;
+      if (!msgId) {
+        msgId = (
+          await ctx.reply("...", {
+            message_thread_id:
+              ctx.message?.message_thread_id ||
+              ctx.message?.reply_to_message?.message_thread_id,
+          })
+        ).message_id;
+      }
       const isTypingEnabled = config.openAi.chatGpt.isTypingEnabled;
       if (isTypingEnabled) {
         ctx.chatAction = "typing";
@@ -431,15 +439,14 @@ export class OpenAIBot {
         ).catch((e) => this.onError(ctx, e));
         return;
       }
-      ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_35_TURBO_16K;
-      const model = ChatGPTModelsEnum.GPT_35_TURBO_16K;
-      // const { model } = ctx.session.openAi.chatGpt;
+      let price = 0;
+      ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_4_32K;
+      const model = ChatGPTModelsEnum.GPT_4_32K;
       const chatModel = getChatModel(model);
       const webCrawlerMaxTokens =
         chatModel.maxContextTokens - config.openAi.chatGpt.maxTokens * 2;
       const { user, password } = hasUsernamePassword(prompt);
       if (user && password) {
-        // && ctx.chat?.type !== 'private'
         const maskedPrompt =
           ctx.message
             ?.text!.replaceAll(user, "****")
@@ -447,6 +454,13 @@ export class OpenAIBot {
         ctx.api.deleteMessage(ctx.chat?.id!, ctx.message?.message_id!);
         sendMessage(ctx, maskedPrompt);
       }
+      let msgId = (
+        await ctx.reply("...", {
+          message_thread_id:
+            ctx.message?.message_thread_id ||
+            ctx.message?.reply_to_message?.message_thread_id,
+        })
+      ).message_id;
       const webContent = await getWebContent(
         url,
         webCrawlerMaxTokens,
@@ -454,46 +468,53 @@ export class OpenAIBot {
         password
       );
       if (webContent.urlText !== "") {
-        // await sendMessage(ctx,`URL downloaded`,
-        //           // `${(webContent.networkTraffic / 1048576).toFixed(
-        //   //   2
-        //   // )} MB in ${(webContent.elapsedTime / 1000).toFixed(2)} seconds`,
-        // {
-        //   topicId: ctx.message?.message_thread_id,
-        //   parseMode: "Markdown",
-        // }).catch((e) => this.onError(ctx, e));
+        price = await getCrawlerPrice(webContent.networkTraffic);
         if (
           !(await this.payments.pay(ctx as OnMessageContext, webContent.fees))
         ) {
           this.onNotBalanceMessage(ctx);
         } else {
           let newPrompt = "";
+          const webCrawlConversation: ChatConversation[] = [];
+          if (command !== "sum") {
+            webCrawlConversation.push({
+              content: config.openAi.chatGpt.webCrawlerContext,
+              role: "system",
+            });
+          }
+          webCrawlConversation.push({
+            content: `Here is the text: ${webContent.urlText}`,
+            role: "user",
+          });
+          const webCrawlerResult = await chatCompletion(
+            webCrawlConversation,
+            model,
+            true
+          );
+          price += webCrawlerResult.price;
           if (prompt !== "") {
-            newPrompt = `${command === "sum" ? "Summarize" : ""} ${limitPrompt(
-              prompt
-            )}. This is the web crawl text: ${webContent.urlText}`;
+            newPrompt = `${
+              command === "sum" ? "Summarize" : ""
+            } ${prompt}. This is the web crawl text: ${
+              webCrawlerResult.completion
+            }`;
           } else {
-            newPrompt = `Summarize this text in ${config.openAi.chatGpt.wordLimit} words:
-            } "${webContent.urlText}"`;
+            newPrompt = `Summarize this text ${webCrawlerResult.completion}`;
           }
           chat.push({
             content: newPrompt,
             role: "user",
           });
-
-          if (prompt || command === "sum") {
-            const payload = {
-              conversation: chat,
-              model: model || config.openAi.chatGpt.model,
-              ctx,
-            };
-            const result = await this.promptGen(payload);
-            chat = [...result.chat];
-            if (
-              !(await this.payments.pay(ctx as OnMessageContext, result.price))
-            ) {
-              this.onNotBalanceMessage(ctx);
-            }
+          const payload = {
+            conversation: chat,
+            model: model || config.openAi.chatGpt.model,
+            ctx,
+          };
+          const result = await this.promptGen(payload, msgId);
+          chat = [...result.chat];
+          price += result.price;
+          if (!(await this.payments.pay(ctx as OnMessageContext, price))) {
+            this.onNotBalanceMessage(ctx);
           }
         }
       } else {
@@ -626,19 +647,19 @@ export class OpenAIBot {
             }).catch((e) => this.onError(ctx, e));
             return;
           }
-          const { url, newPrompt } = hasUrl(ctx, prompt);
+          const { url } = hasUrl(ctx, prompt);
+          if (chatConversation.length === 0 && !url) {
+            chatConversation.push({
+              role: "system",
+              content: config.openAi.chatGpt.chatCompletionContext,
+            });
+          }
           if (url) {
-            await this.onWebCrawler(
-              ctx,
-              newPrompt,
-              chatConversation,
-              url,
-              "ask"
-            );
+            await this.onWebCrawler(ctx, prompt, chatConversation, url, "ask");
           } else {
             chatConversation.push({
               role: "user",
-              content: limitPrompt(prompt),
+              content: prompt,
             });
             const payload = {
               conversation: chatConversation!,

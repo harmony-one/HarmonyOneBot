@@ -1,7 +1,5 @@
 import config from "../../config";
-import { isValidUrl } from "./utils/web-crawler";
 import { OnMessageContext, OnCallBackQueryData, MessageExtras } from "../types";
-import { parse } from "path";
 import { ParseMode } from "grammy/types";
 import { getChatModel, getChatModelPrice, getTokenNumber } from "./api/openAi";
 import { ChatPayload } from "../types";
@@ -24,6 +22,9 @@ export const SupportedCommands = {
   },
   gpt4: {
     name: "gpt4",
+  },
+  ask32: {
+    name: "ask32",
   },
   gpt: {
     name: "gpt",
