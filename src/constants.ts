@@ -52,8 +52,6 @@ Send to: \`$WALLET_ADDRESS\`
 /send TARGET-WALLET-ADDRESS ONE-TOKEN-AMOUNT
 /send 0x742c4788CC47A94cf260abc474E2Fa45695a79Cd 42
 
-/chat32 ("Ask Me Anything” via OpenAI ChatGPT-4 with 32K context)
-
 /memo (Send voice messages via microphone button on bottom right)
 
 
