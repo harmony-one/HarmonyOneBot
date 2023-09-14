@@ -1,6 +1,6 @@
-import { Menu } from "@grammyjs/menu";
-import { BotContext } from "../types";
-import { MenuIds } from "../../constants";
+import { Menu } from '@grammyjs/menu'
+import { type BotContext } from '../types'
+import { MenuIds } from '../../constants'
 
 const helpText = `🏦 *Wallet Connect Help*
 
@@ -16,18 +16,18 @@ const helpText = `🏦 *Wallet Connect Help*
 Example:
 
 */walletc* send 0x199177Bcc7cdB22eC10E3A2DA888c7811275fc38 2.55
-`;
+`
 
 export const walletMenu = new Menu<BotContext>(MenuIds.WALLET_MAIN)
-  .text("Help", (ctx) => {
-    return ctx
+  .text('Help', async (ctx) => {
+    return await ctx
       .editMessageText(helpText, {
-        parse_mode: "Markdown",
-        disable_web_page_preview: true,
+        parse_mode: 'Markdown',
+        disable_web_page_preview: true
       })
       .catch((ex) => {
-        console.log("### ex", ex);
-      });
+        console.log('### ex', ex)
+      })
   })
   .row()
-  .back("⬅️ Back");
+  .back('⬅️ Back')

@@ -1,84 +1,84 @@
-import { InlineKeyboard, InputFile } from "grammy";
-import { OnMessageContext, OnCallBackQueryData } from "../types";
-import { SDImagesBotBase } from "./SDImagesBotBase";
-import { COMMAND, IOperation, parseCtx, promptHasBadWords } from "./helpers";
-import { getModelByParam, IModel, MODELS_CONFIGS } from "./api";
-import { uuidv4 } from "./utils";
-import { sendMessage } from "../open-ai/helpers";
+import { InlineKeyboard, InputFile } from 'grammy'
+import { type OnMessageContext, type OnCallBackQueryData } from '../types'
+import { SDImagesBotBase } from './SDImagesBotBase'
+import { COMMAND, type IOperation, parseCtx, promptHasBadWords } from './helpers'
+import { getModelByParam, IModel, MODELS_CONFIGS } from './api'
+import { uuidv4 } from './utils'
+import { sendMessage } from '../open-ai/helpers'
 
 export class SDImagesBot extends SDImagesBotBase {
-  public isSupportedEvent(
+  public isSupportedEvent (
     ctx: OnMessageContext | OnCallBackQueryData
   ): boolean {
-    const photos = ctx.message?.photo;
+    const photos = ctx.message?.photo
 
     if (photos && ctx.message?.media_group_id) {
       this.addMediaGroupPhoto({
         photoId: photos[photos.length - 1].file_id,
         mediaGroupId: ctx.message.media_group_id,
         caption: ctx.message.caption || ''
-      });
+      })
     }
 
-    const operation = !!parseCtx(ctx);
+    const operation = !!parseCtx(ctx)
 
-    const hasCallbackQuery = this.isSupportedCallbackQuery(ctx);
+    const hasCallbackQuery = this.isSupportedCallbackQuery(ctx)
 
-    return hasCallbackQuery || operation;
+    return hasCallbackQuery || operation
   }
 
-  public getEstimatedPrice(ctx: any) {
-    return 1.5;
+  public getEstimatedPrice (ctx: any) {
+    return 1.5
   }
 
-  public isSupportedCallbackQuery(
+  public isSupportedCallbackQuery (
     ctx: OnMessageContext | OnCallBackQueryData
   ): boolean {
     if (!ctx.callbackQuery?.data) {
-      return false;
+      return false
     }
 
-    const [sessionId] = ctx.callbackQuery.data.split("_");
+    const [sessionId] = ctx.callbackQuery.data.split('_')
 
-    return !!this.getSessionById(sessionId);
+    return !!this.getSessionById(sessionId)
   }
 
-  public async onEvent(
+  public async onEvent (
     ctx: OnMessageContext | OnCallBackQueryData,
     refundCallback: (reason?: string) => void
   ) {
     if (this.isSupportedCallbackQuery(ctx)) {
-      this.onImgSelected(ctx, refundCallback);
-      return;
+      this.onImgSelected(ctx, refundCallback)
+      return
     }
 
-    const operation = parseCtx(ctx);
+    const operation = parseCtx(ctx)
 
-    const photo = ctx.message?.photo;
+    const photo = ctx.message?.photo
 
     if (!operation) {
-      console.log(`### unsupported command ${ctx.message?.text}`);
-      await sendMessage(ctx, "### unsupported command");
-      return refundCallback("Unsupported command");
+      console.log(`### unsupported command ${ctx.message?.text}`)
+      await sendMessage(ctx, '### unsupported command')
+      refundCallback('Unsupported command'); return
     }
 
-    const prompt = operation.prompt;
-    let parsedPrompt = prompt
-      .substring(prompt.indexOf(" ") + 1, prompt.indexOf("--"))
-      .trim();
+    const prompt = operation.prompt
+    const parsedPrompt = prompt
+      .substring(prompt.indexOf(' ') + 1, prompt.indexOf('--'))
+      .trim()
 
     if (promptHasBadWords(parsedPrompt)) {
-      console.log(`### promptHasBadWords ${ctx.message?.text}`);
+      console.log(`### promptHasBadWords ${ctx.message?.text}`)
       await sendMessage(
         ctx,
-        "Your prompt has been flagged for potentially generating illegal or malicious content. If you believe there has been a mistake, please reach out to support."
-      );
-      return refundCallback("Prompt has bad words");
+        'Your prompt has been flagged for potentially generating illegal or malicious content. If you believe there has been a mistake, please reach out to support.'
+      )
+      refundCallback('Prompt has bad words'); return
     }
 
     if (prompt.length > 1000) {
-      await ctx.reply("Your prompt is too long. Please shorten your prompt and try again.");
-      return refundCallback("Prompt is too long");
+      await ctx.reply('Your prompt is too long. Please shorten your prompt and try again.')
+      refundCallback('Prompt is too long'); return
     }
 
     switch (operation.command) {
@@ -87,49 +87,49 @@ export class SDImagesBot extends SDImagesBotBase {
           ctx,
           refundCallback,
           await this.createSession(ctx, operation)
-        );
-        return;
+        )
+        return
 
       case COMMAND.TRAIN:
         this.trainLoraByImages(
           ctx,
           refundCallback,
           await this.createSession(ctx, operation)
-        );
-        return;
+        )
+        return
 
       case COMMAND.IMAGE_TO_IMAGE:
         this.generateImageByImage(
           ctx,
           refundCallback,
           await this.createSession(ctx, operation)
-        );
-        return;
+        )
+        return
 
       case COMMAND.TEXT_TO_IMAGES:
-        this.onImagesCmd(ctx, refundCallback, operation);
-        return;
+        this.onImagesCmd(ctx, refundCallback, operation)
+        return
 
       case COMMAND.CONSTRUCTOR:
-        this.onConstructorCmd(ctx, refundCallback, operation);
-        return;
+        this.onConstructorCmd(ctx, refundCallback, operation)
+        return
 
       case COMMAND.HELP:
-        await sendMessage(ctx, "Stable Diffusion Models: \n");
+        await sendMessage(ctx, 'Stable Diffusion Models: \n')
 
         for (let i = 0; i < MODELS_CONFIGS.length; i++) {
-          const model = MODELS_CONFIGS[i];
+          const model = MODELS_CONFIGS[i]
 
           await sendMessage(
             ctx,
             `${model.name}: ${model.link} \n \nUsing: /${model.aliases[0]} /${model.aliases[1]} /${model.aliases[2]} \n`
-          );
+          )
         }
-        return;
+        return
     }
 
-    console.log(`### unsupported command`);
-    sendMessage(ctx, "### unsupported command");
+    console.log('### unsupported command')
+    sendMessage(ctx, '### unsupported command')
   }
 
   onImagesCmd = async (
@@ -137,113 +137,109 @@ export class SDImagesBot extends SDImagesBotBase {
     refundCallback: (reason?: string) => void,
     operation: IOperation
   ) => {
-    const uuid = uuidv4();
+    const uuid = uuidv4()
 
     try {
-      await this.waitingQueue(uuid, ctx);
-      const { prompt, model } = operation;
+      await this.waitingQueue(uuid, ctx)
+      const { prompt, model } = operation
 
       const res = await this.sdNodeApi.generateImagesPreviews({
         prompt,
-        model,
-      });
+        model
+      })
 
       const newSession = await this.createSession(ctx, {
         ...operation,
-        all_seeds: res.all_seeds,
-      });
-      const extras = {
-        message_thread_id: ctx.message?.message_thread_id,
-      };
+        all_seeds: res.all_seeds
+      })
+      const extras = { message_thread_id: ctx.message?.message_thread_id }
       await ctx.replyWithMediaGroup(
         res.images.map((img, idx) => ({
-          type: "photo",
+          type: 'photo',
           media: new InputFile(img),
-          caption: String(idx + 1),
+          caption: String(idx + 1)
         })),
         extras
-      );
+      )
 
       await ctx.reply(
-        "Please choose 1 of 4 images for next high quality generation",
+        'Please choose 1 of 4 images for next high quality generation',
         {
-          parse_mode: "HTML",
+          parse_mode: 'HTML',
           reply_markup: new InlineKeyboard()
-            .text("1", `${newSession.id}_1`)
-            .text("2", `${newSession.id}_2`)
-            .text("3", `${newSession.id}_3`)
-            .text("4", `${newSession.id}_4`)
+            .text('1', `${newSession.id}_1`)
+            .text('2', `${newSession.id}_2`)
+            .text('3', `${newSession.id}_3`)
+            .text('4', `${newSession.id}_4`)
             .row(),
-          message_thread_id: ctx.message?.message_thread_id,
+          message_thread_id: ctx.message?.message_thread_id
         }
-      );
+      )
     } catch (e: any) {
-      console.log(e);
-      sendMessage(ctx, `Error: something went wrong...`);
-      refundCallback(e.message);
+      console.log(e)
+      sendMessage(ctx, 'Error: something went wrong...')
+      refundCallback(e.message)
     }
 
-    this.queue = this.queue.filter((v) => v !== uuid);
-  };
+    this.queue = this.queue.filter((v) => v !== uuid)
+  }
 
-  async onImgSelected(
+  async onImgSelected (
     ctx: OnMessageContext | OnCallBackQueryData,
     refundCallback: (reason?: string) => void
   ): Promise<any> {
     try {
-      const authorObj = await ctx.getAuthor();
-      const author = `@${authorObj.user.username}`;
+      const authorObj = await ctx.getAuthor()
+      const author = `@${authorObj.user.username}`
 
       if (!ctx.callbackQuery?.data) {
-        console.log("wrong callbackQuery");
-        refundCallback("Wrong callbackQuery");
-        return;
+        console.log('wrong callbackQuery')
+        refundCallback('Wrong callbackQuery')
+        return
       }
 
-      const [sessionId, ...paramsArray] = ctx.callbackQuery.data.split("_");
+      const [sessionId, ...paramsArray] = ctx.callbackQuery.data.split('_')
 
-      const params = paramsArray.join("_");
+      const params = paramsArray.join('_')
 
       if (!sessionId || !params) {
-        refundCallback("Wrong params");
-        return;
+        refundCallback('Wrong params')
+        return
       }
 
-      const session = this.getSessionById(sessionId);
+      const session = this.getSessionById(sessionId)
 
       if (!session || session.author !== author) {
-        refundCallback("Wrong author");
-        return;
+        refundCallback('Wrong author')
+        return
       }
 
-      let model;
+      let model
 
       if (session.command === COMMAND.CONSTRUCTOR) {
-        model = getModelByParam(params);
+        model = getModelByParam(params)
 
         if (!model) {
-          console.log("wrong model");
-          refundCallback("Wrong callbackQuery");
-          return;
+          console.log('wrong model')
+          refundCallback('Wrong callbackQuery')
+          return
         }
 
-        this.generateImage(ctx, refundCallback, { ...session, model });
+        this.generateImage(ctx, refundCallback, { ...session, model })
 
-        return;
+        return
       }
 
       if (session.command === COMMAND.TEXT_TO_IMAGES) {
         this.generateImage(ctx, refundCallback, {
           ...session,
-          seed: session?.all_seeds && Number(session.all_seeds[+params - 1]),
-        });
-
-        return;
+          seed: session?.all_seeds && Number(session.all_seeds[+params - 1])
+        })
       }
     } catch (e: any) {
-      console.log(e);
-      sendMessage(ctx, `Error: something went wrong...`);
-      refundCallback(e.message);
+      console.log(e)
+      sendMessage(ctx, 'Error: something went wrong...')
+      refundCallback(e.message)
     }
   }
 
@@ -253,37 +249,37 @@ export class SDImagesBot extends SDImagesBotBase {
     operation: IOperation
   ) => {
     try {
-      const newSession = await this.createSession(ctx, operation);
+      const newSession = await this.createSession(ctx, operation)
 
-      const buttonsPerRow = 2;
-      let rowCount = buttonsPerRow;
-      const keyboard = new InlineKeyboard();
+      const buttonsPerRow = 2
+      let rowCount = buttonsPerRow
+      const keyboard = new InlineKeyboard()
 
       for (let i = 0; i < MODELS_CONFIGS.length; i++) {
         keyboard.text(
           MODELS_CONFIGS[i].name,
           `${newSession.id}_${MODELS_CONFIGS[i].hash}`
-        );
+        )
 
-        rowCount--;
+        rowCount--
 
         if (!rowCount) {
-          keyboard.row();
-          rowCount = buttonsPerRow;
+          keyboard.row()
+          rowCount = buttonsPerRow
         }
       }
 
-      keyboard.row();
+      keyboard.row()
 
       await ctx.reply(newSession.message, {
-        parse_mode: "HTML",
+        parse_mode: 'HTML',
         reply_markup: keyboard,
-        message_thread_id: ctx.message?.message_thread_id,
-      });
+        message_thread_id: ctx.message?.message_thread_id
+      })
     } catch (e: any) {
-      console.log(e);
-      sendMessage(ctx, `Error: something went wrong...`);
-      refundCallback(e);
+      console.log(e)
+      sendMessage(ctx, 'Error: something went wrong...')
+      refundCallback(e)
     }
-  };
+  }
 }

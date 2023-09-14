@@ -1,19 +1,19 @@
-import {Entity, Column, PrimaryGeneratedColumn, CreateDateColumn} from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn } from 'typeorm'
 
 @Entity()
 export class StatBotCommand {
   @PrimaryGeneratedColumn()
-  id!: number;
+    id!: number
 
-  @Column({type: "bigint"})
-  tgUserId!: number;
-
-  @Column()
-  command!: string;
+  @Column({ type: 'bigint' })
+    tgUserId!: number
 
   @Column()
-  rawMessage!: string;
+    command!: string
+
+  @Column()
+    rawMessage!: string
 
   @CreateDateColumn()
-  createDate!: Date;
+    createDate!: Date
 }

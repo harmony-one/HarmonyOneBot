@@ -1,13 +1,13 @@
-import config from '../../../config';
+import config from '../../../config'
 import { DomainPrice, dcClient } from '../api/d1dc'
 import { relayApi } from '../api/relayApi'
 import { getUSDPrice } from '../api/coingecko'
-import { formatONEAmount } from '.';
+import { formatONEAmount } from '.'
 
 export const isDomainAvailable = async (domainName: string) => {
-  const nameExpired = await dcClient.checkNameExpired({ name: domainName });
-  const web3IsAvailable = await dcClient.checkAvailable({ name: domainName });
-  const web2IsAvailable = await relayApi().checkDomain({ sld: domainName });
+  const nameExpired = await dcClient.checkNameExpired({ name: domainName })
+  const web3IsAvailable = await dcClient.checkAvailable({ name: domainName })
+  const web2IsAvailable = await relayApi().checkDomain({ sld: domainName })
   const isAvailable = ((nameExpired.expirationDate > 0 && web3IsAvailable && web2IsAvailable) || // requested by Aaron
   (web2IsAvailable && web3IsAvailable) || // initial comparsion
   (nameExpired.isExpired && !nameExpired.isInGracePeriod)) as boolean
@@ -22,13 +22,13 @@ export const isDomainAvailable = async (domainName: string) => {
       (nameExpired.isExpired && !nameExpired.isInGracePeriod)) as boolean,
     isInGracePeriod: nameExpired.isInGracePeriod,
     priceOne: domainPrice && formatONEAmount(domainPrice),
-    priceUSD: domainPrice ? await getUSDPrice(domainPrice) : { price: 0, error: null} 
-  };
-};
+    priceUSD: domainPrice ? await getUSDPrice(domainPrice) : { price: 0, error: null }
+  }
+}
 
 const isRestricted = (name: string): boolean => {
   const phrases = config.country.restrictedPhrases
-  for (var i = 0; i < phrases.length; i++) {
+  for (let i = 0; i < phrases.length; i++) {
     if (name.includes(phrases[i])) return true
   }
   return false
@@ -38,7 +38,7 @@ const SPECIAL_NAMES = ['0', '1']
 // prettier-ignore
 
 const RESERVED_NAMES = [
-  ...SPECIAL_NAMES,
+  ...SPECIAL_NAMES
 ]
 
 const nameUtils = {
@@ -60,37 +60,37 @@ const nameUtils = {
   },
   isReservedName: (name: string) => {
     return false
-    //name.length <= config.domain.reserved
-  },
+    // name.length <= config.domain.reserved
+  }
 }
 
 export const validateDomainName = (domainName: string) => {
   if (!nameUtils.isValidName(domainName.toLowerCase())) {
     return {
       valid: false,
-      error: 'Domains can use a mix of letters and numbers', //Domains can use a mix of letters and numbers
+      error: 'Domains can use a mix of letters and numbers' // Domains can use a mix of letters and numbers
     }
   }
   if (!nameUtils.isValidLength(domainName)) {
     return {
       valid: false,
-      error: 'Domains must be under 64 characters long',
+      error: 'Domains must be under 64 characters long'
     }
   }
   if (nameUtils.isTaken(domainName.toLowerCase())) {
     return {
       valid: false,
-      error: 'This domain name is reserved for special purpose',
+      error: 'This domain name is reserved for special purpose'
     }
   }
   if (nameUtils.isRestricted(domainName.toLocaleLowerCase())) {
     return {
       valid: false,
-      error: `${domainName} contains a restricted phrase and can't be registered`,
+      error: `${domainName} contains a restricted phrase and can't be registered`
     }
   }
   return {
     valid: true,
-    error: '',
+    error: ''
   }
 }

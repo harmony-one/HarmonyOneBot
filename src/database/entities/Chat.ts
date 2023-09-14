@@ -1,20 +1,20 @@
-import {Entity, Column, PrimaryGeneratedColumn, ManyToOne} from 'typeorm';
-import {User} from "./User";
+import { Entity, Column, PrimaryGeneratedColumn, ManyToOne } from 'typeorm'
+import { User } from './User'
 
-@Entity({name: 'chats'})
+@Entity({ name: 'chats' })
 export class Chat {
   @PrimaryGeneratedColumn()
-  id!: number;
+    id!: number
 
-  @Column({type: 'bigint'})
-  accountId!: number; // chatId or tgUserId
+  @Column({ type: 'bigint' })
+    accountId!: number // chatId or tgUserId
 
-  @Column({default: '0'})
-  fiatCreditAmount!: string;
+  @Column({ default: '0' })
+    fiatCreditAmount!: string
 
   @Column()
-  creditAmount!: string;
+    creditAmount!: string
 
-  @ManyToOne(() => User, (user) => user.chat, {nullable: false})
-  owner!: User // a user who invited the bot / group owner
+  @ManyToOne(() => User, (user) => user.chat, { nullable: false })
+    owner!: User // a user who invited the bot / group owner
 }

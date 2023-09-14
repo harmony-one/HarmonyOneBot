@@ -1,7 +1,7 @@
-import { Menu } from "@grammyjs/menu";
-import { BotContext } from "../types";
-import { MenuIds, menuText } from "../../constants";
-import { getStartMenuText } from "../../pages";
+import { Menu } from '@grammyjs/menu'
+import { type BotContext } from '../types'
+import { MenuIds, menuText } from '../../constants'
+import { getStartMenuText } from '../../pages'
 
 // export const sdImagesMenuText = {
 //   helpText: `🖼️ *Stable Diffusion Help*
@@ -22,14 +22,14 @@ import { getStartMenuText } from "../../pages";
 export const sdImagesMenu = new Menu<BotContext>(MenuIds.SD_IMAGES_MAIN).back(
   menuText.mainMenu.backButton,
   async (ctx) => {
-    const text = (await getStartMenuText(ctx)) || "";
+    const text = (await getStartMenuText(ctx)) || ''
     ctx
       .editMessageText(text, {
-        parse_mode: "Markdown",
-        disable_web_page_preview: true,
+        parse_mode: 'Markdown',
+        disable_web_page_preview: true
       })
       .catch((ex) => {
-        console.log("### ex", ex);
-      });
+        console.log('### ex', ex)
+      })
   }
-);
+)
