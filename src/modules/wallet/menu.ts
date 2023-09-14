@@ -1,6 +1,6 @@
-import { Menu } from "@grammyjs/menu";
-import { BotContext } from "../types";
-import { MenuIds, menuText } from "../../constants";
+import { Menu } from '@grammyjs/menu'
+import { type BotContext } from '../types'
+import { MenuIds, menuText } from '../../constants'
 
 export const walletMenuText = {
   helpText: `💰 *Credits*
@@ -14,14 +14,14 @@ export const walletMenuText = {
 Example: \`/send 0x199177Bcc7cdB22eC10E3A2DA888c7811275fc38 2.55\`
 
 
-  `,
-};
+  `
+}
 
 export const walletMenu = new Menu<BotContext>(MenuIds.WALLET_MAIN).back(
   menuText.mainMenu.backButton,
-  (ctx) => {
-    return ctx.editMessageText(menuText.mainMenu.menuName).catch((ex) => {
-      console.log('### ex', ex);
-    });
+  async (ctx) => {
+    return await ctx.editMessageText(menuText.mainMenu.menuName).catch((ex) => {
+      console.log('### ex', ex)
+    })
   }
-);
+)
