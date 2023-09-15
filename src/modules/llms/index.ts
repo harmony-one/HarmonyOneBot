@@ -75,7 +75,7 @@ export class LlmsBot {
       return
     }
 
-    if (ctx.hasCommand(SupportedCommands.bard.name)) {
+    if (ctx.hasCommand(SupportedCommands.bard.name) || ctx.hasCommand(SupportedCommands.bardF.name)) {
       this.onChat(ctx, LlmsModelsEnum.BISON)
       return
     }

@@ -1,5 +1,4 @@
 import { Menu } from '@grammyjs/menu'
-
 import { appText } from '../utils/text'
 import { type BotContext } from '../../types'
 import { isAdmin } from '../utils/context'
@@ -9,7 +8,7 @@ import config from '../../../config'
 export const openAiMenuText = {
   helpText: `*🎨 DALL·E 2 Help*
 
-  I generate *${config.openAi.imageGen.sessionDefault.numImages} ${config.openAi.imageGen.sessionDefault.imgSize}* image(s) per prompt\n
+  I generate *${config.openAi.dalle.sessionDefault.numImages} ${config.openAi.dalle.sessionDefault.imgSize}* image(s) per prompt\n
   
   *1. GENERATE A STANDARD PROMPT*
   • Use */genImg* <TEXT>
@@ -132,7 +131,7 @@ const imageGenNumberOptions = new Menu<BotContext>(MenuIds.IMAGE_GEN_NUMBER)
   .row()
   .back('Back')
 
-function getLabel (m: string, attribute: string, ctx: any) {
+function getLabel (m: string, attribute: string, ctx: any): string {
   let label = m
   if (ctx.session.openAi.imageGen[attribute] + '' === m) {
     label += ' ✅'
@@ -156,12 +155,12 @@ const imageGenSizeOptions = new Menu<BotContext>(MenuIds.IMAGE_GEN_SIZE)
   .row()
   .back('⬅️ Back')
 
-function setImageNumber (n: number, ctx: any) {
+function setImageNumber (n: number, ctx: any): void {
   ctx.session.openAi.imageGen.numImages = n
   ctx.menu.back()
 }
 
-function setImageSize (s: string, ctx: any) {
+function setImageSize (s: string, ctx: any): void {
   ctx.session.openAi.imageGen.imgSize = s
   ctx.menu.back()
 }
