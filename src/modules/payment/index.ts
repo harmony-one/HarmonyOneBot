@@ -1,18 +1,15 @@
-import pino, { type Logger } from 'pino'
+import pino, {type Logger} from 'pino'
 import Web3 from 'web3'
-import { type Account } from 'web3-core'
+import {type Account} from 'web3-core'
 import axios from 'axios'
-import bn, { BigNumber } from 'bignumber.js'
+import bn, {BigNumber} from 'bignumber.js'
 import config from '../../config'
-import { chatService, statsService } from '../../database/services'
-import { type OnMessageContext } from '../types'
-import { LRUCache } from 'lru-cache'
-import {
-  oneTokenFeeCounter,
-  freeCreditsFeeCounter
-} from '../../metrics/prometheus'
-import { type BotPaymentLog } from '../../database/stats.service'
-import { sendMessage } from '../open-ai/helpers'
+import {chatService, statsService} from '../../database/services'
+import {type OnMessageContext} from '../types'
+import {LRUCache} from 'lru-cache'
+import {freeCreditsFeeCounter, oneTokenFeeCounter} from '../../metrics/prometheus'
+import {type BotPaymentLog} from '../../database/stats.service'
+import {sendMessage} from '../open-ai/helpers'
 
 interface CoinGeckoResponse {
   harmony: {
@@ -55,8 +52,6 @@ export class BotPayments {
 
     this.hotWallet = this.getUserAccount('hot_wallet') as Account
     this.logger.info(`Hot wallet address: ${this.hotWallet.address}`)
-
-    this.getOneRate()
   }
 
   private async getOneRate () {
@@ -115,8 +110,7 @@ export class BotPayments {
   public async getUserBalance (accountId: number) {
     const account = this.getUserAccount(accountId)
     if (account) {
-      const addressBalance = await this.getAddressBalance(account.address)
-      return addressBalance
+      return await this.getAddressBalance(account.address)
     }
     return bn(0)
   }
@@ -153,12 +147,11 @@ export class BotPayments {
         nonce
       }
       const gasLimit = await web3.eth.estimateGas(txBody)
-      const tx = await web3.eth.sendTransaction({
+      return await web3.eth.sendTransaction({
         ...txBody,
         gasPrice,
         gas: web3.utils.toHex(gasLimit)
       })
-      return tx
     } catch (e) {
       const message = (e as Error).message || ''
       if (
@@ -175,11 +168,11 @@ export class BotPayments {
     }
   }
 
-  public isUserInWhitelist (userId: number | string, username = ''): Promise<boolean> {
+  public isUserInWhitelist (userId: number | string, username = ''): boolean {
     const { whitelist } = config.payment
     return (
       whitelist.includes(userId.toString()) ||
-      (username && whitelist.includes(username.toString().toLowerCase()))
+      (!!username && whitelist.includes(username.toString().toLowerCase()))
     )
   }
 
@@ -306,12 +299,12 @@ export class BotPayments {
   }
 
   public async pay (ctx: OnMessageContext, amountUSD: number) {
-    const { from, message_id, chat, text } = ctx.update.message
+    const { from, message_id, chat } = ctx.update.message
 
     const accountId = this.getAccountId(ctx)
     const userAccount = this.getUserAccount(accountId)
     if (!userAccount) {
-      sendMessage(
+      await sendMessage(
         ctx,
         `Cannot get @${from.username}(${from.id}) blockchain account`
       )
@@ -391,7 +384,7 @@ export class BotPayments {
               (e as Error).message
             )}"`
           )
-          sendMessage(ctx, 'Payment error, try again later', {
+          await sendMessage(ctx, 'Payment error, try again later', {
             parseMode: 'Markdown',
             replyId: message_id
           })
@@ -405,7 +398,7 @@ export class BotPayments {
       const fiatCreditsBalance = await chatService.getFiatBalance(accountId)
       const balance = addressBalance.plus(creditsBalance).plus(fiatCreditsBalance)
       const balanceOne = this.toONE(balance, false).toFixed(2)
-      sendMessage(ctx,
+      await sendMessage(ctx,
         `Your credits: ${balanceOne} ONE tokens. To recharge, send to \`${userAccount.address}\`.`,
         {
           parseMode: 'Markdown',
@@ -483,7 +476,7 @@ export class BotPayments {
         const addressBalance = await this.getAddressBalance(account.address)
         const balance = addressBalance.plus(freeCredits).plus(fiatCredits)
         const balanceOne = this.toONE(balance, false)
-        sendMessage(
+        await sendMessage(
           ctx,
           `Your 1Bot credits in ONE tokens: ${balanceOne.toFixed(2)}
 
@@ -495,13 +488,13 @@ To recharge, send to: \`${account.address}\`. Buy tokens on harmony.one/buy.`,
         )
       } catch (e) {
         this.logger.error(e)
-        sendMessage(ctx, 'Error retrieving credits')
+        await sendMessage(ctx, 'Error retrieving credits')
       }
     } else if (text === '/migrate') {
       const amount = await this.migrateFunds(accountId)
       const balance = await this.getAddressBalance(account.address)
       const balanceOne = this.toONE(balance, false)
-      let replyText = ''
+      let replyText: string
       if (amount.gt(0)) {
         replyText = `Transferred ${this.toONE(amount, false).toFixed(
           2
@@ -513,12 +506,9 @@ To recharge, send to: \`${account.address}\`. Buy tokens on harmony.one/buy.`,
           2
         )} ONE`
       }
-      sendMessage(ctx, replyText, { parseMode: 'Markdown' })
+      await sendMessage(ctx, replyText, { parseMode: 'Markdown' })
     }
   }
-
-  private readonly sleep = async (timeout: number) =>
-    await new Promise((resolve) => setTimeout(resolve, timeout))
 
   private async withdrawHotWalletFunds () {
     try {
