@@ -4,7 +4,6 @@ import { type OnCallBackQueryData, type OnMessageContext } from '../../types'
 export const formatONEAmount = (num: number | string) => {
   const twoDecimalsFormatter = new Intl.NumberFormat('en-US', {
     minimumFractionDigits: 0,
-    // @ts-expect-error
     maximumFractionDigits: num < 100 ? 2 : 0
   })
 
@@ -13,7 +12,6 @@ export const formatONEAmount = (num: number | string) => {
 
 export const formatUSDAmount = (num: string | number) => {
   const twoDecimalsFormatter = new Intl.NumberFormat('en-US', {
-    // @ts-expect-error
     minimumFractionDigits: num < 10 ? 2 : 0,
     maximumFractionDigits: 2
   })
