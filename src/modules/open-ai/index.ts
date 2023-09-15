@@ -39,6 +39,7 @@ import {
   SupportedCommands,
 } from "./helpers";
 import { getWebContent, getCrawlerPrice } from "./utils/web-crawler";
+import { llmWebCrawler } from "../llms/api/liteLlm";
 
 export class OpenAIBot {
   private logger: Logger;
@@ -337,16 +338,18 @@ export class OpenAIBot {
     }
   };
 
-  private async promptGen(data: ChatPayload) {
+  private async promptGen(data: ChatPayload, msgId?: number) {
     const { conversation, ctx, model } = data;
     try {
-      let msgId = (
-        await ctx.reply("...", {
-          message_thread_id:
-            ctx.message?.message_thread_id ||
-            ctx.message?.reply_to_message?.message_thread_id,
-        })
-      ).message_id;
+      if (!msgId) {
+        msgId = (
+          await ctx.reply("...", {
+            message_thread_id:
+              ctx.message?.message_thread_id ||
+              ctx.message?.reply_to_message?.message_thread_id,
+          })
+        ).message_id;
+      }
       const isTypingEnabled = config.openAi.chatGpt.isTypingEnabled;
       if (isTypingEnabled) {
         ctx.chatAction = "typing";
@@ -418,28 +421,28 @@ export class OpenAIBot {
     chat: ChatConversation[],
     url: string,
     command = "ask",
-    retryCount = MAX_TRIES
+    retryCount = MAX_TRIES,
+    msgId = 0
   ) {
     try {
       if (retryCount === 0) {
         await sendMessage(
           ctx,
-          "Url not supported, incorrect web site address or missing user credentials",
+          "There was an error processing your request. Please retry later",
           {
             parseMode: "Markdown",
           }
         ).catch((e) => this.onError(ctx, e));
         return;
       }
-      ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_35_TURBO_16K;
-      const model = ChatGPTModelsEnum.GPT_35_TURBO_16K;
-      // const { model } = ctx.session.openAi.chatGpt;
+      let price = 0;
+      ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_35_TURBO_16K; // GPT_4_32K;
+      const model = ChatGPTModelsEnum.GPT_35_TURBO_16K //GPT_4_32K;
       const chatModel = getChatModel(model);
       const webCrawlerMaxTokens =
         chatModel.maxContextTokens - config.openAi.chatGpt.maxTokens * 2;
       const { user, password } = hasUsernamePassword(prompt);
       if (user && password) {
-        // && ctx.chat?.type !== 'private'
         const maskedPrompt =
           ctx.message
             ?.text!.replaceAll(user, "****")
@@ -447,57 +450,48 @@ export class OpenAIBot {
         ctx.api.deleteMessage(ctx.chat?.id!, ctx.message?.message_id!);
         sendMessage(ctx, maskedPrompt);
       }
-      const webContent = await getWebContent(
-        url,
-        webCrawlerMaxTokens,
-        user,
-        password
-      );
-      if (webContent.urlText !== "") {
-        // await sendMessage(ctx,`URL downloaded`,
-        //           // `${(webContent.networkTraffic / 1048576).toFixed(
-        //   //   2
-        //   // )} MB in ${(webContent.elapsedTime / 1000).toFixed(2)} seconds`,
-        // {
-        //   topicId: ctx.message?.message_thread_id,
-        //   parseMode: "Markdown",
-        // }).catch((e) => this.onError(ctx, e));
+      if (msgId === 0) {
+        msgId = (
+          await ctx.reply("...", {
+            message_thread_id:
+              ctx.message?.message_thread_id ||
+              ctx.message?.reply_to_message?.message_thread_id,
+          })
+        ).message_id;
+      }
+      // const webContent = await getWebContent(
+      //   url,
+      //   webCrawlerMaxTokens,
+      //   user,
+      //   password
+      // );
+      const webContent = {
+        urlText: [
+          'Upcoming features for our beloved @harmony1bot: Expert shortcuts + context loading; Chat on website or documents or transcripts; Custom image models or characters; Phone conversations with intent. Join our development + user group @onebotlove!',
+          'Our Q4 goals are 100 custom Stable Diffusion models (from CivitAI and HuggingFace), 1000 public and private data sources (as GPT4 context or embeddings), and $100K @harmony1bot revenues and tokens with 5 developers or modelers or trainers.',
+          'Let’s focus on G – not for AGI (artificial general intelligence), but Gen (generative) AI with large language model (LLM). We are, NOT just generative or general AI – but the Generation AI. To prioritize, follow the wisdom of market-product-team fit: generative agents, $1 fees, and twice daily. That is, is Harmony riding the 100x wave of the decade? Are users paying for what they ask and deserve? Do yourselves use the feature as often as toothbrush?',
+          'ONE Bot’s 3 key metrics are: the total fees users pay in ONE tokens (excluding the initial 100 ONE credits), weekly active users (the total unique Telegram accounts in the last 7 days), daily user engagement (the total messages sent to bot in the last 24 hours).',
+          'Harmony’s 3 categories of key metrics are: (1) the 7-day moving averages for network transaction fees, for unique wallet addresses, and for ONE token price on Binance; (2) the total value locked (TVL) of assets from multiple bridges, the 30-day trading volume from swap.country and DeFira, and the total delegated stakes on all validators; and, (3) the ONE Bot’s metrics above.'],
+          fees: 0,
+          networkTraffic: 0,
+          elapsedTime: 0
+      }
+      console.log(webContent.urlText)
+      if (webContent.urlText.length > 0) {
         if (
           !(await this.payments.pay(ctx as OnMessageContext, webContent.fees))
         ) {
           this.onNotBalanceMessage(ctx);
         } else {
-          let newPrompt = "";
-          if (prompt !== "") {
-            newPrompt = `${command === "sum" ? "Summarize" : ""} ${limitPrompt(
-              prompt
-            )}. This is the web crawl text: ${webContent.urlText}`;
-          } else {
-            newPrompt = `Summarize this text in ${config.openAi.chatGpt.wordLimit} words:
-            } "${webContent.urlText}"`;
-          }
-          chat.push({
-            content: newPrompt,
-            role: "user",
-          });
-
-          if (prompt || command === "sum") {
-            const payload = {
-              conversation: chat,
-              model: model || config.openAi.chatGpt.model,
-              ctx,
-            };
-            const result = await this.promptGen(payload);
-            chat = [...result.chat];
-            if (
-              !(await this.payments.pay(ctx as OnMessageContext, result.price))
-            ) {
-              this.onNotBalanceMessage(ctx);
-            }
+          const response = llmWebCrawler(webContent.urlText,prompt,model)
+          // chat = [...result.chat];
+          price += 0 // result.price;
+          if (!(await this.payments.pay(ctx as OnMessageContext, price))) {
+            this.onNotBalanceMessage(ctx);
           }
         }
       } else {
-        this.onWebCrawler(ctx, prompt, chat, url, command, retryCount - 1);
+        this.onWebCrawler(ctx, prompt, chat, url, command, retryCount - 1, msgId);
         return;
       }
       return {

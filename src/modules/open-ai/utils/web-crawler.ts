@@ -17,7 +17,7 @@ const logger = pino({
   },
 });
 interface WebContent {
-  urlText: string;
+  urlText: string[];
   elapsedTime: number;
   networkTraffic: number;
   fees: number;
@@ -38,23 +38,9 @@ export const isValidUrl = (url: string): boolean => {
 
 function parseWebContent(
   inputArray: CrawlerElement[],
-  maxTokens: number
-): string {
-  let concatenatedText = "";
-  let currentTokenCount = 0;
-  for (const item of inputArray) {
-    if (item.tagName !== "a" && item.tagName !== "code") {
-      const text = item.text;
-      const tokenCount = getTokenNumber(text);
-      if (currentTokenCount + tokenCount <= maxTokens) {
-        concatenatedText += text + " ";
-        currentTokenCount += tokenCount;
-      } else {
-        break;
-      }
-    }
-  }
-  return concatenatedText;
+): string[] {
+  let parsedArray = inputArray.filter(t => t.tagName !== 'a' && t.tagName !== 'code').map(t => t.text) 
+  return parsedArray;
 }
 
 export const getCrawlerPrice = async (
@@ -66,7 +52,7 @@ export const getCrawlerPrice = async (
 export const getWebContentKagi = async (
   url: string,
   maxTokens: number
-): Promise<WebContent> => {
+) => {
   if (!url.startsWith("https://")) {
     url = `https://${url}`;
   }
@@ -108,7 +94,7 @@ export const getWebContent = async (
         result.elements ? result.elements.length : 0
       }`
     );
-    const text = parseWebContent(result.elements, maxTokens);
+    const text = parseWebContent(result.elements);
     return {
       urlText: text,
       elapsedTime: result.elapsedTime,
@@ -116,7 +102,6 @@ export const getWebContent = async (
       fees: await getCrawlerPrice(result.networkTraffic),
       oneFees: 0.5,
     };
-    // return { price: formatUSDAmount(Number(onePrice) * usdPrice), error: null };
   } catch (e) {
     throw e;
   }
@@ -153,3 +138,4 @@ export const getChatMemberInfo = async (
     throw e;
   }
 };
+
