@@ -249,7 +249,7 @@ export class OpenAIBot {
       .catch(async (e) => { await this.onError(ctx, e, MAX_TRIES, '### unsupported command') })
   }
 
-  private async hasBalance (ctx: OnMessageContext | OnCallBackQueryData): Promise<boolean> {
+  private async hasBalance (ctx: OnMessageContext | OnCallBackQueryData) {
     const accountId = this.payments.getAccountId(ctx as OnMessageContext)
     const addressBalance = await this.payments.getUserBalance(accountId)
     const creditsBalance = await chatService.getBalance(accountId)
