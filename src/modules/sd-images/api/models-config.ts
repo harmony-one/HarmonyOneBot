@@ -37,10 +37,14 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/43977/moonmix",
     "baseModel": "SDXL 1.0",
     "aliases": [
-      "2",
+      "3",
       "leo",
       "real",
-      "!"
+      "!",
+      "r.",
+      "R.",
+      "r",
+      "mm"
     ],
     "defaultPrompt": "leogirl, realistic photography, The Joker, shrouded in carnival-esque, multicolored spotlights, stands in the middle of a chaotic circus tent. His manic grin becomes even more unsettling under the harsh, unnatural lighting, close up, perfecteyes --no (worst quality, low quality), deformed, distorted, disfigured, doll, poorly drawn, bad anatomy, wrong anatomy --cfg 7 --steps 40 --seed 3912625479 --d 832x1344"
   },
@@ -53,10 +57,15 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/4384/dreamshaper",
     "baseModel": "SD 1.5",
     "aliases": [
-      "3",
+      "4",
       "dream",
       "4384",
-      "h879"
+      "h879",
+      "d.",
+      "D.",
+      "d",
+      "ds",
+      ":"
     ],
     "defaultPrompt": "8k portrait of beautiful cyborg with brown hair, intricate, elegant, highly detailed, majestic, digital photography, art by artgerm and ruan jia and greg rutkowski surreal painting gold butterfly filigree, broken glass, (masterpiece, sidelighting, finely detailed beautiful eyes: 1.2), hdr, <lora:more_details:0.36>"
   },
@@ -69,9 +78,11 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/8281/perfect-world",
     "baseModel": "SDXL 1.0",
     "aliases": [
-      "4",
+      "6",
       "nsfw",
-      "perf"
+      "perf",
+      "pw",
+      "("
     ],
     "defaultPrompt": "(masterpiece:1.2), (best quality:1.2), 1woman, 1boy, short hair, blonde hair, breast focus, slim and petite body, nude, black stockings, black high heels, silver necklace, orgasm, mouth open, aroused, <lora:murkysSuspendedOn_1:0.9>, suspendedonpenisms, sex, arm grab, sex from behind, dangling legs, size difference, in the luxurious living room, --no (worst quality:1.2), (bad quality:1.2), (poor quality:1.2), bad artist, extra limbs, bad anatomy, missing legs --seed 780544502378871 --steps 20 --sampler euler --cfg 8 --d 512x512"
   },
@@ -84,11 +95,12 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/4823/deliberate",
     "baseModel": "SD 1.5",
     "aliases": [
-      "5",
+      "7",
       "d",
       "del",
       "4823",
-      "h9ab"
+      "h9ab",
+      "de"
     ],
     "defaultPrompt": "a cute kitten made out of metal, (cyborg:1.1), ([tail | detailed wire]:1.3), (intricate details), hdr, (intricate details, hyperdetailed:1.2), cinematic shot, vignette, centered"
   },
@@ -101,11 +113,12 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/43331/majicmix-realistic",
     "baseModel": "SD 1.5",
     "aliases": [
-      "6",
+      "2",
       "majic",
       "4333",
       "h7e2",
-      "?"
+      "?",
+      "mj",
     ],
     "defaultPrompt": "1girl,sitting on a cozy couch,crossing legs,soft light"
   },
@@ -118,10 +131,12 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/84040/sdxl-unstable-diffusers-yamermix",
     "baseModel": "SDXL 1.0",
     "aliases": [
-      "7",
+      "8",
       "xl_dif",
       "8404",
-      "hef9"
+      "hef9",
+      "$",
+      "ud",
     ],
     "defaultPrompt": "pastel color, from above, upper body, depth of field, masterpiece, best quality, best quality, girl sitting on a swing, school uniform, black hair, blue eyes, autumn, park"
   },
@@ -134,11 +149,13 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/7371/rev-animated",
     "baseModel": "SD 1.5",
     "aliases": [
-      "8",
+      "5",
       "magic",
       "rev",
       "7371",
-      "h419"
+      "h419",
+      ";",
+      "ra",
     ],
     "defaultPrompt": "best quality, ultra high res, photorealistic, sfw, armored wizard, magical tattoos, apprentice, 1girl, looking at viewer, upper body, slender, small breasts, purple hair with white stripes, white croptop, (dark and moody universe:1.3), (elden ring style:1.3), (warhammer style:1.1), floating rocks, glowing pebbles, fiery dust, concept artist, global illumination, depth of field, gloomy, unsettling, splash art, art by artgerm and greg rutkowski and viktoria gavrilenko, scary smile, purple light, rule of the thirds --cfg 8.5 --steps 30 --seed 1463146050 --d 1280x853 --no girls, (worst quality:1.2), (low quality:1.2), (lowres:1.1), (monochrome:1.1), (greyscale), multiple views, comic, sketch, (((bad anatomy))), (((deformed))), (((disfigured))), watermark, multiple_views, mutation hands, mutation fingers, extra fingers, missing fingers, watermark"
   },
@@ -151,7 +168,7 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/15003/cyberrealistic",
     "baseModel": "SD 1.5",
     "aliases": [
-      "9",
+      //"9",
       "cyber",
       "1500",
       "h7a4"
@@ -170,7 +187,10 @@ export let MODELS_CONFIGS: IModel[] = [
       "10",
       "xl_dream",
       "1129",
-      "h0f1"
+      "h0f1",
+      "@",
+      "sx",
+      "ds"
     ],
     "defaultPrompt": "barry allen the flash on wheelchair moving at supersonic speed creating flame trails, speed trails, motion blur, electricity speed outdoor, realistic highly detailed cinematic cinematography, movie shots footage,"
   },
@@ -1443,12 +1463,14 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/23521/anime-pastel-dream",
     "baseModel": "SD 1.5",
     "aliases": [
-      "101",
+      "9",
       "n",
       "an",
       "anime",
       "2352",
-      "h4be"
+      "h4be",
+      "ap",
+      "&"
     ],
     "defaultPrompt": "masterpiece, best quality, ultra-detailed, illustration, beautiful detailed eyes, looking at viewer, close up, pink hair, shy, cat ears"
   },
