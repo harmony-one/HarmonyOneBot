@@ -122,7 +122,7 @@ export const MODELS_CONFIGS: IModel[] = [
       "4333",
       "h7e2",
       "?",
-      "mj",
+      "mj"
     ],
     "defaultPrompt": "1girl,sitting on a cozy couch,crossing legs,soft light"
   },
@@ -140,7 +140,7 @@ export const MODELS_CONFIGS: IModel[] = [
       "8404",
       "hef9",
       "$",
-      "ud",
+      "ud"
     ],
     "defaultPrompt": "pastel color, from above, upper body, depth of field, masterpiece, best quality, best quality, girl sitting on a swing, school uniform, black hair, blue eyes, autumn, park"
   },
@@ -159,7 +159,7 @@ export const MODELS_CONFIGS: IModel[] = [
       "7371",
       "h419",
       ";",
-      "ra",
+      "ra"
     ],
     "defaultPrompt": "best quality, ultra high res, photorealistic, sfw, armored wizard, magical tattoos, apprentice, 1girl, looking at viewer, upper body, slender, small breasts, purple hair with white stripes, white croptop, (dark and moody universe:1.3), (elden ring style:1.3), (warhammer style:1.1), floating rocks, glowing pebbles, fiery dust, concept artist, global illumination, depth of field, gloomy, unsettling, splash art, art by artgerm and greg rutkowski and viktoria gavrilenko, scary smile, purple light, rule of the thirds --cfg 8.5 --steps 30 --seed 1463146050 --d 1280x853 --no girls, (worst quality:1.2), (low quality:1.2), (lowres:1.1), (monochrome:1.1), (greyscale), multiple views, comic, sketch, (((bad anatomy))), (((deformed))), (((disfigured))), watermark, multiple_views, mutation hands, mutation fingers, extra fingers, missing fingers, watermark"
   },
@@ -172,7 +172,7 @@ export const MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/15003/cyberrealistic",
     "baseModel": "SD 1.5",
     "aliases": [
-      //"9",
+      // "9",
       "cyber",
       "1500",
       "h7a4"
@@ -1496,17 +1496,17 @@ export const MODELS_CONFIGS: IModel[] = [
 ]
 
 export const getModelByParam = (searchStr: string): IModel | undefined => {
-  let param = searchStr;
-  let serverNumber;
+  let param = searchStr
+  let serverNumber
 
   if (!isNaN(Number(param)) && param.endsWith('.2')) {
-    param = param.split('.2')[0];
-    serverNumber = 2;
+    param = param.split('.2')[0]
+    serverNumber = 2
   }
 
   if (isNaN(Number(param)) && param.endsWith('2')) {
-    param = param.slice(0, param.length - 1);
-    serverNumber = 2;
+    param = param.slice(0, param.length - 1)
+    serverNumber = 2
   }
 
   const model = MODELS_CONFIGS.find(m =>
