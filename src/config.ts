@@ -36,8 +36,7 @@ export default {
       telegramFileUrl: 'https://api.telegram.org/file/bot',
       completions: {
         temperature:
-          (process.env.OPENAI_TEMPERATURE &&
-            parseInt(process.env.OPENAI_TEMPERATURE)) ??
+          (parseInt(process.env.OPENAI_TEMPERATURE ?? '')) ??
           0.8
       },
       defaultPrompt:

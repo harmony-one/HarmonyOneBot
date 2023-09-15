@@ -1,6 +1,7 @@
+/* eslint-disable @typescript-eslint/prefer-nullish-coalescing */
 import { type Txt2ImgOptions } from './types'
 
-export function buildImgPrompt (options: Txt2ImgOptions & { clientId: string }) {
+export function buildImgPrompt (options: Txt2ImgOptions & { clientId: string }): unknown {
   return {
     client_id: options.clientId,
     prompt: {

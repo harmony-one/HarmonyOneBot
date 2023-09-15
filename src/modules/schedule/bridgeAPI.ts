@@ -72,15 +72,14 @@ interface StakingHistoryItem {
 
 type StakingHistory = Record<string, StakingHistoryItem>
 
-export const getStakingStats = async () => {
+export const getStakingStats = async (): Promise<{ 'total-staking': string, history: StakingHistory }> => {
   const { data } = await axios.get<{ 'total-staking': string, history: StakingHistory }>(`${stakeApiUrl}/networks/harmony/network_info_lite`)
   return data
 }
 
-export const getBridgeStats = async () => {
+export const getBridgeStats = async (): Promise<{ change: string, value: string }> => {
   const daysCount = 7
   const weekTimestamp = moment().subtract(daysCount - 1, 'days').unix()
-  const yesterdayTimestamp = moment().subtract(1, 'days').unix()
 
   const tokens = await getTokensList()
   const daysAmountMap: Record<string, number> = {}
@@ -89,7 +88,7 @@ export const getBridgeStats = async () => {
     const items = await getOperations(i)
 
     items.filter((item) => {
-      const { type, timestamp, amount, status } = item
+      const { timestamp, amount, status } = item
       return status === 'success' &&
           timestamp >= weekTimestamp &&
           amount > 0
@@ -99,8 +98,8 @@ export const getBridgeStats = async () => {
 
         const isIncome = type.includes('to_one')
         const token = tokens.find(item =>
-          erc20Address.toLowerCase() === erc20Address.toLowerCase() ||
-          hrc20Address.toLowerCase() === hrc20Address.toLowerCase()
+          item.erc20Address.toLowerCase() === erc20Address.toLowerCase() ||
+          item.hrc20Address.toLowerCase() === hrc20Address.toLowerCase()
         )
 
         if (!token) {
@@ -130,7 +129,7 @@ export const getBridgeStats = async () => {
     .map(([_, value]) => value)
 
   const value = daysAmountList[0] // Latest day
-  const valueTotal = daysAmountList.reduce((sum, item) => sum += item, 0)
+  const valueTotal = daysAmountList.reduce((sum, item) => { sum += item; return sum }, 0)
 
   const average = valueTotal / daysCount
   let change = getPercentDiff(average, value).toFixed(1)
@@ -144,17 +143,17 @@ export const getBridgeStats = async () => {
   }
 }
 
-export const getTVL = async () => {
+export const getTVL = async (): Promise<number> => {
   const tokens = await getTokensList()
   return tokens.reduce((acc, item) => acc + +item.totalLockedUSD, 0)
 }
 
-export const getTotalStakes = async () => {
+export const getTotalStakes = async (): Promise<number> => {
   const { 'total-staking': totalStaking } = await getStakingStats()
   return Math.round(+totalStaking / 10 ** 18)
 }
 
-export const getAvgStakes = async () => {
+export const getAvgStakes = async (): Promise<number> => {
   const { history } = await getStakingStats()
   const sortedHistory = Object.values(history).sort((a, b) => b.current_epoch - a.current_epoch)
 

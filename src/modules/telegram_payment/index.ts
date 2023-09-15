@@ -25,13 +25,14 @@ export class TelegramPayments {
     })
   }
 
-  public isSupportedEvent (ctx: OnMessageContext) {
+  public isSupportedEvent (ctx: OnMessageContext): boolean {
     return ctx.hasCommand(Object.values(SupportedCommands)) || ctx.has('message:successful_payment')
   }
 
-  public async onEvent (ctx: OnMessageContext) {
+  public async onEvent (ctx: OnMessageContext): Promise<void> {
     if (ctx.hasCommand(SupportedCommands.DEPOSIT)) {
       await this.createPaymentInvoice(ctx)
+      return
     }
 
     if (ctx.has('message:successful_payment')) {
@@ -42,19 +43,21 @@ export class TelegramPayments {
     }
   }
 
-  public async onPreCheckout (ctx: OnPreCheckoutContext) {
+  public async onPreCheckout (ctx: OnPreCheckoutContext): Promise<void> {
     const { uuid } = JSON.parse(ctx.preCheckoutQuery.invoice_payload) as { uuid: string }
 
     const invoice = await invoiceService.get(uuid)
 
     if (!invoice || invoice.status !== 'init') {
-      return await ctx.answerPreCheckoutQuery(false, { error_message: 'Outdated invoice' })
+      await ctx.answerPreCheckoutQuery(false, { error_message: 'Outdated invoice' })
+      return
     }
 
     await ctx.answerPreCheckoutQuery(true)
   }
 
-  async onSuccessfulPayment (ctx: OnSuccessfullPayment) {
+  async onSuccessfulPayment (ctx: OnSuccessfullPayment): Promise<void> {
+    // eslint-disable-next-line @typescript-eslint/naming-convention
     const { invoice_payload, telegram_payment_charge_id, provider_payment_charge_id } = ctx.message.successful_payment
 
     const { uuid } = JSON.parse(invoice_payload) as { uuid: string }
@@ -69,7 +72,7 @@ export class TelegramPayments {
     this.logger.info(`Payment from @${ctx.message.from.username} $${invoice.amount / 100} was completed!`)
   }
 
-  private async createPaymentInvoice (ctx: OnMessageContext) {
+  private async createPaymentInvoice (ctx: OnMessageContext): Promise<void> {
     const accountId = this.payments.getAccountId(ctx)
     let tgUserId = accountId
     if (ctx.update.message.chat.type === 'group') {
@@ -80,11 +83,13 @@ export class TelegramPayments {
       }
     }
 
-    const [cmd, usdAmountText = '10'] = ctx.message?.text?.split(' ') || []
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const [_, usdAmountText = '10'] = ctx.message?.text?.split(' ') ?? []
 
     const usdAmount = parseFloat(usdAmountText)
     if (isNaN(usdAmount)) {
-      return await ctx.reply('The value should be a valid number: 10 or 10.45')
+      await ctx.reply('The value should be a valid number: 10 or 10.45')
+      return
     }
 
     const fixedUsdAmount = parseFloat(usdAmount.toFixed(2))
@@ -106,7 +111,7 @@ export class TelegramPayments {
     const invoice = await invoiceService.create({ tgUserId, accountId, itemId, amount })
     const payload = JSON.stringify({ uuid: invoice.uuid })
     this.logger.info(`Send invoice: ${JSON.stringify({ tgUserId, accountId, itemId, amount })}`)
-    const photo_url = 'https://pbs.twimg.com/media/F5SofMsbgAApd2Y?format=png&name=small'
-    await ctx.api.sendInvoice(chatId, title, description, payload, providerToken, currency, prices, { start_parameter: 'createInvoice', photo_url, photo_width: 502, photo_height: 502 })
+    const photoUrl = 'https://pbs.twimg.com/media/F5SofMsbgAApd2Y?format=png&name=small'
+    await ctx.api.sendInvoice(chatId, title, description, payload, providerToken, currency, prices, { start_parameter: 'createInvoice', photo_url: photoUrl, photo_width: 502, photo_height: 502 })
   }
 }

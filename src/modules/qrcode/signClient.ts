@@ -3,7 +3,7 @@ import config from '../../config'
 
 let client: SignClient | null = null
 
-export const getSignClient = async () => {
+export const getSignClient = async (): Promise<SignClient> => {
   if (client) {
     return client
   }
@@ -24,10 +24,10 @@ export const getSignClient = async () => {
   })
 
   signClient.on('session_update', ({ topic, params }) => {
-    const { namespaces } = params
-    const _session = signClient.session.get(topic)
+    // const { namespaces } = params
+    // const _session = signClient.session.get(topic)
     // Overwrite the `namespaces` of the existing session with the incoming one.
-    const updatedSession = { ..._session, namespaces }
+    // const updatedSession = { ..._session, namespaces }
     // Integrate the updated session state into your dapp state.
     // onSessionUpdate(updatedSession)
   })
@@ -42,5 +42,3 @@ export const getSignClient = async () => {
 
   return client
 }
-
-getSignClient()

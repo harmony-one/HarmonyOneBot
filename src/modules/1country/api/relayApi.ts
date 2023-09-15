@@ -7,15 +7,20 @@ const base = axios.create({
   timeout: 10000
 })
 
-export const relayApi = () => {
+export const relayApi = (): {
+  enableSubdomains: (domainName: string) => Promise<void>
+  checkDomain: ({ sld }: { sld: string }) => Promise<{ isAvailable: any, renewPrice: any, responseText: any, isReserved: any, isRegistered: any, error: string, regPrice: any, restorePrice: any, transferPrice: any } | { error: string }>
+  createCert: ({
+    domain,
+    address,
+    async
+  }: { domain: string, address?: string, async?: boolean }) => Promise<{ success: any, sld: any, nakedJobId: any, error: any, mcJobId: any }>
+  genNFT: ({ domain }: { domain: string }) => Promise<{ metadata: any, generated: any }>
+} => {
   return {
     enableSubdomains: async (domainName: string) => {
-      try {
-        const { data } = await base.post('/enable-subdomains', { domain: `${domainName}${config.country.tld}` })
-        console.log('enableSubdomains', data)
-      } catch (e) {
-        throw (e)
-      }
+      const { data } = await base.post('/enable-subdomains', { domain: `${domainName}${config.country.tld}` })
+      console.log('enableSubdomains', data)
     },
     checkDomain: async ({ sld }: { sld: string }) => {
       try {

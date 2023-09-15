@@ -5,11 +5,11 @@ interface Params {
   negativePrompt: string
 }
 
-function randomIntFromInterval (min: number, max: number) { // min and max included
+function randomIntFromInterval (min: number, max: number): number { // min and max included
   return Math.floor(Math.random() * (max - min + 1) + min)
 }
 
-export default function buildQRWorkflow (params: Params) {
+export default function buildQRWorkflow (params: Params): unknown {
   const seed = randomIntFromInterval(100000000000000, 1000000000000000)
 
   return {
@@ -190,7 +190,7 @@ export default function buildQRWorkflow (params: Params) {
               ],
               size: {
                 0: 385.8155212402344,
-                1: 216.61624145507812
+                1: 216.616241455078
               },
               flags: {},
               order: 4,

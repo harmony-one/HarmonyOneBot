@@ -1,4 +1,4 @@
-import { SDNodeApi, type IModel, getModelByParam, MODELS_CONFIGS } from './api'
+import { SDNodeApi, type IModel, getModelByParam } from './api'
 import { type OnMessageContext, type OnCallBackQueryData } from '../types'
 import { getTelegramFileUrl, loadFile, sleep, uuidv4 } from './utils'
 import { GrammyError, InputFile } from 'grammy'
@@ -50,7 +50,7 @@ export class SDImagesBotBase {
     })
   }
 
-  addMediaGroupPhoto = (params: { photoId: string, mediaGroupId: string, caption: string }) => {
+  addMediaGroupPhoto = (params: { photoId: string, mediaGroupId: string, caption: string }): void => {
     const mediaGroup = this.mediaGroupCache.find(m => m.mediaGroupId === params.mediaGroupId)
 
     if (mediaGroup) {
@@ -75,14 +75,15 @@ export class SDImagesBotBase {
       all_seeds?: string[]
       seed?: string
     }
-  ) => {
+  ): Promise<ISession> => {
+    // eslint-disable-next-line @typescript-eslint/naming-convention
     const { prompt, model, command, all_seeds, lora } = params
 
     const authorObj = await ctx.getAuthor()
     const author = `@${authorObj.user.username}`
 
     const sessionId = uuidv4()
-    const message = (ctx.message?.text || '').replace('/images', '/image')
+    const message = (ctx.message?.text ?? '').replace('/images', '/image')
 
     const newSession: ISession = {
       id: sessionId,
@@ -100,12 +101,13 @@ export class SDImagesBotBase {
     return newSession
   }
 
-  getSessionById = (id: string) => this.sessions.find(s => s.id === id)
+  getSessionById = (id: string): ISession | undefined => this.sessions.find(s => s.id === id)
 
   waitingQueue = async (uuid: string, ctx: OnMessageContext | OnCallBackQueryData): Promise<number> => {
     this.queue.push(uuid)
     let idx = this.queue.findIndex((v) => v === uuid)
 
+    // eslint-disable-next-line @typescript-eslint/naming-convention
     const { message_id } = await ctx.reply(
             `You are #${idx + 1} in line for making images. The wait time is about ${(idx + 1) * 15} seconds.`, { message_thread_id: ctx.message?.message_thread_id }
     )
@@ -123,7 +125,7 @@ export class SDImagesBotBase {
     refundCallback: (reason?: string) => void,
     session: ISession,
     specialMessage?: string
-  ) => {
+  ): Promise<void> => {
     const { model, prompt, seed, lora } = session
     const uuid = uuidv4()
 
@@ -156,13 +158,13 @@ export class SDImagesBotBase {
       const msgExtras: MessageExtras = { message_thread_id: ctx.message?.message_thread_id }
       if (e instanceof GrammyError) {
         if (e.error_code === 400 && e.description.includes('not enough rights')) {
-          ctx.reply('Error: The bot does not have permission to send photos in chat... Refunding payments', msgExtras)
+          await ctx.reply('Error: The bot does not have permission to send photos in chat... Refunding payments', msgExtras)
         } else {
-          ctx.reply('Error: something went wrong... Refunding payments', msgExtras)
+          await ctx.reply('Error: something went wrong... Refunding payments', msgExtras)
         }
       } else {
         this.logger.error(e.toString())
-        ctx.reply('Error: something went wrong... Refunding payments', msgExtras)
+        await ctx.reply('Error: something went wrong... Refunding payments', msgExtras)
       }
       refundCallback()
     }
@@ -174,7 +176,7 @@ export class SDImagesBotBase {
     ctx: OnMessageContext | OnCallBackQueryData,
     refundCallback: (reason?: string) => void,
     session: ISession
-  ) => {
+  ): Promise<void> => {
     const { model, prompt, seed, lora } = session
     const uuid = uuidv4()
 
@@ -184,16 +186,12 @@ export class SDImagesBotBase {
       ctx.chatAction = 'upload_photo'
 
       let fileBuffer: Buffer
-      let width, height
       let fileName
 
-      const photos = ctx.message?.photo || ctx.message?.reply_to_message?.photo
+      const photos = ctx.message?.photo ?? ctx.message?.reply_to_message?.photo
 
       if (photos) {
         const photo = photos[photos.length - 1]
-
-        width = photo.width
-        height = photo.height
 
         const file = await ctx.api.getFile(photo.file_id)
 
@@ -244,13 +242,13 @@ export class SDImagesBotBase {
       const msgExtras: MessageExtras = { message_thread_id: ctx.message?.message_thread_id }
       if (e instanceof GrammyError) {
         if (e.error_code === 400 && e.description.includes('not enough rights')) {
-          ctx.reply('Error: The bot does not have permission to send photos in chat... Refunding payments', msgExtras)
+          await ctx.reply('Error: The bot does not have permission to send photos in chat... Refunding payments', msgExtras)
         } else {
-          ctx.reply('Error: something went wrong... Refunding payments', msgExtras)
+          await ctx.reply('Error: something went wrong... Refunding payments', msgExtras)
         }
       } else {
         this.logger.error(e.toString())
-        ctx.reply('Error: something went wrong... Refunding payments', msgExtras)
+        await ctx.reply('Error: something went wrong... Refunding payments', msgExtras)
       }
       refundCallback()
     }
@@ -262,23 +260,25 @@ export class SDImagesBotBase {
     ctx: OnMessageContext | OnCallBackQueryData,
     refundCallback: (reason?: string) => void,
     session: ISession
-  ) => {
-    const { model, prompt, seed, lora } = session
+  ): Promise<void> => {
+    const { model, prompt } = session
     try {
       ctx.chatAction = 'upload_photo'
 
       let photosIds: string[] = []
       let filesBuffer: Buffer[]
 
-      const [,caption] = (ctx.message?.text || '').split(' ')
+      const [,caption] = (ctx.message?.text ?? '').split(' ')
 
       this.mediaGroupCache
         .filter(m => m.caption.replace('/train ', '') === caption)
-        .forEach(m => photosIds = photosIds.concat(m.photosIds))
+        .forEach(m => {
+          photosIds = photosIds.concat(m.photosIds)
+        })
 
       if (photosIds) {
-        filesBuffer = await Promise.all(photosIds.map(async file_id => {
-          const file = await ctx.api.getFile(file_id)
+        filesBuffer = await Promise.all(photosIds.map(async fileId => {
+          const file = await ctx.api.getFile(fileId)
 
           if (file?.file_path) {
             const url = getTelegramFileUrl(file?.file_path)
@@ -309,27 +309,27 @@ export class SDImagesBotBase {
         ctx,
         refundCallback,
         await this.createSession(ctx, {
-          model: getModelByParam(modelAlias) || model,
+          model: getModelByParam(modelAlias) ?? model,
           prompt: `<lora:${loraName}:1>`,
           command: COMMAND.TEXT_TO_IMAGE
         }),
                 `/${modelAlias} <lora:${loraName}:1>`
       )
     } catch (e: any) {
-      const topicId = await ctx.message?.message_thread_id
+      const topicId = ctx.message?.message_thread_id
       const msgExtras: MessageExtras = {}
       if (topicId) {
         msgExtras.message_thread_id = topicId
       }
       if (e instanceof GrammyError) {
         if (e.error_code === 400 && e.description.includes('not enough rights')) {
-          ctx.reply('Error: The bot does not have permission to send photos in chat... Refunding payments', msgExtras)
+          await ctx.reply('Error: The bot does not have permission to send photos in chat... Refunding payments', msgExtras)
         } else {
-          ctx.reply('Error: something went wrong... Refunding payments', msgExtras)
+          await ctx.reply('Error: something went wrong... Refunding payments', msgExtras)
         }
       } else {
         this.logger.error(e.toString())
-        ctx.reply('Error: something went wrong... Refunding payments', msgExtras)
+        await ctx.reply('Error: something went wrong... Refunding payments', msgExtras)
       }
       refundCallback()
     }

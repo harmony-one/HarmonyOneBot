@@ -378,7 +378,9 @@ export class OneCountryBot {
       }
       msg += `${appText.registerConfirmation}, or ${appText.registerKeepWriting}`
     }
-    await ctx.api.editMessageText(ctx.chat?.id ?? '', msgId, msg, { parse_mode: 'Markdown' })
+    if (ctx.chat?.id) {
+      await ctx.api.editMessageText(ctx.chat.id, msgId, msg, { parse_mode: 'Markdown' })
+    }
   }
 
   onEnableSubomain = async (ctx: OnMessageContext): Promise<void> => {

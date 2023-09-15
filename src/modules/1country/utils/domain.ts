@@ -1,10 +1,12 @@
 import config from '../../../config'
-import { DomainPrice, dcClient } from '../api/d1dc'
+import { dcClient } from '../api/d1dc'
 import { relayApi } from '../api/relayApi'
 import { getUSDPrice } from '../api/coingecko'
 import { formatONEAmount } from '.'
 
-export const isDomainAvailable = async (domainName: string) => {
+interface DomainInfo { isAvailable: boolean, priceOne: string, priceUSD: { price: string | null, error: string | null }, isInGracePeriod: boolean }
+
+export const isDomainAvailable = async (domainName: string): Promise<DomainInfo> => {
   const nameExpired = await dcClient.checkNameExpired({ name: domainName })
   const web3IsAvailable = await dcClient.checkAvailable({ name: domainName })
   const web2IsAvailable = await relayApi().checkDomain({ sld: domainName })
@@ -22,7 +24,7 @@ export const isDomainAvailable = async (domainName: string) => {
       (nameExpired.isExpired && !nameExpired.isInGracePeriod)) as boolean,
     isInGracePeriod: nameExpired.isInGracePeriod,
     priceOne: domainPrice && formatONEAmount(domainPrice),
-    priceUSD: domainPrice ? await getUSDPrice(domainPrice) : { price: 0, error: null }
+    priceUSD: domainPrice ? await getUSDPrice(domainPrice) : { price: '0', error: null }
   }
 }
 
@@ -64,7 +66,7 @@ const nameUtils = {
   }
 }
 
-export const validateDomainName = (domainName: string) => {
+export const validateDomainName = (domainName: string): { valid: boolean, error: string } => {
   if (!nameUtils.isValidName(domainName.toLowerCase())) {
     return {
       valid: false,

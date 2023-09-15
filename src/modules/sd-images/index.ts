@@ -2,7 +2,7 @@ import { InlineKeyboard, InputFile } from 'grammy'
 import { type OnMessageContext, type OnCallBackQueryData } from '../types'
 import { SDImagesBotBase } from './SDImagesBotBase'
 import { COMMAND, type IOperation, parseCtx, promptHasBadWords } from './helpers'
-import { getModelByParam, IModel, MODELS_CONFIGS } from './api'
+import { getModelByParam, MODELS_CONFIGS } from './api'
 import { uuidv4 } from './utils'
 import { sendMessage } from '../open-ai/helpers'
 
@@ -16,7 +16,7 @@ export class SDImagesBot extends SDImagesBotBase {
       this.addMediaGroupPhoto({
         photoId: photos[photos.length - 1].file_id,
         mediaGroupId: ctx.message.media_group_id,
-        caption: ctx.message.caption || ''
+        caption: ctx.message.caption ?? ''
       })
     }
 
@@ -27,7 +27,7 @@ export class SDImagesBot extends SDImagesBotBase {
     return hasCallbackQuery || operation
   }
 
-  public getEstimatedPrice (ctx: any) {
+  public getEstimatedPrice (ctx: any): number {
     return 1.5
   }
 
@@ -46,15 +46,13 @@ export class SDImagesBot extends SDImagesBotBase {
   public async onEvent (
     ctx: OnMessageContext | OnCallBackQueryData,
     refundCallback: (reason?: string) => void
-  ) {
+  ): Promise<void> {
     if (this.isSupportedCallbackQuery(ctx)) {
-      this.onImgSelected(ctx, refundCallback)
+      await this.onImgSelected(ctx, refundCallback)
       return
     }
 
     const operation = parseCtx(ctx)
-
-    const photo = ctx.message?.photo
 
     if (!operation) {
       console.log(`### unsupported command ${ctx.message?.text}`)
@@ -82,7 +80,7 @@ export class SDImagesBot extends SDImagesBotBase {
     }
     switch (operation.command) {
       case COMMAND.TEXT_TO_IMAGE:
-        this.generateImage(
+        await this.generateImage(
           ctx,
           refundCallback,
           await this.createSession(ctx, operation)
@@ -90,7 +88,7 @@ export class SDImagesBot extends SDImagesBotBase {
         return
 
       case COMMAND.TRAIN:
-        this.trainLoraByImages(
+        await this.trainLoraByImages(
           ctx,
           refundCallback,
           await this.createSession(ctx, operation)
@@ -98,7 +96,7 @@ export class SDImagesBot extends SDImagesBotBase {
         return
 
       case COMMAND.IMAGE_TO_IMAGE:
-        this.generateImageByImage(
+        await this.generateImageByImage(
           ctx,
           refundCallback,
           await this.createSession(ctx, operation)
@@ -106,11 +104,11 @@ export class SDImagesBot extends SDImagesBotBase {
         return
 
       case COMMAND.TEXT_TO_IMAGES:
-        this.onImagesCmd(ctx, refundCallback, operation)
+        await this.onImagesCmd(ctx, refundCallback, operation)
         return
 
       case COMMAND.CONSTRUCTOR:
-        this.onConstructorCmd(ctx, refundCallback, operation)
+        await this.onConstructorCmd(ctx, refundCallback, operation)
         return
 
       case COMMAND.HELP:
@@ -128,14 +126,14 @@ export class SDImagesBot extends SDImagesBotBase {
     }
 
     console.log('### unsupported command')
-    sendMessage(ctx, '### unsupported command')
+    await sendMessage(ctx, '### unsupported command')
   }
 
   onImagesCmd = async (
     ctx: OnMessageContext | OnCallBackQueryData,
     refundCallback: (reason?: string) => void,
     operation: IOperation
-  ) => {
+  ): Promise<void> => {
     const uuid = uuidv4()
 
     try {
@@ -176,7 +174,7 @@ export class SDImagesBot extends SDImagesBotBase {
       )
     } catch (e: any) {
       console.log(e)
-      sendMessage(ctx, 'Error: something went wrong...')
+      await sendMessage(ctx, 'Error: something went wrong...')
       refundCallback(e.message)
     }
 
@@ -224,20 +222,20 @@ export class SDImagesBot extends SDImagesBotBase {
           return
         }
 
-        this.generateImage(ctx, refundCallback, { ...session, model })
+        await this.generateImage(ctx, refundCallback, { ...session, model })
 
         return
       }
 
       if (session.command === COMMAND.TEXT_TO_IMAGES) {
-        this.generateImage(ctx, refundCallback, {
+        await this.generateImage(ctx, refundCallback, {
           ...session,
           seed: session?.all_seeds && Number(session.all_seeds[+params - 1])
         })
       }
     } catch (e: any) {
       console.log(e)
-      sendMessage(ctx, 'Error: something went wrong...')
+      await sendMessage(ctx, 'Error: something went wrong...')
       refundCallback(e.message)
     }
   }
@@ -246,7 +244,7 @@ export class SDImagesBot extends SDImagesBotBase {
     ctx: OnMessageContext | OnCallBackQueryData,
     refundCallback: (reason?: string) => void,
     operation: IOperation
-  ) => {
+  ): Promise<void> => {
     try {
       const newSession = await this.createSession(ctx, operation)
 
@@ -277,7 +275,7 @@ export class SDImagesBot extends SDImagesBotBase {
       })
     } catch (e: any) {
       console.log(e)
-      sendMessage(ctx, 'Error: something went wrong...')
+      await sendMessage(ctx, 'Error: something went wrong...')
       refundCallback(e)
     }
   }

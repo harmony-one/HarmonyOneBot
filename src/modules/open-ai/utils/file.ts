@@ -2,7 +2,7 @@ import axios from 'axios'
 import sharp from 'sharp'
 import fs from 'fs'
 
-export const getImage = async (filePath: string) => {
+export const getImage = async (filePath: string): Promise<{ error: string } | { fileName: string, file: any, error: null }> => {
   const imageFilename = `image_${Date.now()}.jpg`
   await axios({
     url: filePath,
@@ -52,6 +52,6 @@ export const getImage = async (filePath: string) => {
   }
 }
 
-export const deleteFile = (fileName: string) => {
+export const deleteFile = (fileName: string): void => {
   fs.unlinkSync(fileName)
 }
