@@ -11,7 +11,7 @@ interface Img2ImgResponse {
 const sdHttpClient = axios.create({ baseURL: config.stableDiffusion.stableDiffusionHost, headers: { 'Content-Type': 'application/json' } })
 
 export class Automatic1111Client {
-  async img2img (config: Automatic1111Config) {
+  async img2img (config: Automatic1111Config): Promise<Buffer | undefined> {
     const body = getImg2ImgConfig(config)
 
     try {
@@ -22,12 +22,12 @@ export class Automatic1111Client {
       return Buffer.from(img, 'base64')
     } catch (ex) {
       console.log('### ex', ex)
-      // @ts-expect-error
+      // @ts-expect-error TS18046: 'ex' is of type 'unknown'.
       console.log('### ex', JSON.stringify(ex.response.data))
     }
   }
 
-  async text2img (config: Automatic1111Config) {
+  async text2img (config: Automatic1111Config): Promise<Buffer | undefined> {
     // const filePath = path.join(__dirname, '../../files/qrcodes/h_country.png');
     // const imgBase64 = fs.readFileSync(filePath, 'base64')
 
@@ -40,7 +40,7 @@ export class Automatic1111Client {
       return Buffer.from(img, 'base64')
     } catch (ex) {
       console.log('### ex', ex)
-      // @ts-expect-error
+      // @ts-expect-error TS18046: 'ex' is of type 'unknown'.
       console.log('### ex', JSON.stringify(ex.response.data))
     }
   }

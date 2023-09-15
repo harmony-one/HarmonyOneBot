@@ -1467,7 +1467,7 @@ export let MODELS_CONFIGS: IModel[] = [
   }
 ]
 
-export const getModelByParam = (param: string) => {
+export const getModelByParam = (param: string): IModel | undefined => {
   const model = MODELS_CONFIGS.find(m =>
     m.id === param ||
     (m.hash && m.hash === param) ||

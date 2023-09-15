@@ -147,6 +147,8 @@ export class WalletConnect {
       message_thread_id: ctx.message?.message_thread_id
     })
 
+    // request will wait the user answer
+    // eslint-disable-next-line @typescript-eslint/no-floating-promises
     this.requestApproval(ctx, approval, message)
   }
 
@@ -158,6 +160,8 @@ export class WalletConnect {
       message_thread_id: ctx.message?.message_thread_id
     })
 
+    // request will wait an user answer
+    // eslint-disable-next-line @typescript-eslint/no-floating-promises
     this.requestApproval(ctx, approval, message)
   }
 

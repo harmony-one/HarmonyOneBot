@@ -8,7 +8,7 @@ interface Params {
   width?: number
 }
 
-export function normalizeUrl (url: string) {
+export function normalizeUrl (url: string): string {
   if (!url.startsWith('http')) {
     url = 'https://' + url
   }
@@ -47,7 +47,7 @@ export async function retryAsync<T> (
   }
 }
 
-export const scanQRCode = (imgBuffer: Buffer) => {
+export const scanQRCode = (imgBuffer: Buffer): string => {
   const pngData = png.decode(imgBuffer)
 
   const out = {
@@ -59,7 +59,7 @@ export const scanQRCode = (imgBuffer: Buffer) => {
   return readQR({ height: pngData.height, width: pngData.width, data: out.data })
 }
 
-export const isQRCodeReadable = (imgBuffer: Buffer) => {
+export const isQRCodeReadable = (imgBuffer: Buffer): boolean => {
   const info = scanQRCode(imgBuffer)
   return !!info
 }

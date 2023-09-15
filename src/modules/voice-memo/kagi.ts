@@ -21,14 +21,14 @@ export class Kagi {
     this.apiKey = apiKey
   }
 
-  public async getSummarization (audioUrl: string) {
+  public async getSummarization (audioUrl: string): Promise<string> {
     const url = `https://kagi.com/api/v0/summarize?url=${audioUrl}`
     console.log('Kagi request url:', url)
     const { data } = await axios.get<SummarizationResponse>(url, { headers: { Authorization: `Bot ${this.apiKey}` } })
     return data.data.output || ''
   }
 
-  public estimatePrice (duration: number) {
+  public estimatePrice (duration: number): number {
     return this.pricePerHour * duration / 60 / 60
   }
 }

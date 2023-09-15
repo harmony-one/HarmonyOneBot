@@ -11,7 +11,7 @@ export interface InvoiceParams {
 }
 
 export class InvoiceService {
-  public async create (data: InvoiceParams) {
+  public async create (data: InvoiceParams): Promise<Invoice> {
     const invoice = new Invoice()
 
     invoice.tgUserId = data.tgUserId
@@ -24,11 +24,11 @@ export class InvoiceService {
     return await invoiceRepository.save(invoice)
   }
 
-  public async get (uuid: string) {
+  public async get (uuid: string): Promise<Invoice | null> {
     return await invoiceRepository.findOneBy({ uuid })
   }
 
-  public async setPendingStatus (data: Pick<Invoice, 'uuid'>) {
+  public async setPendingStatus (data: Pick<Invoice, 'uuid'>): Promise<Invoice> {
     const invoice = await invoiceRepository.findOneBy({ uuid: data.uuid })
 
     if (!invoice) {
@@ -39,7 +39,7 @@ export class InvoiceService {
     return await invoiceRepository.save(invoice)
   }
 
-  public async setSuccessStatus (data: Pick<Invoice, 'uuid' | 'telegramPaymentChargeId' | 'providerPaymentChargeId'>) {
+  public async setSuccessStatus (data: Pick<Invoice, 'uuid' | 'telegramPaymentChargeId' | 'providerPaymentChargeId'>): Promise<Invoice> {
     const invoice = await invoiceRepository.findOneBy({ uuid: data.uuid })
 
     if (!invoice) {
