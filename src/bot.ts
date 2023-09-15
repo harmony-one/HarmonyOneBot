@@ -622,6 +622,7 @@ async function bootstrap () {
   })
 
   await AppDataSource.initialize()
+  payments.bootstrap()
 
   const prometheusMetrics = new PrometheusMetrics()
   await prometheusMetrics.bootstrap()
@@ -659,7 +660,7 @@ async function bootstrap () {
     const task = runBotHeartBit(runner, config.betteruptime.botHeartBitId)
     const stopHeartBit = () => {
       logger.info('heart bit stopping')
-      task.stop()
+      // task.stop()
     }
     process.once('SIGINT', stopHeartBit)
     process.once('SIGTERM', stopHeartBit)

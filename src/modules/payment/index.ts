@@ -4,12 +4,13 @@ import {type Account} from 'web3-core'
 import axios from 'axios'
 import bn, {BigNumber} from 'bignumber.js'
 import config from '../../config'
-import {chatService, statsService} from '../../database/services'
+import {chatService, invoiceService, statsService} from '../../database/services'
 import {type OnMessageContext} from '../types'
 import {LRUCache} from 'lru-cache'
 import {freeCreditsFeeCounter, oneTokenFeeCounter} from '../../metrics/prometheus'
 import {type BotPaymentLog} from '../../database/stats.service'
 import {sendMessage} from '../open-ai/helpers'
+import {InvoiceParams} from "../../database/invoice.service";
 
 interface CoinGeckoResponse {
   harmony: {
@@ -52,6 +53,62 @@ export class BotPayments {
 
     this.hotWallet = this.getUserAccount('hot_wallet') as Account
     this.logger.info(`Hot wallet address: ${this.hotWallet.address}`)
+  }
+
+  public bootstrap() {
+    this.startCheckingUserBalances()
+  }
+
+  private async transferUserFundsToHolder(
+    accountId: number,
+    userAccount: Account,
+    amount: BigNumber
+  ) {
+    const invoiceData: InvoiceParams = {
+      tgUserId: accountId,
+      accountId,
+      amount: 1,
+      itemId: 'deposit_one',
+      currency: 'ONE'
+    }
+    const invoice = await invoiceService.create(invoiceData)
+    await this.transferFunds(userAccount, this.holderAddress, amount);
+    await invoiceService.setSuccessStatus({ uuid: invoice.uuid, providerPaymentChargeId: '', telegramPaymentChargeId: '' })
+  }
+
+  private async startCheckingUserBalances() {
+    let accounts: {accountId: string}[] = []
+    try {
+      accounts = await statsService.getLasInteractingAccounts(24)
+    } catch (e) {
+      this.logger.error(`Cannot get last interacted accounts: ${(e as Error).message}`)
+    }
+    console.log('accounts', accounts)
+    for(let acc of accounts) {
+      const accountId = +acc.accountId
+      const userAccount = this.getUserAccount(accountId)
+      if(userAccount) {
+        let userBalance = new BigNumber(0)
+        try {
+          userBalance = await this.getUserBalance(accountId)
+        } catch (e) {
+          this.logger.error(`Cannot get user balance ${accountId} ${userAccount.address}`)
+        }
+
+        if(userBalance.gt(0)) {
+          try {
+            await this.transferUserFundsToHolder(accountId, userAccount, userBalance);
+            this.logger.info(`User ${accountId} ${userAccount.address} hot wallet funds "${userBalance.toString()}" ONE transferred to holder address ${this.holderAddress}`)
+          } catch (e) {
+            this.logger.error(
+              `Cannot transfer user "${userAccount.address}" funds to holder "${this.holderAddress}": ${(e as Error).message}`
+            )
+          }
+        }
+      } else {
+        this.logger.error(`Cannot get account with id "${accountId}"`)
+      }
+    }
   }
 
   private async getOneRate () {
