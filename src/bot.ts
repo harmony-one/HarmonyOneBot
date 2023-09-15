@@ -260,10 +260,14 @@ const onMessage = async (ctx: OnMessageContext): Promise<void> => {
         if (isPaid) {
           await qrCodeBot
             .onEvent(ctx, (reason?: string) => {
-              payments.refundPayment(reason, ctx, price)
+              payments.refundPayment(reason, ctx, price).catch((error) => {
+                logger.error(`Error refundPayment ${error}`)
+              })
             })
             .catch((e) => {
-              payments.refundPayment(e.message || 'Unknown error', ctx, price)
+              payments.refundPayment(e.message || 'Unknown error', ctx, price).catch((error) => {
+                logger.error(`Error refundPayment ${error}`)
+              })
             })
           return
         }
@@ -274,10 +278,14 @@ const onMessage = async (ctx: OnMessageContext): Promise<void> => {
         if (isPaid) {
           await sdImagesBot
             .onEvent(ctx, (reason?: string) => {
-              payments.refundPayment(reason, ctx, price)
+              payments.refundPayment(reason, ctx, price).catch((error) => {
+                logger.error(`Error refundPayment ${error}`)
+              })
             })
             .catch((e) => {
-              payments.refundPayment(e.message || 'Unknown error', ctx, price)
+              payments.refundPayment(e.message || 'Unknown error', ctx, price).catch((error) => {
+                logger.error(`Error refundPayment ${error}`)
+              })
             })
           return
         }
@@ -288,7 +296,9 @@ const onMessage = async (ctx: OnMessageContext): Promise<void> => {
         const isPaid = await payments.pay(ctx, price)
         if (isPaid) {
           await voiceMemo.onEvent(ctx).catch((e) => {
-            payments.refundPayment(e.message || 'Unknown error', ctx, price)
+            payments.refundPayment(e.message || 'Unknown error', ctx, price).catch((error) => {
+              logger.error(`Error refundPayment ${error}`)
+            })
           })
         }
         return
@@ -302,10 +312,14 @@ const onMessage = async (ctx: OnMessageContext): Promise<void> => {
           // const file = await bot.getFile();
           const response = await documentBot
             .onEvent(ctx, (reason?: string) => {
-              payments.refundPayment(reason, ctx, price)
+              payments.refundPayment(reason, ctx, price).catch((error) => {
+                logger.error(`Error refundPayment ${error}`)
+              })
             })
             .catch((e) => {
-              payments.refundPayment(e.message || 'Unknown error', ctx, price)
+              payments.refundPayment(e.message || 'Unknown error', ctx, price).catch((error) => {
+                logger.error(`Error refundPayment ${error}`)
+              })
               return { next: false }
             })
 
@@ -322,10 +336,14 @@ const onMessage = async (ctx: OnMessageContext): Promise<void> => {
         if (isPaid) {
           const response = await translateBot
             .onEvent(ctx, (reason?: string) => {
-              payments.refundPayment(reason, ctx, price)
+              payments.refundPayment(reason, ctx, price).catch((error) => {
+                logger.error(`Error refundPayment ${error}`)
+              })
             })
             .catch((e) => {
-              payments.refundPayment(e.message || 'Unknown error', ctx, price)
+              payments.refundPayment(e.message || 'Unknown error', ctx, price).catch((error) => {
+                logger.error(`Error refundPayment ${error}`)
+              })
               return { next: false }
             })
 
@@ -481,7 +499,7 @@ bot.command(['start', 'help', 'menu'], async (ctx) => {
 })
 
 bot.command('more', async (ctx) => {
-  writeCommandLog(ctx as OnMessageContext)
+  await writeCommandLog(ctx as OnMessageContext)
   return await ctx.reply(commandsHelpText.more, {
     parse_mode: 'Markdown',
     disable_web_page_preview: true,
@@ -490,7 +508,7 @@ bot.command('more', async (ctx) => {
 })
 
 bot.command('terms', async (ctx) => {
-  writeCommandLog(ctx as OnMessageContext)
+  await writeCommandLog(ctx as OnMessageContext)
   return await ctx.reply(TERMS.text, {
     parse_mode: 'Markdown',
     disable_web_page_preview: true,
@@ -499,7 +517,7 @@ bot.command('terms', async (ctx) => {
 })
 
 bot.command('support', async (ctx) => {
-  writeCommandLog(ctx as OnMessageContext)
+  await writeCommandLog(ctx as OnMessageContext)
   return await ctx.reply(SUPPORT.text, {
     parse_mode: 'Markdown',
     disable_web_page_preview: true,
@@ -508,7 +526,7 @@ bot.command('support', async (ctx) => {
 })
 
 bot.command('models', async (ctx) => {
-  writeCommandLog(ctx as OnMessageContext)
+  await writeCommandLog(ctx as OnMessageContext)
   return await ctx.reply(MODELS.text, {
     parse_mode: 'Markdown',
     disable_web_page_preview: true
@@ -516,7 +534,7 @@ bot.command('models', async (ctx) => {
 })
 
 bot.command('feedback', async (ctx) => {
-  writeCommandLog(ctx as OnMessageContext)
+  await writeCommandLog(ctx as OnMessageContext)
   return await ctx.reply(FEEDBACK.text, {
     parse_mode: 'Markdown',
     disable_web_page_preview: true,
@@ -525,7 +543,7 @@ bot.command('feedback', async (ctx) => {
 })
 
 bot.command('love', async (ctx) => {
-  writeCommandLog(ctx as OnMessageContext)
+  await writeCommandLog(ctx as OnMessageContext)
   return await ctx.reply(LOVE.text, {
     parse_mode: 'Markdown',
     disable_web_page_preview: true,
