@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/prefer-nullish-coalescing */
+/* eslint-disable @typescript-eslint/quotes */
+/* eslint-disable quote-props */
 export interface IModel {
   path: string
   name: string
@@ -11,7 +14,7 @@ export interface IModel {
   defaultImageUrl?: string
 }
 
-export let MODELS_CONFIGS: IModel[] = [
+export const MODELS_CONFIGS: IModel[] = [
   {
     "path": "sdXL_v10VAEFix.safetensors",
     "name": "SD XL",
@@ -1491,7 +1494,7 @@ export let MODELS_CONFIGS: IModel[] = [
   }
 ]
 
-export const getModelByParam = (param: string) => {
+export const getModelByParam = (param: string): IModel | undefined => {
   const model = MODELS_CONFIGS.find(m =>
     m.id === param ||
     (m.hash && m.hash === param) ||
