@@ -177,8 +177,7 @@ export class BotPayments {
     }
   }
 
-
-  public isUserInWhitelist (userId: number | string, username = ''): boolean {
+  public isUserInWhitelist (userId: number | string, username = '') {
     const { whitelist } = config.payment
     return (
       whitelist.includes(userId.toString()) ||
