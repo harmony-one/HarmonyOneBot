@@ -1,14 +1,14 @@
-import { Entity, Column, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
-import {Chat} from "./Chat";
+import { Entity, Column, OneToMany, PrimaryGeneratedColumn } from 'typeorm'
+import { Chat } from './Chat'
 
-@Entity({name: 'users'})
+@Entity({ name: 'users' })
 export class User {
   @PrimaryGeneratedColumn()
-  id!: number;
+    id!: number
 
-  @Column({unique: true, type: "bigint"})
-  tgUserId!: number;
+  @Column({ unique: true, type: 'bigint' })
+    tgUserId!: number
 
-  @OneToMany(() => Chat, (chat) => chat.owner, {nullable: false})
-  chat!: Chat[]
+  @OneToMany(() => Chat, (chat) => chat.owner, { nullable: false })
+    chat!: Chat[]
 }

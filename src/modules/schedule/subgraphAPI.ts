@@ -1,7 +1,7 @@
 import axios from 'axios'
 import config from '../../config'
-import moment from "moment/moment";
-import {getPercentDiff} from "./utils";
+import moment from 'moment/moment'
+import { getPercentDiff } from './utils'
 
 export interface TradingVolume {
   id: string
@@ -30,9 +30,7 @@ const generateTradingVolumeQuery = (first = 30) => {
 export const getTradingVolume = async (daysCount = 30): Promise<TradingVolume[]> => {
   const { data } = await axios.post<SubgraphResponse>(
     config.schedule.swapSubgraphApiUrl,
-    {
-      query: generateTradingVolumeQuery(daysCount),
-    },
-  );
-  return data.data.uniswapDayDatas;
+    { query: generateTradingVolumeQuery(daysCount) }
+  )
+  return data.data.uniswapDayDatas
 }

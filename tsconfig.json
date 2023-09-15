@@ -10,6 +10,6 @@
     "strictPropertyInitialization": false,
     "isolatedModules": true
   },
-  "include": ["src/bot.ts", "environment.d.ts"],
+  "include": ["**/*.ts", "environment.d.ts"],
   "exclude": ["node_modules"]
 }
