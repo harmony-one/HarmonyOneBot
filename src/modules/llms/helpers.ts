@@ -211,12 +211,12 @@ export const limitPrompt = (prompt: string) => {
   const wordCountPattern = /(\d+)\s*word(s)?/g
   const match = wordCountPattern.exec(prompt)
 
-  if (match) {
-    return `${prompt}`
-  }
-
-  return `${prompt} in around ${config.openAi.chatGpt.wordLimit} words`
-}
+  // if (match) {
+  //   return `${prompt}`
+  // }
+  // return `${prompt} in around ${config.openAi.chatGpt.wordLimit} words`
+  return prompt
+};
 
 export const prepareConversation = (
   conversation: ChatConversation[],
