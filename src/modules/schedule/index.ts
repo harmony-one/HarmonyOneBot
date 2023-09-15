@@ -193,10 +193,20 @@ export class BotSchedule {
 /*---------------------------------------------------------------------------------*/
   public async generateAudit() {
     const botFeesAudit = await audit.getBotFeeAudit(this.holderAddress);
-    const report = `
-    ${abbreviateNumber(botFeesAudit.total)}
-    ${abbreviateNumber(botFeesAudit.maxFeeDay)}
-    `
+    
+
+
+
+    const report = `*Revenue Stats*` +
+    `\nTotal: ${abbreviateNumber(botFeesAudit.total)}` +
+    `\nMonthly:`+
+    `\nWeekly:`+
+    `\nDaily:` +
+    `\n24hr Max: ${abbreviateNumber(botFeesAudit.maxFeeDay)}` +
+    `\n24hr Min:`+
+    ``+
+    ``
+    
     return report
   }
 /*-------------------------------------------------------------------------------------*/

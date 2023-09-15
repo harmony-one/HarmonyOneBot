@@ -136,6 +136,18 @@ const maxFeesAudit = (daysAmountMap: Record<string, number>): Record<string,numb
   return { maxFeeDay: maxFee };
 }
 
+const minFeesAudit = (daysAmountMap: Record<string, number>): Record<string,number> => {
+  let minFee = 1000000;
+  let minFeeDay = "";
+  for (const [day, fee] of Object.entries(daysAmountMap)) {
+    if (fee < minFee) {
+      minFee = fee;
+      minFeeDay = day;
+    }
+  }
+  return { minFeeDay: minFee };
+}
+
 export {
   getBotFeeAudit,
   totalFeesAudit
