@@ -1,7 +1,5 @@
 import axios from 'axios'
 import config from '../../config'
-import moment from 'moment/moment'
-import { getPercentDiff } from './utils'
 
 export interface TradingVolume {
   id: string
@@ -15,7 +13,7 @@ interface SubgraphResponse {
   }
 }
 
-const generateTradingVolumeQuery = (first = 30) => {
+const generateTradingVolumeQuery = (first = 30): string => {
   return `
   query {
     uniswapDayDatas(orderBy: date, orderDirection: desc, first: ${first}) {

@@ -1,6 +1,6 @@
 import { type Txt2ImgOptions } from './types'
 
-export function buildImgPromptLora (options: Txt2ImgOptions & { clientId: string }) {
+export function buildImgPromptLora (options: Txt2ImgOptions & { clientId: string }): unknown {
   return {
     client_id: options.clientId,
     prompt: {
@@ -89,8 +89,8 @@ export function buildImgPromptLora (options: Txt2ImgOptions & { clientId: string
       10: {
         inputs: {
           lora_name: options.loraPath,
-          strength_model: options.loraStrength || 1,
-          strength_clip: options.loraStrength || 1,
+          strength_model: options.loraStrength ?? 1,
+          strength_clip: options.loraStrength ?? 1,
           model: [
             '4',
             0

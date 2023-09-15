@@ -1,12 +1,6 @@
 import axios from 'axios'
 import { formatONEAmount, formatUSDAmount } from '../utils'
 
-const base = axios.create({
-  baseURL:
-    'https://api.coingecko.com/api/v3/simple/price?ids=harmony&vs_currencies=usd',
-  timeout: 10000
-})
-
 export const getUSDPrice = async (
   onePrice: string
 ): Promise<{ price: string | null, error: string | null }> => {

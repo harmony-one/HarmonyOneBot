@@ -5,7 +5,7 @@ import config from '../../config'
 import { type BotContext, type OnMessageContext } from '../types'
 import { getDailyMetrics, MetricsDailyType } from './explorerApi'
 import { getAddressBalance, getBotFee, getBotFeeStats } from './harmonyApi'
-import { getAvgStakes, getTotalStakes, getTVL } from './bridgeAPI'
+import { getAvgStakes, getTVL } from './bridgeAPI'
 import { statsService } from '../../database/services'
 import { abbreviateNumber, lessThan100, precise } from './utils'
 import { getOneRate } from './exchangeApi'
@@ -33,7 +33,9 @@ export class BotSchedule {
 
     if (config.schedule.isEnabled) {
       if (config.schedule.chatId) {
-        this.runCronJob()
+        this.runCronJob().catch((ex) => {
+          this.logger.error(`Error runCronJob ${ex}`)
+        })
       } else {
         this.logger.info('No chatId defined. Set [SCHEDULE_CHAT_ID] variable.')
       }
@@ -42,7 +44,7 @@ export class BotSchedule {
     }
   }
 
-  private async postMetricsUpdate () {
+  private async postMetricsUpdate (): Promise<void> {
     const scheduleChatId = config.schedule.chatId
     if (!scheduleChatId) {
       this.logger.error('Post updates: no chatId defined. Set [SCHEDULE_CHAT_ID] variable.')
@@ -58,17 +60,19 @@ export class BotSchedule {
     }
   }
 
-  private async runCronJob () {
-    cron.schedule('00 16 * * *', () => {
+  private async runCronJob (): Promise<cron.ScheduledTask> {
+    return cron.schedule('00 16 * * *', () => {
       this.logger.info('Posting daily metrics...')
-      this.postMetricsUpdate()
+      this.postMetricsUpdate().catch((error) => {
+        this.logger.error(`postMetricsUpdate error ${error}`)
+      })
     }, {
       scheduled: true,
       timezone: 'Europe/Lisbon'
     })
   }
 
-  public isSupportedEvent (ctx: OnMessageContext) {
+  public isSupportedEvent (ctx: OnMessageContext): boolean {
     return config.schedule.isEnabled && ctx.hasCommand(Object.values(SupportedCommands))
   }
 
@@ -77,7 +81,7 @@ export class BotSchedule {
     return `*${botFees.value}* ONE (${botFees.change}%)`
   }
 
-  public async generateReport () {
+  public async generateReport (): Promise<string> {
     const [
       networkFeesWeekly,
       walletsCountWeekly,
@@ -128,7 +132,7 @@ export class BotSchedule {
     return `${networkUsage}\n${assetsUpdate}\n${oneBotMetrics}`
   }
 
-  public async generateReportEngagementByCommand (days: number) {
+  public async generateReportEngagementByCommand (days: number): Promise<string> {
     const dbRows = await statsService.getUserEngagementByCommand(days)
 
     const cropIndex = dbRows.length >= 10 ? 10 : dbRows.length - 1
@@ -149,7 +153,7 @@ export class BotSchedule {
     return '```\n' + rows.join('\n') + '\n```'
   }
 
-  public async generateFullReport () {
+  public async generateFullReport (): Promise<string> {
     const [
       botFeesReport,
       botFeesWeekly,
@@ -184,9 +188,7 @@ export class BotSchedule {
     return report
   }
 
-  public async onEvent (ctx: OnMessageContext) {
-    const { message_id } = ctx.update.message
-
+  public async onEvent (ctx: OnMessageContext): Promise<void> {
     if (ctx.hasCommand(SupportedCommands.BOT_STATS)) {
       const report = await this.generateReport()
       if (report) {
@@ -199,7 +201,7 @@ export class BotSchedule {
 
     if (ctx.hasCommand(SupportedCommands.STATS)) {
       const report = await this.generateReport()
-      ctx.reply(report, {
+      await ctx.reply(report, {
         parse_mode: 'Markdown',
         message_thread_id: ctx.message?.message_thread_id
       })
@@ -207,7 +209,7 @@ export class BotSchedule {
 
     if (ctx.hasCommand(SupportedCommands.ALL_STATS)) {
       const report = await this.generateFullReport()
-      ctx.reply(report, {
+      await ctx.reply(report, {
         parse_mode: 'Markdown',
         message_thread_id: ctx.message?.message_thread_id
       })

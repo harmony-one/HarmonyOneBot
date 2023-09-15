@@ -112,7 +112,8 @@ export const LORAS_CONFIGS: ILora[] = [
   }
 ]
 
-export const getLoraByParam = (param: string, baseModel: 'SD 1.5' | 'SDXL 1.0') => {
+
+export const getLoraByParam = (param: string, baseModel: string) => {
   const model = LORAS_CONFIGS.find(m =>
     (m.id === param ||
             m.hash === param ||

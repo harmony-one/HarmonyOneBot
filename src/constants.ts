@@ -73,7 +73,7 @@ export const menuText = {
     menuName: 'Main Menu',
     helpText: `*Main Menu*
      
-🤖 welcome to the [harmony ONE bot](https://stse.substack.com/p/one-bot-for-all-generative-ai-on)! access ai models, agents, characters, services pay-per-use.`
+🤖 welcome to the [harmony ONE bot](https://stse.substack.com/p/one-bot-for-all-generative-ai-on)! access ai models, agents, characters, services pay-per-use.`
   },
   askMenu: {
     menuName: '💬 /ask ChatGPT4',
@@ -116,6 +116,7 @@ export const MODELS = {
 // ----------EXAMPLES----------\n\
 // [Full list of models with examples](https://j.h.country/harmony1bot-full-list-of-custom-models-c2219c4222ff421b8388a2c2a03e22ff)\n\
 //   ",
+  // eslint-disable-next-line no-multi-str
   text: '\
   /xl extra-large XL, high resolution, short prompts, embedded words. [/1](https://civitai.com/models/101055/sd-xl)\n\
 /real photography realism, film-like portrait, landscape sketches. [/2](https://civitai.com/models/43977/moonmix)\n\
@@ -171,11 +172,11 @@ export const BANNED = { text: 'underage,minor,child,loli,children,kid,young,girl
 // /images vintage hot rod with custom flame paint job
 
 // /help - this help message
-// /wallet - 🏦 Wallet
+// /wallet - 🏦 Wallet
 // /chat - 🖋️ ChatGPT 4
-// /images - 🎨 Image Generation
+// /images - 🎨 Image Generation
 // /qr - 📷 QR Generation
-// /register - 🌐 1.country
+// /register - 🌐 1.country
 
 // *EVENTS*
 // The bot will produce a summary audio transcript when uploading a voice message.

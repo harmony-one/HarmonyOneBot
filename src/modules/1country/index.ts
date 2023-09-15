@@ -66,7 +66,7 @@ export class OneCountryBot {
     const hasCommand = ctx.hasCommand(
       Object.values(SupportedCommands).map((command) => command.name)
     )
-    const hasPrefix = this.hasPrefix(ctx.message?.text || '')
+    const hasPrefix = this.hasPrefix(ctx.message?.text ?? '')
     if (hasPrefix && ctx.session.oneCountry.lastDomain) {
       return true
     }
@@ -80,7 +80,7 @@ export class OneCountryBot {
     )
     const promptNumber = prompt === '' ? 0 : prompt.split(' ').length
     if (!commandName) {
-      const hasGroupPrefix = this.hasPrefix(ctx.message?.text || '')
+      const hasGroupPrefix = this.hasPrefix(ctx.message?.text ?? '')
       if (hasGroupPrefix && promptNumber > 1) {
         return true
       }
@@ -125,43 +125,43 @@ export class OneCountryBot {
     return false
   }
 
-  public getEstimatedPrice (ctx: any) {
+  public getEstimatedPrice (ctx: any): number {
     return 0
   }
 
-  public async onEvent (ctx: OnMessageContext | OnCallBackQueryData) {
+  public async onEvent (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
     if (!this.isSupportedEvent(ctx)) {
       this.logger.warn(`### unsupported command ${ctx.message?.text}`)
-      return false
+      return
     }
 
     if (ctx.hasCommand(SupportedCommands.visit.name)) {
-      this.onVistitCmd(ctx)
+      await this.onVistitCmd(ctx)
       return
     }
 
     if (ctx.hasCommand(SupportedCommands.check.name)) {
-      this.onCheckCmd(ctx)
+      await this.onCheckCmd(ctx)
       return
     }
 
     if (ctx.hasCommand(SupportedCommands.register.name)) {
-      this.onRegister(ctx)
+      await this.onRegister(ctx)
       return
     }
 
-    if (this.hasPrefix(ctx.message?.text || '')) {
-      this.onRegister(ctx)
+    if (this.hasPrefix(ctx.message?.text ?? '')) {
+      await this.onRegister(ctx)
       return
     }
 
     if (ctx.hasCommand(SupportedCommands.nft.name)) {
-      this.onNftCmd(ctx)
+      await this.onNftCmd(ctx)
       return
     }
 
     if (ctx.hasCommand(SupportedCommands.cert.name)) {
-      this.onCertCmd(ctx)
+      await this.onCertCmd(ctx)
       return
     }
 
@@ -181,27 +181,27 @@ export class OneCountryBot {
     // }
 
     this.logger.warn('### unsupported command')
-    ctx.reply('### unsupported command', { message_thread_id: ctx.message?.message_thread_id })
+    await ctx.reply('### unsupported command', { message_thread_id: ctx.message?.message_thread_id })
   }
 
-  onVistitCmd = async (ctx: OnMessageContext | OnCallBackQueryData) => {
+  onVistitCmd = async (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> => {
     if (!ctx.match) {
-      ctx.reply('Error: Missing 1.country domain', { message_thread_id: ctx.message?.message_thread_id })
+      await ctx.reply('Error: Missing 1.country domain', { message_thread_id: ctx.message?.message_thread_id })
       return
     }
 
     const url = getUrl(ctx.match as string)
     const keyboard = new InlineKeyboard().webApp('Go', `https://${url}/`)
 
-    ctx.reply(`Visit ${url}`, {
+    await ctx.reply(`Visit ${url}`, {
       reply_markup: keyboard,
       message_thread_id: ctx.message?.message_thread_id
     })
   }
 
-  onRenewCmd = (ctx: OnMessageContext | OnCallBackQueryData) => {
+  onRenewCmd = async (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> => {
     if (!ctx.match) {
-      ctx.reply('Error: Missing 1.country domain', { message_thread_id: ctx.message?.message_thread_id })
+      await ctx.reply('Error: Missing 1.country domain', { message_thread_id: ctx.message?.message_thread_id })
       return
     }
     const url = getUrl(ctx.match as string)
@@ -213,16 +213,16 @@ export class OneCountryBot {
         `https://${url}/?renew`
       )
 
-    ctx.reply(`Renew ${url}`, {
+    await ctx.reply(`Renew ${url}`, {
       reply_markup: keyboard,
       message_thread_id: ctx.message?.message_thread_id
     })
   }
 
-  onNotionCmd = async (ctx: OnMessageContext | OnCallBackQueryData) => {
+  onNotionCmd = async (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> => {
     const prompt: any = ctx.match
     if (!prompt) {
-      ctx.reply('Error: Missing alias and url', { message_thread_id: ctx.message?.message_thread_id })
+      await ctx.reply('Error: Missing alias and url', { message_thread_id: ctx.message?.message_thread_id })
       return
     }
     const [domain = '', alias = '', url = ''] = prompt.split(' ')
@@ -235,75 +235,75 @@ export class OneCountryBot {
             'Process the Notion page Renew in 1.country',
             `https://${domainName}.country/?${alias}#=${url}`
           )
-          ctx.reply(`Renew ${url}`, {
+          await ctx.reply(`Renew ${url}`, {
             reply_markup: keyboard,
             message_thread_id: ctx.message?.message_thread_id
           })
         } else {
-          ctx.reply('The domain doesn\'t exist', { message_thread_id: ctx.message?.message_thread_id })
+          await ctx.reply('The domain doesn\'t exist', { message_thread_id: ctx.message?.message_thread_id })
         }
       } else {
-        ctx.reply('Invalid url', { message_thread_id: ctx.message?.message_thread_id })
+        await ctx.reply('Invalid url', { message_thread_id: ctx.message?.message_thread_id })
       }
     } else {
-      ctx.reply(appText.notion.promptMissing, {
+      await ctx.reply(appText.notion.promptMissing, {
         parse_mode: 'Markdown',
         message_thread_id: ctx.message?.message_thread_id
       })
     }
   }
 
-  onCertCmd = async (ctx: OnMessageContext | OnCallBackQueryData) => {
+  onCertCmd = async (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> => {
     if (await isAdmin(ctx, false, true)) {
       if (!ctx.match) {
-        ctx.reply('Error: Missing 1.country domain', { message_thread_id: ctx.message?.message_thread_id })
+        await ctx.reply('Error: Missing 1.country domain', { message_thread_id: ctx.message?.message_thread_id })
         return
       }
       const url = getUrl(ctx.match as string)
       try {
         const response = await relayApi().createCert({ domain: url })
         if (!response.error) {
-          ctx.reply(`The SSL certificate of ${url} was renewed`, { message_thread_id: ctx.message?.message_thread_id })
+          await ctx.reply(`The SSL certificate of ${url} was renewed`, { message_thread_id: ctx.message?.message_thread_id })
         } else {
-          ctx.reply(`${response.error}`, { message_thread_id: ctx.message?.message_thread_id })
+          await ctx.reply(`${response.error}`, { message_thread_id: ctx.message?.message_thread_id })
         }
       } catch (e) {
         this.logger.error(
           e instanceof AxiosError ? e.response?.data.error : appText.axiosError
         )
-        ctx.reply(
+        await ctx.reply(
           e instanceof AxiosError ? e.response?.data.error : appText.axiosError, { message_thread_id: ctx.message?.message_thread_id }
         )
       }
     } else {
-      ctx.reply('This command is reserved', { message_thread_id: ctx.message?.message_thread_id })
+      await ctx.reply('This command is reserved', { message_thread_id: ctx.message?.message_thread_id })
     }
   }
 
-  onNftCmd = async (ctx: OnMessageContext | OnCallBackQueryData) => {
+  onNftCmd = async (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> => {
     const url = getUrl(ctx.match as string)
     if (await isAdmin(ctx, false, true)) {
       try {
-        const response = await relayApi().genNFT({ domain: url })
-        ctx.reply('NFT metadata generated', { message_thread_id: ctx.message?.message_thread_id })
+        await relayApi().genNFT({ domain: url })
+        await ctx.reply('NFT metadata generated', { message_thread_id: ctx.message?.message_thread_id })
       } catch (e) {
         this.logger.error(
           e instanceof AxiosError
             ? e.response?.data.error
             : 'There was an error processing your request'
         )
-        ctx.reply(
+        await ctx.reply(
           e instanceof AxiosError
             ? e.response?.data.error
             : 'There was an error processing your request',
           { message_thread_id: ctx.message?.message_thread_id })
       }
     } else {
-      ctx.reply('This command is reserved', { message_thread_id: ctx.message?.message_thread_id })
+      await ctx.reply('This command is reserved', { message_thread_id: ctx.message?.message_thread_id })
     }
   }
 
-  onCheckCmd = async (ctx: OnMessageContext | OnCallBackQueryData) => {
+  onCheckCmd = async (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> => {
     if (await isAdmin(ctx, false, true)) {
       const domain = this.cleanInput(ctx.match as string)
       const avaliable = await isDomainAvailable(domain)
@@ -321,16 +321,16 @@ export class OneCountryBot {
         }
         msg += `Write */rent ${domain}* to purchase it`
       }
-      ctx.reply(msg, {
+      await ctx.reply(msg, {
         parse_mode: 'Markdown',
         message_thread_id: ctx.message?.message_thread_id
       })
     } else {
-      ctx.reply('This command is reserved', { message_thread_id: ctx.message?.message_thread_id })
+      await ctx.reply('This command is reserved', { message_thread_id: ctx.message?.message_thread_id })
     }
   }
 
-  async onRegister (ctx: OnMessageContext | OnCallBackQueryData) {
+  async onRegister (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
     const { prompt } = getCommandNamePrompt(ctx, SupportedCommands)
     const lastDomain = ctx.session.oneCountry.lastDomain
     let msgId = 0
@@ -354,7 +354,7 @@ export class OneCountryBot {
     )
     const validate = validateDomainName(domain)
     if (!validate.valid) {
-      ctx.reply(validate.error, {
+      await ctx.reply(validate.error, {
         parse_mode: 'Markdown',
         message_thread_id: ctx.message?.message_thread_id
       })
@@ -378,10 +378,12 @@ export class OneCountryBot {
       }
       msg += `${appText.registerConfirmation}, or ${appText.registerKeepWriting}`
     }
-    ctx.api.editMessageText(ctx.chat?.id!, msgId, msg, { parse_mode: 'Markdown' })
+    if (ctx.chat?.id) {
+      await ctx.api.editMessageText(ctx.chat.id, msgId, msg, { parse_mode: 'Markdown' })
+    }
   }
 
-  onEnableSubomain = async (ctx: OnMessageContext) => {
+  onEnableSubomain = async (ctx: OnMessageContext): Promise<void> => {
     const {
       text,
       from: { id: userId, username }
@@ -392,7 +394,7 @@ export class OneCountryBot {
       domain = getUrl(domain, false)
       const isAvailable = await isDomainAvailable(domain)
       if (!isAvailable.isAvailable) {
-        ctx.reply('Processing the request...', { message_thread_id: ctx.message?.message_thread_id })
+        await ctx.reply('Processing the request...', { message_thread_id: ctx.message?.message_thread_id })
         try {
           await relayApi().enableSubdomains(domain)
         } catch (e) {
@@ -401,15 +403,15 @@ export class OneCountryBot {
               ? e.response?.data
               : 'There was an error processing your request'
           )
-          ctx.reply('There was an error processing your request', { message_thread_id: ctx.message?.message_thread_id })
+          await ctx.reply('There was an error processing your request', { message_thread_id: ctx.message?.message_thread_id })
         }
       }
     } else {
-      ctx.reply('This command is reserved', { message_thread_id: ctx.message?.message_thread_id })
+      await ctx.reply('This command is reserved', { message_thread_id: ctx.message?.message_thread_id })
     }
   }
 
-  private readonly cleanInput = (input: string) => {
+  private readonly cleanInput = (input: string): string => {
     return input.replace(/[^a-z0-9-]/g, '').toLowerCase()
   }
 }

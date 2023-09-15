@@ -1,4 +1,6 @@
+/* eslint-disable */
 import { waitingExecute, IParams, getParamsFromPrompt } from './helpers'
+import { type IModel } from './models-config'
 
 // Mock the console.error method to prevent it from actually logging errors
 console.error = jest.fn()

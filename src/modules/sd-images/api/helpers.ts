@@ -1,9 +1,10 @@
+/* eslint-disable @typescript-eslint/naming-convention, no-useless-escape */
 import { type IModel } from './models-config'
 
-export const waitingExecute = async (fn: () => Promise<any>, ms: number) => await new Promise((resolve, reject) => {
+export const waitingExecute = async (fn: () => Promise<any>, ms: number): Promise<unknown> => await new Promise((resolve, reject) => {
   const timeoutId = setTimeout(() => {
     console.error('SD images Error: waitingExecute time is up')
-    reject('Error: waitingExecute time is up')
+    reject(new Error('Error: waitingExecute time is up'))
   }, ms)
 
   fn().then(resolve).catch(reject).finally(() => { clearTimeout(timeoutId) })
@@ -193,7 +194,7 @@ export const getParamsFromPrompt = (originalPrompt: string, model?: IModel): IPa
   }
 
   // Add 'leogirl' to trigger /leo model
-  if (model && model.name == 'leosams_helloworld' && !prompt.includes('leogirl')) {
+  if (model && model.name === 'leosams_helloworld' && !prompt.includes('leogirl')) {
     prompt = 'leogirl ' + prompt
   }
 

@@ -15,6 +15,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+/* eslint-disable */
+
 import type { EncodingType, ErrorCorrection, Image, Point, Mask } from './index'
 import { Bitmap, utils } from './index'
 const { best, bin, drawTemplate, fillArr, info, interleave, validateVersion, zigzag } = utils

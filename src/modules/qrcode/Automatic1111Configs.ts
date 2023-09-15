@@ -9,7 +9,7 @@ export interface Automatic1111Config {
   height?: number
 }
 
-export const getTxt2ImgConfig = (conf: Automatic1111Config) => {
+export const getTxt2ImgConfig = (conf: Automatic1111Config): unknown => {
   const {
     imgBase64,
     prompt,
@@ -60,7 +60,7 @@ export const getTxt2ImgConfig = (conf: Automatic1111Config) => {
   }
 }
 
-export const getImg2ImgConfig = (conf: Automatic1111Config) => {
+export const getImg2ImgConfig = (conf: Automatic1111Config): unknown => {
   const {
     imgBase64,
     prompt,

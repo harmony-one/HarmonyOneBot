@@ -1,6 +1,6 @@
 import { Menu } from '@grammyjs/menu'
 import { type BotContext } from '../types'
-import { MenuIds, commandsHelpText, menuText } from '../../constants'
+import { MenuIds, menuText } from '../../constants'
 import { getStartMenuText } from '../../pages'
 
 export const voiceMemoMenuText = {
