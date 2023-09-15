@@ -175,11 +175,11 @@ export class BotPayments {
     }
   }
 
-  public isUserInWhitelist (userId: number | string, username = ''): Promise<boolean> {
+  public isUserInWhitelist (userId: number | string, username = ''): boolean {
     const { whitelist } = config.payment
     return (
       whitelist.includes(userId.toString()) ||
-      (username && whitelist.includes(username.toString().toLowerCase()))
+      (username !== '' && whitelist.includes(username.toString().toLowerCase()))
     )
   }
 

@@ -656,7 +656,8 @@ async function bootstrap () {
   process.on('SIGTERM', stopApplication)
 
   if (config.betteruptime.botHeartBitId) {
-    const task = runBotHeartBit(runner, config.betteruptime.botHeartBitId)
+    const task = await runBotHeartBit(runner, config.betteruptime.botHeartBitId)
+    
     const stopHeartBit = () => {
       logger.info('heart bit stopping')
       task.stop()

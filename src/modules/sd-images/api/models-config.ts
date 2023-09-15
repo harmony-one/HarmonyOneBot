@@ -53,7 +53,7 @@ export const MODELS_CONFIGS: IModel[] = [
     shortName: 'majicmix-realistic',
     link: 'https://civitai.com/models/43331/majicmix-realistic',
     baseModel: 'SD 1.5',
-    aliases: ['majic', '4333', 'h7e2', '6'],
+    aliases: ['majic', '4333', 'h7e2', '6', '?'],
     defaultPrompt: '1girl,sitting on a cozy couch,crossing legs,soft light'
   },
   {
@@ -141,7 +141,7 @@ export const MODELS_CONFIGS: IModel[] = [
     shortName: 'helloworld',
     link: 'https://civitai.com/models/43977/moonmix',
     baseModel: 'SDXL 1.0',
-    aliases: ['leo', 'real', '2'],
+    aliases: ['leo', 'real', '2', '!'],
     defaultPrompt: 'leogirl, realistic photography, The Joker, shrouded in carnival-esque, multicolored spotlights, stands in the middle of a chaotic circus tent. His manic grin becomes even more unsettling under the harsh, unnatural lighting, close up, perfecteyes --no (worst quality, low quality), deformed, distorted, disfigured, doll, poorly drawn, bad anatomy, wrong anatomy --cfg 7 --steps 40 --seed 3912625479 --d 832x1344'
   },
   {

@@ -133,7 +133,7 @@ export const streamChatCompletion = async (
             conversation as OpenAI.Chat.Completions.CreateChatCompletionRequestMessage[],
           stream: true,
           max_tokens: limitTokens ? config.openAi.chatGpt.maxTokens : undefined,
-          temperature: config.openAi.dalle.completions.temperature
+          temperature: config.openAi.dalle.completions.temperature || 0.8
         })
         let wordCount = 0
 
