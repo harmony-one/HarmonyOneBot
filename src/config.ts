@@ -27,10 +27,8 @@ export default {
     wordLimit: 50,
     model: 'chat-bison',
     minimumBalance: 0,
-    isEnabled: Boolean(parseInt(process.env.LLMS_ENABLED || "1")),
-    prefixes: {
-      bardPrefix: [","],
-    },
+    isEnabled: Boolean(parseInt(process.env.LLMS_ENABLED ?? '1')),
+    prefixes: { ardPrefix: [','] }
   },
   openAi: {
     dalle: {
@@ -69,8 +67,8 @@ export default {
       model: process.env.OPENAI_MODEL ?? 'gpt-4-32k',
       prefixes: {
         chatPrefix: process.env.ASK_PREFIX
-          ? process.env.ASK_PREFIX.split(",")
-          : ["a.", "."], // , "?", ">",
+          ? process.env.ASK_PREFIX.split(',')
+          : ['a.', '.'], // , "?", ">",
         dallePrefix: process.env.DALLE_PREFIX
           ? process.env.DALLE_PREFIX.split(',')
           : ['d.'],

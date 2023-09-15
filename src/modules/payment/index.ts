@@ -1,3 +1,7 @@
+/* eslint-disable @typescript-eslint/naming-convention */
+/* eslint-disable @typescript-eslint/prefer-nullish-coalescing */
+/* eslint-disable @typescript-eslint/explicit-function-return-type */
+/* eslint-disable @typescript-eslint/no-floating-promises */
 import pino, { type Logger } from 'pino'
 import Web3 from 'web3'
 import { type Account } from 'web3-core'
@@ -306,7 +310,7 @@ export class BotPayments {
   }
 
   public async pay (ctx: OnMessageContext, amountUSD: number) {
-    const { from, message_id, chat, text } = ctx.update.message
+    const { from, message_id, chat } = ctx.update.message
 
     const accountId = this.getAccountId(ctx)
     const userAccount = this.getUserAccount(accountId)
