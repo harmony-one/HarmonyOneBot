@@ -15,15 +15,15 @@ import config from "../../config";
 import { sleep } from "../sd-images/utils";
 import {
   getPromptPrice,
+  hasBardPrefix,
   hasPrefix,
   isMentioned,
   limitPrompt,
   MAX_TRIES,
   prepareConversation,
-  preparePrompt,
-  sendMessage,
   SupportedCommands,
 } from "./helpers";
+import { preparePrompt, sendMessage } from "../open-ai/helpers";
 import { vertexCompletion } from "./api/vertex";
 import { LlmCompletion, llmCompletion } from "./api/liteLlm";
 import { LlmsModelsEnum } from "./types";
@@ -72,13 +72,13 @@ export class LlmsBot {
       return false;
     }
 
-    if (ctx.hasCommand(SupportedCommands.palm.name)) {
+    if (ctx.hasCommand(SupportedCommands.bard.name)) {
       this.onChat(ctx, LlmsModelsEnum.BISON);
       return;
     }
 
-    if (ctx.hasCommand(SupportedCommands.bard.name)) {
-      this.onChat(ctx, LlmsModelsEnum.BISON);
+    if (hasBardPrefix(ctx.message?.text || "") !== "") {
+      this.onPrefix(ctx, LlmsModelsEnum.BISON);
       return;
     }
 
