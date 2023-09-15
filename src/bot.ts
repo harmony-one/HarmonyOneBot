@@ -577,7 +577,7 @@ bot.command('stop', (ctx) => {
 
 bot.on('message', onMessage)
 bot.on('callback_query:data', onCallback)
-bot.on('pre_checkout_query', async (ctx) => await telegramPayments.onPreCheckout(ctx))
+bot.on('pre_checkout_query', async (ctx) => { await telegramPayments.onPreCheckout(ctx) })
 
 bot.catch((err) => {
   const ctx = err.ctx
@@ -656,7 +656,7 @@ async function bootstrap () {
   process.on('SIGTERM', stopApplication)
 
   if (config.betteruptime.botHeartBitId) {
-    const task = runBotHeartBit(runner, config.betteruptime.botHeartBitId)
+    const task = await runBotHeartBit(runner, config.betteruptime.botHeartBitId)
     const stopHeartBit = () => {
       logger.info('heart bit stopping')
       task.stop()
