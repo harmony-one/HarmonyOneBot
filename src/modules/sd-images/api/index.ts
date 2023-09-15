@@ -3,6 +3,7 @@ import { MODELS_CONFIGS, getModelByParam, type IModel, modelsAliases } from './m
 import { getLoraByParam, type ILora } from './loras-config'
 import { getParamsFromPrompt, NEGATIVE_PROMPT } from './helpers'
 import { type OnMessageContext, type OnCallBackQueryData } from '../../types'
+import config from '../../../config'
 
 export * from './models-config'
 
@@ -37,7 +38,7 @@ export class SDNodeApi {
 
       // For trained Loras
       if (!selectedLora) {
-        selectedLora = {
+                selectedLora = {
           path: `${params.loraName}.safetensors`,
           name: params.loraName
         } as ILora
@@ -48,6 +49,15 @@ export class SDNodeApi {
 
     if (selectedLora?.shortName === 'logo') {
       params.promptWithoutParams = `logo, ${params.promptWithoutParams}, LogoRedAF`
+    }
+
+    let serverConfig;
+
+    if (options.model.serverNumber === 2) {
+      serverConfig = {
+        host: config.comfyHost2,
+        wsHost: config.comfyWsHost2,
+      }
     }
 
     const { images } = await this.client.txt2img({
@@ -63,7 +73,7 @@ export class SDNodeApi {
       seed: options.seed || params.seed,
       model: options.model.path,
       batchSize: 1
-    })
+    }, serverConfig)
 
     return images[0]
   }
@@ -85,7 +95,7 @@ export class SDNodeApi {
 
       // For trained Loras
       if (!selectedLora) {
-        selectedLora = {
+                selectedLora = {
           path: `${params.loraName}.safetensors`,
           name: params.loraName
         } as ILora
