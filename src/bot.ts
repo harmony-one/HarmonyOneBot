@@ -49,7 +49,10 @@ import { runBotHeartBit } from './monitoring/monitoring'
 import { type BotPaymentLog } from './database/stats.service'
 import { getChatMemberInfo } from './modules/open-ai/utils/web-crawler'
 import { TelegramPayments } from './modules/telegram_payment'
-require('events').EventEmitter.defaultMaxListeners = 30
+import * as Sentry from '@sentry/node'
+import * as Events from 'events'
+
+Events.EventEmitter.defaultMaxListeners = 30
 
 const logger = pino({
   name: 'bot',
