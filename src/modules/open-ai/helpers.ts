@@ -2,6 +2,7 @@ import config from '../../config'
 import { type OnMessageContext, type OnCallBackQueryData, type MessageExtras, type ChatPayload } from '../types'
 import { type ParseMode } from 'grammy/types'
 import { getChatModel, getChatModelPrice, getTokenNumber } from './api/openAi'
+import { type Message } from 'grammy/out/types'
 
 export const SupportedCommands = {
   chat: { name: 'chat' },
@@ -10,10 +11,7 @@ export const SupportedCommands = {
   ask35: { name: 'ask35' },
   new: { name: 'new' },
   gpt4: { name: 'gpt4' },
-
-  ask32: {
-    name: "ask32",
-  },
+  ask32: { name: 'ask32' },
   gpt: { name: 'gpt' },
   last: { name: 'last' },
   dalle: { name: 'DALLE' },
@@ -30,7 +28,7 @@ export const isMentioned = (
     const { offset, text } = ctx.entities()[0]
     const { username } = ctx.me
     if (username === text.slice(1) && offset === 0) {
-      const prompt = ctx.message?.text!.slice(text.length)
+      const prompt = ctx.message?.text?.slice(text.length)
       if (prompt && prompt.split(' ').length > 0) {
         return true
       }
@@ -72,7 +70,7 @@ export const hasNewPrefix = (prompt: string): string => {
 export const hasUrl = (
   ctx: OnMessageContext | OnCallBackQueryData,
   prompt: string
-) => {
+): { newPrompt: string, url: string } => {
   const urls = ctx.entities('url')
   let url = ''
   let newPrompt = ''
@@ -91,7 +89,7 @@ export const hasUrl = (
   }
 }
 
-export const hasUsernamePassword = (prompt: string) => {
+export const hasUsernamePassword = (prompt: string): { password: string, user: string } => {
   let user = ''
   let password = ''
   const parts = prompt.split(' ')
@@ -118,7 +116,7 @@ export const hasUsernamePassword = (prompt: string) => {
 }
 
 // doesn't get all the special characters like !
-export const hasUserPasswordRegex = (prompt: string) => {
+export const hasUserPasswordRegex = (prompt: string): { password: string, user: string } => {
   const pattern =
     /\b(user=|password=|user|password)\s*([^\s]+)\b.*\b(user=|password=|user|password)\s*([^\s]+)\b/i
   const matches = pattern.exec(prompt)
@@ -127,7 +125,7 @@ export const hasUserPasswordRegex = (prompt: string) => {
   let password = ''
 
   if (matches) {
-    const [_, keyword, word, __, word2] = matches
+    const [, keyword, word, , word2] = matches
     if (keyword.toLowerCase() === 'user' || keyword.toLowerCase() === 'user=') {
       user = word
       password = word2
@@ -145,8 +143,8 @@ export const hasUserPasswordRegex = (prompt: string) => {
 export const preparePrompt = async (
   ctx: OnMessageContext | OnCallBackQueryData,
   prompt: string
-) => {
-  const msg = await ctx.message?.reply_to_message?.text
+): Promise<string> => {
+  const msg = ctx.message?.reply_to_message?.text
   if (msg) {
     return `${prompt} ${msg}`
   }
@@ -155,7 +153,7 @@ export const preparePrompt = async (
 
 export const messageTopic = async (
   ctx: OnMessageContext | OnCallBackQueryData
-) => {
+): Promise<undefined | number> => {
   return ctx.message?.message_thread_id
 }
 
@@ -166,8 +164,8 @@ interface GetMessagesExtras {
   disable_web_page_preview?: boolean
 }
 
-export const getMessageExtras = (params: GetMessagesExtras) => {
-  const { parseMode, caption, replyId, disable_web_page_preview } = params
+export const getMessageExtras = (params: GetMessagesExtras): MessageExtras => {
+  const { parseMode, caption, replyId, disable_web_page_preview: disableWebPagePreview } = params
   const extras: MessageExtras = {}
   if (parseMode) {
     extras.parse_mode = parseMode
@@ -178,8 +176,8 @@ export const getMessageExtras = (params: GetMessagesExtras) => {
   if (caption) {
     extras.caption = caption
   }
-  if (disable_web_page_preview) {
-    extras.disable_web_page_preview = disable_web_page_preview
+  if (disableWebPagePreview) {
+    extras.disable_web_page_preview = disableWebPagePreview
   }
   return extras
 }
@@ -188,7 +186,7 @@ export const sendMessage = async (
   ctx: OnMessageContext | OnCallBackQueryData,
   msg: string,
   msgExtras?: GetMessagesExtras
-) => {
+): Promise<Message.TextMessage> => {
   let extras: MessageExtras = {}
   if (msgExtras) {
     extras = getMessageExtras(msgExtras)
@@ -208,7 +206,7 @@ export const hasPrefix = (prompt: string): string => {
   )
 }
 
-export const getPromptPrice = (completion: string, data: ChatPayload) => {
+export const getPromptPrice = (completion: string, data: ChatPayload): { price: number, promptTokens: number, completionTokens: number } => {
   const { conversation, ctx, model } = data
 
   const prompt = conversation[conversation.length - 1].content
@@ -228,7 +226,7 @@ export const getPromptPrice = (completion: string, data: ChatPayload) => {
   }
 }
 
-export const limitPrompt = (prompt: string) => {
+export const limitPrompt = (prompt: string): string => {
   const wordCountPattern = /(\d+)\s*word(s)?/g
   const match = wordCountPattern.exec(prompt)
 

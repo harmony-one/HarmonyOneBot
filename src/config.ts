@@ -50,11 +50,8 @@ export default {
       chatCompletionContext: `You are an AI Bot powered by Harmony. Your strengths are ai api aggregation for chat, 
         image, and voice interactions using OpenAI’s chatgpt, Stable Diffusion, and more. 
         Respond flexibly, but try to stay within 100 words in your response.`,
-      webCrawlerContext: `You will receive a web crawling text. Please get keys concepts, but try to stay within 4000 words in your response.`,
-      maxTokens:
-        (process.env.OPENAI_MAX_TOKENS &&
-          parseInt(process.env.OPENAI_MAX_TOKENS)) ??
-        800, // telegram messages has a char limit
+      webCrawlerContext: 'You will receive a web crawling text. Please get keys concepts, but try to stay within 4000 words in your response.',
+      maxTokens: parseInt(process.env.OPENAI_MAX_TOKENS ?? '800'), // telegram messages has a char limit
       wordLimit: 30,
       wordCountBetween: process.env.WORD_COUNT_BETWEEN
         ? parseInt(process.env.WORD_COUNT_BETWEEN)
@@ -66,7 +63,7 @@ export default {
       isTypingEnabled: Boolean(
         parseInt(process.env.TYPING_STATUS_ENABLED ?? '1')
       ),
-      model: process.env.OPENAI_MODEL ?? "gpt-4-32k",
+      model: process.env.OPENAI_MODEL ?? 'gpt-4-32k',
       prefixes: {
         chatPrefix: process.env.ASK_PREFIX
           ? process.env.ASK_PREFIX.split(',')
@@ -142,12 +139,6 @@ export default {
       .split(',')
       .map((item) => item.toString().toLowerCase()),
     creditsAmount: '100'
-  },
-  betteruptime: {
-    botHeartBitId: process.env.BOT_HEARTBIT_ID || "",
-  },
-  telegramPayments: {
-    token: process.env.TELEGRAM_PAYMENTS_TOKEN || "",
   },
   betteruptime: { botHeartBitId: process.env.BOT_HEARTBIT_ID ?? '' },
   telegramPayments: { token: process.env.TELEGRAM_PAYMENTS_TOKEN ?? '' }
