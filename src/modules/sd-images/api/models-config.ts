@@ -13,216 +13,220 @@ export interface IModel {
 
 export let MODELS_CONFIGS: IModel[] = [
   {
-    path: 'sdXL_v10VAEFix.safetensors',
-    name: 'SD XL',
-    id: '101055',
-    hash: 'E6BB9EA85B',
-    shortName: 'sd-xl',
-    link: 'https://civitai.com/models/101055/sd-xl',
-    baseModel: 'SDXL 1.0',
-    aliases: ['xl', '1010', 'he6b', '1'],
-    defaultPrompt: 'A bunny is sitting in a kimono, in the style of renaissance - inspired chiaroscuro, hyper - realistic portraiture, nicolas mignard, old master influenced fantasy, portraitures with hidden meanings, dom qwek, art of burma'
+    "path": "sdXL_v10VAEFix.safetensors",
+    "name": "SD XL",
+    "id": "101055",
+    "hash": "E6BB9EA85B",
+    "shortName": "sd-xl",
+    "link": "https://civitai.com/models/101055/sd-xl",
+    "baseModel": "SDXL 1.0",
+    "aliases": [
+      "1",
+      "xl",
+      "1010",
+      "he6b"
+    ],
+    "defaultPrompt": "A bunny is sitting in a kimono, in the style of renaissance - inspired chiaroscuro, hyper - realistic portraiture, nicolas mignard, old master influenced fantasy, portraitures with hidden meanings, dom qwek, art of burma"
   },
   {
-    path: 'deliberate_v2.safetensors',
-    name: 'Deliberate',
-    id: '4823',
-    hash: '9ABA26ABDF',
-    shortName: 'deliberate',
-    link: 'https://civitai.com/models/4823/deliberate',
-    baseModel: 'SD 1.5',
-    aliases: ['d', 'del', '4823', 'h9ab', '5'],
-    defaultPrompt: 'a cute kitten made out of metal, (cyborg:1.1), ([tail | detailed wire]:1.3), (intricate details), hdr, (intricate details, hyperdetailed:1.2), cinematic shot, vignette, centered'
-  },
-  {
-    path: 'dreamshaper_8.safetensors',
-    name: 'DreamShaper',
-    id: '4384',
-    hash: '879DB523C3',
-    shortName: 'dreamshaper',
-    link: 'https://civitai.com/models/4384/dreamshaper',
-    baseModel: 'SD 1.5',
-    aliases: ['dream', '4384', 'h879', '3'],
-    defaultPrompt: '8k portrait of beautiful cyborg with brown hair, intricate, elegant, highly detailed, majestic, digital photography, art by artgerm and ruan jia and greg rutkowski surreal painting gold butterfly filigree, broken glass, (masterpiece, sidelighting, finely detailed beautiful eyes: 1.2), hdr, <lora:more_details:0.36>'
-  },
-  {
-    path: 'majicmixRealistic_betterV2V25.safetensors',
-    name: 'majicMIX realistic 麦橘写实',
-    id: '43331',
-    hash: 'D7E2AC2F4A',
-    shortName: 'majicmix-realistic',
-    link: 'https://civitai.com/models/43331/majicmix-realistic',
-    baseModel: 'SD 1.5',
-    aliases: ['majic', '4333', 'h7e2', '6'],
-    defaultPrompt: '1girl,sitting on a cozy couch,crossing legs,soft light'
-  },
-  {
-    path: 'revAnimated_v122.safetensors',
-    name: 'ReV Animated',
-    id: '7371',
-    hash: '4199BCDD14',
-    shortName: 'rev-animated',
-    link: 'https://civitai.com/models/7371/rev-animated',
-    baseModel: 'SD 1.5',
-    aliases: ['magic', 'rev', '7371', 'h419'],
-    defaultPrompt: 'best quality, ultra high res, photorealistic, sfw, armored wizard, magical tattoos, apprentice, 1girl, looking at viewer, upper body, slender, small breasts, purple hair with white stripes, white croptop, (dark and moody universe:1.3), (elden ring style:1.3), (warhammer style:1.1), floating rocks, glowing pebbles, fiery dust, concept artist, global illumination, depth of field, gloomy, unsettling, splash art, art by artgerm and greg rutkowski and viktoria gavrilenko, scary smile, purple light, rule of the thirds --cfg 8.5 --steps 30 --seed 1463146050 --d 1280x853 --no girls, (worst quality:1.2), (low quality:1.2), (lowres:1.1), (monochrome:1.1), (greyscale), multiple views, comic, sketch, (((bad anatomy))), (((deformed))), (((disfigured))), watermark, multiple_views, mutation hands, mutation fingers, extra fingers, missing fingers, watermark'
-  },
-  {
-    path: 'v1-5-pruned-emaonly.safetensors',
-    name: 'v1-5-pruned-emaonly',
-    id: '',
-    hash: '',
-    shortName: 'pruned-emaonly',
-    link: '',
-    baseModel: 'SD 1.5',
-    aliases: ['p', 'prune'],
-    defaultPrompt: 'masterpiece, best quality, ultra-detailed, illustration, beautiful detailed eyes, looking at viewer, close up, pink hair, shy, cat ears'
-  },
-  {
-    path: 'animePastelDream_softBakedVae.safetensors',
-    name: 'Anime Pastel Dream',
-    id: '23521',
-    hash: '4BE38C1A17',
-    shortName: 'anime-pastel-dream',
-    link: 'https://civitai.com/models/23521/anime-pastel-dream',
-    baseModel: 'SD 1.5',
-    aliases: ['n', 'an', 'anime', '2352', 'h4be'],
-    defaultPrompt: 'masterpiece, best quality, ultra-detailed, illustration, beautiful detailed eyes, looking at viewer, close up, pink hair, shy, cat ears'
-  },
-  {
-    path: 'cyberrealistic_v33.safetensors',
-    name: 'CyberRealistic',
-    id: '15003',
-    hash: '7A4DBBA12F',
-    shortName: 'cyberrealistic',
-    link: 'https://civitai.com/models/15003/cyberrealistic',
-    baseModel: 'SD 1.5',
-    aliases: ['cyber', '1500', 'h7a4'],
-    defaultPrompt: '<lora:LowRA:0.6> (8k, RAW photo, highest quality), beautiful girl, close up, dress, (detailed eyes:0.8), defiance512, (looking at the camera:1.4), (highest quality), (best shadow), intricate details, interior, ginger hair:1.3, dark studio, muted colors, freckles   <lora:epiNoiseoffset_v2Pynoise:1.2>'
-  },
-  {
-    path: 'dreamshaperXL10_alpha2Xl10.safetensors',
-    name: 'DreamShaper XL1.0',
-    id: '112902',
-    hash: '0F1B80CFE8',
-    shortName: 'dreamshaper-xl10',
-    link: 'https://civitai.com/models/112902/dreamshaper-xl10',
-    baseModel: 'SDXL 1.0',
-    aliases: ['xl_dream', '1129', 'h0f1'],
-    defaultPrompt: 'barry allen the flash on wheelchair moving at supersonic speed creating flame trails, speed trails, motion blur, electricity speed outdoor, realistic highly detailed cinematic cinematography, movie shots footage,'
-  },
-  {
-    path: 'sdxlUnstableDiffusers_v5UnchainedSlayer.safetensors',
-    name: 'SDXL Unstable Diffusers ☛ YamerMIX',
-    id: '84040',
-    hash: 'EF924AAE79',
-    shortName: 'sdxl-unstable-diffusers-yamermix',
-    link: 'https://civitai.com/models/84040/sdxl-unstable-diffusers-yamermix',
-    baseModel: 'SDXL 1.0',
-    aliases: ['xl_dif', '8404', 'hef9', '7'],
-    defaultPrompt: 'pastel color, from above, upper body, depth of field, masterpiece, best quality, best quality, girl sitting on a swing, school uniform, black hair, blue eyes, autumn, park'
-  },
-  {
-    path: 'lyriel.safetensors',
-    name: 'lyriel',
-    id: '22922',
-    hash: 'EC6F68EA63',
-    shortName: 'lyriel',
-    link: 'https://civitai.com/models/22922/lyriel',
-    baseModel: 'SD 1.5',
-    aliases: ['lyr'],
-    defaultPrompt: '(dark shot:1.1), epic realistic, RAW, analog, A full portrait of stunning woman wearing swimsuit, alluring expression, swimming pool, clear water, wet hair, natural look, no make up, pureerosface_v1, masterpiece that captures the essence and beauty of the woman and water, ((highly detailed skin, skin details, water details)), sharp focus, volumetric fog, 8k UHD, DSLR, high quality, film grain, Fujifilm XT3, art by greg rutkowski and artgerm, soft cinematic light, adobe lightroom, photolab, hdr, intricate, highly detailed, (depth of field:1.4), faded, (neutral colors:1.2), (hdr:1.4), (muted colors:1.2), hyperdetailed, (artstation:1.4), cinematic, warm lights, dramatic light, (intricate details:1.1), complex background, (rutkowski:0.66), (teal and orange:0.4), (natural skin texture, hyperrealism, soft light, sharp)'
-  },
-  {
-    path: 'leosams_helloworld.safetensors',
-    name: 'leosams_helloworld',
-    id: '43977',
-    hash: 'BCFD4AA1C0',
-    shortName: 'helloworld',
-    link: 'https://civitai.com/models/43977/moonmix',
-    baseModel: 'SDXL 1.0',
-    aliases: ['leo', 'real', '2'],
-    defaultPrompt: 'leogirl, realistic photography, The Joker, shrouded in carnival-esque, multicolored spotlights, stands in the middle of a chaotic circus tent. His manic grin becomes even more unsettling under the harsh, unnatural lighting, close up, perfecteyes --no (worst quality, low quality), deformed, distorted, disfigured, doll, poorly drawn, bad anatomy, wrong anatomy --cfg 7 --steps 40 --seed 3912625479 --d 832x1344'
-  },
-  {
-    path: 'perfect_world.safetensors',
-    name: 'perfect_world',
-    id: '8281',
-    hash: 'B4C1D10A2D',
-    shortName: 'perfect_world',
-    link: 'https://civitai.com/models/8281/perfect-world',
-    baseModel: 'SDXL 1.0', // baseModel is listed as 'other'
-    aliases: ['nsfw', 'perf', '4'],
-    defaultPrompt: '(masterpiece:1.2), (best quality:1.2), 1woman, 1boy, short hair, blonde hair, breast focus, slim and petite body, nude, black stockings, black high heels, silver necklace, orgasm, mouth open, aroused, <lora:murkysSuspendedOn_1:0.9>, suspendedonpenisms, sex, arm grab, sex from behind, dangling legs, size difference, in the luxurious living room, --no (worst quality:1.2), (bad quality:1.2), (poor quality:1.2), bad artist, extra limbs, bad anatomy, missing legs --seed 780544502378871 --steps 20 --sampler euler --cfg 8 --d 512x512'
-  },
-  {
-    path: 'reliberate.safetensors',
-    name: 'reliberate',
-    id: '79754',
-    hash: '6B08E2C182',
-    shortName: 'reliberate',
-    link: 'https://civitai.com/models/79754/reliberate',
-    baseModel: 'SD 1.5',
-    aliases: ['rel'],
-    defaultPrompt: '(hdr:1.4), professional photograph of an arab man worker, 80mm, desert, barren landscape, medium closeup, moles skin, soft light, sharp, exposure, muted colors, dim colors, soothing tones'
-  },
-  {
-    path: 'a-zovya_rpg_artist_tools.safetensors',
-    name: 'rpg_artist_tools',
-    id: '8124',
-    hash: '25BA966C5D',
-    shortName: 'rpg_artist_tools',
-    link: 'https://civitai.com/models/8124',
-    baseModel: 'SD 1.5',
-    aliases: ['rpg'],
-    defaultPrompt: 'dungeons and dragons epic movie poster barbarian woman with cape charging into battle violent roar riding a vicious ice [wolf|tiger] beast leather and fur boots warriors and red banners (windy dust debris storm:1.1) volumetric lighting fog depth mist pass z pass great stone castle very bright morning sunlight from side, (masterpiece) (best quality) (detailed) (8k) (cinematic lighting) (sharp focus) (intricate)'
-  },
-  {
-    path: 'chilloutmix.safetensors',
-    name: 'chilloutmix',
-    id: '6424',
-    hash: 'FC2511737A',
-    shortName: 'chillout',
-    link: 'https://civitai.com/models/6424/chilloutmix',
-    baseModel: 'SD 1.5',
-    aliases: ['chill'],
-    defaultPrompt: '(RAW photo, best quality), (realistic, photo-realistic:1.3), masterpiece, an extremely delicate and beautiful, extremely detailed, CG, unity , 2k wallpaper, Amazing, finely detail, light smile, extremely detailed CG unity 8k wallpaper, huge filesize, ultra-detailed, highres, absurdres, soft light, (((medium hair:1.3), short bang, pink hair, floating hair novafrogstyle)), beautiful detailed girl, detailed fingers, extremely detailed eyes and face, beautiful detailed nose, beautiful detailed eyes, long eyelashes, light on face, looking at viewer, (closed mouth:1.2), 1girl, cute, young, mature face, (full body:1.3), ((small breasts)), realistic face, realistic body, beautiful detailed thigh, (ulzzang-6500-v1.1:0.8), <lora:koreanDollLikeness_v15:0.4>, business suit, cross-laced clothes, collared shirt, open clothes, in office, detailed office, open cardigan, black thighhighs, miniskirt, black underwear, unbuttoned shirt,'
-  },
-  {
-    path: 'ayonimix_V4.safetensors',
-    name: 'AyoniMix',
-    id: '4550',
-    hash: 'F3A242FCAA',
-    shortName: 'ayonimix',
-    link: 'https://civitai.com/models/4550/ayonimix',
-    baseModel: 'SD 1.5',
-    aliases: ['mix'],
-    defaultPrompt: '<lora:LowRA:0.6> (8k, RAW photo, highest quality), beautiful girl, close up, dress, (detailed eyes:0.8), defiance512, (looking at the camera:1.4), (highest quality), (best shadow), intricate details, interior, ginger hair:1.3, dark studio, muted colors, freckles   <lora:epiNoiseoffset_v2Pynoise:1.2>'
-  },
-  {
-    path: 'ayonimixAnime_ayonimixAnimeV4.safetensors',
-    name: 'AyoniMix Anime',
-    id: '4949',
-    hash: 'E2F5FBE48D',
-    shortName: 'mix-anime',
-    link: 'https://civitai.com/models/4949/ayonimix-anime',
-    baseModel: 'SD 1.5',
-    aliases: ['mix-anime', 'ma'],
-    defaultPrompt: '<lora:LowRA:0.6> (8k, RAW photo, highest quality), beautiful girl, close up, dress, (detailed eyes:0.8), defiance512, (looking at the camera:1.4), (highest quality), (best shadow), intricate details, interior, ginger hair:1.3, dark studio, muted colors, freckles   <lora:epiNoiseoffset_v2Pynoise:1.2>'
+    "path": "150851.safetensors",
+    "name": "leosams_helloworld",
+    "id": "43977",
+    "hash": "BCFD4AA1C0",
+    "shortName": "helloworld",
+    "link": "https://civitai.com/models/43977/moonmix",
+    "baseModel": "SDXL 1.0",
+    "aliases": [
+      "2",
+      "leo",
+      "real"
+    ],
+    "defaultPrompt": "leogirl, realistic photography, The Joker, shrouded in carnival-esque, multicolored spotlights, stands in the middle of a chaotic circus tent. His manic grin becomes even more unsettling under the harsh, unnatural lighting, close up, perfecteyes --no (worst quality, low quality), deformed, distorted, disfigured, doll, poorly drawn, bad anatomy, wrong anatomy --cfg 7 --steps 40 --seed 3912625479 --d 832x1344"
   },
   {
     "path": "128713.safetensors",
     "name": "DreamShaper",
     "id": "4384",
-    "shortName": "DreamShaper",
-    "link": "https://civitai.com/models/4384",
+    "hash": "879DB523C3",
+    "shortName": "dreamshaper",
+    "link": "https://civitai.com/models/4384/dreamshaper",
     "baseModel": "SD 1.5",
     "aliases": [
-      "1",
+      "3",
+      "dream",
       "4384",
-      "128713"
+      "h879"
     ],
-    "defaultPrompt": "a young woman, street, laughing, ponytails, dramatic, complex background, cinematic"
+    "defaultPrompt": "8k portrait of beautiful cyborg with brown hair, intricate, elegant, highly detailed, majestic, digital photography, art by artgerm and ruan jia and greg rutkowski surreal painting gold butterfly filigree, broken glass, (masterpiece, sidelighting, finely detailed beautiful eyes: 1.2), hdr, <lora:more_details:0.36>"
+  },
+  {
+    "path": "129687.safetensors",
+    "name": "perfect_world",
+    "id": "8281",
+    "hash": "B4C1D10A2D",
+    "shortName": "perfect_world",
+    "link": "https://civitai.com/models/8281/perfect-world",
+    "baseModel": "SDXL 1.0",
+    "aliases": [
+      "4",
+      "nsfw",
+      "perf"
+    ],
+    "defaultPrompt": "(masterpiece:1.2), (best quality:1.2), 1woman, 1boy, short hair, blonde hair, breast focus, slim and petite body, nude, black stockings, black high heels, silver necklace, orgasm, mouth open, aroused, <lora:murkysSuspendedOn_1:0.9>, suspendedonpenisms, sex, arm grab, sex from behind, dangling legs, size difference, in the luxurious living room, --no (worst quality:1.2), (bad quality:1.2), (poor quality:1.2), bad artist, extra limbs, bad anatomy, missing legs --seed 780544502378871 --steps 20 --sampler euler --cfg 8 --d 512x512"
+  },
+  {
+    "path": "156110.safetensors",
+    "name": "Deliberate",
+    "id": "4823",
+    "hash": "9ABA26ABDF",
+    "shortName": "deliberate",
+    "link": "https://civitai.com/models/4823/deliberate",
+    "baseModel": "SD 1.5",
+    "aliases": [
+      "5",
+      "d",
+      "del",
+      "4823",
+      "h9ab"
+    ],
+    "defaultPrompt": "a cute kitten made out of metal, (cyborg:1.1), ([tail | detailed wire]:1.3), (intricate details), hdr, (intricate details, hyperdetailed:1.2), cinematic shot, vignette, centered"
+  },
+  {
+    "path": "126470.safetensors",
+    "name": "majicMIX realistic 麦橘写实",
+    "id": "43331",
+    "hash": "D7E2AC2F4A",
+    "shortName": "majicmix-realistic",
+    "link": "https://civitai.com/models/43331/majicmix-realistic",
+    "baseModel": "SD 1.5",
+    "aliases": [
+      "6",
+      "majic",
+      "4333",
+      "h7e2"
+    ],
+    "defaultPrompt": "1girl,sitting on a cozy couch,crossing legs,soft light"
+  },
+  {
+    "path": "148515.safetensors",
+    "name": "SDXL Unstable Diffusers ☛ YamerMIX",
+    "id": "84040",
+    "hash": "EF924AAE79",
+    "shortName": "sdxl-unstable-diffusers-yamermix",
+    "link": "https://civitai.com/models/84040/sdxl-unstable-diffusers-yamermix",
+    "baseModel": "SDXL 1.0",
+    "aliases": [
+      "7",
+      "xl_dif",
+      "8404",
+      "hef9"
+    ],
+    "defaultPrompt": "pastel color, from above, upper body, depth of field, masterpiece, best quality, best quality, girl sitting on a swing, school uniform, black hair, blue eyes, autumn, park"
+  },
+  {
+    "path": "46846.safetensors",
+    "name": "ReV Animated",
+    "id": "7371",
+    "hash": "4199BCDD14",
+    "shortName": "rev-animated",
+    "link": "https://civitai.com/models/7371/rev-animated",
+    "baseModel": "SD 1.5",
+    "aliases": [
+      "8",
+      "magic",
+      "rev",
+      "7371",
+      "h419"
+    ],
+    "defaultPrompt": "best quality, ultra high res, photorealistic, sfw, armored wizard, magical tattoos, apprentice, 1girl, looking at viewer, upper body, slender, small breasts, purple hair with white stripes, white croptop, (dark and moody universe:1.3), (elden ring style:1.3), (warhammer style:1.1), floating rocks, glowing pebbles, fiery dust, concept artist, global illumination, depth of field, gloomy, unsettling, splash art, art by artgerm and greg rutkowski and viktoria gavrilenko, scary smile, purple light, rule of the thirds --cfg 8.5 --steps 30 --seed 1463146050 --d 1280x853 --no girls, (worst quality:1.2), (low quality:1.2), (lowres:1.1), (monochrome:1.1), (greyscale), multiple views, comic, sketch, (((bad anatomy))), (((deformed))), (((disfigured))), watermark, multiple_views, mutation hands, mutation fingers, extra fingers, missing fingers, watermark"
+  },
+  {
+    "path": "138176.safetensors",
+    "name": "CyberRealistic",
+    "id": "15003",
+    "hash": "7A4DBBA12F",
+    "shortName": "cyberrealistic",
+    "link": "https://civitai.com/models/15003/cyberrealistic",
+    "baseModel": "SD 1.5",
+    "aliases": [
+      "9",
+      "cyber",
+      "1500",
+      "h7a4"
+    ],
+    "defaultPrompt": "<lora:LowRA:0.6> (8k, RAW photo, highest quality), beautiful girl, close up, dress, (detailed eyes:0.8), defiance512, (looking at the camera:1.4), (highest quality), (best shadow), intricate details, interior, ginger hair:1.3, dark studio, muted colors, freckles   <lora:epiNoiseoffset_v2Pynoise:1.2>"
+  },
+  {
+    "path": "126688.safetensors",
+    "name": "DreamShaper XL1.0",
+    "id": "112902",
+    "hash": "0F1B80CFE8",
+    "shortName": "dreamshaper-xl10",
+    "link": "https://civitai.com/models/112902/dreamshaper-xl10",
+    "baseModel": "SDXL 1.0",
+    "aliases": [
+      "10",
+      "xl_dream",
+      "1129",
+      "h0f1"
+    ],
+    "defaultPrompt": "barry allen the flash on wheelchair moving at supersonic speed creating flame trails, speed trails, motion blur, electricity speed outdoor, realistic highly detailed cinematic cinematography, movie shots footage,"
+  },
+  {
+    "path": "72396.safetensors",
+    "name": "lyriel",
+    "id": "22922",
+    "hash": "EC6F68EA63",
+    "shortName": "lyriel",
+    "link": "https://civitai.com/models/22922/lyriel",
+    "baseModel": "SD 1.5",
+    "aliases": [
+      "11",
+      "lyr"
+    ],
+    "defaultPrompt": "(dark shot:1.1), epic realistic, RAW, analog, A full portrait of stunning woman wearing swimsuit, alluring expression, swimming pool, clear water, wet hair, natural look, no make up, pureerosface_v1, masterpiece that captures the essence and beauty of the woman and water, ((highly detailed skin, skin details, water details)), sharp focus, volumetric fog, 8k UHD, DSLR, high quality, film grain, Fujifilm XT3, art by greg rutkowski and artgerm, soft cinematic light, adobe lightroom, photolab, hdr, intricate, highly detailed, (depth of field:1.4), faded, (neutral colors:1.2), (hdr:1.4), (muted colors:1.2), hyperdetailed, (artstation:1.4), cinematic, warm lights, dramatic light, (intricate details:1.1), complex background, (rutkowski:0.66), (teal and orange:0.4), (natural skin texture, hyperrealism, soft light, sharp)"
+  },
+  {
+    "path": "135166.safetensors",
+    "name": "reliberate",
+    "id": "79754",
+    "hash": "6B08E2C182",
+    "shortName": "reliberate",
+    "link": "https://civitai.com/models/79754/reliberate",
+    "baseModel": "SD 1.5",
+    "aliases": [
+      "12",
+      "rel"
+    ],
+    "defaultPrompt": "(hdr:1.4), professional photograph of an arab man worker, 80mm, desert, barren landscape, medium closeup, moles skin, soft light, sharp, exposure, muted colors, dim colors, soothing tones"
+  },
+  {
+    "path": "79290.safetensors",
+    "name": "rpg_artist_tools",
+    "id": "8124",
+    "hash": "25BA966C5D",
+    "shortName": "rpg_artist_tools",
+    "link": "https://civitai.com/models/8124",
+    "baseModel": "SD 1.5",
+    "aliases": [
+      "13",
+      "rpg"
+    ],
+    "defaultPrompt": "dungeons and dragons epic movie poster barbarian woman with cape charging into battle violent roar riding a vicious ice [wolf|tiger] beast leather and fur boots warriors and red banners (windy dust debris storm:1.1) volumetric lighting fog depth mist pass z pass great stone castle very bright morning sunlight from side, (masterpiece) (best quality) (detailed) (8k) (cinematic lighting) (sharp focus) (intricate)"
+  },
+  {
+    "path": "11745.safetensors",
+    "name": "chilloutmix",
+    "id": "6424",
+    "hash": "FC2511737A",
+    "shortName": "chillout",
+    "link": "https://civitai.com/models/6424/chilloutmix",
+    "baseModel": "SD 1.5",
+    "aliases": [
+      "14",
+      "chill"
+    ],
+    "defaultPrompt": "(RAW photo, best quality), (realistic, photo-realistic:1.3), masterpiece, an extremely delicate and beautiful, extremely detailed, CG, unity , 2k wallpaper, Amazing, finely detail, light smile, extremely detailed CG unity 8k wallpaper, huge filesize, ultra-detailed, highres, absurdres, soft light, (((medium hair:1.3), short bang, pink hair, floating hair novafrogstyle)), beautiful detailed girl, detailed fingers, extremely detailed eyes and face, beautiful detailed nose, beautiful detailed eyes, long eyelashes, light on face, looking at viewer, (closed mouth:1.2), 1girl, cute, young, mature face, (full body:1.3), ((small breasts)), realistic face, realistic body, beautiful detailed thigh, (ulzzang-6500-v1.1:0.8), <lora:koreanDollLikeness_v15:0.4>, business suit, cross-laced clothes, collared shirt, open clothes, in office, detailed office, open cardigan, black thighhighs, miniskirt, black underwear, unbuttoned shirt,"
   },
   {
     "path": "76907.safetensors",
@@ -232,37 +236,9 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/36520",
     "baseModel": "SD 1.5",
     "aliases": [
-      "2",
+      "15",
       "36520",
       "76907"
-    ],
-    "defaultPrompt": "a young woman, street, laughing, ponytails, dramatic, complex background, cinematic"
-  },
-  {
-    "path": "46846.safetensors",
-    "name": "ReV Animated",
-    "id": "7371",
-    "shortName": "ReV Animated",
-    "link": "https://civitai.com/models/7371",
-    "baseModel": "SD 1.5",
-    "aliases": [
-      "3",
-      "7371",
-      "46846"
-    ],
-    "defaultPrompt": "a young woman, street, laughing, ponytails, dramatic, complex background, cinematic"
-  },
-  {
-    "path": "79290.safetensors",
-    "name": "A-Zovya RPG Artist Tools",
-    "id": "8124",
-    "shortName": "A-Zovya RPG Artist Tools",
-    "link": "https://civitai.com/models/8124",
-    "baseModel": "SD 1.5",
-    "aliases": [
-      "4",
-      "8124",
-      "79290"
     ],
     "defaultPrompt": "a young woman, street, laughing, ponytails, dramatic, complex background, cinematic"
   },
@@ -274,7 +250,7 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/10028",
     "baseModel": "SD 1.5",
     "aliases": [
-      "5",
+      "16",
       "10028",
       "64094"
     ],
@@ -288,7 +264,7 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/6755",
     "baseModel": "SD 1.5",
     "aliases": [
-      "6",
+      "17",
       "6755",
       "105924"
     ],
@@ -302,7 +278,7 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/2220",
     "baseModel": "SD 1.5",
     "aliases": [
-      "7",
+      "18",
       "2220",
       "61372"
     ],
@@ -316,7 +292,7 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/28169",
     "baseModel": "SD 1.5",
     "aliases": [
-      "8",
+      "19",
       "28169",
       "154252"
     ],
@@ -330,7 +306,7 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/2583",
     "baseModel": "SD 1.5",
     "aliases": [
-      "9",
+      "20",
       "2583",
       "106922"
     ],
@@ -344,37 +320,9 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/25694",
     "baseModel": "SD 1.5",
     "aliases": [
-      "10",
+      "21",
       "25694",
       "160989"
-    ],
-    "defaultPrompt": "a young woman, street, laughing, ponytails, dramatic, complex background, cinematic"
-  },
-  {
-    "path": "129687.safetensors",
-    "name": "Perfect World 完美世界",
-    "id": "8281",
-    "shortName": "Perfect World 完美世界",
-    "link": "https://civitai.com/models/8281",
-    "baseModel": "Other",
-    "aliases": [
-      "11",
-      "8281",
-      "129687"
-    ],
-    "defaultPrompt": "a young woman, street, laughing, ponytails, dramatic, complex background, cinematic"
-  },
-  {
-    "path": "11745.safetensors",
-    "name": "ChilloutMix",
-    "id": "6424",
-    "shortName": "ChilloutMix",
-    "link": "https://civitai.com/models/6424",
-    "baseModel": "SD 1.5",
-    "aliases": [
-      "12",
-      "6424",
-      "11745"
     ],
     "defaultPrompt": "a young woman, street, laughing, ponytails, dramatic, complex background, cinematic"
   },
@@ -386,23 +334,9 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/12606",
     "baseModel": "SD 1.5",
     "aliases": [
-      "13",
+      "22",
       "12606",
       "100675"
-    ],
-    "defaultPrompt": "a young woman, street, laughing, ponytails, dramatic, complex background, cinematic"
-  },
-  {
-    "path": "126470.safetensors",
-    "name": "majicMIX realistic 麦橘写实",
-    "id": "43331",
-    "shortName": "majicMIX realistic 麦橘写实",
-    "link": "https://civitai.com/models/43331",
-    "baseModel": "SD 1.5",
-    "aliases": [
-      "14",
-      "43331",
-      "126470"
     ],
     "defaultPrompt": "a young woman, street, laughing, ponytails, dramatic, complex background, cinematic"
   },
@@ -414,7 +348,7 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/34469",
     "baseModel": "SD 1.5",
     "aliases": [
-      "15",
+      "23",
       "34469",
       "156771"
     ],
@@ -428,7 +362,7 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/17649",
     "baseModel": "SD 1.5",
     "aliases": [
-      "16",
+      "24",
       "17649",
       "160423"
     ],
@@ -442,7 +376,7 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/24779",
     "baseModel": "SD 1.5",
     "aliases": [
-      "17",
+      "25",
       "24779",
       "93208"
     ],
@@ -456,7 +390,7 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/81458",
     "baseModel": "SD 1.5",
     "aliases": [
-      "18",
+      "26",
       "81458",
       "132760"
     ],
@@ -470,7 +404,7 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/8030",
     "baseModel": "SD 1.5",
     "aliases": [
-      "19",
+      "27",
       "8030",
       "160495"
     ],
@@ -484,23 +418,9 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/7240",
     "baseModel": "SD 1.5",
     "aliases": [
-      "20",
+      "28",
       "7240",
       "119057"
-    ],
-    "defaultPrompt": "a young woman, street, laughing, ponytails, dramatic, complex background, cinematic"
-  },
-  {
-    "path": "138176.safetensors",
-    "name": "CyberRealistic",
-    "id": "15003",
-    "shortName": "CyberRealistic",
-    "link": "https://civitai.com/models/15003",
-    "baseModel": "SD 1.5",
-    "aliases": [
-      "21",
-      "15003",
-      "138176"
     ],
     "defaultPrompt": "a young woman, street, laughing, ponytails, dramatic, complex background, cinematic"
   },
@@ -512,7 +432,7 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/4451",
     "baseModel": "SD 1.5",
     "aliases": [
-      "22",
+      "29",
       "4451",
       "5038"
     ],
@@ -526,7 +446,7 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/24350",
     "baseModel": "SD 1.5",
     "aliases": [
-      "23",
+      "30",
       "24350",
       "86698"
     ],
@@ -540,7 +460,7 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/10415",
     "baseModel": "SD 1.5",
     "aliases": [
-      "24",
+      "31",
       "10415",
       "106289"
     ],
@@ -554,7 +474,7 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/84728",
     "baseModel": "SD 1.5",
     "aliases": [
-      "25",
+      "32",
       "84728",
       "90072"
     ],
@@ -568,23 +488,9 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/62778",
     "baseModel": "SD 1.5",
     "aliases": [
-      "26",
+      "33",
       "62778",
       "75209"
-    ],
-    "defaultPrompt": "a young woman, street, laughing, ponytails, dramatic, complex background, cinematic"
-  },
-  {
-    "path": "156110.safetensors",
-    "name": "Deliberate",
-    "id": "4823",
-    "shortName": "Deliberate",
-    "link": "https://civitai.com/models/4823",
-    "baseModel": "SD 1.5",
-    "aliases": [
-      "27",
-      "4823",
-      "156110"
     ],
     "defaultPrompt": "a young woman, street, laughing, ponytails, dramatic, complex background, cinematic"
   },
@@ -596,7 +502,7 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/28059",
     "baseModel": "SD 1.5",
     "aliases": [
-      "28",
+      "34",
       "28059",
       "121557"
     ],
@@ -610,7 +516,7 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/41865",
     "baseModel": "SD 1.5",
     "aliases": [
-      "29",
+      "35",
       "41865",
       "49055"
     ],
@@ -624,7 +530,7 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/57319",
     "baseModel": "SD 1.5",
     "aliases": [
-      "30",
+      "36",
       "57319",
       "99805"
     ],
@@ -638,7 +544,7 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/47274",
     "baseModel": "SD 1.5",
     "aliases": [
-      "31",
+      "37",
       "47274",
       "102222"
     ],
@@ -652,7 +558,7 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/23900",
     "baseModel": "SD 1.5",
     "aliases": [
-      "32",
+      "38",
       "23900",
       "95489"
     ],
@@ -666,7 +572,7 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/11866",
     "baseModel": "SD 1.5",
     "aliases": [
-      "33",
+      "39",
       "11866",
       "108289"
     ],
@@ -680,7 +586,7 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/56967",
     "baseModel": "SD 1.5",
     "aliases": [
-      "34",
+      "40",
       "56967",
       "89855"
     ],
@@ -694,7 +600,7 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/4468",
     "baseModel": "SD 1.5",
     "aliases": [
-      "35",
+      "41",
       "4468",
       "57618"
     ],
@@ -708,7 +614,7 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/107842",
     "baseModel": "SD 1.5",
     "aliases": [
-      "36",
+      "42",
       "107842",
       "155642"
     ],
@@ -722,7 +628,7 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/4201",
     "baseModel": "SD 1.5",
     "aliases": [
-      "37",
+      "43",
       "4201",
       "130072"
     ],
@@ -736,23 +642,9 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/18798",
     "baseModel": "SD 1.5",
     "aliases": [
-      "38",
+      "44",
       "18798",
       "112809"
-    ],
-    "defaultPrompt": "a young woman, street, laughing, ponytails, dramatic, complex background, cinematic"
-  },
-  {
-    "path": "126688.safetensors",
-    "name": "DreamShaper XL1.0",
-    "id": "112902",
-    "shortName": "DreamShaper XL1.0",
-    "link": "https://civitai.com/models/112902",
-    "baseModel": "SDXL 1.0",
-    "aliases": [
-      "39",
-      "112902",
-      "126688"
     ],
     "defaultPrompt": "a young woman, street, laughing, ponytails, dramatic, complex background, cinematic"
   },
@@ -764,7 +656,7 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/47130",
     "baseModel": "SD 1.5",
     "aliases": [
-      "40",
+      "45",
       "47130",
       "115942"
     ],
@@ -778,7 +670,7 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/20282",
     "baseModel": "SD 1.5",
     "aliases": [
-      "41",
+      "46",
       "20282",
       "70458"
     ],
@@ -792,7 +684,7 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/118111",
     "baseModel": "SDXL 1.0",
     "aliases": [
-      "42",
+      "47",
       "118111",
       "150238"
     ],
@@ -806,7 +698,7 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/9871",
     "baseModel": "SD 1.5",
     "aliases": [
-      "43",
+      "48",
       "9871",
       "59409"
     ],
@@ -820,7 +712,7 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/48671",
     "baseModel": "SD 1.5",
     "aliases": [
-      "44",
+      "49",
       "48671",
       "141866"
     ],
@@ -834,37 +726,9 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/58431",
     "baseModel": "SD 1.5",
     "aliases": [
-      "45",
+      "50",
       "58431",
       "130121"
-    ],
-    "defaultPrompt": "a young woman, street, laughing, ponytails, dramatic, complex background, cinematic"
-  },
-  {
-    "path": "135166.safetensors",
-    "name": "Reliberate",
-    "id": "79754",
-    "shortName": "Reliberate",
-    "link": "https://civitai.com/models/79754",
-    "baseModel": "SD 1.5",
-    "aliases": [
-      "46",
-      "79754",
-      "135166"
-    ],
-    "defaultPrompt": "a young woman, street, laughing, ponytails, dramatic, complex background, cinematic"
-  },
-  {
-    "path": "72396.safetensors",
-    "name": "Lyriel",
-    "id": "22922",
-    "shortName": "Lyriel",
-    "link": "https://civitai.com/models/22922",
-    "baseModel": "SD 1.5",
-    "aliases": [
-      "47",
-      "22922",
-      "72396"
     ],
     "defaultPrompt": "a young woman, street, laughing, ponytails, dramatic, complex background, cinematic"
   },
@@ -876,7 +740,7 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/9139",
     "baseModel": "SD 1.5",
     "aliases": [
-      "48",
+      "51",
       "9139",
       "95214"
     ],
@@ -890,7 +754,7 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/27259",
     "baseModel": "Other",
     "aliases": [
-      "49",
+      "52",
       "27259",
       "116759"
     ],
@@ -904,7 +768,7 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/46422",
     "baseModel": "SD 1.5",
     "aliases": [
-      "50",
+      "53",
       "46422",
       "127207"
     ],
@@ -918,7 +782,7 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/9409",
     "baseModel": "SD 1.5",
     "aliases": [
-      "51",
+      "54",
       "9409",
       "90854"
     ],
@@ -932,7 +796,7 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/18207",
     "baseModel": "SD 1.5",
     "aliases": [
-      "52",
+      "55",
       "18207",
       "156263"
     ],
@@ -946,7 +810,7 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/13034",
     "baseModel": "SD 1.5",
     "aliases": [
-      "53",
+      "56",
       "13034",
       "127680"
     ],
@@ -960,7 +824,7 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/18427",
     "baseModel": "SD 1.5",
     "aliases": [
-      "54",
+      "57",
       "18427",
       "95199"
     ],
@@ -974,7 +838,7 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/24149",
     "baseModel": "SD 1.5",
     "aliases": [
-      "55",
+      "58",
       "24149",
       "108545"
     ],
@@ -988,7 +852,7 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/25831",
     "baseModel": "SD 1.5",
     "aliases": [
-      "56",
+      "59",
       "25831",
       "127416"
     ],
@@ -1002,7 +866,7 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/9942",
     "baseModel": "SD 1.5",
     "aliases": [
-      "57",
+      "60",
       "9942",
       "17233"
     ],
@@ -1016,23 +880,9 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/7241",
     "baseModel": "Other",
     "aliases": [
-      "58",
+      "61",
       "7241",
       "34559"
-    ],
-    "defaultPrompt": "a young woman, street, laughing, ponytails, dramatic, complex background, cinematic"
-  },
-  {
-    "path": "148515.safetensors",
-    "name": "SDXL Unstable Diffusers ☛ YamerMIX",
-    "id": "84040",
-    "shortName": "SDXL Unstable Diffusers ☛ YamerMIX",
-    "link": "https://civitai.com/models/84040",
-    "baseModel": "SDXL 1.0",
-    "aliases": [
-      "59",
-      "84040",
-      "148515"
     ],
     "defaultPrompt": "a young woman, street, laughing, ponytails, dramatic, complex background, cinematic"
   },
@@ -1044,7 +894,7 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/119229",
     "baseModel": "SDXL 1.0",
     "aliases": [
-      "60",
+      "62",
       "119229",
       "158371"
     ],
@@ -1058,7 +908,7 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/50882",
     "baseModel": "SD 1.5",
     "aliases": [
-      "61",
+      "63",
       "50882",
       "75441"
     ],
@@ -1072,7 +922,7 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/25494",
     "baseModel": "SD 1.5",
     "aliases": [
-      "62",
+      "64",
       "25494",
       "113479"
     ],
@@ -1086,7 +936,7 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/5414",
     "baseModel": "Other",
     "aliases": [
-      "63",
+      "65",
       "5414",
       "6297"
     ],
@@ -1100,7 +950,7 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/7279",
     "baseModel": "SD 1.5",
     "aliases": [
-      "64",
+      "66",
       "7279",
       "90599"
     ],
@@ -1114,7 +964,7 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/94809",
     "baseModel": "SD 1.5",
     "aliases": [
-      "65",
+      "67",
       "94809",
       "159751"
     ],
@@ -1128,7 +978,7 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/5062",
     "baseModel": "SD 1.5",
     "aliases": [
-      "66",
+      "68",
       "5062",
       "142125"
     ],
@@ -1142,7 +992,7 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/5245",
     "baseModel": "SD 1.5",
     "aliases": [
-      "67",
+      "69",
       "5245",
       "6087"
     ],
@@ -1156,7 +1006,7 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/5952",
     "baseModel": "SD 1.5",
     "aliases": [
-      "68",
+      "70",
       "5952",
       "137204"
     ],
@@ -1170,7 +1020,7 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/9291",
     "baseModel": "SD 1.5",
     "aliases": [
-      "69",
+      "71",
       "9291",
       "13510"
     ],
@@ -1184,7 +1034,7 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/18927",
     "baseModel": "SD 1.5",
     "aliases": [
-      "70",
+      "72",
       "18927",
       "158294"
     ],
@@ -1198,7 +1048,7 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/118441",
     "baseModel": "SDXL 1.0",
     "aliases": [
-      "71",
+      "73",
       "118441",
       "162380"
     ],
@@ -1212,7 +1062,7 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/7152",
     "baseModel": "SD 1.5",
     "aliases": [
-      "72",
+      "74",
       "7152",
       "25993"
     ],
@@ -1226,7 +1076,7 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/78056",
     "baseModel": "SD 1.5",
     "aliases": [
-      "73",
+      "75",
       "78056",
       "133274"
     ],
@@ -1240,7 +1090,7 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/69158",
     "baseModel": "SD 1.5",
     "aliases": [
-      "74",
+      "76",
       "69158",
       "147184"
     ],
@@ -1254,7 +1104,7 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/118756",
     "baseModel": "SDXL 1.0",
     "aliases": [
-      "75",
+      "77",
       "118756",
       "136754"
     ],
@@ -1268,7 +1118,7 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/53360",
     "baseModel": "SD 1.5",
     "aliases": [
-      "76",
+      "78",
       "53360",
       "106169"
     ],
@@ -1282,7 +1132,7 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/3671",
     "baseModel": "SD 1.5",
     "aliases": [
-      "77",
+      "79",
       "3671",
       "156883"
     ],
@@ -1296,7 +1146,7 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/1116",
     "baseModel": "SD 1.5",
     "aliases": [
-      "78",
+      "80",
       "1116",
       "124626"
     ],
@@ -1310,7 +1160,7 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/4669",
     "baseModel": "SD 1.5",
     "aliases": [
-      "79",
+      "81",
       "4669",
       "6878"
     ],
@@ -1324,7 +1174,7 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/2661",
     "baseModel": "SD 1.5",
     "aliases": [
-      "80",
+      "82",
       "2661",
       "15640"
     ],
@@ -1338,7 +1188,7 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/35960",
     "baseModel": "SD 1.5",
     "aliases": [
-      "81",
+      "83",
       "35960",
       "103436"
     ],
@@ -1352,7 +1202,7 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/90642",
     "baseModel": "Other",
     "aliases": [
-      "82",
+      "84",
       "90642",
       "111564"
     ],
@@ -1366,7 +1216,7 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/52548",
     "baseModel": "SD 1.5",
     "aliases": [
-      "83",
+      "85",
       "52548",
       "105566"
     ],
@@ -1380,7 +1230,7 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/97744",
     "baseModel": "SD 1.5",
     "aliases": [
-      "84",
+      "86",
       "97744",
       "161244"
     ],
@@ -1394,7 +1244,7 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/22402",
     "baseModel": "SD 1.5",
     "aliases": [
-      "85",
+      "87",
       "22402",
       "129240"
     ],
@@ -1408,7 +1258,7 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/54073",
     "baseModel": "SD 1.5",
     "aliases": [
-      "86",
+      "88",
       "54073",
       "107847"
     ],
@@ -1422,7 +1272,7 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/122606",
     "baseModel": "SDXL 1.0",
     "aliases": [
-      "87",
+      "89",
       "122606",
       "148259"
     ],
@@ -1436,7 +1286,7 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/15509",
     "baseModel": "SD 1.4",
     "aliases": [
-      "88",
+      "90",
       "15509",
       "18295"
     ],
@@ -1450,7 +1300,7 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/36538",
     "baseModel": "SD 1.5",
     "aliases": [
-      "89",
+      "91",
       "36538",
       "107675"
     ],
@@ -1464,7 +1314,7 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/82790",
     "baseModel": "SD 1.5",
     "aliases": [
-      "90",
+      "92",
       "82790",
       "155994"
     ],
@@ -1478,7 +1328,7 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/6925",
     "baseModel": "SD 1.5",
     "aliases": [
-      "91",
+      "93",
       "6925",
       "8137"
     ],
@@ -1492,7 +1342,7 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/123307",
     "baseModel": "SDXL 1.0",
     "aliases": [
-      "92",
+      "94",
       "123307",
       "155870"
     ],
@@ -1506,7 +1356,7 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/4449",
     "baseModel": "SD 1.5",
     "aliases": [
-      "93",
+      "95",
       "4449",
       "5036"
     ],
@@ -1520,23 +1370,9 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/34553",
     "baseModel": "SD 1.5",
     "aliases": [
-      "94",
+      "96",
       "34553",
       "156882"
-    ],
-    "defaultPrompt": "a young woman, street, laughing, ponytails, dramatic, complex background, cinematic"
-  },
-  {
-    "path": "150851.safetensors",
-    "name": "LEOSAM's HelloWorld 新世界 SDXL Model (Historical Version: MoonFilm & MoonMix SD1.5 model)",
-    "id": "43977",
-    "shortName": "LEOSAM's HelloWorld 新世界 SDXL Model (Historical Version: MoonFilm & MoonMix SD1.5 model)",
-    "link": "https://civitai.com/models/43977",
-    "baseModel": "SDXL 1.0",
-    "aliases": [
-      "95",
-      "43977",
-      "150851"
     ],
     "defaultPrompt": "a young woman, street, laughing, ponytails, dramatic, complex background, cinematic"
   },
@@ -1548,7 +1384,7 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/5706",
     "baseModel": "SD 1.5",
     "aliases": [
-      "96",
+      "97",
       "5706",
       "41233"
     ],
@@ -1562,7 +1398,7 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/30240",
     "baseModel": "SD 1.5",
     "aliases": [
-      "97",
+      "98",
       "30240",
       "125771"
     ],
@@ -1576,7 +1412,7 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/22364",
     "baseModel": "SD 1.5",
     "aliases": [
-      "98",
+      "99",
       "22364",
       "87825"
     ],
@@ -1590,11 +1426,44 @@ export let MODELS_CONFIGS: IModel[] = [
     "link": "https://civitai.com/models/6250",
     "baseModel": "SD 1.5",
     "aliases": [
-      "99",
+      "100",
       "6250",
       "7328"
     ],
     "defaultPrompt": "a young woman, street, laughing, ponytails, dramatic, complex background, cinematic"
+  },
+  {
+    "path": "animePastelDream_softBakedVae.safetensors",
+    "name": "Anime Pastel Dream",
+    "id": "23521",
+    "hash": "4BE38C1A17",
+    "shortName": "anime-pastel-dream",
+    "link": "https://civitai.com/models/23521/anime-pastel-dream",
+    "baseModel": "SD 1.5",
+    "aliases": [
+      "101",
+      "n",
+      "an",
+      "anime",
+      "2352",
+      "h4be"
+    ],
+    "defaultPrompt": "masterpiece, best quality, ultra-detailed, illustration, beautiful detailed eyes, looking at viewer, close up, pink hair, shy, cat ears"
+  },
+  {
+    "path": "v1-5-pruned-emaonly.safetensors",
+    "name": "v1-5-pruned-emaonly",
+    "id": "",
+    "hash": "",
+    "shortName": "pruned-emaonly",
+    "link": "",
+    "baseModel": "SD 1.5",
+    "aliases": [
+      "102",
+      "p",
+      "prune"
+    ],
+    "defaultPrompt": "masterpiece, best quality, ultra-detailed, illustration, beautiful detailed eyes, looking at viewer, close up, pink hair, shy, cat ears"
   }
 ]
 
