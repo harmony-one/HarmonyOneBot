@@ -37,7 +37,16 @@ const removeSpaceFromBegin = (text: string) => {
   return text.slice(idx)
 }
 
-const SPECIAL_IMG_CMD_SYMBOLS = [',', 'i.', 'l.', 'I.']
+const SPECIAL_IMG_CMD_SYMBOLS = ['i.', 'l.', 'I.', '?', '!'];
+
+export const getPrefix = (prompt: string, prefixList: string[]): string => {
+  for (let i = 0; i < prefixList.length; i++) {
+    if (prompt.toLocaleLowerCase().startsWith(prefixList[i])) {
+      return prefixList[i];
+    }
+  }
+  return "";
+};
 
 const parsePrompts = (fullText: string): { modelId: string, prompt: string } => {
   let modelId = ''
@@ -146,6 +155,8 @@ export const parseCtx = (ctx: Context): IOperation | false => {
     const startWithSpecialSymbol = SPECIAL_IMG_CMD_SYMBOLS.some(s => !!messageText?.startsWith(s))
 
     if (startWithSpecialSymbol) {
+      const prefix = getPrefix(messageText, SPECIAL_IMG_CMD_SYMBOLS)
+      model = getModelByParam(prefix);
       command = COMMAND.TEXT_TO_IMAGE
     }
 

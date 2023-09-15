@@ -54,8 +54,8 @@ export const hasDallePrefix = (prompt: string): string => {
   return ''
 }
 
-export const hasNewPrefix = (prompt: string): string => {
-  const prefixList = config.openAi.chatGpt.prefixes.newPrefix
+export const hasBardPrefix = (prompt: string): string => {
+  const prefixList = config.llms.prefixes.bardPrefix
   for (let i = 0; i < prefixList.length; i++) {
     if (prompt.toLocaleLowerCase().startsWith(prefixList[i])) {
       return prefixList[i]
@@ -195,7 +195,7 @@ export const sendMessage = async (
 
 export const hasPrefix = (prompt: string): string => {
   return (
-    hasChatPrefix(prompt) || hasDallePrefix(prompt) || hasNewPrefix(prompt)
+    hasBardPrefix(prompt)
   )
 }
 

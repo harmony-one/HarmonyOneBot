@@ -39,7 +39,8 @@ export let MODELS_CONFIGS: IModel[] = [
     "aliases": [
       "2",
       "leo",
-      "real"
+      "real",
+      "!"
     ],
     "defaultPrompt": "leogirl, realistic photography, The Joker, shrouded in carnival-esque, multicolored spotlights, stands in the middle of a chaotic circus tent. His manic grin becomes even more unsettling under the harsh, unnatural lighting, close up, perfecteyes --no (worst quality, low quality), deformed, distorted, disfigured, doll, poorly drawn, bad anatomy, wrong anatomy --cfg 7 --steps 40 --seed 3912625479 --d 832x1344"
   },
@@ -103,7 +104,8 @@ export let MODELS_CONFIGS: IModel[] = [
       "6",
       "majic",
       "4333",
-      "h7e2"
+      "h7e2",
+      "?"
     ],
     "defaultPrompt": "1girl,sitting on a cozy couch,crossing legs,soft light"
   },
