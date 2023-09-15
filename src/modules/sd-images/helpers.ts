@@ -108,6 +108,13 @@ export const parseCtx = (ctx: Context): IOperation | false => {
     }
 
     if (
+      (hasCommand(ctx, 'image2') ?? hasCommand(ctx, 'imagine2')) ?? hasCommand(ctx, 'img2')
+    ) {
+      command = COMMAND.TEXT_TO_IMAGE
+      model = model && ({ ...model, serverNumber: 2 });
+    }
+
+    if (
       hasCommand(ctx, 'logo') || hasCommand(ctx, 'l')
     ) {
       command = COMMAND.TEXT_TO_IMAGE
@@ -167,7 +174,7 @@ export const parseCtx = (ctx: Context): IOperation | false => {
     }
 
     const messageHasPhoto = !!ctx.message?.photo?.length ||
-            !!ctx.message?.reply_to_message?.photo?.length
+      !!ctx.message?.reply_to_message?.photo?.length
 
     if (command === COMMAND.TEXT_TO_IMAGE && messageHasPhoto) {
       command = COMMAND.IMAGE_TO_IMAGE
