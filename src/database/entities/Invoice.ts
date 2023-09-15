@@ -1,37 +1,37 @@
-import {Entity, Column, CreateDateColumn, UpdateDateColumn} from 'typeorm';
+import { Entity, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm'
 
 @Entity()
 export class Invoice {
-  @Column({ default: () => "gen_random_uuid()", primary: true })
-  uuid!: string
+  @Column({ default: () => 'gen_random_uuid()', primary: true })
+    uuid!: string
 
-  @Column({type: "bigint"})
-  tgUserId!: number;
+  @Column({ type: 'bigint' })
+    tgUserId!: number
 
-  @Column({type: "bigint"})
-  accountId!: number;
-
-  @Column()
-  currency!: string;
+  @Column({ type: 'bigint' })
+    accountId!: number
 
   @Column()
-  itemId!: string;
+    currency!: string
 
   @Column()
-  amount!: number;
+    itemId!: string
 
-  @Column({nullable: true})
-  telegramPaymentChargeId!: string;
+  @Column()
+    amount!: number
 
-  @Column({nullable: true})
-  providerPaymentChargeId!: string;
+  @Column({ nullable: true })
+    telegramPaymentChargeId!: string
 
-  @Column({nullable: false})
-  status!: 'init' | 'pending' | 'fail' | 'success';
+  @Column({ nullable: true })
+    providerPaymentChargeId!: string
+
+  @Column({ nullable: false })
+    status!: 'init' | 'pending' | 'fail' | 'success'
 
   @CreateDateColumn()
-  createAt!: Date;
+    createAt!: Date
 
   @UpdateDateColumn()
-  updatedAt!: Date;
+    updatedAt!: Date
 }

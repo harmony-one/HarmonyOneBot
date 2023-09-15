@@ -2,7 +2,7 @@ import { waitingExecute, IParams, getParamsFromPrompt } from "./helpers";
 import { IModel } from "./models-config";
 
 // Mock the console.error method to prevent it from actually logging errors
-console.error = jest.fn();
+console.error = jest.fn()
 
 describe("waitingExecute", () => {
   test("waits for the promise to resolve", async () => {
@@ -17,12 +17,12 @@ describe("waitingExecute", () => {
     });
 
     try {
-      await waitingExecute(() => promise, 1000);
+      await waitingExecute(async () => await promise, 1000)
     } catch (error) {
       expect(error).toBe("Error: waitingExecute time is up");
     }
-  });
-});
+  })
+})
 
 describe("getParamsFromPrompt", () => {
   test("parses parameters from the prompt", () => {
@@ -42,9 +42,9 @@ describe("getParamsFromPrompt", () => {
       promptWithoutParams: "doo, moo, boo",
       seed: 1234567890,
       denoise: 0.5,
-      controlnetVersion: 2,
-    });
-  });
+      controlnetVersion: 2
+    })
+  })
 
   test("handles missing parameters with default values", () => {
     const prompt = "This is a prompt without parameters";
@@ -63,7 +63,7 @@ describe("getParamsFromPrompt", () => {
       promptWithoutParams: "This is a prompt without parameters",
       seed: undefined,
       denoise: undefined,
-      controlnetVersion: 1,
-    });
-  });
-});
+      controlnetVersion: 1
+    })
+  })
+})
