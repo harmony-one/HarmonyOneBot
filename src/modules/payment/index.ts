@@ -26,7 +26,6 @@ export class BotPayments {
   private ONERate: number = 0
   private ONERateUpdateTimestamp = 0
   private readonly rpcURL: string = 'https://api.harmony.one'
-  private lastPaymentTimestamp = 0
   private readonly noncePending = new LRUCache<string, number>({
     max: 1000,
     ttl: 30 * 1000
@@ -67,12 +66,13 @@ export class BotPayments {
     const invoiceData: InvoiceParams = {
       tgUserId: accountId,
       accountId,
-      amount: 1,
+      amount: Math.round(this.convertBigNumber(amount)),
       itemId: 'deposit_one',
       currency: 'ONE'
     }
     const invoice = await invoiceService.create(invoiceData)
     await this.transferFunds(userAccount, this.holderAddress, amount);
+    await chatService.depositOneCredits(accountId, amount.toString())
     await invoiceService.setSuccessStatus({ uuid: invoice.uuid, providerPaymentChargeId: '', telegramPaymentChargeId: '' })
   }
 
@@ -83,22 +83,26 @@ export class BotPayments {
     } catch (e) {
       this.logger.error(`Cannot get last interacted accounts: ${(e as Error).message}`)
     }
-    console.log('accounts', accounts)
+
+    const txFee = await this.getTransactionFee()
+
     for(let acc of accounts) {
       const accountId = +acc.accountId
       const userAccount = this.getUserAccount(accountId)
       if(userAccount) {
-        let userBalance = new BigNumber(0)
+        let availableBalance = new BigNumber(0)
         try {
-          userBalance = await this.getUserBalance(accountId)
+          availableBalance = await this.getUserBalance(accountId)
+          availableBalance = BigNumber.max(availableBalance.minus(txFee), 0)
         } catch (e) {
           this.logger.error(`Cannot get user balance ${accountId} ${userAccount.address}`)
         }
 
-        if(userBalance.gt(0)) {
+        if(availableBalance.gt(0)) {
           try {
-            await this.transferUserFundsToHolder(accountId, userAccount, userBalance);
-            this.logger.info(`User ${accountId} ${userAccount.address} hot wallet funds "${userBalance.toString()}" ONE transferred to holder address ${this.holderAddress}`)
+            await this.transferUserFundsToHolder(accountId, userAccount, availableBalance);
+            const userCreditsBalance = await chatService.getBalance(accountId)
+            this.logger.info(`User ${accountId} ${userAccount.address} hot wallet funds "${availableBalance.toString()}" ONE transferred to holder address ${this.holderAddress}. ONE credits balance: ${userCreditsBalance.toString()}.`)
           } catch (e) {
             this.logger.error(
               `Cannot transfer user "${userAccount.address}" funds to holder "${this.holderAddress}": ${(e as Error).message}`
@@ -368,10 +372,6 @@ export class BotPayments {
       return false
     }
 
-    if (Date.now() - this.lastPaymentTimestamp > 60 * 1000) {
-      await this.withdrawHotWalletFunds()
-    }
-
     this.logger.info(
       `Pay event @${from.username}(${from.id}) in chat ${chat.id} (${chat.type}), accountId: ${accountId}, account address: ${userAccount.address}`
     )
@@ -424,7 +424,6 @@ export class BotPayments {
             this.hotWallet.address,
             amountToPay
           )
-          this.lastPaymentTimestamp = Date.now()
           if (tx) {
             oneTokenFeeCounter.inc(this.convertBigNumber(amountToPay))
             this.logger.info(
@@ -564,35 +563,6 @@ To recharge, send to: \`${account.address}\`. Buy tokens on harmony.one/buy.`,
         )} ONE`
       }
       await sendMessage(ctx, replyText, { parseMode: 'Markdown' })
-    }
-  }
-
-  private async withdrawHotWalletFunds () {
-    try {
-      const hotWalletBalance = await this.getAddressBalance(
-        this.hotWallet.address
-      )
-      const fee = await this.getTransactionFee()
-      if (hotWalletBalance.gt(fee)) {
-        await this.transferFunds(
-          this.hotWallet,
-          this.holderAddress,
-          hotWalletBalance.minus(fee)
-        )
-        this.logger.info(
-          `Hot wallet funds transferred from hot wallet ${
-            this.hotWallet.address
-          } to holder address: ${
-            this.holderAddress
-          }, amount: ${hotWalletBalance.toFixed()}`
-        )
-      } else {
-        // this.logger.info(`Hot wallet ${this.hotWallet.address} balance is zero, skip withdrawal`)
-      }
-    } catch (e) {
-      this.logger.error(
-        `Cannot withdraw hot wallet funds: ${(e as Error).message}`
-      )
     }
   }
 }

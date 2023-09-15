@@ -103,6 +103,18 @@ export class ChatService {
     return await chatRepository.update({ accountId }, { fiatCreditAmount: newValue.toString() })
   }
 
+  public async depositOneCredits (accountId: number, amount: string) {
+    const account = await this.getAccountById(accountId)
+    if (!account) {
+      throw new Error(`${accountId} Cannot find credits account`)
+    }
+
+    const oldValue = BigInt(account.oneCreditAmount)
+    const newValue = oldValue + BigInt(amount)
+
+    return await chatRepository.update({ accountId }, { oneCreditAmount: newValue.toString() })
+  }
+
   public async getBalance (accountId: number) {
     const account = await this.getAccountById(accountId)
     if (account) {

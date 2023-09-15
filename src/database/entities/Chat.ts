@@ -10,6 +10,9 @@ export class Chat {
     accountId!: number // chatId or tgUserId
 
   @Column({ default: '0' })
+    oneCreditAmount!: string
+
+  @Column({ default: '0' })
     fiatCreditAmount!: string
 
   @Column()
