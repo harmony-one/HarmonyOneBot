@@ -26,10 +26,9 @@ const getRandomSeed = (): number => Math.round(Math.random() * 1e15)
 
 export class Client {
   txt2img = async (options: Txt2ImgOptions, serverConfig?: { host: string, wsHost: string }): Promise<Txt2ImgResponse> => {
-    const comfyClient = new ComfyClient({
+    const comfyClient = new ComfyClient(serverConfig || {
       host: config.comfyHost,
       wsHost: config.comfyWsHost,
-      ...serverConfig
     })
 
     try {
@@ -157,12 +156,12 @@ export class Client {
       comfyClient.abortWebsocket()
 
       const result: Txt2ImgResponse =
-       {
-         images,
-         parameters: {},
-         all_seeds: [String(seed)],
-         info: ''
-       }
+      {
+        images,
+        parameters: {},
+        all_seeds: [String(seed)],
+        info: ''
+      }
 
       return result
     } catch (e) {
@@ -185,7 +184,7 @@ export class Client {
     })
 
     // TODO
-    const trainServer = config.comfyHost.split(':')[0] + ':7860'
+    const trainServer = config.comfyHost.replace('8080', '7860');
 
     try {
       let attempts = 3

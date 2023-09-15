@@ -9,6 +9,7 @@ export interface IModel {
   aliases: string[]
   defaultPrompt: string
   defaultImageUrl?: string
+  serverNumber?: number
 }
 
 export let MODELS_CONFIGS: IModel[] = [
@@ -1467,7 +1468,20 @@ export let MODELS_CONFIGS: IModel[] = [
   }
 ]
 
-export const getModelByParam = (param: string): IModel | undefined => {
+export const getModelByParam = (searchStr: string): IModel | undefined => {
+  let param = searchStr;
+  let serverNumber;
+
+  if (!isNaN(Number(param)) && param.endsWith('.2')) {
+    param = param.split('.2')[0];
+    serverNumber = 2;
+  }
+
+  if (isNaN(Number(param)) && param.endsWith('2')) {
+    param = param.slice(0, param.length - 1);
+    serverNumber = 2;
+  }
+
   const model = MODELS_CONFIGS.find(m =>
     m.id === param ||
     (m.hash && m.hash === param) ||
@@ -1475,7 +1489,10 @@ export const getModelByParam = (param: string): IModel | undefined => {
     m.aliases.includes(param)
   )
 
-  return model
+  return model && {
+    ...model,
+    serverNumber
+  }
 }
 
 export const modelsAliases = []
