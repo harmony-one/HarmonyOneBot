@@ -1,5 +1,5 @@
 import { Client } from './sd-node-client'
-import { MODELS_CONFIGS, getModelByParam, type IModel, modelsAliases } from './models-config'
+import { type IModel } from './models-config'
 import { getLoraByParam, type ILora } from './loras-config'
 import { getParamsFromPrompt, NEGATIVE_PROMPT } from './helpers'
 import { type OnMessageContext, type OnCallBackQueryData } from '../../types'
@@ -22,7 +22,7 @@ export class SDNodeApi {
     this.client = new Client()
   }
 
-  generateImage = async (options: IGenImageOptions) => {
+  generateImage = async (options: IGenImageOptions): Promise<Buffer> => {
     const params = getParamsFromPrompt(options.prompt, options.model)
 
     let selectedLora
@@ -37,6 +37,7 @@ export class SDNodeApi {
 
       // For trained Loras
       if (!selectedLora) {
+        // eslint-disable-next-line
         selectedLora = {
           path: `${params.loraName}.safetensors`,
           name: params.loraName
@@ -60,7 +61,7 @@ export class SDNodeApi {
       loraPath: selectedLora?.path,
       loraName: params.loraName,
       loraStrength,
-      seed: options.seed || params.seed,
+      seed: options.seed ?? params.seed,
       model: options.model.path,
       batchSize: 1
     })
@@ -70,7 +71,7 @@ export class SDNodeApi {
 
   generateImageByImage = async (
     options: IGenImageOptions & { fileName: string, fileBuffer: Buffer }
-  ) => {
+  ): Promise<Buffer> => {
     const params = getParamsFromPrompt(options.prompt, options.model)
 
     let selectedLora: ILora | undefined
@@ -85,6 +86,7 @@ export class SDNodeApi {
 
       // For trained Loras
       if (!selectedLora) {
+        // eslint-disable-next-line
         selectedLora = {
           path: `${params.loraName}.safetensors`,
           name: params.loraName
@@ -103,14 +105,14 @@ export class SDNodeApi {
       {
         prompt: params.promptWithoutParams,
         negativePrompt: params.negativePrompt,
-        width: options.width || params.width,
-        height: options.height || params.height,
+        width: options.width ?? params.width,
+        height: options.height ?? params.height,
         steps: params.steps,
         cfgScale: params.cfgScale,
         loraPath: selectedLora?.path,
         loraName: params.loraName,
         loraStrength,
-        seed: options.seed || params.seed,
+        seed: options.seed ?? params.seed,
         denoise: params.denoise,
         model: options.model.path,
         batchSize: 1,
@@ -121,7 +123,7 @@ export class SDNodeApi {
     return images[0]
   }
 
-  generateImagesPreviews = async (options: IGenImageOptions) => {
+  generateImagesPreviews: (options: IGenImageOptions) => Promise<{ images: Buffer[], all_seeds: string[], parameters: unknown, info: string }> = async (options: IGenImageOptions) => {
     const params = {
       prompt: options.prompt,
       negativePrompt: NEGATIVE_PROMPT,

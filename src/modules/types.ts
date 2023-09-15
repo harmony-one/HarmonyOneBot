@@ -1,9 +1,6 @@
 import {
   type Context,
-  type SessionFlavor,
-  CommandContext,
-  HearsContext,
-  CallbackQueryMiddleware
+  type SessionFlavor
 } from 'grammy'
 import { type Filter, type FilterQuery } from 'grammy/out/filter'
 import { type MenuFlavor } from '@grammyjs/menu/out/menu'

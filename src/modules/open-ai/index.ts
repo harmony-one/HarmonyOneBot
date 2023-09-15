@@ -260,7 +260,7 @@ export class OpenAIBot {
     const balanceOne = this.payments.toONE(balance, false).toFixed(2)
     return (
       +balanceOne > +config.openAi.chatGpt.minimumBalance ||
-      (await this.payments.isUserInWhitelist(ctx.from.id, ctx.from.username))
+      (this.payments.isUserInWhitelist(ctx.from.id, ctx.from.username))
     )
   }
 

@@ -1,16 +1,15 @@
 import { ComfyClient } from './ComfyClient'
 import crypto from 'crypto'
 import { createQRCode } from '../utils'
-import { sha256 } from 'telegram/Helpers'
 import * as fs from 'fs'
 import config from '../../../config'
 
-function isDirectoryExists (path: string) {
+function isDirectoryExists (path: string): boolean {
   try {
     const stats = fs.statSync(path)
     return stats.isDirectory()
   } catch (error) {
-    // @ts-expect-error
+    // @ts-expect-error TS18046: 'error' is of type 'unknown'.
     if (error.code === 'ENOENT') {
       return false
     }
@@ -18,7 +17,7 @@ function isDirectoryExists (path: string) {
   }
 }
 
-function buildQrPrompt (d: { qrFilename: string, clientId: string }) {
+async function buildQrPrompt (d: { qrFilename: string, clientId: string }): Promise<unknown> {
   return {
     client_id: d.clientId,
     prompt: {
@@ -223,7 +222,7 @@ function buildQrPrompt (d: { qrFilename: string, clientId: string }) {
   }
 }
 
-async function main () {
+async function main (): Promise<void> {
   const url = 'https://h.country'
   const qrImgBuffer = await createQRCode({ url, margin: 3 })
 
@@ -267,4 +266,6 @@ async function main () {
   }
 }
 
-main()
+main().catch((error) => {
+  console.error(error)
+})

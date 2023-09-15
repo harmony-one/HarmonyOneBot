@@ -26,6 +26,7 @@ export const llmCompletion = async (
       const totalInputTokens = response.data.usage.prompt_tokens
       const totalOutputTokens = response.data.usage.completion_tokens
       const completion = response.data.choices
+
       return {
         completion: {
           content: completion[0].message?.content!,

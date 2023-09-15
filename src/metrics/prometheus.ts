@@ -34,10 +34,11 @@ register.registerMetric(dauCounter)
 
 export class PrometheusMetrics {
   constructor () {
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
     setInterval(async () => { await this.updateDau() }, 30 * 60 * 1000)
   }
 
-  public async bootstrap () {
+  public async bootstrap (): Promise<void> {
     try {
       const totalOne = await statsService.getTotalONE()
       const freeCredits = await statsService.getTotalFreeCredits()
@@ -53,7 +54,7 @@ export class PrometheusMetrics {
     }
   }
 
-  async updateDau () {
+  async updateDau (): Promise<void> {
     try {
       const dauValue = await statsService.getActiveUsers()
       dauCounter.inc(dauValue)

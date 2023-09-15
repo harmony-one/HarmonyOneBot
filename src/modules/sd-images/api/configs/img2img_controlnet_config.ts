@@ -3,7 +3,7 @@ import { type Img2ImgOptions } from './img2img_config'
 export function buildImg2ImgControlnetPrompt (options: Img2ImgOptions & {
   clientId: string
   fileName: string
-}) {
+}): unknown {
   return {
     client_id: options.clientId,
     prompt: {
@@ -14,7 +14,7 @@ export function buildImg2ImgControlnetPrompt (options: Img2ImgOptions & {
           cfg: options.cfgScale,
           sampler_name: 'euler',
           scheduler: 'normal',
-          denoise: options.denoise || 0.87,
+          denoise: options.denoise ?? 0.87,
           model: [
             '4',
             0

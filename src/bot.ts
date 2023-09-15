@@ -47,8 +47,8 @@ import { autoRetry } from '@grammyjs/auto-retry'
 import { run } from '@grammyjs/runner'
 import { runBotHeartBit } from './monitoring/monitoring'
 import { type BotPaymentLog } from './database/stats.service'
-import { getChatMemberInfo } from './modules/open-ai/utils/web-crawler'
 import { TelegramPayments } from './modules/telegram_payment'
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 require('events').EventEmitter.defaultMaxListeners = 30
 
 const logger = pino({
@@ -69,7 +69,7 @@ bot.use(
     limit: 3,
 
     // This is called when the limit is exceeded.
-    onLimitExceeded: async (ctx) => {
+    onLimitExceeded: (ctx): void => {
       // await ctx.reply("Please refrain from sending too many requests")
       logger.error(`@${ctx.from?.username} has exceeded the message limit`)
       // await ctx.reply("");
@@ -153,7 +153,7 @@ bot.on('message:new_chat_members:me', async (ctx) => {
     }
 
     const tgUserId = ctx.message.from.id
-    const tgUsername = ctx.message.from.username || ''
+    const tgUsername = ctx.message.from.username ?? ''
 
     await chatService.initChat({ tgUserId, accountId, tgUsername })
   } catch (err) {
@@ -161,7 +161,7 @@ bot.on('message:new_chat_members:me', async (ctx) => {
   }
 })
 
-const assignFreeCredits = async (ctx: OnMessageContext) => {
+const assignFreeCredits = async (ctx: OnMessageContext): Promise<boolean> => {
   const { chat } = ctx.update.message
 
   const accountId = payments.getAccountId(ctx)
@@ -179,7 +179,7 @@ const assignFreeCredits = async (ctx: OnMessageContext) => {
       const creator = members.find((member) => member.status === 'creator')
       if (creator) {
         tgUserId = creator.user.id
-        tgUsername = creator.user.username || ''
+        tgUsername = creator.user.username ?? ''
       }
     }
 
@@ -204,6 +204,8 @@ bot.use(async (ctx, next) => {
         tgUserId,
         command: entity.text.replace('/', ''),
         rawMessage: ''
+      }).catch((error) => {
+        logger.error(`Error add log ${error}`)
       })
     }
   }
@@ -214,12 +216,12 @@ bot.use(async (ctx, next) => {
 const writeCommandLog = async (
   ctx: OnMessageContext,
   isSupportedCommand = true
-) => {
+): Promise<void> => {
   const { from, text = '', chat } = ctx.update.message
 
   try {
     const accountId = payments.getAccountId(ctx)
-    const [command] = text?.split(' ')
+    const [command] = text.split(' ')
 
     const log: BotPaymentLog = {
       tgUserId: from.id,
@@ -241,7 +243,7 @@ const writeCommandLog = async (
   }
 }
 
-const onMessage = async (ctx: OnMessageContext) => {
+const onMessage = async (ctx: OnMessageContext): Promise<void> => {
   try {
     // bot doesn't handle forwarded messages
     if (!ctx.message.forward_from) {
@@ -430,7 +432,7 @@ const onMessage = async (ctx: OnMessageContext) => {
   }
 }
 
-const onCallback = async (ctx: OnCallBackQueryData) => {
+const onCallback = async (ctx: OnCallBackQueryData): Promise<void> => {
   try {
     if (qrCodeBot.isSupportedEvent(ctx)) {
       await qrCodeBot.onEvent(ctx, (reason) => {
@@ -577,7 +579,7 @@ bot.command('stop', (ctx) => {
 
 bot.on('message', onMessage)
 bot.on('callback_query:data', onCallback)
-bot.on('pre_checkout_query', async (ctx) => await telegramPayments.onPreCheckout(ctx))
+bot.on('pre_checkout_query', async (ctx) => { await telegramPayments.onPreCheckout(ctx) })
 
 bot.catch((err) => {
   const ctx = err.ctx
@@ -608,12 +610,13 @@ app.get('/health', (req, res) => {
   res.send('OK').end()
 })
 
+// eslint-disable-next-line @typescript-eslint/no-misused-promises
 app.get('/metrics', async (req, res) => {
   res.setHeader('Content-Type', prometheusRegister.contentType)
   res.send(await prometheusRegister.metrics())
 })
 
-async function bootstrap () {
+async function bootstrap (): Promise<void> {
   const httpServer = app.listen(config.port, () => {
     logger.info(`Bot listening on port ${config.port}`)
     // bot.start({
@@ -628,11 +631,11 @@ async function bootstrap () {
 
   const runner = run(bot)
 
-  const stopApplication = async () => {
+  const stopApplication = async (): Promise<void> => {
     console.warn('Terminating the bot...')
 
     try {
-      await httpServer.close()
+      httpServer.close()
       console.warn('The HTTP server is turned off')
 
       if (runner && runner.isRunning()) {
@@ -652,12 +655,14 @@ async function bootstrap () {
     }
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-misused-promises
   process.on('SIGINT', stopApplication)
+  // eslint-disable-next-line @typescript-eslint/no-misused-promises
   process.on('SIGTERM', stopApplication)
 
   if (config.betteruptime.botHeartBitId) {
-    const task = runBotHeartBit(runner, config.betteruptime.botHeartBitId)
-    const stopHeartBit = () => {
+    const task = await runBotHeartBit(runner, config.betteruptime.botHeartBitId)
+    const stopHeartBit = (): void => {
       logger.info('heart bit stopping')
       task.stop()
     }
@@ -666,4 +671,7 @@ async function bootstrap () {
   }
 }
 
-bootstrap()
+bootstrap().catch((error) => {
+  console.error(`bot bootstrap error ${error}`)
+  process.exit(1)
+})
