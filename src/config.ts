@@ -28,7 +28,7 @@ export default {
     model: 'chat-bison',
     minimumBalance: 0,
     isEnabled: Boolean(parseInt(process.env.LLMS_ENABLED ?? '1')),
-    prefixes: { bardPrefix: [','] }
+    prefixes: { bardPrefix: [',','b.','B.'] }
   },
   openAi: {
     dalle: {

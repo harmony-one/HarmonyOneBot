@@ -12,7 +12,7 @@ import { LlmsModelsEnum } from './types'
 import { type Message } from 'grammy/out/types'
 
 export const SupportedCommands = {
-  palm: { name: 'v' },
+  bardF: { name: 'bard' },
   bard: { name: 'b' }
 }
 
