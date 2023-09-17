@@ -37,7 +37,7 @@ const removeSpaceFromBegin = (text: string) => {
   return text.slice(idx)
 }
 
-const SPECIAL_IMG_CMD_SYMBOLS = ['i.', 'l.', 'I.', '?', '!', ':', ';', "r.", "R.", "d.", "D.","(", ")", "$", "&", "@","<"];
+const SPECIAL_IMG_CMD_SYMBOLS = ['i.', 'l.', 'I.', '?', '!', ':', ';', "r.", "R.", "d.", "D.","(", ")", "$", "&","<"];
 
 export const getPrefix = (prompt: string, prefixList: string[]): string => {
   for (let i = 0; i < prefixList.length; i++) {

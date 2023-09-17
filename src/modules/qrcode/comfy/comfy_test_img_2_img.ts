@@ -5,7 +5,7 @@ import { sha256 } from 'telegram/Helpers'
 import * as fs from 'fs'
 import config from '../../../config'
 
-function isDirectoryExists (path: string) {
+function isDirectoryExists(path: string) {
   try {
     const stats = fs.statSync(path)
     return stats.isDirectory()
@@ -18,7 +18,7 @@ function isDirectoryExists (path: string) {
   }
 }
 
-function buildQrPrompt (d: { qrFilename: string, clientId: string }) {
+function buildQrPrompt(d: { qrFilename: string, clientId: string }) {
   return {
     client_id: d.clientId,
     prompt: {
@@ -223,7 +223,7 @@ function buildQrPrompt (d: { qrFilename: string, clientId: string }) {
   }
 }
 
-async function main () {
+async function main() {
   const url = 'https://h.country'
   const qrImgBuffer = await createQRCode({ url, margin: 3 })
 
@@ -234,7 +234,9 @@ async function main () {
   const fileName = filenameHash.digest('hex') + '.png'
   console.log('### fileName', fileName)
 
-  const uploadResult = await comfyClient.uploadImage(fileName, qrImgBuffer)
+  const uploadResult = await comfyClient.uploadImage({
+    filename: fileName, fileBuffer: qrImgBuffer, override: true
+  })
   console.log('### uploadResult', uploadResult)
 
   const prompt = buildQrPrompt({ qrFilename: uploadResult.name, clientId: comfyClient.clientId })
