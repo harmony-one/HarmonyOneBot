@@ -6,7 +6,7 @@ import { type BotPayments } from '../payment'
 import pino, { type Logger } from 'pino'
 
 enum SupportedCommands {
-  DEPOSIT = 'buy',
+  BUY = 'buy',
 }
 
 export class TelegramPayments {
@@ -30,7 +30,7 @@ export class TelegramPayments {
   }
 
   public async onEvent (ctx: OnMessageContext): Promise<void> {
-    if (ctx.hasCommand(SupportedCommands.DEPOSIT)) {
+    if (ctx.hasCommand(SupportedCommands.BUY)) {
       await this.createPaymentInvoice(ctx)
       return
     }
