@@ -139,5 +139,6 @@ export default {
     creditsAmount: '100'
   },
   betteruptime: { botHeartBitId: process.env.BOT_HEARTBIT_ID ?? '' },
-  telegramPayments: { token: process.env.TELEGRAM_PAYMENTS_TOKEN ?? '' }
+  telegramPayments: { token: process.env.TELEGRAM_PAYMENTS_TOKEN ?? '' },
+  sentry: { dsn: process.env.SENTRY_DSN }
 }

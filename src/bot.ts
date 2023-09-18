@@ -88,6 +88,7 @@ bot.use(
 )
 
 Sentry.init({
+  dsn: config.sentry.dsn,
   integrations: [
     new ProfilingIntegration()
   ],
@@ -313,6 +314,17 @@ const UtilityBots: Record<string, UtilityBot> = {
   schedule
 }
 
+const executeOrRefund = (ctx: OnMessageContext, price: number, bot: PayableBot): void => {
+  const refund = (reason?: string): void => {
+    payments.refundPayment(reason, ctx, price).catch((ex: any) => {
+      logger.error('Refund error', reason, ex)
+    })
+  }
+  bot.onEvent(ctx, refund).catch((ex: any) => {
+    refund(ex?.message ?? 'Unknown error')
+  })
+}
+
 const onMessage = async (ctx: OnMessageContext): Promise<void> => {
   try {
     // bot doesn't handle forwarded messages
@@ -323,18 +335,10 @@ const onMessage = async (ctx: OnMessageContext): Promise<void> => {
         await telegramPayments.onEvent(ctx)
         return
       }
-      const tryOrRefund = (price: number, callback: (ctx: OnMessageContext, refundCallback: RefundCallback) => Promise<any>): void => {
-        const refund = (reason?: string): void => {
-          payments.refundPayment(reason, ctx, price).catch((ex: any) => {
-            logger.error('Refund error', reason, ex)
-          })
-        }
-        callback(ctx, refund).catch((ex: any) => {
-          refund(ex?.message ?? 'Unknown error')
-        })
-      }
+
       for (const config of Object.values(PayableBots)) {
         const bot = config.bot
+
         if (!bot.isSupportedEvent(ctx)) {
           continue
         }
@@ -345,7 +349,7 @@ const onMessage = async (ctx: OnMessageContext): Promise<void> => {
         const price = bot.getEstimatedPrice(ctx)
         const isPaid = await payments.pay(ctx, price)
         if (isPaid) {
-          tryOrRefund(price, bot.onEvent)
+          executeOrRefund(ctx, price, bot)
         }
         return
       }
