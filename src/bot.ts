@@ -371,7 +371,7 @@ const onMessage = async (ctx: OnMessageContext): Promise<void> => {
       await writeCommandLog(ctx, false)
     }
   } catch (ex: any) {
-    logger.error('onMessage error', ex)
+    logger.error({ errorMsg: ex.message }, 'onMessage error')
   }
 }
 
@@ -390,7 +390,7 @@ const onCallback = async (ctx: OnCallBackQueryData): Promise<void> => {
       })
     }
   } catch (ex: any) {
-    logger.error('onMessage error', ex)
+    logger.error({ errorMsg: ex.message }, 'onCallback error')
   }
 }
 
