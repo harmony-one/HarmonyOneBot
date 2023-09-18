@@ -9,7 +9,8 @@
     "dev": "env-cmd ts-node-dev src/bot.ts",
     "test": "jest",
     "typeorm": "typeorm-ts-node-commonjs -d src/database/datasource.ts",
-    "lint": "eslint . --ext .ts"
+    "lint": "eslint . --ext .ts",
+    "sentry:sourcemaps": "sentry-cli sourcemaps inject --org hiddenstate --project harmony-ai-bot ./dist && sentry-cli sourcemaps upload --org hiddenstate --project harmony-ai-bot ./dist"
   },
   "repository": {
     "type": "git",
@@ -63,15 +64,19 @@
     "prettier": "2.8.7",
     "ts-jest": "^29.1.1",
     "ts-node-dev": "^2.0.0",
-    "typescript": "^4.8.4"
+    "typescript": "^4.8.4",
+    "@sentry/cli": "^2.20.7"
   },
   "dependencies": {
+    "@elastic/elasticsearch": "^8.9.0",
     "@grammyjs/auto-chat-action": "^0.1.1",
     "@grammyjs/auto-retry": "^1.1.1",
     "@grammyjs/conversations": "^1.1.2",
     "@grammyjs/menu": "^1.2.1",
     "@grammyjs/ratelimiter": "^1.2.0",
     "@grammyjs/runner": "^2.0.3",
+    "@sentry/node": "^7.69.0",
+    "@sentry/profiling-node": "^1.2.1",
     "@walletconnect/sign-client": "^2.9.2",
     "axios": "^1.4.0",
     "bignumber.js": "^9.1.1",
@@ -79,6 +84,8 @@
     "dotenv": "^16.0.3",
     "ethers": "^5.7.2",
     "express": "^4.18.2",
+ 	"form-data": "^4.0.0",
+    "express-async-handler": "^1.2.0",
     "gpt-tokenizer": "^2.1.1",
     "grammy": "^1.17.1",
     "jsqr": "^1.4.0",
@@ -103,6 +110,7 @@
     "upng-js": "^2.1.0",
     "uuid": "^9.0.0",
     "web3": "1.10.0",
+    "web3-utils": "^4.0.5",
     "websocket": "^1.0.34"
   }
 }

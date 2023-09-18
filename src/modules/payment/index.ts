@@ -1,6 +1,6 @@
 import pino, {type Logger} from 'pino'
 import Web3 from 'web3'
-import {type Account} from 'web3-core'
+import { type Account, type TransactionReceipt } from 'web3-core'
 import axios from 'axios'
 import bn, {BigNumber} from 'bignumber.js'
 import config from '../../config'
@@ -126,7 +126,7 @@ export class BotPayments {
     }
   }
 
-  private async getOneRate () {
+  private async getOneRate (): Promise<number> {
     if (
       this.ONERate &&
       Date.now() - this.ONERateUpdateTimestamp < 10 * 60 * 1000
@@ -153,20 +153,20 @@ export class BotPayments {
   public getUserAccount (
     userId: number | string,
     botSecret = config.payment.secret
-  ) {
+  ): Account | undefined {
     const privateKey = this.web3.utils.sha3(`${botSecret}_${userId}`)
     if (privateKey) {
       return this.web3.eth.accounts.privateKeyToAccount(privateKey)
     }
   }
 
-  public async getPriceInONE (centsUsd: number) {
+  public async getPriceInONE (centsUsd: number): Promise<bn> {
     const currentRate = await this.getOneRate()
     const amount = currentRate ? centsUsd / 100 / currentRate : 0
     return bn(Math.round(amount * 10 ** 18))
   }
 
-  public toONE (amount: BigNumber, roundCeil = true) {
+  public toONE (amount: BigNumber, roundCeil = true): number {
     const value = this.web3.utils.fromWei(amount.toFixed(0), 'ether')
     if (roundCeil) {
       return Math.ceil(+value)
@@ -174,12 +174,12 @@ export class BotPayments {
     return +value
   }
 
-  public async getAddressBalance (address: string) {
+  public async getAddressBalance (address: string): Promise<bn> {
     const balance = await this.web3.eth.getBalance(address)
     return bn(balance.toString())
   }
 
-  public async getUserBalance (accountId: number) {
+  public async getUserBalance (accountId: number): Promise<bn> {
     const account = this.getUserAccount(accountId)
     if (account) {
       return await this.getAddressBalance(account.address)
@@ -187,7 +187,7 @@ export class BotPayments {
     return bn(0)
   }
 
-  private async getTransactionFee () {
+  private async getTransactionFee (): Promise<bn> {
     const gasPrice = await this.web3.eth.getGasPrice()
     return bn(gasPrice.toString()).multipliedBy(21000)
   }
@@ -196,7 +196,7 @@ export class BotPayments {
     accountFrom: Account,
     addressTo: string,
     amount: BigNumber
-  ) {
+  ): Promise<TransactionReceipt | undefined> {
     try {
       const web3 = new Web3(this.rpcURL)
       web3.eth.accounts.wallet.add(accountFrom)
@@ -252,7 +252,7 @@ export class BotPayments {
     )
   }
 
-  public isPaymentsEnabled () {
+  public isPaymentsEnabled (): boolean {
     return Boolean(
       config.payment.isEnabled &&
         config.payment.secret &&
@@ -260,7 +260,7 @@ export class BotPayments {
     )
   }
 
-  private skipPayment (ctx: OnMessageContext, amountUSD: number) {
+  private skipPayment (ctx: OnMessageContext, amountUSD: number): boolean {
     const { id: userId, username = '' } = ctx.update.message.from
 
     if (!this.isPaymentsEnabled()) {
@@ -288,7 +288,7 @@ export class BotPayments {
     reason = '',
     ctx: OnMessageContext,
     amountUSD: number
-  ) {
+  ): Promise<boolean> {
     const { id: userId, username = '' } = ctx.update.message.from
 
     this.logger.error(
@@ -327,11 +327,14 @@ export class BotPayments {
             (e as Error).message
           }`
         )
+        return false
       }
     }
+
+    return false
   }
 
-  private convertBigNumber (value: BigNumber, precision = 8) {
+  private convertBigNumber (value: BigNumber, precision = 8): number {
     return +value.div(BigNumber(10).pow(18)).toFormat(precision)
   }
 
@@ -340,14 +343,14 @@ export class BotPayments {
     amountCredits: BigNumber,
     amountOne: BigNumber,
     amountFiatCredits: BigNumber
-  ) {
+  ): Promise<void> {
     const { from, text = '', audio, voice = '', chat } = ctx.update.message
 
     try {
       const accountId = this.getAccountId(ctx)
       let [command = ''] = text.split(' ')
       if (!command) {
-        if (audio || voice) {
+        if (audio ?? voice) {
           command = '/voice-memo'
         } else {
           command = '/openai'
@@ -374,7 +377,8 @@ export class BotPayments {
     }
   }
 
-  public async pay (ctx: OnMessageContext, amountUSD: number) {
+  public async pay (ctx: OnMessageContext, amountUSD: number): Promise<boolean> {
+    // eslint-disable-next-line @typescript-eslint/naming-convention
     const { from, message_id, chat } = ctx.update.message
 
     const accountId = this.getAccountId(ctx)
@@ -476,6 +480,7 @@ export class BotPayments {
           replyId: message_id
         }
       )
+      return false
     }
   }
 
@@ -513,23 +518,23 @@ export class BotPayments {
     return totalFunds
   }
 
-  public isSupportedEvent (ctx: OnMessageContext) {
+  public isSupportedEvent (ctx: OnMessageContext): boolean {
     const { text = '' } = ctx.update.message
     return ['/credits', '/migrate'].includes(text)
   }
 
-  public getAccountId (ctx: OnMessageContext) {
+  public getAccountId (ctx: OnMessageContext): number {
     const { chat, from } = ctx.update.message
     const { id: userId } = from
     const { id: chatId, type } = chat
     return type === 'private' ? userId : chatId
   }
 
-  public async onEvent (ctx: OnMessageContext) {
+  public async onEvent (ctx: OnMessageContext): Promise<void> {
     const { text = '', from, chat } = ctx.update.message
 
     if (!this.isSupportedEvent(ctx)) {
-      return false
+      return
     }
     const accountId = this.getAccountId(ctx)
     const account = this.getUserAccount(accountId)
@@ -538,7 +543,7 @@ export class BotPayments {
     )
 
     if (!account) {
-      return false
+      return
     }
     if (text === '/credits') {
       try {

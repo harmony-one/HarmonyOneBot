@@ -17,7 +17,6 @@ import {
   type DalleGPTModel,
   DalleGPTModels
 } from '../types'
-import { getMessageExtras } from '../helpers'
 
 const openai = new OpenAI({ apiKey: config.openAiKey })
 
@@ -33,20 +32,16 @@ export async function postGenerateImg (
   prompt: string,
   numImgs?: number,
   imgSize?: string
-) {
-  try {
-    const payload = {
-      prompt,
-      n: numImgs || config.openAi.dalle.sessionDefault.numImages,
-      size: imgSize || config.openAi.dalle.sessionDefault.imgSize
-    }
-    const response = await openai.images.generate(
-      payload as OpenAI.Images.ImageGenerateParams
-    )
-    return response.data
-  } catch (error) {
-    throw error
+): Promise<OpenAI.Images.Image[]> {
+  const payload = {
+    prompt,
+    n: numImgs ?? config.openAi.dalle.sessionDefault.numImages,
+    size: imgSize ?? config.openAi.dalle.sessionDefault.imgSize
   }
+  const response = await openai.images.generate(
+    payload as OpenAI.Images.ImageGenerateParams
+  )
+  return response.data
 }
 
 export async function alterGeneratedImg (
@@ -54,14 +49,14 @@ export async function alterGeneratedImg (
   filePath: string,
   ctx: OnMessageContext | OnCallBackQueryData,
   imgSize?: string
-) {
+): Promise<OpenAI.Images.Image[] | null | undefined> {
   try {
     const imageData = await getImage(filePath)
     if (!imageData.error) {
       let response
-      const size = imgSize || config.openAi.dalle.sessionDefault.imgSize
+      const size = imgSize ?? config.openAi.dalle.sessionDefault.imgSize
       if (!isNaN(+prompt)) {
-        const size = imgSize || config.openAi.dalle.sessionDefault.imgSize
+        const size = imgSize ?? config.openAi.dalle.sessionDefault.imgSize
         const n = parseInt(prompt)
         const payLoad: OpenAI.Images.ImageCreateVariationParams = {
           image: imageData.file as any,
@@ -133,7 +128,7 @@ export const streamChatCompletion = async (
             conversation as OpenAI.Chat.Completions.CreateChatCompletionRequestMessage[],
           stream: true,
           max_tokens: limitTokens ? config.openAi.chatGpt.maxTokens : undefined,
-          temperature: config.openAi.dalle.completions.temperature || null
+          temperature: config.openAi.dalle.completions.temperature || 0.8
         })
         let wordCount = 0
 
@@ -189,22 +184,19 @@ export const streamChatCompletion = async (
   }
 }
 
-export async function improvePrompt (promptText: string, model: string) {
+export async function improvePrompt (promptText: string, model: string): Promise<string> {
   const prompt = `Improve this picture description using max 100 words and don't add additional text to the image: ${promptText} `
-  try {
-    const conversation = [{ role: 'user', content: prompt }]
-    const response = await chatCompletion(conversation, model)
-    return response.completion
-  } catch (e: any) {
-    throw e
-  }
+
+  const conversation = [{ role: 'user', content: prompt }]
+  const response = await chatCompletion(conversation, model)
+  return response.completion
 }
 
-export const getTokenNumber = (prompt: string) => {
+export const getTokenNumber = (prompt: string): number => {
   return encode(prompt).length
 }
 
-export const getChatModel = (modelName: string) => {
+export const getChatModel = (modelName: string): ChatModel => {
   return ChatGPTModels[modelName]
 }
 
@@ -213,7 +205,7 @@ export const getChatModelPrice = (
   inCents = true,
   inputTokens: number,
   outPutTokens?: number
-) => {
+): number => {
   let price = model.inputPrice * inputTokens
   price += outPutTokens
     ? outPutTokens * model.outputPrice
@@ -222,7 +214,7 @@ export const getChatModelPrice = (
   return price / 1000
 }
 
-export const getDalleModel = (modelName: string) => {
+export const getDalleModel = (modelName: string): DalleGPTModel => {
   logger.info(modelName)
   return DalleGPTModels[modelName]
 }
@@ -233,7 +225,7 @@ export const getDalleModelPrice = (
   numImages = 1,
   hasEnhacedPrompt = false,
   chatModel?: ChatModel
-) => {
+): number => {
   let price = model.price * numImages || 0
   if (hasEnhacedPrompt && chatModel) {
     const averageToken = 250 // for 100 words
@@ -242,7 +234,7 @@ export const getDalleModelPrice = (
   return price
 }
 
-function getGrammy429Error () {
+export function getGrammy429Error (): GrammyError {
   return new GrammyError(
     "GrammyError: Call to 'sendMessage' failed! (429: Too Many Requests: retry after 33)",
     {

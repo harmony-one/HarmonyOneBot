@@ -60,9 +60,9 @@ export class OpenAIBot {
     }
   }
 
-  public async isSupportedEvent (
+  public isSupportedEvent (
     ctx: OnMessageContext | OnCallBackQueryData
-  ): Promise<boolean> {
+  ): boolean {
     const hasCommand = ctx.hasCommand(
       Object.values(SupportedCommands).map((command) => command.name)
     )
@@ -135,7 +135,7 @@ export class OpenAIBot {
   }
 
   public async onEvent (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
-    if (!(await this.isSupportedEvent(ctx)) && ctx.chat?.type !== 'private') {
+    if (!(this.isSupportedEvent(ctx)) && ctx.chat?.type !== 'private') {
       this.logger.warn(`### unsupported command ${ctx.message?.text}`)
       return
     }
@@ -257,10 +257,10 @@ export class OpenAIBot {
     const balance = addressBalance
       .plus(creditsBalance)
       .plus(fiatCreditsBalance)
-    const balanceOne = this.payments.toONE(balance, false).toFixed(2)
+    const balanceOne = this.payments.toONE(balance, false)
     return (
-      +balanceOne > +config.openAi.chatGpt.minimumBalance ||
-      (await this.payments.isUserInWhitelist(ctx.from.id, ctx.from.username))
+      (+balanceOne > +config.openAi.chatGpt.minimumBalance) ||
+      (this.payments.isUserInWhitelist(ctx.from.id, ctx.from.username))
     )
   }
 
@@ -438,8 +438,8 @@ export class OpenAIBot {
         return
       }
       let price = 0
-      ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_4_32K
-      const model = ChatGPTModelsEnum.GPT_4_32K
+      ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_35_TURBO_16K
+      const model = ChatGPTModelsEnum.GPT_35_TURBO_16K
       const chatModel = getChatModel(model)
       const webCrawlerMaxTokens =
         chatModel.maxContextTokens - config.openAi.chatGpt.maxTokens * 2

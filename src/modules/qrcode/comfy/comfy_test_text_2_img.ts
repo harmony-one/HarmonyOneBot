@@ -2,12 +2,12 @@ import { ComfyClient } from './ComfyClient'
 import * as fs from 'fs'
 import config from '../../../config'
 
-function isDirectoryExists (path: string) {
+function isDirectoryExists (path: string): boolean {
   try {
     const stats = fs.statSync(path)
     return stats.isDirectory()
   } catch (error) {
-    // @ts-expect-error
+    // @ts-expect-error TS18046: 'error' is of type 'unknown'.
     if (error.code === 'ENOENT') {
       return false
     }
@@ -15,7 +15,7 @@ function isDirectoryExists (path: string) {
   }
 }
 
-function buildQrPrompt (d: { clientId: string }) {
+function buildQrPrompt (d: { clientId: string }): unknown {
   return {
     client_id: d.clientId,
     prompt: { 3: { inputs: { seed: 563212564120689, steps: 20, cfg: 8, sampler_name: 'euler', scheduler: 'normal', denoise: 1, model: ['4', 0], positive: ['6', 0], negative: ['7', 0], latent_image: ['5', 0] }, class_type: 'KSampler' }, 4: { inputs: { ckpt_name: 'sd_xl_refiner_0.9.safetensors' }, class_type: 'CheckpointLoaderSimple' }, 5: { inputs: { width: 512, height: 512, batch_size: 1 }, class_type: 'EmptyLatentImage' }, 6: { inputs: { text: 'beautiful scenery nature glass bottle landscape, , purple galaxy bottle,', clip: ['4', 1] }, class_type: 'CLIPTextEncode' }, 7: { inputs: { text: 'text, watermark', clip: ['4', 1] }, class_type: 'CLIPTextEncode' }, 8: { inputs: { samples: ['3', 0], vae: ['4', 2] }, class_type: 'VAEDecode' }, 9: { inputs: { filename_prefix: 'ComfyUI', images: ['8', 0] }, class_type: 'SaveImage' } },
@@ -23,7 +23,7 @@ function buildQrPrompt (d: { clientId: string }) {
   }
 }
 
-async function main () {
+async function main (): Promise<void> {
   const comfyClient = new ComfyClient({ host: config.comfyHost, wsHost: config.comfyWsHost })
 
   const prompt = buildQrPrompt({ clientId: comfyClient.clientId })
@@ -54,4 +54,6 @@ async function main () {
   }
 }
 
-main()
+main().catch((err) => {
+  console.error(err)
+})

@@ -15,7 +15,7 @@ export class Speechmatics {
     this.apiKey = apiKey
   }
 
-  private async postJob (dataUrl: string, type: 'file' | 'url') {
+  private async postJob (dataUrl: string, type: 'file' | 'url'): Promise<string> {
     const formData = new FormData()
 
     let config: any = {
@@ -53,12 +53,12 @@ export class Speechmatics {
     return data.id
   }
 
-  private readonly sleep = async (timeout: number) => {
+  private readonly sleep = async (timeout: number): Promise<unknown> => {
     return await new Promise(resolve => setTimeout(resolve, timeout))
   }
 
-  private async getJobResult (jobId: string) {
-    const { data } = await axios.get(`https://asr.api.speechmatics.com/v2/jobs/${jobId}/transcript?format=txt`, { headers: { Authorization: `Bearer ${this.apiKey}` } })
+  private async getJobResult (jobId: string): Promise<string> {
+    const { data } = await axios.get<string>(`https://asr.api.speechmatics.com/v2/jobs/${jobId}/transcript?format=txt`, { headers: { Authorization: `Bearer ${this.apiKey}` } })
     return data
   }
 
@@ -67,7 +67,7 @@ export class Speechmatics {
     return data?.summary?.content ? data.summary.content : ''
   }
 
-  private enrichTranslation (text: string) {
+  private enrichTranslation (text: string): string {
     return text
       .split('SPEAKER: S')
       .filter(item => item).map(item => {
@@ -93,14 +93,14 @@ export class Speechmatics {
     return null
   }
 
-  public async getTranslation (dataUrl: string, type: 'file' | 'url' = 'file') {
+  public async getTranslation (dataUrl: string, type: 'file' | 'url' = 'file'): Promise<SpeechmaticsResult | null> {
     const jobIb = await this.postJob(dataUrl, type)
     console.log(`Speechmatics: start job ${jobIb}, data url: ${dataUrl}`)
     const result = await this.pollJobResult(jobIb)
     return result
   }
 
-  public estimatePrice (duration: number) {
+  public estimatePrice (duration: number): number {
     return Math.ceil(this.pricePerHour * duration / 60 / 60 * 100)
   }
 }

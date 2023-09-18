@@ -1,8 +1,7 @@
-import config from '../../config'
 import { type OnCallBackQueryData, type OnMessageContext } from '../types'
 import { getModelByParam, type IModel, MODELS_CONFIGS } from './api'
-import { getLoraByParam, type ILora, LORAS_CONFIGS } from './api/loras-config'
-import { childrenWords, tabooWords, sexWords } from './words-blacklist'
+import { getLoraByParam, type ILora } from './api/loras-config'
+import { childrenWords, sexWords } from './words-blacklist'
 
 export enum COMMAND {
   TEXT_TO_IMAGE = 'image',
@@ -25,7 +24,7 @@ export interface IMediaGroup {
   photos_ids: string[]
 }
 
-const removeSpaceFromBegin = (text: string) => {
+const removeSpaceFromBegin = (text: string): string => {
   if (!text) return ''
 
   let idx = 0
@@ -37,7 +36,16 @@ const removeSpaceFromBegin = (text: string) => {
   return text.slice(idx)
 }
 
-const SPECIAL_IMG_CMD_SYMBOLS = [',', 'i.', 'l.', 'I.']
+const SPECIAL_IMG_CMD_SYMBOLS = ['i.', 'l.', 'I.', '?', '!', ':', ';', "r.", "R.", "d.", "D.","(", ")", "$", "&","<"];
+
+export const getPrefix = (prompt: string, prefixList: string[]): string => {
+  for (let i = 0; i < prefixList.length; i++) {
+    if (prompt.toLocaleLowerCase().startsWith(prefixList[i])) {
+      return prefixList[i];
+    }
+  }
+  return "";
+};
 
 const parsePrompts = (fullText: string): { modelId: string, prompt: string } => {
   let modelId = ''
@@ -63,7 +71,7 @@ const parsePrompts = (fullText: string): { modelId: string, prompt: string } => 
       prompt = prompt.join('')
       prompt = removeSpaceFromBegin(prompt)
 
-      modelId = modelParamStr.join('').split('=')[1].replace(/[^a-zA-Z\-\_\d]/g, '')
+      modelId = modelParamStr.join('').split('=')[1].replace(/[^a-zA-Z\-_\d]/g, '')
     } else {
       prompt = removeSpaceFromBegin(text)
     }
@@ -78,7 +86,7 @@ const parsePrompts = (fullText: string): { modelId: string, prompt: string } => 
 
 type Context = OnMessageContext | OnCallBackQueryData
 
-const hasCommand = (ctx: Context, cmd: string) => ctx.hasCommand(cmd) || (ctx.message?.text?.startsWith(`${cmd} `) && ctx.chat?.type === 'private')
+const hasCommand = (ctx: Context, cmd: string): boolean | undefined => ctx.hasCommand(cmd) || (ctx.message?.text?.startsWith(`${cmd} `) && ctx.chat?.type === 'private')
 
 export const parseCtx = (ctx: Context): IOperation | false => {
   try {
@@ -102,17 +110,24 @@ export const parseCtx = (ctx: Context): IOperation | false => {
     let lora
 
     if (
-      hasCommand(ctx, 'image') || hasCommand(ctx, 'imagine') || hasCommand(ctx, 'img')
+      (hasCommand(ctx, 'image') ?? hasCommand(ctx, 'imagine')) ?? hasCommand(ctx, 'img')
     ) {
       command = COMMAND.TEXT_TO_IMAGE
+    }
+
+    if (
+      (hasCommand(ctx, 'image2') ?? hasCommand(ctx, 'imagine2')) ?? hasCommand(ctx, 'img2')
+    ) {
+      command = COMMAND.TEXT_TO_IMAGE
+      model = model && ({ ...model, serverNumber: 2 });
     }
 
     if (
       hasCommand(ctx, 'logo') || hasCommand(ctx, 'l')
     ) {
       command = COMMAND.TEXT_TO_IMAGE
-      model = model || getModelByParam('xl')
-      lora = getLoraByParam('logo', model?.baseModel || 'SDXL 1.0')
+      model = model ?? getModelByParam('xl')
+      lora = getLoraByParam('logo', model?.baseModel ?? 'SDXL 1.0')
     }
 
     if (hasCommand(ctx, 'images')) {
@@ -146,12 +161,14 @@ export const parseCtx = (ctx: Context): IOperation | false => {
     const startWithSpecialSymbol = SPECIAL_IMG_CMD_SYMBOLS.some(s => !!messageText?.startsWith(s))
 
     if (startWithSpecialSymbol) {
+      const prefix = getPrefix(messageText, SPECIAL_IMG_CMD_SYMBOLS)
+      model = getModelByParam(prefix);
       command = COMMAND.TEXT_TO_IMAGE
     }
 
     if (messageText.startsWith('l.')) {
       model = getModelByParam('xl')
-      lora = getLoraByParam('logo', model?.baseModel || 'SDXL 1.0')
+      lora = getLoraByParam('logo', model?.baseModel ?? 'SDXL 1.0')
     }
 
     if (!model) {
@@ -167,14 +184,14 @@ export const parseCtx = (ctx: Context): IOperation | false => {
     }
 
     const messageHasPhoto = !!ctx.message?.photo?.length ||
-            !!ctx.message?.reply_to_message?.photo?.length
+      !!ctx.message?.reply_to_message?.photo?.length
 
     if (command === COMMAND.TEXT_TO_IMAGE && messageHasPhoto) {
       command = COMMAND.IMAGE_TO_IMAGE
 
       // TODO: img + lora + controlneet  don't support Xl
       if (lora && model.baseModel !== 'SD 1.5') {
-        model = getModelByParam('rev') || MODELS_CONFIGS[0]
+        model = getModelByParam('rev') ?? MODELS_CONFIGS[0]
       }
     }
 
@@ -193,7 +210,7 @@ export const parseCtx = (ctx: Context): IOperation | false => {
   return false
 }
 
-export const promptHasBadWords = (prompt: string) => {
+export const promptHasBadWords = (prompt: string): boolean => {
   const lowerCasePrompt = prompt.toLowerCase()
 
   const hasChildrenWords = childrenWords.some(

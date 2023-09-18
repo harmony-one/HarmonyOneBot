@@ -12,7 +12,7 @@ import {
   type Txt2ImgOptions,
   type Img2ImgOptions
 } from './configs'
-import { NEGATIVE_PROMPT, waitingExecute } from './helpers'
+import { waitingExecute } from './helpers'
 import axios from 'axios'
 
 export interface Txt2ImgResponse {
@@ -22,16 +22,15 @@ export interface Txt2ImgResponse {
   info: string
 }
 
-const getRandomSeed = () => Math.round(Math.random() * 1e15)
+const getRandomSeed = (): number => Math.round(Math.random() * 1e15)
 
 export class Client {
-  constructor () { }
+constructor () { }
 
   txt2img = async (options: Txt2ImgOptions, serverConfig?: { host: string, wsHost: string }): Promise<Txt2ImgResponse> => {
-    const comfyClient = new ComfyClient({
+    const comfyClient = new ComfyClient(serverConfig || {
       host: config.comfyHost,
       wsHost: config.comfyWsHost,
-      ...serverConfig
     })
 
     try {
@@ -42,7 +41,7 @@ export class Client {
         attempts--
       }
 
-      const seed = options.seed || getRandomSeed()
+      const seed = options.seed ?? getRandomSeed()
 
       const buildImgPromptMethod = options.loraPath ? buildImgPromptLora : buildImgPrompt
 
@@ -54,7 +53,7 @@ export class Client {
 
       const r = await comfyClient.queuePrompt(prompt)
 
-      const promptResult = await waitingExecute(async () => await comfyClient.waitingPromptExecution(r.prompt_id), 1000 * 180)
+      await waitingExecute(async () => await comfyClient.waitingPromptExecution(r.prompt_id), 1000 * 180)
 
       const history = await comfyClient.history(r.prompt_id)
 
@@ -64,12 +63,13 @@ export class Client {
 
       comfyClient.abortWebsocket()
 
-      return {
+      const result: Txt2ImgResponse = {
         images,
         parameters: {},
         all_seeds: [String(seed)],
         info: ''
-      } as Txt2ImgResponse
+      }
+      return result
     } catch (e) {
       comfyClient.abortWebsocket()
       throw e
@@ -95,7 +95,7 @@ export class Client {
         attempts--
       }
 
-      const seed = options.seed || getRandomSeed()
+      const seed = options.seed ?? getRandomSeed()
 
       const filename = Date.now() + '.png'
 
@@ -147,7 +147,7 @@ export class Client {
 
       const r = await comfyClient.queuePrompt(prompt)
 
-      const promptResult = await waitingExecute(async () => await comfyClient.waitingPromptExecution(r.prompt_id), 1000 * 180)
+      await waitingExecute(async () => await comfyClient.waitingPromptExecution(r.prompt_id), 1000 * 180)
 
       const history = await comfyClient.history(r.prompt_id)
 
@@ -157,12 +157,15 @@ export class Client {
 
       comfyClient.abortWebsocket()
 
-      return {
-        images,
-        parameters: {},
-        all_seeds: [String(seed)],
-        info: ''
-      } as Txt2ImgResponse
+      const result: Txt2ImgResponse =
+       {
+         images,
+         parameters: {},
+         all_seeds: [String(seed)],
+         info: ''
+       }
+
+      return result
     } catch (e) {
       comfyClient.abortWebsocket()
       throw e
@@ -194,7 +197,7 @@ export class Client {
       }
 
       if (!fileBuffers.length) {
-        ctx.reply(`No files found for ${loraName}`)
+        await ctx.reply(`No files found for ${loraName}`)
         throw new Error('No files found')
       }
 
@@ -209,7 +212,7 @@ export class Client {
       let res = await axios.get(`${trainServer}/add/${loraName}/${modelPath}`)
       let train = res.data
 
-      ctx.reply(`Starting training with ${fileBuffers.length} images, your number is ${train.numberInQueue}`)
+      await ctx.reply(`Starting training with ${fileBuffers.length} images, your number is ${train.numberInQueue}`)
 
       while (train.status === 'IN_PROGRESS' || train.status === 'WAITING') {
         await sleep(1000)
@@ -222,7 +225,7 @@ export class Client {
         throw new Error(`Training finished with ${train.status} status`)
       }
 
-      ctx.reply(`Training for <lora:${loraName}:1> completed successfully`)
+      await ctx.reply(`Training for <lora:${loraName}:1> completed successfully`)
 
       comfyClient.abortWebsocket()
     } catch (e) {

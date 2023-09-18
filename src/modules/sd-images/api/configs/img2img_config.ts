@@ -9,7 +9,7 @@ export interface Img2ImgOptions extends Txt2ImgOptions {
 export function buildImg2ImgPrompt (options: Img2ImgOptions & {
   clientId: string
   fileName: string
-}) {
+}): unknown {
   return {
     client_id: options.clientId,
     prompt: {
@@ -20,7 +20,7 @@ export function buildImg2ImgPrompt (options: Img2ImgOptions & {
           cfg: options.cfgScale,
           sampler_name: 'euler',
           scheduler: 'normal',
-          denoise: options.denoise || 0.5,
+          denoise: options.denoise ?? 0.5,
           model: [
             '4',
             0

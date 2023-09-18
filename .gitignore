@@ -4,3 +4,5 @@ node_modules/
 .idea
 
 yarn.lock
+# Sentry Auth Token
+.sentryclirc

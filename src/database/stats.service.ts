@@ -26,7 +26,7 @@ export interface EngagementByCommand {
 }
 
 export class StatsService {
-  public async writeLog (log: BotPaymentLog) {
+  public async writeLog (log: BotPaymentLog): Promise<BotLog> {
     let paymentLog = new BotLog()
     paymentLog = {
       ...paymentLog,
@@ -36,22 +36,22 @@ export class StatsService {
     return await logRepository.save(paymentLog)
   }
 
-  async getTotalONE () {
+  async getTotalONE (): Promise<number> {
     const rows = await logRepository.query('select sum("amountOne") from logs')
     return rows.length ? +rows[0].sum : 0
   }
 
-  async getTotalFreeCredits () {
+  async getTotalFreeCredits (): Promise<number> {
     const rows = await logRepository.query('select sum("amountCredits") from logs')
     return rows.length ? +rows[0].sum : 0
   }
 
-  async getUniqueUsersCount () {
+  async getUniqueUsersCount (): Promise<number> {
     const rows = await logRepository.query('select count(distinct("tgUserId")) from logs')
     return rows.length ? +rows[0].count : 0
   }
 
-  public async getActiveUsers (daysPeriod = 0) {
+  public async getActiveUsers (daysPeriod = 0): Promise<number> {
     const currentTime = moment()
     const dateStart = moment()
       .tz('America/Los_Angeles')
@@ -70,7 +70,7 @@ export class StatsService {
     return rows.length ? +rows[0].count : 0
   }
 
-  public async getTotalMessages (daysPeriod = 0, onlySupportedCommands = false) {
+  public async getTotalMessages (daysPeriod = 0, onlySupportedCommands = false): Promise<number> {
     const currentTime = moment()
     const dateStart = moment()
       .tz('America/Los_Angeles')
@@ -80,7 +80,7 @@ export class StatsService {
 
     const dateEnd = currentTime.unix()
 
-    const query = await logRepository
+    const query = logRepository
       .createQueryBuilder('logs')
       .select('count(*)')
       .where(`logs.createdAt BETWEEN TO_TIMESTAMP(${dateStart}) and TO_TIMESTAMP(${dateEnd})`)
@@ -113,7 +113,7 @@ export class StatsService {
     return rows
   }
 
-  public async addCommandStat ({ tgUserId, rawMessage, command }: { tgUserId: number, rawMessage: string, command: string }) {
+  public async addCommandStat ({ tgUserId, rawMessage, command }: { tgUserId: number, rawMessage: string, command: string }): Promise<StatBotCommand> {
     const stat = new StatBotCommand()
 
     stat.command = command
