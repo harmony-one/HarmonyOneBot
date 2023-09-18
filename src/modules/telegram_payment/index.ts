@@ -6,7 +6,7 @@ import { type BotPayments } from '../payment'
 import pino, { type Logger } from 'pino'
 
 enum SupportedCommands {
-  DEPOSIT = 'deposit',
+  DEPOSIT = 'buy',
 }
 
 export class TelegramPayments {
@@ -84,7 +84,7 @@ export class TelegramPayments {
     }
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const [_, usdAmountText = '10'] = ctx.message?.text?.split(' ') ?? []
+    const [_, usdAmountText = '5'] = ctx.message?.text?.split(' ') ?? []
 
     const usdAmount = parseFloat(usdAmountText)
     if (isNaN(usdAmount)) {
@@ -98,8 +98,8 @@ export class TelegramPayments {
     const amount = Math.ceil(fixedUsdAmount * 100) // cents
 
     const chatId = ctx.message.chat.id
-    const title = 'Buy AI Credits'
-    const description = 'Purchase up to $10 of AI Credits'
+    const title = "AI Credits"
+    const description = 'Purchase up to $10.'
     const providerToken = config.telegramPayments.token
     const currency = 'USD'
     const creditsAmount = await this.payments.getPriceInONE(amount)
@@ -112,6 +112,6 @@ export class TelegramPayments {
     const payload = JSON.stringify({ uuid: invoice.uuid })
     this.logger.info(`Send invoice: ${JSON.stringify({ tgUserId, accountId, itemId, amount })}`)
     const photoUrl = 'https://pbs.twimg.com/media/F5SofMsbgAApd2Y?format=png&name=small'
-    await ctx.api.sendInvoice(chatId, title, description, payload, providerToken, currency, prices, { start_parameter: 'createInvoice', photo_url: photoUrl, photo_width: 502, photo_height: 502 })
+    await ctx.api.sendInvoice(chatId, title, description, payload, providerToken, currency, prices, { start_parameter: 'createInvoice' })
   }
 }
