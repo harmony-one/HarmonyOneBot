@@ -192,7 +192,6 @@ export const MODELS_CONFIGS: IModel[] = [
       "xl_dream",
       "1129",
       "h0f1",
-      "@",
       "sx",
       "ds"
     ],
