@@ -1,9 +1,10 @@
+/* eslint-disable @typescript-eslint/prefer-nullish-coalescing */
 import { type Img2ImgOptions } from './img2img_config'
 
 export function buildImg2ImgLoraPrompt (options: Img2ImgOptions & {
   clientId: string
   fileName: string
-}) {
+}): unknown {
   return {
     client_id: options.clientId,
     prompt: {

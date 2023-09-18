@@ -28,6 +28,8 @@ enum Callbacks {
   Regenerate = 'qr-regenerate',
 }
 
+type ParsedCommand = { command: string, url: string, prompt: string, error: boolean } | { command: string, url: string, prompt: string, error?: undefined }
+
 export class QRCodeBot {
   private readonly logger: Logger
   constructor () {
@@ -40,7 +42,7 @@ export class QRCodeBot {
     })
   }
 
-  public getEstimatedPrice (ctx: any) {
+  public getEstimatedPrice (ctx: any): number {
     return 1 //  1.5;
   }
 
@@ -56,7 +58,7 @@ export class QRCodeBot {
   public async onEvent (
     ctx: OnMessageContext | OnCallBackQueryData,
     refundCallback: RefundCallback
-  ) {
+  ): Promise<void> {
     if (!this.isSupportedEvent(ctx)) {
       await ctx.reply(`Unsupported command: ${ctx.message?.text}`, { message_thread_id: ctx.message?.message_thread_id })
       refundCallback('Unsupported command'); return
@@ -68,11 +70,12 @@ export class QRCodeBot {
           await ctx.answerCallbackQuery()
         } catch (ex) {
           console.log('### ex', ex)
+          this.logger.error(`answerCallbackQuery error ${ex}`)
         }
 
         const msg =
-          ctx.callbackQuery.message?.text ||
-          ctx.callbackQuery.message?.caption ||
+          (ctx.callbackQuery.message?.text ??
+          ctx.callbackQuery.message?.caption) ??
           ''
 
         if (!msg) {
@@ -82,18 +85,18 @@ export class QRCodeBot {
 
         const cmd = this.parseQrCommand(msg)
 
-        if (cmd.error || !cmd.command || !cmd.url || !cmd.prompt) {
+        if (cmd.error ?? !cmd.command ?? !cmd.url ?? !cmd.prompt) {
           await ctx.reply("Message haven't contain command: " + msg, { message_thread_id: ctx.message?.message_thread_id })
           refundCallback("Message haven't contain command: "); return
         }
 
         if (cmd.command === SupportedCommands.QR) {
-          return await this.onQr(ctx, msg, 'img2img')
+          await this.onQr(ctx, msg, 'img2img'); return
         }
       }
 
       if (ctx.hasCommand(SupportedCommands.QR)) {
-        return await this.onQr(ctx, ctx.message.text, 'img2img')
+        await this.onQr(ctx, ctx.message.text, 'img2img'); return
       }
     } catch (ex) {
       if (ex instanceof Error) {
@@ -101,7 +104,7 @@ export class QRCodeBot {
         refundCallback(ex.message); return
       }
 
-      this.logger.info('Error ' + ex)
+      this.logger.info(`Error ${ex}`)
       refundCallback('Unknown error'); return
     }
 
@@ -110,7 +113,7 @@ export class QRCodeBot {
     refundCallback('Unsupported command')
   }
 
-  public parseQrCommand (message: string) {
+  public parseQrCommand (message: string): ParsedCommand {
     // command: /qr url prompt1, prompt2, prompt3
 
     if (!message.startsWith('/')) {
@@ -135,12 +138,12 @@ export class QRCodeBot {
     ctx: OnMessageContext | OnCallBackQueryData,
     message: string,
     method: 'txt2img' | 'img2img'
-  ) {
+  ): Promise<boolean> {
     this.logger.info('generate qr')
 
     const command = this.parseQrCommand(message)
 
-    if (command.error || !command.command || !command.url || !command.prompt) {
+    if ((command.error ?? !command.command) || !command.url || !command.prompt) {
       command.url = 'https://s.country/ai'
       command.prompt = 'astronaut, exuberant, anime girl, smile, sky, colorful'
       //       ctx.reply(`
@@ -156,7 +159,7 @@ export class QRCodeBot {
 
     const messageText = message
 
-    const operation = async (retryAttempts: number) => {
+    const operation = async (retryAttempts: number): Promise<Buffer> => {
       this.logger.info(`### generate: ${retryAttempts} ${messageText}`)
 
       const props = {
@@ -205,7 +208,7 @@ export class QRCodeBot {
       this.logger.info('sent qr code')
       return true
     } catch (e: any) {
-      const topicId = await ctx.message?.message_thread_id
+      const topicId = ctx.message?.message_thread_id
       const msgExtras: MessageExtras = {}
       if (topicId) {
         msgExtras.message_thread_id = topicId
@@ -215,19 +218,19 @@ export class QRCodeBot {
           e.error_code === 400 &&
           e.description.includes('not enough rights')
         ) {
-          ctx.reply(
+          await ctx.reply(
             'Error: The bot does not have permission to send photos in chat...',
             msgExtras
           )
         } else {
-          ctx.reply(
+          await ctx.reply(
             'Error: something went wrong...',
             msgExtras
           )
         }
       } else {
         this.logger.error(e.toString())
-        ctx.reply(
+        await ctx.reply(
           'Error: something went wrong...',
           msgExtras
         )
@@ -246,7 +249,7 @@ export class QRCodeBot {
     qrMargin: number
     prompt: string
     method: 'img2img' | 'txt2img'
-  }) {
+  }): Promise<Buffer | undefined> {
     const qrImgBuffer = await createQRCode({ url: qrUrl, margin: qrMargin })
     const sdClient = new Automatic1111Client()
 
@@ -283,7 +286,7 @@ export class QRCodeBot {
     qrMargin: number
     prompt: string
     method: 'img2img' | 'txt2img'
-  }) {
+  }): Promise<Buffer> {
     const qrImgBuffer = await createQRCode({
       url: normalizeUrl(qrUrl),
       width: 680,

@@ -3,7 +3,7 @@ import FormData from 'form-data'
 import { v4 as uuidv4 } from 'uuid'
 import Websocket from 'websocket'
 
-type HistoryResponse = Record<string, {
+interface HistoryResponseItem {
   prompt: any
   outputs: Record<string, {
     images: Array<{
@@ -12,7 +12,9 @@ type HistoryResponse = Record<string, {
       'type': 'output'
     }>
   }>
-}>
+}
+
+type HistoryResponse = Record<string, HistoryResponseItem>
 
 interface QueuePromptResponse {
   prompt_id: string
@@ -60,9 +62,9 @@ export class ComfyClient {
     this.initWebsocket()
   }
 
-  initWebsocket () {
+  initWebsocket (): void {
     this.wsClient.on('connectFailed', function (error) {
-      // console.log('Connect Error: ' + error.toString());
+      console.log('Connect Error: ' + error.toString())
     })
 
     this.wsClient.on('connect', (connection) => {
@@ -70,7 +72,7 @@ export class ComfyClient {
 
       // console.log('WebSocket Client Connected');
       connection.on('error', (error) => {
-        // console.log("Connection Error: " + error.toString());
+        console.log('Connection Error: ' + error.toString())
       })
       connection.on('close', () => {
         // console.log('Connection Closed');
@@ -81,16 +83,16 @@ export class ComfyClient {
     this.wsClient.connect(this.wsHost + `/ws?clientId=${this.clientId}`)
   }
 
-  abortWebsocket () {
+  abortWebsocket (): void {
     if (this.wsConnection) {
       this.wsClient.abort()
     }
   }
 
-  async waitingPromptExecution (prompt_id: string): Promise<PromptResult> {
+  async waitingPromptExecution (promptId: string): Promise<PromptResult> {
     return await new Promise((resolve, reject) => {
       if (!this.wsConnection) {
-        reject('ws connection closed')
+        reject(new Error('ws connection closed'))
         return
       }
 
@@ -105,7 +107,7 @@ export class ComfyClient {
             return
           }
 
-          if (data.data.prompt_id !== prompt_id) {
+          if (data.data.prompt_id !== promptId) {
             return
           }
 
@@ -117,18 +119,18 @@ export class ComfyClient {
     })
   }
 
-  async queuePrompt (prompt: any) {
+  async queuePrompt (prompt: any): Promise<QueuePromptResponse> {
     const data = prompt
     const response = await this.httpClient.post<QueuePromptResponse>('/prompt', data, { headers: { 'Content-Type': 'application/json' } })
     return response.data
   }
 
-  async history (promptId: string) {
+  async history (promptId: string): Promise<HistoryResponseItem> {
     const response = await this.httpClient.get<HistoryResponse>(`/history/${promptId}`)
     return response.data[promptId]
   }
 
-  async uploadImage (params: { filename: string, fileBuffer: Buffer, override: boolean }) {
+  async uploadImage (params: { filename: string, fileBuffer: Buffer, override: boolean }): Promise<UploadImageResponse> {
     const formData = new FormData()
     formData.append('image', params.fileBuffer, {
       filename: params.filename,
@@ -141,7 +143,7 @@ export class ComfyClient {
     return response.data
   }
 
-  async downloadResult (filename: string) {
+  async downloadResult (filename: string): Promise<Buffer> {
     const response = await this.httpClient.get<Buffer>(`/view?filename=${filename}&subfolder=&type=output`, { responseType: 'arraybuffer' })
     return response.data
   }

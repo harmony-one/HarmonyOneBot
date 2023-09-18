@@ -5,14 +5,6 @@ import pino, { type Logger } from 'pino'
 import DCv2Abi from '../contracts/DCv2'
 import config from '../../../config'
 
-const logger = pino({
-  name: 'OneCountryBot',
-  transport: {
-    target: 'pino-pretty',
-    options: { colorize: true }
-  }
-})
-
 export interface DomainRecord {
   renter: string
   rentTime: number
@@ -75,7 +67,7 @@ class DcClient {
     this.logger.info(`DC Contract ${config.country.contract} initialized`)
   }
 
-  async duration () {
+  async duration (): Promise<any> {
     return this.contractReadOnly.duration()
   }
 
@@ -135,7 +127,7 @@ class DcClient {
     }
   }
 
-  async checkAvailable ({ name }: { name: string }) {
+  async checkAvailable ({ name }: { name: string }): Promise<boolean> {
     const isAvailable = await this.contractReadOnly.available(name)
     return isAvailable?.toString()?.toLowerCase() === 'true'
   }

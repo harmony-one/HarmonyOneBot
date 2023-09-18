@@ -17,13 +17,13 @@ export enum MetricsDailyType {
   totalFee = 'total_fee',
 }
 
-export const getDailyMetrics = async (type: MetricsDailyType, limit: number) => {
+export const getDailyMetrics = async (type: MetricsDailyType, limit: number): Promise<MetricsDaily[]> => {
   const feesUrl = `${apiUrl}/v0/metrics?type=${type}&limit=${limit}`
   const { data } = await axios.get<MetricsDaily[]>(feesUrl, { headers: { 'X-API-KEY': apiKey } })
   return data
 }
 
-export const getFeeStats = async () => {
+export const getFeeStats = async (): Promise<{ change: string, value: string }> => {
   const metrics = await getDailyMetrics(MetricsDailyType.totalFee, 14)
 
   let feesWeek1 = 0; let feesWeek2 = 0

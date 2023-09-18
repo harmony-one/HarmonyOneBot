@@ -16,12 +16,12 @@ export class Wallet {
     this.logger.info(`Wallet started, web app url: ${config.wallet.webAppUrl}`)
   }
 
-  public isSupportedEvent (ctx: OnMessageContext) {
-    const { text, chat } = ctx.update.message
-    return chat.type === 'private' && text && text.toLowerCase() === '/wallet'
+  public isSupportedEvent (ctx: OnMessageContext): boolean {
+    const { chat } = ctx.update.message
+    return chat.type === 'private' && ctx.hasCommand('wallet')
   }
 
-  public async onEvent (ctx: OnMessageContext) {
+  public async onEvent (ctx: OnMessageContext): Promise<void> {
     const { text, from: { id: userId, username } } = ctx.update.message
     this.logger.info(`Message from ${username} (${userId}): "${text}"`)
 

@@ -53,7 +53,7 @@ export class LlmsBot {
     if (isMentioned(ctx)) {
       return true
     }
-    const chatPrefix = hasPrefix(ctx.message?.text || '')
+    const chatPrefix = hasPrefix(ctx.message?.text ?? '')
     if (chatPrefix !== '') {
       return true
     }
@@ -64,8 +64,9 @@ export class LlmsBot {
     return 0
   }
 
-  public async onEvent (ctx: OnMessageContext | OnCallBackQueryData) {
-    if (!this.isSupportedEvent(ctx) && ctx.chat?.type !== 'private') {
+  public async onEvent (ctx: OnMessageContext | OnCallBackQueryData): Promise<false | undefined> {
+    const isSupportedEvent = await this.isSupportedEvent(ctx)
+    if (!isSupportedEvent && ctx.chat?.type !== 'private') {
       this.logger.warn(`### unsupported command ${ctx.message?.text}`)
       return false
     }
@@ -74,31 +75,33 @@ export class LlmsBot {
       this.onPrefix(ctx, LlmsModelsEnum.BISON)
       return
     }
-
     if (ctx.hasCommand(SupportedCommands.bard.name) || ctx.hasCommand(SupportedCommands.bardF.name)) {
       this.onChat(ctx, LlmsModelsEnum.BISON)
       return
     }
 
     this.logger.warn('### unsupported command')
-    sendMessage(ctx, '### unsupported command').catch(async (e) => { await this.onError(ctx, e, MAX_TRIES, '### unsupported command') }
+    await sendMessage(ctx, '### unsupported command').catch(async (e) => { await this.onError(ctx, e, MAX_TRIES, '### unsupported command') }
     )
   }
 
-  private async hasBalance (ctx: OnMessageContext | OnCallBackQueryData) {
+  private async hasBalance (ctx: OnMessageContext | OnCallBackQueryData): Promise<boolean> {
     const accountId = this.payments.getAccountId(ctx as OnMessageContext)
     const addressBalance = await this.payments.getUserBalance(accountId)
     const creditsBalance = await chatService.getBalance(accountId)
     const balance = addressBalance.plus(creditsBalance)
-    const balanceOne = (await this.payments.toONE(balance, false)).toFixed(2)
+    const balanceOne = this.payments.toONE(balance, false).toFixed(2)
     return (
       +balanceOne > +config.llms.minimumBalance ||
-      (await this.payments.isUserInWhitelist(ctx.from.id, ctx.from.username))
+      (this.payments.isUserInWhitelist(ctx.from.id, ctx.from.username))
     )
   }
 
-  private async promptGen (data: ChatPayload) {
+  private async promptGen (data: ChatPayload): Promise<{ price: number, chat: ChatConversation[] }> {
     const { conversation, ctx, model } = data
+    if (!ctx.chat?.id) {
+      throw new Error('internal error')
+    }
     try {
       const msgId = (
         await ctx.reply('...', { message_thread_id: ctx.message?.message_thread_id })
@@ -116,8 +119,8 @@ export class LlmsBot {
         response = await llmCompletion(chat, model)
       }
       if (response.completion) {
-        ctx.api.editMessageText(
-          ctx.chat?.id!,
+        await ctx.api.editMessageText(
+          ctx.chat.id,
           msgId,
           response.completion.content
         )
@@ -145,14 +148,14 @@ export class LlmsBot {
     }
   }
 
-  async onPrefix (ctx: OnMessageContext | OnCallBackQueryData, model: string) {
+  async onPrefix (ctx: OnMessageContext | OnCallBackQueryData, model: string): Promise<void> {
     try {
       if (this.botSuspended) {
         sendMessage(ctx, 'The bot is suspended').catch(async (e) => { await this.onError(ctx, e) }
         )
         return
       }
-      const { prompt, commandName } = getCommandNamePrompt(
+      const { prompt } = getCommandNamePrompt(
         ctx,
         SupportedCommands
       )
@@ -163,16 +166,16 @@ export class LlmsBot {
       })
       if (!ctx.session.llms.isProcessingQueue) {
         ctx.session.llms.isProcessingQueue = true
-        this.onChatRequestHandler(ctx).then(() => {
+        await this.onChatRequestHandler(ctx).then(() => {
           ctx.session.llms.isProcessingQueue = false
         })
       }
     } catch (e) {
-      this.onError(ctx, e)
+      await this.onError(ctx, e)
     }
   }
 
-  async onChat (ctx: OnMessageContext | OnCallBackQueryData, model: string) {
+  async onChat (ctx: OnMessageContext | OnCallBackQueryData, model: string): Promise<void> {
     try {
       if (this.botSuspended) {
         sendMessage(ctx, 'The bot is suspended').catch(async (e) => { await this.onError(ctx, e) }
@@ -186,16 +189,16 @@ export class LlmsBot {
       })
       if (!ctx.session.llms.isProcessingQueue) {
         ctx.session.llms.isProcessingQueue = true
-        this.onChatRequestHandler(ctx).then(() => {
+        await this.onChatRequestHandler(ctx).then(() => {
           ctx.session.llms.isProcessingQueue = false
         })
       }
     } catch (e: any) {
-      this.onError(ctx, e)
+      await this.onError(ctx, e)
     }
   }
 
-  async onChatRequestHandler (ctx: OnMessageContext | OnCallBackQueryData) {
+  async onChatRequestHandler (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
     while (ctx.session.llms.requestQueue.length > 0) {
       try {
         const msg = ctx.session.llms.requestQueue.shift()
@@ -203,7 +206,7 @@ export class LlmsBot {
         const model = msg?.model
         const { chatConversation } = ctx.session.llms
         if (await this.hasBalance(ctx)) {
-          if (prompt === '') {
+          if (!prompt) {
             const msg =
               chatConversation.length > 0
                 ? `${appText.gptLast}\n_${
@@ -214,7 +217,7 @@ export class LlmsBot {
             return
           }
           const chat: ChatConversation = {
-            content: limitPrompt(prompt!),
+            content: limitPrompt(prompt),
             model
           }
           if (model === LlmsModelsEnum.BISON) {
@@ -225,7 +228,7 @@ export class LlmsBot {
           chatConversation.push(chat)
           const payload = {
             conversation: chatConversation,
-            model: model || config.llms.model,
+            model: model ?? config.llms.model,
             ctx
           }
           const result = await this.promptGen(payload)
@@ -233,34 +236,34 @@ export class LlmsBot {
           if (
             !(await this.payments.pay(ctx as OnMessageContext, result.price))
           ) {
-            this.onNotBalanceMessage(ctx)
+            await this.onNotBalanceMessage(ctx)
           }
           ctx.chatAction = null
         } else {
-          this.onNotBalanceMessage(ctx)
+          await this.onNotBalanceMessage(ctx)
         }
       } catch (e: any) {
-        this.onError(ctx, e)
+        await this.onError(ctx, e)
       }
     }
   }
 
-  async onEnd (ctx: OnMessageContext | OnCallBackQueryData) {
+  async onEnd (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
     ctx.session.llms.chatConversation = []
     ctx.session.llms.usage = 0
     ctx.session.llms.price = 0
   }
 
-  async onNotBalanceMessage (ctx: OnMessageContext | OnCallBackQueryData) {
+  async onNotBalanceMessage (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
     const accountId = this.payments.getAccountId(ctx as OnMessageContext)
-    const account = await this.payments.getUserAccount(accountId)
+    const account = this.payments.getUserAccount(accountId)
     const addressBalance = await this.payments.getUserBalance(accountId)
     const creditsBalance = await chatService.getBalance(accountId)
     const balance = addressBalance.plus(creditsBalance)
-    const balanceOne = (await this.payments.toONE(balance, false)).toFixed(2)
+    const balanceOne = this.payments.toONE(balance, false).toFixed(2)
     const balanceMessage = appText.notEnoughBalance
       .replaceAll('$CREDITS', balanceOne)
-      .replaceAll('$WALLET_ADDRESS', account?.address || '')
+      .replaceAll('$WALLET_ADDRESS', account?.address ?? '')
     await sendMessage(ctx, balanceMessage, { parseMode: 'Markdown' }).catch(async (e) => { await this.onError(ctx, e) })
   }
 
@@ -269,7 +272,7 @@ export class LlmsBot {
     e: any,
     retryCount: number = MAX_TRIES,
     msg?: string
-  ) {
+  ): Promise<void> {
     if (retryCount === 0) {
       // Retry limit reached, log an error or take alternative action
       this.logger.error(`Retry limit reached for error: ${e}`)
