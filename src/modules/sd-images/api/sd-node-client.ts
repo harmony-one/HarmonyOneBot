@@ -184,7 +184,7 @@ export class Client {
     })
 
     // TODO
-    const trainServer = config.comfyHost.split(':')[0] + ':7860'
+    const trainServer = config.sdTrainHost;
 
     try {
       let attempts = 3
