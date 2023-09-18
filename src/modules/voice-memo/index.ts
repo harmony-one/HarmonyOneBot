@@ -1,4 +1,4 @@
-import { type OnMessageContext } from '../types'
+import { type OnMessageContext, type RefundCallback } from '../types'
 import pino, { type Logger } from 'pino'
 import { initTelegramClient } from './MTProtoAPI'
 import { NewMessage, type NewMessageEvent } from 'telegram/events'

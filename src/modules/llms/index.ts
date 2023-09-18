@@ -44,9 +44,9 @@ export class LlmsBot {
     this.payments = payments
   }
 
-  public async isSupportedEvent (
+  public isSupportedEvent (
     ctx: OnMessageContext | OnCallBackQueryData
-  ): Promise<boolean> {
+  ): boolean {
     const hasCommand = ctx.hasCommand(
       Object.values(SupportedCommands).map((command) => command.name)
     )

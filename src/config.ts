@@ -28,7 +28,7 @@ export default {
     model: 'chat-bison',
     minimumBalance: 0,
     isEnabled: Boolean(parseInt(process.env.LLMS_ENABLED ?? '1')),
-    prefixes: { bardPrefix: [',','b.','B.'] }
+    prefixes: { bardPrefix: [',', 'b.', 'B.'] }
   },
   openAi: {
     dalle: {
@@ -75,9 +75,7 @@ export default {
           ? process.env.NEW_PREFIX.split(',')
           : ['n.', '..']
       },
-      minimumBalance: process.env.MIN_BALANCE
-        ? parseInt(process.env.MIN_BALANCE)
-        : 0
+      minimumBalance: parseInt(process.env.MIN_BALANCE ?? '0')
     }
   },
   country: {
@@ -141,5 +139,6 @@ export default {
     creditsAmount: '100'
   },
   betteruptime: { botHeartBitId: process.env.BOT_HEARTBIT_ID ?? '' },
-  telegramPayments: { token: process.env.TELEGRAM_PAYMENTS_TOKEN ?? '' }
+  telegramPayments: { token: process.env.TELEGRAM_PAYMENTS_TOKEN ?? '' },
+  sentry: { dsn: process.env.SENTRY_DSN }
 }
