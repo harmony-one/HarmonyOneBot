@@ -4,7 +4,7 @@
   "description": "Harmony One Telegram Bot",
   "main": "dist/bot.js",
   "scripts": {
-    "build": "tsc; npm run sentry:sourcemaps",
+    "build": "tsc",
     "start": "node dist/bot.js",
     "dev": "env-cmd ts-node-dev src/bot.ts",
     "test": "jest",
