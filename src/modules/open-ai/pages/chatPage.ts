@@ -1,8 +1,6 @@
 import { Menu } from '@grammyjs/menu'
 
-import { appText } from '../utils/text'
 import { type BotContext } from '../../types'
-import { isAdmin } from '../utils/context'
 import { MenuIds, menuText } from '../../../constants'
 import { ChatGPTModelsEnum } from '../types'
 import { getStartMenuText } from '../../../pages'
@@ -50,7 +48,7 @@ const chatGPTimageDefaultOptions = new Menu<BotContext>(MenuIds.CHAT_GPT_MODEL)
   .row()
   .back('Back')
 
-function getLabel (m: string, ctx: any) {
+function getLabel (m: string, ctx: any): string {
   let label = m
   console.log(
     ctx.session.openAi.chatGpt.model,
@@ -63,7 +61,7 @@ function getLabel (m: string, ctx: any) {
   return label
 }
 
-function setModel (m: string, ctx: any) {
+function setModel (m: string, ctx: any): void {
   ctx.session.openAi.chatGpt.model = m
   ctx.menu.back()
 }

@@ -1,7 +1,4 @@
 import { type OnMessageContext, type RefundCallback } from '../types'
-import pino, { Logger } from 'pino'
-import { chatCompletion, getChatModel, getChatModelPrice, getTokenNumber } from '../open-ai/api/openAi'
-import config from '../../config'
 
 const SupportedDocuments = { PDF: 'application/pdf' }
 
@@ -10,7 +7,7 @@ export class DocumentHandler {
     return 1
   }
 
-  public async onEvent (ctx: OnMessageContext, refundCallback: RefundCallback) {
+  public async onEvent (ctx: OnMessageContext, refundCallback: RefundCallback): Promise<void> {
     try {
       const file = await ctx.getFile()
       console.log(file)

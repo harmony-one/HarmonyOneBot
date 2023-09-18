@@ -1,10 +1,12 @@
+/* eslint-disable */
+import { waitingExecute, IParams, getParamsFromPrompt } from './helpers'
+import { type IModel } from './models-config'
+
 export const test = () => {
   return true
 }
-// import { waitingExecute, getParamsFromPrompt } from './helpers'
-// import { type IModel } from './models-config'
 
-// // Mock the console.error method to prevent it from actually logging errors
+// Mock the console.error method to prevent it from actually logging errors
 // console.error = jest.fn()
 
 // describe('waitingExecute', () => {

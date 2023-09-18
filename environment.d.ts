@@ -1,3 +1,3 @@
 declare module '@mtproto/core';
 
-export {};
+export {}

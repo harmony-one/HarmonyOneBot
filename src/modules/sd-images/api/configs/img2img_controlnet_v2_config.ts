@@ -3,7 +3,7 @@ import { type Img2ImgOptions } from './img2img_config'
 export function buildImg2ImgControlnetV2Prompt (options: Img2ImgOptions & {
   clientId: string
   fileName: string
-}) {
+}): unknown {
   return {
     client_id: options.clientId,
     prompt: {
@@ -182,7 +182,7 @@ export function buildImg2ImgControlnetV2Prompt (options: Img2ImgOptions & {
               ],
               size: {
                 0: 385.8155212402344,
-                1: 216.61624145507812
+                1: 216.616241455078
               },
               flags: {},
               order: 4,

@@ -4,11 +4,10 @@ import { initTelegramClient } from './MTProtoAPI'
 import { NewMessage, type NewMessageEvent } from 'telegram/events'
 import { LRUCache } from 'lru-cache'
 import { Api, type TelegramClient } from 'telegram'
-import { Speechmatics, SpeechmaticsResult } from './speechmatics'
+import { Speechmatics } from './speechmatics'
 import config from '../../config'
 import { type Buffer } from 'buffer'
 import fs from 'fs'
-import moment from 'moment'
 import { Kagi } from './kagi'
 import MessageMediaDocument = Api.MessageMediaDocument
 import { InputFile } from 'grammy'
@@ -37,17 +36,19 @@ export class VoiceMemo {
       }
     })
     if (config.voiceMemo.isEnabled) {
-      this.initTgClient()
+      this.initTgClient().catch((ex) => {
+        this.logger.error(`Error initTgClient ${ex}`)
+      })
     } else {
       this.logger.warn('Voice-memo disabled in config')
     }
   }
 
-  private getTempFilePath (filename: string) {
+  private getTempFilePath (filename: string): string {
     return `./${this.tempDirectory}/${filename}`
   }
 
-  private writeTempFile (buffer: string | Buffer, filename: string) {
+  private writeTempFile (buffer: string | Buffer, filename: string): string {
     const filePath = this.getTempFilePath(filename)
     const dirPath = `./${this.tempDirectory}`
     if (!fs.existsSync(dirPath)) {
@@ -57,21 +58,21 @@ export class VoiceMemo {
     return filePath
   }
 
-  private deleteTempFile (filePath: string) {
+  private deleteTempFile (filePath: string): void {
     if (fs.existsSync(filePath)) {
       fs.unlinkSync(filePath)
     }
   }
 
-  private readonly sleep = async (timeout: number) => await new Promise(resolve => setTimeout(resolve, timeout))
+  private readonly sleep = async (timeout: number): Promise<void> => { await new Promise(resolve => setTimeout(resolve, timeout)) }
 
-  private async initTgClient () {
+  private async initTgClient (): Promise<void> {
     this.telegramClient = await initTelegramClient()
-    this.telegramClient.addEventHandler(this.onTelegramClientEvent.bind(this), new NewMessage({}))
+    this.telegramClient.addEventHandler(() => { this.onTelegramClientEvent.bind(this) }, new NewMessage({}))
     this.logger.info('VoiceMemo bot started')
   }
 
-  private async downloadAudioFile (media: MessageMediaDocument) {
+  private async downloadAudioFile (media: MessageMediaDocument): Promise< { filePath: string, publicFileUrl: string } | undefined> {
     const buffer = await this.telegramClient?.downloadMedia(media)
     if (buffer && media.document) {
       const fileName = `${media.document.id.toString()}.ogg`
@@ -84,10 +85,10 @@ export class VoiceMemo {
     }
   }
 
-  private async onTelegramClientEvent (event: NewMessageEvent) {
+  private async onTelegramClientEvent (event: NewMessageEvent): Promise<void> {
     const { media, chatId, senderId } = event.message
     if (chatId && media instanceof Api.MessageMediaDocument && media?.document) {
-      // @ts-expect-error
+      // @ts-expect-error TS2339: Property 'size' does not exist on type 'TypeDocument'.
       const { size } = media.document
       const requestKey = `${senderId}_${size.toString()}`
       this.logger.info(`Request from ${senderId}: request key: ${requestKey}`)
@@ -108,7 +109,7 @@ export class VoiceMemo {
     }
   }
 
-  private enrichSummarization (text: string) {
+  private enrichSummarization (text: string): string {
     text = text.replace('The speakers', 'We')
     const splitText = text.split('.').map(part => part.trim())
     let resultText = ''
@@ -136,7 +137,7 @@ export class VoiceMemo {
     return config.voiceMemo.isEnabled && (!!voice || !!audio)
   }
 
-  public getEstimatedPrice (ctx: OnMessageContext) {
+  public getEstimatedPrice (ctx: OnMessageContext): number {
     const { update: { message: { voice } } } = ctx
     if (voice) {
       return this.speechmatics.estimatePrice(voice.duration)
@@ -145,8 +146,8 @@ export class VoiceMemo {
   }
 
   public async onEvent (ctx: OnMessageContext): Promise<void> {
-    const { message_id, voice, audio, from } = ctx.update.message
-    const fileSize = (voice || audio)?.file_size
+    const { voice, audio, from } = ctx.update.message
+    const fileSize = (voice ?? audio)?.file_size
     const requestKey = `${from.id}_${fileSize}`
 
     this.requestsQueue.set(requestKey, Date.now())

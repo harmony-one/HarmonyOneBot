@@ -4,7 +4,7 @@ import { abbreviateNumber, getPercentDiff } from './utils'
 
 const rpcUrl = 'https://rpc.s0.t.hmny.io'
 
-const rpcRequest = async (method: string, params: any[] = []) => {
+const rpcRequest = async (method: string, params: any[] = []): Promise<any> => {
   const { data } = await axios.post(rpcUrl, {
     jsonrpc: '2.0',
     id: 1,
@@ -51,7 +51,7 @@ export const getBotFee = async (address: string, daysCount: number): Promise<num
   return total / Math.pow(10, 18)
 }
 
-export const getBotFeeStats = async (address: string, daysCount = 7) => {
+export const getBotFeeStats = async (address: string, daysCount = 7): Promise<{ change: string, value: string }> => {
   const history = await getAddressHistory(address)
 
   const startTimestamp = moment().subtract(daysCount, 'days').unix()
@@ -74,7 +74,7 @@ export const getBotFeeStats = async (address: string, daysCount = 7) => {
     .map(([_, value]) => value)
 
   const value = daysAmountList[0]
-  const valueTotal = daysAmountList.reduce((sum, item) => sum += item, 0)
+  const valueTotal = daysAmountList.reduce((sum, item) => { sum += item; return sum }, 0)
   const average = valueTotal / daysCount
   let change = getPercentDiff(average, value).toFixed(1)
   if (+change > 0) {

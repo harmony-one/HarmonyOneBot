@@ -20,7 +20,7 @@ export class TranslateBot {
     })
   }
 
-  public getEstimatedPrice (ctx: OnMessageContext) {
+  public getEstimatedPrice (ctx: OnMessageContext): number {
     if (ctx.hasCommand(Object.values(SupportedCommands))) {
       return 0
     }
@@ -28,7 +28,7 @@ export class TranslateBot {
     const hasCommand = this.isCtxHasCommand(ctx)
 
     if (!hasCommand && ctx.session.translate.enable) {
-      const message = ctx.message.text || ''
+      const message = ctx.message.text ?? ''
       const promptTokens = getTokenNumber(message)
       const modelPrice = getChatModel(config.openAi.chatGpt.model)
 
@@ -41,8 +41,9 @@ export class TranslateBot {
     return 0
   }
 
-  public isCtxHasCommand (ctx: OnMessageContext) {
-    return ctx.entities().find((ent) => ent.type === 'bot_command')
+  public isCtxHasCommand (ctx: OnMessageContext): boolean {
+    const command = ctx.entities().find((ent) => ent.type === 'bot_command')
+    return !!command
   }
 
   public isSupportedEvent (ctx: OnMessageContext): boolean {
@@ -50,10 +51,10 @@ export class TranslateBot {
     return ctx.hasCommand(Object.values(SupportedCommands)) || (!hasCommand && ctx.session.translate.enable)
   }
 
-  public async onEvent (ctx: OnMessageContext, refundCallback: RefundCallback) {
+  public async onEvent (ctx: OnMessageContext, refundCallback: RefundCallback): Promise<{ next: boolean }> {
     if (!this.isSupportedEvent(ctx)) {
       await ctx.reply(`Unsupported command: ${ctx.message?.text}`, { message_thread_id: ctx.message?.message_thread_id })
-      await refundCallback('Unsupported command')
+      refundCallback('Unsupported command')
       return { next: true }
     }
 
@@ -74,37 +75,38 @@ export class TranslateBot {
       return { next: false }
     }
 
-    await refundCallback('Unsupported command')
+    refundCallback('Unsupported command')
     return { next: true }
   }
 
-  public parseCommand (message: string) {
-    const [command, ...lang] = message.split(' ')
+  public parseCommand (message: string): string[] {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const [_, ...lang] = message.split(' ')
     return lang
   }
 
-  public async runTranslate (ctx: OnMessageContext) {
+  public async runTranslate (ctx: OnMessageContext): Promise<void> {
     ctx.chatAction = 'typing'
-    const langList = this.parseCommand(ctx.message?.text || '')
+    const langList = this.parseCommand(ctx.message?.text ?? '')
 
     ctx.session.translate = {
       languages: langList,
       enable: true
     }
 
-    return await ctx.reply(`Got it. I will translate the following messages into these languages:
-${langList.join(', '), { message_thread_id: ctx.message?.message_thread_id }}
+    await ctx.reply(`Got it. I will translate the following messages into these languages:
+${langList.join(', ')}
 
 To disable translation, use the command /translatestop.`)
   }
 
-  public async stopTranslate (ctx: OnMessageContext) {
+  public async stopTranslate (ctx: OnMessageContext): Promise<void> {
     ctx.chatAction = 'typing'
     ctx.session.translate.enable = false
-    return await ctx.reply('Translation is disabled', { message_thread_id: ctx.message?.message_thread_id })
+    await ctx.reply('Translation is disabled', { message_thread_id: ctx.message?.message_thread_id })
   }
 
-  public async onTranslate (ctx: OnMessageContext) {
+  public async onTranslate (ctx: OnMessageContext): Promise<void> {
     const message = ctx.message.text
 
     const progressMessage = await ctx.reply('...', { message_thread_id: ctx.message?.message_thread_id })
@@ -119,6 +121,6 @@ To disable translation, use the command /translatestop.`)
 
     const response = await chatCompletion(conversation)
 
-    return await ctx.api.editMessageText(ctx.chat?.id, progressMessage.message_id, response.completion, { parse_mode: 'Markdown' })
+    await ctx.api.editMessageText(ctx.chat?.id, progressMessage.message_id, response.completion, { parse_mode: 'Markdown' })
   }
 }

@@ -6,6 +6,7 @@ import { ethers } from 'ethers'
 import { chatService } from './services'
 import config from '../config'
 import { LRUCache } from 'lru-cache'
+import { type UpdateResult } from 'typeorm'
 
 const chatRepository = AppDataSource.getRepository(Chat)
 const userRepository = AppDataSource.getRepository(User)
@@ -16,7 +17,7 @@ const CREDITS_AMOUNT: string = config.credits.creditsAmount
 export class ChatService {
   creditsAssignedCache = new LRUCache<number, boolean>({ max: 1000, ttl: 24 * 60 * 60 * 1000 })
 
-  async create ({ tgUserId, accountId, creditAmount }: { tgUserId: number, accountId: number, creditAmount: string }) {
+  async create ({ tgUserId, accountId, creditAmount }: { tgUserId: number, accountId: number, creditAmount: string }): Promise<Chat> {
     let user = await userRepository.findOneBy({ tgUserId })
 
     if (user === null) {
@@ -33,11 +34,11 @@ export class ChatService {
     return await chatRepository.save(chat)
   }
 
-  public async getAccountById (accountId: number) {
+  public async getAccountById (accountId: number): Promise<Chat | null> {
     return await chatRepository.findOneBy({ accountId })
   }
 
-  public async isCreditsAssigned (accountId: number) {
+  public async isCreditsAssigned (accountId: number): Promise<boolean> {
     const cachedValue = this.creditsAssignedCache.get(accountId)
     if (cachedValue) {
       return true
@@ -49,7 +50,7 @@ export class ChatService {
     return Boolean(account)
   }
 
-  public async withdrawAmount (accountId: number, amount: string) {
+  public async withdrawAmount (accountId: number, amount: string): Promise<UpdateResult> {
     const chat = await this.getAccountById(accountId)
     if (!chat) {
       throw new Error(`${accountId} Cannot find credits account`)
@@ -66,7 +67,7 @@ export class ChatService {
     return await chatRepository.update({ accountId }, { creditAmount: newAmount.toFixed() })
   }
 
-  public async withdrawFiatAmount (accountId: number, amount: string) {
+  public async withdrawFiatAmount (accountId: number, amount: string): Promise<UpdateResult> {
     const chat = await this.getAccountById(accountId)
     if (!chat) {
       throw new Error(`${accountId} Cannot find fiat credits account`)
@@ -83,7 +84,7 @@ export class ChatService {
     return await chatRepository.update({ accountId }, { fiatCreditAmount: newAmount.toFixed() })
   }
 
-  public async setAmount (accountId: number, amount: string) {
+  public async setAmount (accountId: number, amount: string): Promise<UpdateResult> {
     const account = await this.getAccountById(accountId)
     if (!account) {
       throw new Error(`${accountId} Cannot find credits account`)
@@ -91,7 +92,7 @@ export class ChatService {
     return await chatRepository.update({ accountId }, { creditAmount: amount })
   }
 
-  public async depositFiatCredits (accountId: number, amount: string) {
+  public async depositFiatCredits (accountId: number, amount: string): Promise<UpdateResult> {
     const account = await this.getAccountById(accountId)
     if (!account) {
       throw new Error(`${accountId} Cannot find credits account`)
@@ -103,7 +104,7 @@ export class ChatService {
     return await chatRepository.update({ accountId }, { fiatCreditAmount: newValue.toString() })
   }
 
-  public async getBalance (accountId: number) {
+  public async getBalance (accountId: number): Promise<bn> {
     const account = await this.getAccountById(accountId)
     if (account) {
       return bn(account.creditAmount)
@@ -111,7 +112,7 @@ export class ChatService {
     return bn(0)
   }
 
-  public async getFiatBalance (accountId: number) {
+  public async getFiatBalance (accountId: number): Promise<bn> {
     const account = await this.getAccountById(accountId)
     if (account) {
       return bn(account.fiatCreditAmount)
@@ -119,7 +120,7 @@ export class ChatService {
     return bn(0)
   }
 
-  public async initChat ({ tgUserId, accountId, tgUsername = '' }: { tgUserId: number, accountId: number, tgUsername?: string }) {
+  public async initChat ({ tgUserId, accountId, tgUsername = '' }: { tgUserId: number, accountId: number, tgUsername?: string }): Promise<Chat> {
     const chat = await this.getAccountById(accountId)
 
     if (chat !== null) {
@@ -139,7 +140,7 @@ export class ChatService {
     return await this.create({ tgUserId, accountId, creditAmount })
   }
 
-  public async getCountCreatedChats ({ tgUserId }: { tgUserId: number }) {
+  public async getCountCreatedChats ({ tgUserId }: { tgUserId: number }): Promise<number> {
     const chatList = await chatRepository.findBy({ owner: { tgUserId } })
     return chatList.length
   }
