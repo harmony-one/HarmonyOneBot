@@ -55,7 +55,7 @@ export class BotPayments {
   }
 
   public bootstrap() {
-    this.startCheckingUserBalances()
+    this.runHotWalletsTask()
   }
 
   private async transferUserFundsToHolder(
@@ -76,7 +76,16 @@ export class BotPayments {
     await invoiceService.setSuccessStatus({ uuid: invoice.uuid, providerPaymentChargeId: '', telegramPaymentChargeId: '' })
   }
 
-  private async startCheckingUserBalances() {
+  private async runHotWalletsTask () {
+    while (true) {
+      try {
+        await this.checkHotWallets()
+      } catch (e) {}
+      await new Promise(resolve => setTimeout(resolve, 60 * 1000))
+    }
+  }
+
+  private async checkHotWallets() {
     let accounts: {accountId: string}[] = []
     try {
       accounts = await statsService.getLasInteractingAccounts(24)
@@ -93,12 +102,14 @@ export class BotPayments {
         let availableBalance = new BigNumber(0)
         try {
           availableBalance = await this.getUserBalance(accountId)
-          availableBalance = BigNumber.max(availableBalance.minus(txFee), 0)
+          // availableBalance = BigNumber.max(availableBalance.minus(txFee), 0)
         } catch (e) {
           this.logger.error(`Cannot get user balance ${accountId} ${userAccount.address}`)
         }
 
-        if(availableBalance.gt(0)) {
+        console.log('availableBalance', availableBalance.toString())
+
+        if(availableBalance.minus(txFee).gt(0)) {
           try {
             await this.transferUserFundsToHolder(accountId, userAccount, availableBalance);
             const userCreditsBalance = await chatService.getBalance(accountId)
@@ -178,7 +189,7 @@ export class BotPayments {
 
   private async getTransactionFee () {
     const gasPrice = await this.web3.eth.getGasPrice()
-    return bn(gasPrice.toString()).multipliedBy(35000)
+    return bn(gasPrice.toString()).multipliedBy(21000)
   }
 
   private async transferFunds (
@@ -207,11 +218,15 @@ export class BotPayments {
         value: web3.utils.toHex(amount.toFixed()),
         nonce
       }
-      const gasLimit = await web3.eth.estimateGas(txBody)
+      const estimatedGas = await web3.eth.estimateGas(txBody)
+      const gasValue = estimatedGas * +gasPrice
+      const txValue = amount.minus(BigNumber(gasValue)).toFixed()
+
       return await web3.eth.sendTransaction({
         ...txBody,
         gasPrice,
-        gas: web3.utils.toHex(gasLimit)
+        gas: web3.utils.toHex(estimatedGas),
+        value: web3.utils.toHex(txValue),
       })
     } catch (e) {
       const message = (e as Error).message || ''
