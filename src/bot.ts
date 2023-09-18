@@ -1,4 +1,5 @@
 import express from 'express'
+import asyncHandler from 'express-async-handler'
 import {
   Bot,
   type Enhance,
@@ -6,7 +7,7 @@ import {
   HttpError,
   MemorySessionStorage,
   enhanceStorage,
-  session
+  session, type NextFunction
 } from 'grammy'
 import { autoChatAction } from '@grammyjs/auto-chat-action'
 import { limit } from '@grammyjs/ratelimiter'
@@ -16,7 +17,7 @@ import {
   type BotContext,
   type BotSessionData,
   type OnCallBackQueryData,
-  type OnMessageContext
+  type OnMessageContext, type RefundCallback
 } from './modules/types'
 import { mainMenu } from './pages'
 import { TranslateBot } from './modules/translate/TranslateBot'
@@ -47,10 +48,11 @@ import { autoRetry } from '@grammyjs/auto-retry'
 import { run } from '@grammyjs/runner'
 import { runBotHeartBit } from './monitoring/monitoring'
 import { type BotPaymentLog } from './database/stats.service'
-import { getChatMemberInfo } from './modules/open-ai/utils/web-crawler'
+// import { getChatMemberInfo } from './modules/open-ai/utils/web-crawler'
 import { TelegramPayments } from './modules/telegram_payment'
 import * as Sentry from '@sentry/node'
 import * as Events from 'events'
+import { ProfilingIntegration } from '@sentry/profiling-node'
 
 Events.EventEmitter.defaultMaxListeners = 30
 
@@ -72,7 +74,7 @@ bot.use(
     limit: 3,
 
     // This is called when the limit is exceeded.
-    onLimitExceeded: async (ctx) => {
+    onLimitExceeded: (ctx): void => {
       // await ctx.reply("Please refrain from sending too many requests")
       logger.error(`@${ctx.from?.username} has exceeded the message limit`)
       // await ctx.reply("");
@@ -84,6 +86,34 @@ bot.use(
     }
   })
 )
+
+Sentry.init({
+  integrations: [
+    new ProfilingIntegration()
+  ],
+  tracesSampleRate: 1.0, // Performance Monitoring. Should use 0.1 in production
+  profilesSampleRate: 1.0 // Set sampling rate for profiling - this is relative to tracesSampleRate
+})
+bot.use(async (ctx: BotContext, next: NextFunction): Promise<void> => {
+  const transaction = Sentry.startTransaction({ name: 'bot-command' })
+  const entities = ctx.entities()
+  for (const ent of entities) {
+    if (ent.type === 'bot_command') {
+      const command = ent.text.substring(1)
+      const userId = ctx.message?.from?.id
+      if (userId) {
+        Sentry.setUser({ id: userId })
+      }
+      if (command) {
+        Sentry.setTag('command', command)
+      }
+      // there should be only one bot command
+      break
+    }
+  }
+  await next()
+  transaction.finish()
+})
 
 function createInitialSessionData (): BotSessionData {
   return {
@@ -156,7 +186,7 @@ bot.on('message:new_chat_members:me', async (ctx) => {
     }
 
     const tgUserId = ctx.message.from.id
-    const tgUsername = ctx.message.from.username || ''
+    const tgUsername = ctx.message.from.username ?? ''
 
     await chatService.initChat({ tgUserId, accountId, tgUsername })
   } catch (err) {
@@ -164,7 +194,7 @@ bot.on('message:new_chat_members:me', async (ctx) => {
   }
 })
 
-const assignFreeCredits = async (ctx: OnMessageContext) => {
+const assignFreeCredits = async (ctx: OnMessageContext): Promise<boolean> => {
   const { chat } = ctx.update.message
 
   const accountId = payments.getAccountId(ctx)
@@ -182,7 +212,7 @@ const assignFreeCredits = async (ctx: OnMessageContext) => {
       const creator = members.find((member) => member.status === 'creator')
       if (creator) {
         tgUserId = creator.user.id
-        tgUsername = creator.user.username || ''
+        tgUsername = creator.user.username ?? ''
       }
     }
 
@@ -207,6 +237,8 @@ bot.use(async (ctx, next) => {
         tgUserId,
         command: entity.text.replace('/', ''),
         rawMessage: ''
+      }).catch((ex: any) => {
+        console.error('Error logging stats', ex)
       })
     }
   }
@@ -217,12 +249,12 @@ bot.use(async (ctx, next) => {
 const writeCommandLog = async (
   ctx: OnMessageContext,
   isSupportedCommand = true
-) => {
+): Promise<void> => {
   const { from, text = '', chat } = ctx.update.message
 
   try {
     const accountId = payments.getAccountId(ctx)
-    const [command] = text?.split(' ')
+    const [command] = text?.split(' ') ?? []
 
     const log: BotPaymentLog = {
       tgUserId: from.id,
@@ -244,7 +276,44 @@ const writeCommandLog = async (
   }
 }
 
-const onMessage = async (ctx: OnMessageContext) => {
+interface PayableBot {
+  getEstimatedPrice: (ctx: OnMessageContext) => number
+  isSupportedEvent: (ctx: OnMessageContext) => boolean
+  onEvent: (ctx: OnMessageContext, refundCallback: RefundCallback) => Promise<any>
+}
+interface UtilityBot {
+  isSupportedEvent: (ctx: OnMessageContext) => boolean
+  onEvent: (ctx: OnMessageContext) => Promise<any>
+}
+interface PayableBotConfig {
+  bot: PayableBot
+  enabled?: (ctx: OnMessageContext) => boolean
+}
+
+const PayableBots: Record<string, PayableBotConfig> = {
+  qrCodeBot: { bot: qrCodeBot },
+  sdImagesBot: { bot: sdImagesBot },
+  voiceMemo: { bot: voiceMemo },
+  documentBot: { bot: documentBot },
+  translateBot: { bot: translateBot },
+  openAiBot: {
+    enabled: (ctx: OnMessageContext) => ctx.session.openAi.imageGen.isEnabled,
+    bot: openAiBot
+  },
+  llmsBot: {
+    enabled: (ctx: OnMessageContext) => ctx.session.openAi.imageGen.isEnabled,
+    bot: llmsBot
+  },
+  oneCountryBot: { bot: oneCountryBot }
+}
+
+const UtilityBots: Record<string, UtilityBot> = {
+  walletConnect,
+  payments,
+  schedule
+}
+
+const onMessage = async (ctx: OnMessageContext): Promise<void> => {
   try {
     // bot doesn't handle forwarded messages
     if (!ctx.message.forward_from) {
@@ -254,166 +323,37 @@ const onMessage = async (ctx: OnMessageContext) => {
         await telegramPayments.onEvent(ctx)
         return
       }
-
-      if (qrCodeBot.isSupportedEvent(ctx)) {
-        const price = qrCodeBot.getEstimatedPrice(ctx)
-        const isPaid = await payments.pay(ctx, price)
-        if (isPaid) {
-          await qrCodeBot
-            .onEvent(ctx, (reason?: string) => {
-              payments.refundPayment(reason, ctx, price)
-            })
-            .catch((e) => {
-              payments.refundPayment(e.message || 'Unknown error', ctx, price)
-            })
-          return
-        }
-      }
-      if (sdImagesBot.isSupportedEvent(ctx)) {
-        const price = sdImagesBot.getEstimatedPrice(ctx)
-        const isPaid = await payments.pay(ctx, price)
-        if (isPaid) {
-          await sdImagesBot
-            .onEvent(ctx, (reason?: string) => {
-              payments.refundPayment(reason, ctx, price)
-            })
-            .catch((e) => {
-              payments.refundPayment(e.message || 'Unknown error', ctx, price)
-            })
-          return
-        }
-        return
-      }
-      if (voiceMemo.isSupportedEvent(ctx)) {
-        const price = voiceMemo.getEstimatedPrice(ctx)
-        const isPaid = await payments.pay(ctx, price)
-        if (isPaid) {
-          await voiceMemo.onEvent(ctx).catch((e) => {
-            payments.refundPayment(e.message || 'Unknown error', ctx, price)
+      const tryOrRefund = (price: number, callback: (ctx: OnMessageContext, refundCallback: RefundCallback) => Promise<any>): void => {
+        const refund = (reason?: string): void => {
+          payments.refundPayment(reason, ctx, price).catch((ex: any) => {
+            console.error('Refund error', reason, ex)
           })
         }
-        return
+        callback(ctx, refund).catch((ex: any) => {
+          refund(ex?.message ?? 'Unknown error')
+        })
       }
-
-      if (documentBot.isSupportedEvent(ctx)) {
-        const price = 1
+      for (const config of Object.values(PayableBots)) {
+        const bot = config.bot
+        if (!bot.isSupportedEvent(ctx)) {
+          continue
+        }
+        if (config.enabled && !config.enabled(ctx)) {
+          await ctx.reply('Bot disabled', { message_thread_id: ctx.message?.message_thread_id })
+          return
+        }
+        const price = bot.getEstimatedPrice(ctx)
         const isPaid = await payments.pay(ctx, price)
-
         if (isPaid) {
-          // const file = await bot.getFile();
-          const response = await documentBot
-            .onEvent(ctx, (reason?: string) => {
-              payments.refundPayment(reason, ctx, price)
-            })
-            .catch((e) => {
-              payments.refundPayment(e.message || 'Unknown error', ctx, price)
-              return { next: false }
-            })
-
-          if (!response) {
-            return
-          }
+          tryOrRefund(price, bot.onEvent)
         }
-      }
-
-      if (translateBot.isSupportedEvent(ctx)) {
-        const price = translateBot.getEstimatedPrice(ctx)
-        const isPaid = await payments.pay(ctx, price)
-
-        if (isPaid) {
-          const response = await translateBot
-            .onEvent(ctx, (reason?: string) => {
-              payments.refundPayment(reason, ctx, price)
-            })
-            .catch((e) => {
-              payments.refundPayment(e.message || 'Unknown error', ctx, price)
-              return { next: false }
-            })
-
-          if (!response.next) {
-            return
-          }
-        }
-      }
-
-      if (await openAiBot.isSupportedEvent(ctx)) {
-        if (ctx.session.openAi.imageGen.isEnabled) {
-          const price = openAiBot.getEstimatedPrice(ctx)
-          const isPaid = await payments.pay(ctx, price)
-          if (isPaid) {
-            await openAiBot
-              .onEvent(ctx)
-              .catch(async (e) => await payments.refundPayment(e, ctx, price))
-            return
-          }
-          return
-        } else {
-          await ctx.reply('Bot disabled', { message_thread_id: ctx.message?.message_thread_id })
-          return
-        }
-      }
-      if (await llmsBot.isSupportedEvent(ctx)) {
-        if (ctx.session.openAi.imageGen.isEnabled) {
-          const price = llmsBot.getEstimatedPrice(ctx)
-          const isPaid = await payments.pay(ctx, price)
-          if (isPaid) {
-            await llmsBot
-              .onEvent(ctx)
-              .catch(async (e) => await payments.refundPayment(e, ctx, price))
-            return
-          }
-          return
-        } else {
-          await ctx.reply('Bot disabled', { message_thread_id: ctx.message?.message_thread_id })
-          return
-        }
-      }
-
-      if (await openAiBot.isSupportedEvent(ctx)) {
-        if (ctx.session.openAi.imageGen.isEnabled) {
-          const price = openAiBot.getEstimatedPrice(ctx)
-          const isPaid = await payments.pay(ctx, price)
-          if (isPaid) {
-            await openAiBot
-              .onEvent(ctx)
-              .catch(async (e) => await payments.refundPayment(e, ctx, price))
-            return
-          }
-          return
-        } else {
-          await ctx.reply('Bot disabled', { message_thread_id: ctx.message?.message_thread_id })
-          return
-        }
-      }
-      if (oneCountryBot.isSupportedEvent(ctx)) {
-        if (oneCountryBot.isValidCommand(ctx)) {
-          const price = oneCountryBot.getEstimatedPrice(ctx)
-          // if (price > 0) {
-          //   await ctx.reply(`Processing withdraw for ${price.toFixed(2)}¢...`);
-          // }
-          const isPaid = await payments.pay(ctx, price)
-          if (isPaid) {
-            await oneCountryBot
-              .onEvent(ctx)
-              .catch(async (e) => await payments.refundPayment(e, ctx, price))
-            return
-          }
-          return
-        } else {
-          return
-        }
-      }
-
-      if (walletConnect.isSupportedEvent(ctx)) {
-        await walletConnect.onEvent(ctx)
         return
       }
-      if (payments.isSupportedEvent(ctx)) {
-        await payments.onEvent(ctx)
-        return
-      }
-      if (schedule.isSupportedEvent(ctx)) {
-        await schedule.onEvent(ctx)
+      for (const bot of Object.values(UtilityBots)) {
+        if (!bot.isSupportedEvent(ctx)) {
+          continue
+        }
+        await bot.onEvent(ctx)
         return
       }
       // Any message interacts with ChatGPT (only for private chats)
@@ -422,9 +362,7 @@ const onMessage = async (ctx: OnMessageContext) => {
         return
       }
       if (ctx.update.message.chat) {
-        logger.info(
-          `Received message in chat id: ${ctx.update.message.chat.id}`
-        )
+        logger.info(`Received message in chat id: ${ctx.update.message.chat.id}`)
       }
       await writeCommandLog(ctx, false)
     }
@@ -433,7 +371,7 @@ const onMessage = async (ctx: OnMessageContext) => {
   }
 }
 
-const onCallback = async (ctx: OnCallBackQueryData) => {
+const onCallback = async (ctx: OnCallBackQueryData): Promise<void> => {
   try {
     if (qrCodeBot.isSupportedEvent(ctx)) {
       await qrCodeBot.onEvent(ctx, (reason) => {
@@ -482,7 +420,7 @@ bot.command(['start', 'help', 'menu'], async (ctx) => {
 })
 
 bot.command('more', async (ctx) => {
-  writeCommandLog(ctx as OnMessageContext)
+  writeCommandLog(ctx as OnMessageContext).catch(console.error)
   return await ctx.reply(commandsHelpText.more, {
     parse_mode: 'Markdown',
     disable_web_page_preview: true,
@@ -491,7 +429,7 @@ bot.command('more', async (ctx) => {
 })
 
 bot.command('terms', async (ctx) => {
-  writeCommandLog(ctx as OnMessageContext)
+  writeCommandLog(ctx as OnMessageContext).catch(console.error)
   return await ctx.reply(TERMS.text, {
     parse_mode: 'Markdown',
     disable_web_page_preview: true,
@@ -500,7 +438,7 @@ bot.command('terms', async (ctx) => {
 })
 
 bot.command('support', async (ctx) => {
-  writeCommandLog(ctx as OnMessageContext)
+  writeCommandLog(ctx as OnMessageContext).catch(console.error)
   return await ctx.reply(SUPPORT.text, {
     parse_mode: 'Markdown',
     disable_web_page_preview: true,
@@ -509,7 +447,7 @@ bot.command('support', async (ctx) => {
 })
 
 bot.command('models', async (ctx) => {
-  writeCommandLog(ctx as OnMessageContext)
+  writeCommandLog(ctx as OnMessageContext).catch(console.error)
   return await ctx.reply(MODELS.text, {
     parse_mode: 'Markdown',
     disable_web_page_preview: true
@@ -517,7 +455,7 @@ bot.command('models', async (ctx) => {
 })
 
 bot.command('feedback', async (ctx) => {
-  writeCommandLog(ctx as OnMessageContext)
+  writeCommandLog(ctx as OnMessageContext).catch(console.error)
   return await ctx.reply(FEEDBACK.text, {
     parse_mode: 'Markdown',
     disable_web_page_preview: true,
@@ -526,7 +464,7 @@ bot.command('feedback', async (ctx) => {
 })
 
 bot.command('love', async (ctx) => {
-  writeCommandLog(ctx as OnMessageContext)
+  writeCommandLog(ctx as OnMessageContext).catch(console.error)
   return await ctx.reply(LOVE.text, {
     parse_mode: 'Markdown',
     disable_web_page_preview: true,
@@ -611,12 +549,12 @@ app.get('/health', (req, res) => {
   res.send('OK').end()
 })
 
-app.get('/metrics', async (req, res) => {
+app.get('/metrics', asyncHandler(async (req, res): Promise<void> => {
   res.setHeader('Content-Type', prometheusRegister.contentType)
-  res.send(await prometheusRegister.metrics())
-})
+  res.send(await prometheusRegister.metrics()).end()
+}))
 
-async function bootstrap () {
+async function bootstrap (): Promise<void> {
   const httpServer = app.listen(config.port, () => {
     logger.info(`Bot listening on port ${config.port}`)
     // bot.start({
@@ -631,11 +569,11 @@ async function bootstrap () {
 
   const runner = run(bot)
 
-  const stopApplication = async () => {
+  const stopApplication = async (): Promise<void> => {
     console.warn('Terminating the bot...')
 
     try {
-      await httpServer.close()
+      httpServer.close()
       console.warn('The HTTP server is turned off')
 
       if (runner && runner.isRunning()) {
@@ -655,12 +593,12 @@ async function bootstrap () {
     }
   }
 
-  process.on('SIGINT', stopApplication)
-  process.on('SIGTERM', stopApplication)
+  process.on('SIGINT', () => { stopApplication().catch(console.error) })
+  process.on('SIGTERM', () => { stopApplication().catch(console.error) })
 
   if (config.betteruptime.botHeartBitId) {
     const task = await runBotHeartBit(runner, config.betteruptime.botHeartBitId)
-    const stopHeartBit = () => {
+    const stopHeartBit = (): void => {
       logger.info('heart bit stopping')
       task.stop()
     }
@@ -669,4 +607,4 @@ async function bootstrap () {
   }
 }
 
-bootstrap()
+bootstrap().catch(console.error)
