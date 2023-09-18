@@ -238,7 +238,7 @@ bot.use(async (ctx, next) => {
         command: entity.text.replace('/', ''),
         rawMessage: ''
       }).catch((ex: any) => {
-        console.error('Error logging stats', ex)
+        logger.error('Error logging stats', ex)
       })
     }
   }
@@ -326,7 +326,7 @@ const onMessage = async (ctx: OnMessageContext): Promise<void> => {
       const tryOrRefund = (price: number, callback: (ctx: OnMessageContext, refundCallback: RefundCallback) => Promise<any>): void => {
         const refund = (reason?: string): void => {
           payments.refundPayment(reason, ctx, price).catch((ex: any) => {
-            console.error('Refund error', reason, ex)
+            logger.error('Refund error', reason, ex)
           })
         }
         callback(ctx, refund).catch((ex: any) => {
@@ -367,7 +367,7 @@ const onMessage = async (ctx: OnMessageContext): Promise<void> => {
       await writeCommandLog(ctx, false)
     }
   } catch (ex: any) {
-    console.error('onMessage error', ex)
+    logger.error('onMessage error', ex)
   }
 }
 
@@ -382,11 +382,11 @@ const onCallback = async (ctx: OnCallBackQueryData): Promise<void> => {
 
     if (sdImagesBot.isSupportedEvent(ctx)) {
       await sdImagesBot.onEvent(ctx, (e) => {
-        console.log(e, '// TODO refund payment')
+        logger.info(e, '// TODO refund payment')
       })
     }
   } catch (ex: any) {
-    console.error('onMessage error', ex)
+    logger.error('onMessage error', ex)
   }
 }
 
@@ -420,7 +420,7 @@ bot.command(['start', 'help', 'menu'], async (ctx) => {
 })
 
 bot.command('more', async (ctx) => {
-  writeCommandLog(ctx as OnMessageContext).catch(console.error)
+  writeCommandLog(ctx as OnMessageContext).catch(logger.error)
   return await ctx.reply(commandsHelpText.more, {
     parse_mode: 'Markdown',
     disable_web_page_preview: true,
@@ -429,7 +429,7 @@ bot.command('more', async (ctx) => {
 })
 
 bot.command('terms', async (ctx) => {
-  writeCommandLog(ctx as OnMessageContext).catch(console.error)
+  writeCommandLog(ctx as OnMessageContext).catch(logger.error)
   return await ctx.reply(TERMS.text, {
     parse_mode: 'Markdown',
     disable_web_page_preview: true,
@@ -438,7 +438,7 @@ bot.command('terms', async (ctx) => {
 })
 
 bot.command('support', async (ctx) => {
-  writeCommandLog(ctx as OnMessageContext).catch(console.error)
+  writeCommandLog(ctx as OnMessageContext).catch(logger.error)
   return await ctx.reply(SUPPORT.text, {
     parse_mode: 'Markdown',
     disable_web_page_preview: true,
@@ -447,7 +447,7 @@ bot.command('support', async (ctx) => {
 })
 
 bot.command('models', async (ctx) => {
-  writeCommandLog(ctx as OnMessageContext).catch(console.error)
+  writeCommandLog(ctx as OnMessageContext).catch(logger.error)
   return await ctx.reply(MODELS.text, {
     parse_mode: 'Markdown',
     disable_web_page_preview: true
@@ -455,7 +455,7 @@ bot.command('models', async (ctx) => {
 })
 
 bot.command('feedback', async (ctx) => {
-  writeCommandLog(ctx as OnMessageContext).catch(console.error)
+  writeCommandLog(ctx as OnMessageContext).catch(logger.error)
   return await ctx.reply(FEEDBACK.text, {
     parse_mode: 'Markdown',
     disable_web_page_preview: true,
@@ -464,7 +464,7 @@ bot.command('feedback', async (ctx) => {
 })
 
 bot.command('love', async (ctx) => {
-  writeCommandLog(ctx as OnMessageContext).catch(console.error)
+  writeCommandLog(ctx as OnMessageContext).catch(logger.error)
   return await ctx.reply(LOVE.text, {
     parse_mode: 'Markdown',
     disable_web_page_preview: true,
@@ -531,9 +531,9 @@ bot.catch((err) => {
     logger.error('Could not contact Telegram:', e)
   } else {
     logger.error('Unknown error:', e)
-    console.error('global error others', err)
+    logger.error('global error others', err)
   }
-  console.error('global error', err)
+  logger.error('global error', err)
 })
 
 bot.errorBoundary((error) => {
@@ -593,8 +593,8 @@ async function bootstrap (): Promise<void> {
     }
   }
 
-  process.on('SIGINT', () => { stopApplication().catch(console.error) })
-  process.on('SIGTERM', () => { stopApplication().catch(console.error) })
+  process.on('SIGINT', () => { stopApplication().catch(logger.error) })
+  process.on('SIGTERM', () => { stopApplication().catch(logger.error) })
 
   if (config.betteruptime.botHeartBitId) {
     const task = await runBotHeartBit(runner, config.betteruptime.botHeartBitId)
@@ -607,4 +607,7 @@ async function bootstrap (): Promise<void> {
   }
 }
 
-bootstrap().catch(console.error)
+bootstrap().catch((error) => {
+  console.error(`bot bootstrap error ${error}`)
+  process.exit(1)
+})
