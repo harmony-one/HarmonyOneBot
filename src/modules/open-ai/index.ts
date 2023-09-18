@@ -60,9 +60,9 @@ export class OpenAIBot {
     }
   }
 
-  public async isSupportedEvent (
+  public isSupportedEvent (
     ctx: OnMessageContext | OnCallBackQueryData
-  ): Promise<boolean> {
+  ): boolean {
     const hasCommand = ctx.hasCommand(
       Object.values(SupportedCommands).map((command) => command.name)
     )
@@ -135,7 +135,7 @@ export class OpenAIBot {
   }
 
   public async onEvent (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
-    if (!(await this.isSupportedEvent(ctx)) && ctx.chat?.type !== 'private') {
+    if (!(this.isSupportedEvent(ctx)) && ctx.chat?.type !== 'private') {
       this.logger.warn(`### unsupported command ${ctx.message?.text}`)
       return
     }
@@ -249,7 +249,7 @@ export class OpenAIBot {
       .catch(async (e) => { await this.onError(ctx, e, MAX_TRIES, '### unsupported command') })
   }
 
-  private async hasBalance (ctx: OnMessageContext | OnCallBackQueryData) {
+  private async hasBalance (ctx: OnMessageContext | OnCallBackQueryData): Promise<boolean> {
     const accountId = this.payments.getAccountId(ctx as OnMessageContext)
     const addressBalance = await this.payments.getUserBalance(accountId)
     const creditsBalance = await chatService.getBalance(accountId)
@@ -257,9 +257,9 @@ export class OpenAIBot {
     const balance = addressBalance
       .plus(creditsBalance)
       .plus(fiatCreditsBalance)
-    const balanceOne = this.payments.toONE(balance, false).toFixed(2)
+    const balanceOne = this.payments.toONE(balance, false)
     return (
-      +balanceOne > +config.openAi.chatGpt.minimumBalance ||
+      (+balanceOne > +config.openAi.chatGpt.minimumBalance) ||
       (this.payments.isUserInWhitelist(ctx.from.id, ctx.from.username))
     )
   }

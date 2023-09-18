@@ -44,16 +44,16 @@ export class LlmsBot {
     this.payments = payments
   }
 
-  public async isSupportedEvent (
+  public isSupportedEvent (
     ctx: OnMessageContext | OnCallBackQueryData
-  ): Promise<boolean> {
+  ): boolean {
     const hasCommand = ctx.hasCommand(
       Object.values(SupportedCommands).map((command) => command.name)
     )
     if (isMentioned(ctx)) {
       return true
     }
-    const chatPrefix = hasPrefix(ctx.message?.text || '')
+    const chatPrefix = hasPrefix(ctx.message?.text ?? '')
     if (chatPrefix !== '') {
       return true
     }

@@ -6,6 +6,10 @@ import config from '../../config'
 const SupportedDocuments = { PDF: 'application/pdf' }
 
 export class DocumentHandler {
+  public getEstimatedPrice (ctx: OnMessageContext): number {
+    return 1
+  }
+
   public async onEvent (ctx: OnMessageContext, refundCallback: RefundCallback) {
     try {
       const file = await ctx.getFile()

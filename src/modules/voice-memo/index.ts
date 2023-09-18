@@ -1,4 +1,4 @@
-import { type OnMessageContext } from '../types'
+import { type OnMessageContext, type RefundCallback } from '../types'
 import pino, { type Logger } from 'pino'
 import { initTelegramClient } from './MTProtoAPI'
 import { NewMessage, type NewMessageEvent } from 'telegram/events'
@@ -130,10 +130,10 @@ export class VoiceMemo {
     return resultText
   }
 
-  public isSupportedEvent (ctx: OnMessageContext) {
+  public isSupportedEvent (ctx: OnMessageContext): boolean {
     const { voice, audio } = ctx.update.message
 
-    return config.voiceMemo.isEnabled && (voice || audio)
+    return config.voiceMemo.isEnabled && (!!voice || !!audio)
   }
 
   public getEstimatedPrice (ctx: OnMessageContext) {
@@ -144,7 +144,7 @@ export class VoiceMemo {
     return 0
   }
 
-  public async onEvent (ctx: OnMessageContext) {
+  public async onEvent (ctx: OnMessageContext): Promise<void> {
     const { message_id, voice, audio, from } = ctx.update.message
     const fileSize = (voice || audio)?.file_size
     const requestKey = `${from.id}_${fileSize}`
