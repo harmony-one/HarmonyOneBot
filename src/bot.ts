@@ -190,8 +190,9 @@ bot.on('message:new_chat_members:me', async (ctx) => {
     const tgUsername = ctx.message.from.username ?? ''
 
     await chatService.initChat({ tgUserId, accountId, tgUsername })
-  } catch (err) {
-    logger.info(`Create chat error ${err}`)
+  } catch (ex) {
+    Sentry.captureException(ex)
+    logger.error('Create chat error', ex)
   }
 })
 
@@ -220,6 +221,7 @@ const assignFreeCredits = async (ctx: OnMessageContext): Promise<boolean> => {
     await chatService.initChat({ accountId, tgUserId, tgUsername })
     // logger.info(`credits transferred to accountId ${accountId} chat ${chat.type} ${chat.id}`)
   } catch (e) {
+    Sentry.captureException(e)
     logger.error(
       `Cannot check account ${accountId} credits: ${(e as Error).message}`
     )
@@ -239,6 +241,7 @@ bot.use(async (ctx, next) => {
         command: entity.text.replace('/', ''),
         rawMessage: ''
       }).catch((ex: any) => {
+        Sentry.captureException(ex)
         logger.error('Error logging stats', ex)
       })
     }
@@ -271,6 +274,7 @@ const writeCommandLog = async (
     }
     await statsService.writeLog(log)
   } catch (e) {
+    Sentry.captureException(e)
     logger.error(
       `Cannot write unsupported command log: ${(e as Error).message}`
     )
@@ -317,10 +321,12 @@ const UtilityBots: Record<string, UtilityBot> = {
 const executeOrRefund = (ctx: OnMessageContext, price: number, bot: PayableBot): void => {
   const refund = (reason?: string): void => {
     payments.refundPayment(reason, ctx, price).catch((ex: any) => {
+      Sentry.captureException(ex)
       logger.error('Refund error', reason, ex)
     })
   }
   bot.onEvent(ctx, refund).catch((ex: any) => {
+    Sentry.captureException(ex)
     refund(ex?.message ?? 'Unknown error')
   })
 }
@@ -371,6 +377,7 @@ const onMessage = async (ctx: OnMessageContext): Promise<void> => {
       await writeCommandLog(ctx, false)
     }
   } catch (ex: any) {
+    Sentry.captureException(ex)
     logger.error('onMessage error', ex)
   }
 }
@@ -390,6 +397,7 @@ const onCallback = async (ctx: OnCallBackQueryData): Promise<void> => {
       })
     }
   } catch (ex: any) {
+    Sentry.captureException(ex)
     logger.error('onMessage error', ex)
   }
 }
@@ -423,8 +431,13 @@ bot.command(['start', 'help', 'menu'], async (ctx) => {
   })
 })
 
+const logErrorHandler = (ex: any): void => {
+  Sentry.captureException(ex)
+  logger.error(ex)
+}
+
 bot.command('more', async (ctx) => {
-  writeCommandLog(ctx as OnMessageContext).catch(logger.error)
+  writeCommandLog(ctx as OnMessageContext).catch(logErrorHandler)
   return await ctx.reply(commandsHelpText.more, {
     parse_mode: 'Markdown',
     disable_web_page_preview: true,
@@ -433,7 +446,7 @@ bot.command('more', async (ctx) => {
 })
 
 bot.command('terms', async (ctx) => {
-  writeCommandLog(ctx as OnMessageContext).catch(logger.error)
+  writeCommandLog(ctx as OnMessageContext).catch(logErrorHandler)
   return await ctx.reply(TERMS.text, {
     parse_mode: 'Markdown',
     disable_web_page_preview: true,
@@ -442,7 +455,7 @@ bot.command('terms', async (ctx) => {
 })
 
 bot.command('support', async (ctx) => {
-  writeCommandLog(ctx as OnMessageContext).catch(logger.error)
+  writeCommandLog(ctx as OnMessageContext).catch(logErrorHandler)
   return await ctx.reply(SUPPORT.text, {
     parse_mode: 'Markdown',
     disable_web_page_preview: true,
@@ -451,7 +464,7 @@ bot.command('support', async (ctx) => {
 })
 
 bot.command('models', async (ctx) => {
-  writeCommandLog(ctx as OnMessageContext).catch(logger.error)
+  writeCommandLog(ctx as OnMessageContext).catch(logErrorHandler)
   return await ctx.reply(MODELS.text, {
     parse_mode: 'Markdown',
     disable_web_page_preview: true
@@ -459,7 +472,7 @@ bot.command('models', async (ctx) => {
 })
 
 bot.command('feedback', async (ctx) => {
-  writeCommandLog(ctx as OnMessageContext).catch(logger.error)
+  writeCommandLog(ctx as OnMessageContext).catch(logErrorHandler)
   return await ctx.reply(FEEDBACK.text, {
     parse_mode: 'Markdown',
     disable_web_page_preview: true,
@@ -468,7 +481,7 @@ bot.command('feedback', async (ctx) => {
 })
 
 bot.command('love', async (ctx) => {
-  writeCommandLog(ctx as OnMessageContext).catch(logger.error)
+  writeCommandLog(ctx as OnMessageContext).catch(logErrorHandler)
   return await ctx.reply(LOVE.text, {
     parse_mode: 'Markdown',
     disable_web_page_preview: true,
@@ -592,6 +605,7 @@ async function bootstrap (): Promise<void> {
 
       process.exit(0)
     } catch (ex) {
+      Sentry.captureException(ex)
       console.error('An error occurred while terminating', ex)
       process.exit(1)
     }
