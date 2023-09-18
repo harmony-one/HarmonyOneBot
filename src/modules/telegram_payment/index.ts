@@ -111,7 +111,7 @@ export class TelegramPayments {
     const invoice = await invoiceService.create({ tgUserId, accountId, itemId, amount })
     const payload = JSON.stringify({ uuid: invoice.uuid })
     this.logger.info(`Send invoice: ${JSON.stringify({ tgUserId, accountId, itemId, amount })}`)
-    const photoUrl = 'https://pbs.twimg.com/media/F5SofMsbgAApd2Y?format=png&name=small'
+    // const photoUrl = 'https://pbs.twimg.com/media/F5SofMsbgAApd2Y?format=png&name=small'
     await ctx.api.sendInvoice(chatId, title, description, payload, providerToken, currency, prices, { start_parameter: 'createInvoice' })
   }
 }
