@@ -9,6 +9,7 @@ export default {
   telegramBotAuthToken: process.env.TELEGRAM_BOT_AUTH_TOKEN ?? '',
   openAiKey: process.env.OPENAI_API_KEY,
   comfyHost: process.env.COMFY_HOST ?? '',
+  sdTrainHost: process.env.SD_TRAIN_HOST ?? '',
   comfyWsHost: process.env.COMFY_WS_HOST ?? '',
   comfyHost2: process.env.COMFY_HOST2 ?? '',
   comfyWsHost2: process.env.COMFY_WS_HOST2 ?? '',
@@ -63,7 +64,7 @@ export default {
       isTypingEnabled: Boolean(
         parseInt(process.env.TYPING_STATUS_ENABLED ?? '1')
       ),
-      model: process.env.OPENAI_MODEL ?? 'gpt-4-32k',
+      model: process.env.OPENAI_MODEL ?? 'gpt-4',
       prefixes: {
         chatPrefix: process.env.ASK_PREFIX
           ? process.env.ASK_PREFIX.split(',')
