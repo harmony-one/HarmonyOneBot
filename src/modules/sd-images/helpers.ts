@@ -36,16 +36,16 @@ const removeSpaceFromBegin = (text: string): string => {
   return text.slice(idx)
 }
 
-const SPECIAL_IMG_CMD_SYMBOLS = ['i.', 'l.', 'I.', '?', '!', ':', ';', "r.", "R.", "d.", "D.","(", ")", "$", "&","<"];
+const SPECIAL_IMG_CMD_SYMBOLS = ['i.', 'l.', 'I.', '?', '!', ':', ';', 'r.', 'R.', 'd.', 'D.', '(', ')', '$', '&', '<']
 
 export const getPrefix = (prompt: string, prefixList: string[]): string => {
   for (let i = 0; i < prefixList.length; i++) {
     if (prompt.toLocaleLowerCase().startsWith(prefixList[i])) {
-      return prefixList[i];
+      return prefixList[i]
     }
   }
-  return "";
-};
+  return ''
+}
 
 const parsePrompts = (fullText: string): { modelId: string, prompt: string } => {
   let modelId = ''
@@ -86,7 +86,13 @@ const parsePrompts = (fullText: string): { modelId: string, prompt: string } => 
 
 type Context = OnMessageContext | OnCallBackQueryData
 
-const hasCommand = (ctx: Context, cmd: string): boolean | undefined => ctx.hasCommand(cmd) || (ctx.message?.text?.startsWith(`${cmd} `) && ctx.chat?.type === 'private')
+const hasCommand = (ctx: Context, cmd: string): boolean => {
+  return ctx.hasCommand(cmd) ||
+      (
+        (ctx.message?.text?.startsWith(`${cmd} `) ?? false) &&
+          ctx.chat?.type === 'private'
+      )
+}
 
 export const parseCtx = (ctx: Context): IOperation | false => {
   try {
@@ -119,7 +125,7 @@ export const parseCtx = (ctx: Context): IOperation | false => {
       (hasCommand(ctx, 'image2') ?? hasCommand(ctx, 'imagine2')) ?? hasCommand(ctx, 'img2')
     ) {
       command = COMMAND.TEXT_TO_IMAGE
-      model = model && ({ ...model, serverNumber: 2 });
+      model = model && ({ ...model, serverNumber: 2 })
     }
 
     if (
@@ -162,7 +168,7 @@ export const parseCtx = (ctx: Context): IOperation | false => {
 
     if (startWithSpecialSymbol) {
       const prefix = getPrefix(messageText, SPECIAL_IMG_CMD_SYMBOLS)
-      model = getModelByParam(prefix);
+      model = getModelByParam(prefix)
       command = COMMAND.TEXT_TO_IMAGE
     }
 

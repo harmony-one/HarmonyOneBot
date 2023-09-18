@@ -1,4 +1,5 @@
 import { type OnMessageContext, type RefundCallback } from '../types'
+import * as Sentry from '@sentry/node'
 
 const SupportedDocuments = { PDF: 'application/pdf' }
 
@@ -12,8 +13,8 @@ export class DocumentHandler {
       const file = await ctx.getFile()
       console.log(file)
       await ctx.reply('you did it kid')
-    } catch (error) {
-      console.error('Error:', error)
+    } catch (ex) {
+      Sentry.captureException(ex)
       await ctx.reply('you failed kid')
     }
   }

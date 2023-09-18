@@ -147,7 +147,8 @@ function createInitialSessionData (): BotSessionData {
       usage: 0,
       isProcessingQueue: false,
       requestQueue: []
-    }
+    },
+    refunded: false
   }
 }
 

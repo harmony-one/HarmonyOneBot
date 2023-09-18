@@ -78,6 +78,7 @@ export interface BotSessionData {
   openAi: OpenAiSessionData
   translate: TranslateBotData
   llms: LmmsSessionData
+  refunded: boolean
 }
 
 export type BotContext = Context &

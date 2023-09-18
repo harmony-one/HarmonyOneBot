@@ -112,15 +112,13 @@ export const LORAS_CONFIGS: ILora[] = [
   }
 ]
 
-export const getLoraByParam = (param: string, baseModel: string) => {
-  const model = LORAS_CONFIGS.find(m =>
+export const getLoraByParam = (param: string, baseModel: string): ILora | undefined => {
+  return LORAS_CONFIGS.find(m =>
     (m.id === param ||
             m.hash === param ||
             m.shortName === param ||
             m.aliases.includes(param)) && m.baseModel === baseModel
   )
-
-  return model
 }
 
 export const modelsAliases = []

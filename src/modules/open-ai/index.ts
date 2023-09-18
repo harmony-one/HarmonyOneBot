@@ -39,6 +39,7 @@ import {
   SupportedCommands
 } from './helpers'
 import { getWebContent, getCrawlerPrice } from './utils/web-crawler'
+import * as Sentry from '@sentry/node'
 
 export class OpenAIBot {
   private readonly logger: Logger
@@ -118,6 +119,7 @@ export class OpenAIBot {
       }
       return 0
     } catch (e) {
+      Sentry.captureException(e)
       this.logger.error(`getEstimatedPrice error ${e}`)
       throw e
     }
@@ -246,7 +248,9 @@ export class OpenAIBot {
 
     this.logger.warn('### unsupported command')
     await sendMessage(ctx, '### unsupported command')
-      .catch(async (e) => { await this.onError(ctx, e, MAX_TRIES, '### unsupported command') })
+      .catch(async (e) => {
+        await this.onError(ctx, e, MAX_TRIES, '### unsupported command')
+      })
   }
 
   private async hasBalance (ctx: OnMessageContext | OnCallBackQueryData): Promise<boolean> {
@@ -282,8 +286,9 @@ export class OpenAIBot {
           })
         })
       } else {
-        sendMessage(ctx, 'Bot disabled').catch(async (e) => { await this.onError(ctx, e, MAX_TRIES, 'Bot disabled') }
-        )
+        sendMessage(ctx, 'Bot disabled').catch(async (e) => {
+          await this.onError(ctx, e, MAX_TRIES, 'Bot disabled')
+        })
       }
     } catch (e) {
       await this.onError(
@@ -382,6 +387,7 @@ export class OpenAIBot {
         chat: conversation
       }
     } catch (e: any) {
+      Sentry.captureException(e)
       ctx.chatAction = null
       throw e
     }
@@ -389,8 +395,9 @@ export class OpenAIBot {
 
   async onSum (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
     if (this.botSuspended) {
-      sendMessage(ctx, 'The bot is suspended').catch(async (e) => { await this.onError(ctx, e) }
-      )
+      sendMessage(ctx, 'The bot is suspended').catch(async (e) => {
+        await this.onError(ctx, e)
+      })
       return
     }
     try {
@@ -406,8 +413,9 @@ export class OpenAIBot {
           'sum'
         )
       } else {
-        await sendMessage(ctx, 'Error: Missing url').catch(async (e) => { await this.onError(ctx, e) }
-        )
+        await sendMessage(ctx, 'Error: Missing url').catch(async (e) => {
+          await this.onError(ctx, e)
+        })
       }
     } catch (e) {
       await this.onError(ctx, e)
@@ -434,7 +442,9 @@ export class OpenAIBot {
           ctx,
           'Url not supported, incorrect web site address or missing user credentials',
           { parseMode: 'Markdown' }
-        ).catch(async (e) => { await this.onError(ctx, e) })
+        ).catch(async (e) => {
+          await this.onError(ctx, e)
+        })
         return
       }
       let price = 0
@@ -534,7 +544,9 @@ export class OpenAIBot {
   async onMention (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
     try {
       if (this.botSuspended) {
-        await sendMessage(ctx, 'The bot is suspended').catch(async (e) => { await this.onError(ctx, e) })
+        await sendMessage(ctx, 'The bot is suspended').catch(async (e) => {
+          await this.onError(ctx, e)
+        })
         return
       }
       const { username } = ctx.me
@@ -556,8 +568,9 @@ export class OpenAIBot {
   async onPrefix (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
     try {
       if (this.botSuspended) {
-        sendMessage(ctx, 'The bot is suspended').catch(async (e) => { await this.onError(ctx, e) }
-        )
+        sendMessage(ctx, 'The bot is suspended').catch(async (e) => {
+          await this.onError(ctx, e)
+        })
         return
       }
       const { prompt } = getCommandNamePrompt(
@@ -582,8 +595,7 @@ export class OpenAIBot {
   async onPrivateChat (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
     try {
       if (this.botSuspended) {
-        sendMessage(ctx, 'The bot is suspended').catch(async (e) => { await this.onError(ctx, e) }
-        )
+        sendMessage(ctx, 'The bot is suspended').catch(async (e) => { await this.onError(ctx, e) })
         return
       }
       ctx.session.openAi.chatGpt.requestQueue.push(
@@ -712,30 +724,32 @@ export class OpenAIBot {
 
   async onError (
     ctx: OnMessageContext | OnCallBackQueryData,
-    e: any,
+    ex: any,
     retryCount: number = MAX_TRIES,
     msg?: string
   ): Promise<void> {
+    Sentry.setContext('open-ai', { retryCount, msg })
+    Sentry.captureException(ex)
     if (retryCount === 0) {
       // Retry limit reached, log an error or take alternative action
-      this.logger.error(`Retry limit reached for error: ${e}`)
+      this.logger.error(`Retry limit reached for error: ${ex}`)
       return
     }
-    if (e instanceof GrammyError) {
-      if (e.error_code === 400 && e.description.includes('not enough rights')) {
+    if (ex instanceof GrammyError) {
+      if (ex.error_code === 400 && ex.description.includes('not enough rights')) {
         await sendMessage(
           ctx,
           'Error: The bot does not have permission to send photos in chat'
         )
-      } else if (e.error_code === 429) {
+      } else if (ex.error_code === 429) {
         this.botSuspended = true
-        const retryAfter = e.parameters.retry_after
-          ? e.parameters.retry_after < 60
+        const retryAfter = ex.parameters.retry_after
+          ? ex.parameters.retry_after < 60
             ? 60
-            : e.parameters.retry_after * 2
+            : ex.parameters.retry_after * 2
           : 60
-        const method = e.method
-        const errorMessage = `On method "${method}" | ${e.error_code} - ${e.description}`
+        const method = ex.method
+        const errorMessage = `On method "${method}" | ${ex.error_code} - ${ex.description}`
         this.logger.error(errorMessage)
         await sendMessage(
           ctx,
@@ -750,15 +764,15 @@ export class OpenAIBot {
         this.botSuspended = false
       } else {
         this.logger.error(
-          `On method "${e.method}" | ${e.error_code} - ${e.description}`
+          `On method "${ex.method}" | ${ex.error_code} - ${ex.description}`
         )
       }
-    } else if (e instanceof OpenAI.APIError) {
+    } else if (ex instanceof OpenAI.APIError) {
       // 429 RateLimitError
       // e.status = 400 || e.code = BadRequestError
-      this.logger.error(`OPENAI Error ${e.status}(${e.code}) - ${e.message}`)
-      if (e.code === 'context_length_exceeded') {
-        await sendMessage(ctx, e.message).catch(async (e) => { await this.onError(ctx, e, retryCount - 1) })
+      this.logger.error(`OPENAI Error ${ex.status}(${ex.code}) - ${ex.message}`)
+      if (ex.code === 'context_length_exceeded') {
+        await sendMessage(ctx, ex.message).catch(async (e) => { await this.onError(ctx, e, retryCount - 1) })
         await this.onEnd(ctx)
       } else {
         await sendMessage(
@@ -767,7 +781,7 @@ export class OpenAIBot {
         ).catch(async (e) => { await this.onError(ctx, e, retryCount - 1) })
       }
     } else {
-      this.logger.error(`${e.toString()}`)
+      this.logger.error(`${ex.toString()}`)
       await sendMessage(ctx, 'Error handling your request')
         .catch(async (e) => { await this.onError(ctx, e, retryCount - 1) }
         )
