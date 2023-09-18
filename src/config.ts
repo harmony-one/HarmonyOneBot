@@ -63,7 +63,7 @@ export default {
       isTypingEnabled: Boolean(
         parseInt(process.env.TYPING_STATUS_ENABLED ?? '1')
       ),
-      model: process.env.OPENAI_MODEL ?? 'gpt-4-32k',
+      model: process.env.OPENAI_MODEL ?? 'gpt-4',
       prefixes: {
         chatPrefix: process.env.ASK_PREFIX
           ? process.env.ASK_PREFIX.split(',')
