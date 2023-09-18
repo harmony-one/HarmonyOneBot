@@ -438,8 +438,8 @@ export class OpenAIBot {
         return
       }
       let price = 0
-      ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_4_32K
-      const model = ChatGPTModelsEnum.GPT_4_32K
+      ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_35_TURBO_16K
+      const model = ChatGPTModelsEnum.GPT_35_TURBO_16K
       const chatModel = getChatModel(model)
       const webCrawlerMaxTokens =
         chatModel.maxContextTokens - config.openAi.chatGpt.maxTokens * 2
