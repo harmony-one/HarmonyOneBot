@@ -1,4 +1,4 @@
-import { type OnMessageContext, type RefundCallback } from '../types'
+import { type OnMessageContext } from '../types'
 import pino, { type Logger } from 'pino'
 import { initTelegramClient } from './MTProtoAPI'
 import { NewMessage, type NewMessageEvent } from 'telegram/events'
@@ -12,6 +12,7 @@ import { Kagi } from './kagi'
 import MessageMediaDocument = Api.MessageMediaDocument
 import { InputFile } from 'grammy'
 import { bot } from '../../bot'
+import * as Sentry from '@sentry/node'
 
 interface TranslationJob {
   filePath: string
@@ -37,6 +38,7 @@ export class VoiceMemo {
     })
     if (config.voiceMemo.isEnabled) {
       this.initTgClient().catch((ex) => {
+        Sentry.captureException(ex)
         this.logger.error(`Error initTgClient ${ex}`)
       })
     } else {
@@ -198,6 +200,7 @@ export class VoiceMemo {
           }
         }
       } catch (e) {
+        Sentry.captureException(e)
         this.logger.error(`Translation error: ${(e as Error).message}`)
       } finally {
         this.deleteTempFile(filePath)

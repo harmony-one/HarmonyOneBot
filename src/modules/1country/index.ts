@@ -8,6 +8,7 @@ import { getCommandNamePrompt, getUrl } from './utils/'
 import { type Logger, pino } from 'pino'
 import { isAdmin } from '../open-ai/utils/context'
 import config from '../../config'
+import * as Sentry from '@sentry/node'
 
 export const SupportedCommands = {
   register: {
@@ -268,6 +269,7 @@ export class OneCountryBot {
           await ctx.reply(`${response.error}`, { message_thread_id: ctx.message?.message_thread_id })
         }
       } catch (e) {
+        Sentry.captureException(e)
         this.logger.error(
           e instanceof AxiosError ? e.response?.data.error : appText.axiosError
         )
@@ -287,6 +289,7 @@ export class OneCountryBot {
         await relayApi().genNFT({ domain: url })
         await ctx.reply('NFT metadata generated', { message_thread_id: ctx.message?.message_thread_id })
       } catch (e) {
+        Sentry.captureException(e)
         this.logger.error(
           e instanceof AxiosError
             ? e.response?.data.error
@@ -398,6 +401,7 @@ export class OneCountryBot {
         try {
           await relayApi().enableSubdomains(domain)
         } catch (e) {
+          Sentry.captureException(e)
           this.logger.error(
             e instanceof AxiosError
               ? e.response?.data

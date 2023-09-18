@@ -6,3 +6,4 @@ node_modules/
 .env*
 .yarn/
 yarn.lock
+.eslintrc.js

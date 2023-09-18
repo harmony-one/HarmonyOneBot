@@ -5,6 +5,7 @@ import { COMMAND, type IOperation, parseCtx, promptHasBadWords } from './helpers
 import { getModelByParam, MODELS_CONFIGS } from './api'
 import { uuidv4 } from './utils'
 import { sendMessage } from '../open-ai/helpers'
+import * as Sentry from '@sentry/node'
 
 export class SDImagesBot extends SDImagesBotBase {
   public isSupportedEvent (
@@ -174,9 +175,9 @@ export class SDImagesBot extends SDImagesBotBase {
         }
       )
     } catch (e: any) {
-      console.log(e)
-      await sendMessage(ctx, 'Error: something went wrong...')
+      Sentry.captureException(e)
       refundCallback(e.message)
+      await sendMessage(ctx, 'Error: something went wrong...')
     }
 
     this.queue = this.queue.filter((v) => v !== uuid)
@@ -235,9 +236,9 @@ export class SDImagesBot extends SDImagesBotBase {
         })
       }
     } catch (e: any) {
-      console.log(e)
-      await sendMessage(ctx, 'Error: something went wrong...')
+      Sentry.captureException(e)
       refundCallback(e.message)
+      await sendMessage(ctx, 'Error: something went wrong...')
     }
   }
 
@@ -275,9 +276,9 @@ export class SDImagesBot extends SDImagesBotBase {
         message_thread_id: ctx.message?.message_thread_id
       })
     } catch (e: any) {
-      console.log(e)
-      await sendMessage(ctx, 'Error: something went wrong...')
+      Sentry.captureException(e)
       refundCallback(e)
+      await sendMessage(ctx, 'Error: something went wrong...')
     }
   }
 }

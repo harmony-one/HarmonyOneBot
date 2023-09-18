@@ -14,7 +14,6 @@ import { chatService } from '../../database/services'
 import config from '../../config'
 import { sleep } from '../sd-images/utils'
 import {
-  getPromptPrice,
   hasBardPrefix,
   hasPrefix,
   isMentioned,
@@ -27,6 +26,7 @@ import { preparePrompt, sendMessage } from '../open-ai/helpers'
 import { vertexCompletion } from './api/vertex'
 import { type LlmCompletion, llmCompletion } from './api/liteLlm'
 import { LlmsModelsEnum } from './types'
+import * as Sentry from '@sentry/node'
 export class LlmsBot {
   private readonly logger: Logger
   private readonly payments: BotPayments
@@ -64,25 +64,26 @@ export class LlmsBot {
     return 0
   }
 
-  public async onEvent (ctx: OnMessageContext | OnCallBackQueryData): Promise<false | undefined> {
-    const isSupportedEvent = await this.isSupportedEvent(ctx)
+  public async onEvent (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
+    const isSupportedEvent = this.isSupportedEvent(ctx)
     if (!isSupportedEvent && ctx.chat?.type !== 'private') {
       this.logger.warn(`### unsupported command ${ctx.message?.text}`)
-      return false
+      return
     }
 
     if (hasBardPrefix(ctx.message?.text ?? '') !== '') {
-      this.onPrefix(ctx, LlmsModelsEnum.BISON)
+      await this.onPrefix(ctx, LlmsModelsEnum.BISON)
       return
     }
     if (ctx.hasCommand(SupportedCommands.bard.name) || ctx.hasCommand(SupportedCommands.bardF.name)) {
-      this.onChat(ctx, LlmsModelsEnum.BISON)
+      await this.onChat(ctx, LlmsModelsEnum.BISON)
       return
     }
 
     this.logger.warn('### unsupported command')
-    await sendMessage(ctx, '### unsupported command').catch(async (e) => { await this.onError(ctx, e, MAX_TRIES, '### unsupported command') }
-    )
+    await sendMessage(ctx, '### unsupported command').catch(async (e) => {
+      await this.onError(ctx, e, MAX_TRIES, '### unsupported command')
+    })
   }
 
   private async hasBalance (ctx: OnMessageContext | OnCallBackQueryData): Promise<boolean> {
@@ -143,6 +144,7 @@ export class LlmsBot {
         chat: conversation
       }
     } catch (e: any) {
+      Sentry.captureException(e)
       ctx.chatAction = null
       throw e
     }
@@ -151,8 +153,7 @@ export class LlmsBot {
   async onPrefix (ctx: OnMessageContext | OnCallBackQueryData, model: string): Promise<void> {
     try {
       if (this.botSuspended) {
-        sendMessage(ctx, 'The bot is suspended').catch(async (e) => { await this.onError(ctx, e) }
-        )
+        sendMessage(ctx, 'The bot is suspended').catch(async (e) => { await this.onError(ctx, e) })
         return
       }
       const { prompt } = getCommandNamePrompt(
@@ -178,8 +179,7 @@ export class LlmsBot {
   async onChat (ctx: OnMessageContext | OnCallBackQueryData, model: string): Promise<void> {
     try {
       if (this.botSuspended) {
-        sendMessage(ctx, 'The bot is suspended').catch(async (e) => { await this.onError(ctx, e) }
-        )
+        sendMessage(ctx, 'The bot is suspended').catch(async (e) => { await this.onError(ctx, e) })
         return
       }
       const prompt = ctx.match ? ctx.match : ctx.message?.text
@@ -273,6 +273,8 @@ export class LlmsBot {
     retryCount: number = MAX_TRIES,
     msg?: string
   ): Promise<void> {
+    Sentry.setContext('llms', { retryCount, msg })
+    Sentry.captureException(e)
     if (retryCount === 0) {
       // Retry limit reached, log an error or take alternative action
       this.logger.error(`Retry limit reached for error: ${e}`)

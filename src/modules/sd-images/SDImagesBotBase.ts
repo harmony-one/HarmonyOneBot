@@ -126,7 +126,7 @@ export class SDImagesBotBase {
     this.queue2.push(uuid)
     let idx = this.queue2.findIndex((v) => v === uuid)
 
-    const { message_id } = await ctx.reply(
+    const { message_id: messageId } = await ctx.reply(
       `You are #${idx + 1} in line for making images. The wait time is about ${(idx + 1) * 15} seconds.`, { message_thread_id: ctx.message?.message_thread_id }
     )
     // waiting queue
@@ -135,7 +135,7 @@ export class SDImagesBotBase {
       idx = this.queue2.findIndex((v) => v === uuid)
     }
 
-    return message_id
+    return messageId
   }
 
   generateImage = async (
@@ -148,12 +148,12 @@ export class SDImagesBotBase {
     const uuid = uuidv4()
 
     try {
-      let queueMessageId;
+      let queueMessageId
 
       if (model.serverNumber === 2) {
-        queueMessageId = await this.waitingQueue2(uuid, ctx);
+        queueMessageId = await this.waitingQueue2(uuid, ctx)
       } else {
-        queueMessageId = await this.waitingQueue(uuid, ctx);
+        queueMessageId = await this.waitingQueue(uuid, ctx)
       }
 
       ctx.chatAction = 'upload_photo'
@@ -214,7 +214,6 @@ export class SDImagesBotBase {
       ctx.chatAction = 'upload_photo'
 
       let fileBuffer: Buffer
-      let width, height
       let fileName
 
       const photos = ctx.message?.photo ?? ctx.message?.reply_to_message?.photo

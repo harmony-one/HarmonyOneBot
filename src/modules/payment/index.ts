@@ -13,6 +13,7 @@ import {
 } from '../../metrics/prometheus'
 import { type BotPaymentLog } from '../../database/stats.service'
 import { sendMessage } from '../open-ai/helpers'
+import * as Sentry from '@sentry/node'
 
 interface CoinGeckoResponse {
   harmony: {
@@ -56,8 +57,9 @@ export class BotPayments {
     this.hotWallet = this.getUserAccount('hot_wallet') as Account
     this.logger.info(`Hot wallet address: ${this.hotWallet.address}`)
 
-    this.getOneRate().catch(err => {
-      this.logger.error(`get one rate error ${err}`)
+    this.getOneRate().catch(ex => {
+      Sentry.captureException(ex)
+      this.logger.error(`get one rate error ${ex}`)
     })
   }
 
@@ -76,6 +78,7 @@ export class BotPayments {
       )
       oneRate = +data.harmony.usd
     } catch (e) {
+      Sentry.captureException(e)
       this.logger.error(
         `Cannot get ONE rates: ${JSON.stringify((e as Error).message)}`
       )
@@ -162,6 +165,7 @@ export class BotPayments {
       })
       return tx
     } catch (e) {
+      Sentry.captureException(e)
       const message = (e as Error).message || ''
       if (
         message &&
@@ -223,6 +227,11 @@ export class BotPayments {
     amountUSD: number
   ): Promise<boolean> {
     const { id: userId, username = '' } = ctx.update.message.from
+    if (ctx.session.refunded) {
+      Sentry.captureMessage('already refunded')
+      this.logger.error(`[${userId} @${username}] already refunded`)
+      return true
+    }
 
     this.logger.error(
       `[${userId} @${username}] refund payment: $${amountUSD}, reason: "${reason}"`
@@ -253,8 +262,10 @@ export class BotPayments {
             }`
           )
         }
+        ctx.session.refunded = true
         return true
       } catch (e) {
+        Sentry.captureException(e)
         this.logger.error(
           `[${userId} @${username}] amountONE: ${amountONE.toFixed()} refund error : ${
             (e as Error).message
@@ -304,6 +315,7 @@ export class BotPayments {
       }
       await statsService.writeLog(log)
     } catch (e) {
+      Sentry.captureException(e)
       this.logger.error(
         `Cannot write payments log: ${JSON.stringify((e as Error).message)}`
       )
@@ -392,6 +404,7 @@ export class BotPayments {
             )
           }
         } catch (e) {
+          Sentry.captureException(e)
           this.logger.error(
             `[${from.id}] withdraw error: "${JSON.stringify(
               (e as Error).message
@@ -501,6 +514,7 @@ To recharge, send to: \`${account.address}\`. Buy tokens on harmony.one/buy.`,
           }
         )
       } catch (e) {
+        Sentry.captureException(e)
         this.logger.error(e)
         await sendMessage(ctx, 'Error retrieving credits')
       }
@@ -550,6 +564,7 @@ To recharge, send to: \`${account.address}\`. Buy tokens on harmony.one/buy.`,
         // this.logger.info(`Hot wallet ${this.hotWallet.address} balance is zero, skip withdrawal`)
       }
     } catch (e) {
+      Sentry.captureException(e)
       this.logger.error(
         `Cannot withdraw hot wallet funds: ${(e as Error).message}`
       )

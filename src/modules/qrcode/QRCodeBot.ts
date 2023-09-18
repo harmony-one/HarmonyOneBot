@@ -19,6 +19,7 @@ import { ComfyClient } from './comfy/ComfyClient'
 import crypto from 'crypto'
 import buildQRWorkflow from './comfy/buildQRWorkflow'
 import pino, { type Logger } from 'pino'
+import * as Sentry from '@sentry/node'
 
 enum SupportedCommands {
   QR = 'qr',
@@ -69,7 +70,7 @@ export class QRCodeBot {
         try {
           await ctx.answerCallbackQuery()
         } catch (ex) {
-          console.log('### ex', ex)
+          Sentry.captureException(ex)
           this.logger.error(`answerCallbackQuery error ${ex}`)
         }
 
@@ -99,6 +100,7 @@ export class QRCodeBot {
         await this.onQr(ctx, ctx.message.text, 'img2img'); return
       }
     } catch (ex) {
+      Sentry.captureException(ex)
       if (ex instanceof Error) {
         this.logger.info('Error ' + ex.message)
         refundCallback(ex.message); return
@@ -185,6 +187,7 @@ export class QRCodeBot {
       ctx.chatAction = 'upload_photo'
       qrImgBuffer = await retryAsync(operation, 5, 100)
     } catch (ex) {
+      Sentry.captureException(ex)
       ctx.chatAction = null
       this.logger.error(`ex ${ex}`)
       await ctx.reply('Internal error', { message_thread_id: ctx.message?.message_thread_id })
@@ -208,6 +211,7 @@ export class QRCodeBot {
       this.logger.info('sent qr code')
       return true
     } catch (e: any) {
+      Sentry.captureException(e)
       const topicId = ctx.message?.message_thread_id
       const msgExtras: MessageExtras = {}
       if (topicId) {
