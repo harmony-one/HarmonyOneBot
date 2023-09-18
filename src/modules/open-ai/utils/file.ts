@@ -2,7 +2,7 @@ import axios from 'axios'
 import sharp from 'sharp'
 import fs from 'fs'
 
-export const getImage = async (filePath: string): Promise<{ error: string } | { fileName: string, file: any, error: null }> => {
+export const getImage = async (filePath: string): Promise<{ fileName: string, file: any, error: string } | { fileName: string, file: any, error: null }> => {
   const imageFilename = `image_${Date.now()}.jpg`
   await axios({
     url: filePath,
@@ -29,20 +29,20 @@ export const getImage = async (filePath: string): Promise<{ error: string } | { 
   deleteFile(imageFilename)
   if (imageInfo.format !== 'png') {
     deleteFile(convertedFilename)
-    return { error: 'Please send a valid PNG image.' }
+    return { error: 'Please send a valid PNG image.', fileName: '', file: null }
   }
 
   const imageSize = fs.statSync(convertedFilename).size
   const maxSize = 4 * 1024 * 1024 // 4MB
   if (imageSize > maxSize) {
     deleteFile(convertedFilename)
-    return { error: 'The image size exceeds the limit of 4MB.' }
+    return { error: 'The image size exceeds the limit of 4MB.', fileName: '', file: null }
   }
 
   const imageDimensions = await sharp(convertedFilename).metadata()
   if (imageDimensions.width !== imageDimensions.height) {
     deleteFile(convertedFilename)
-    return { error: 'Please send a square image.' }
+    return { error: 'Please send a square image.', fileName: '', file: null }
   }
 
   return {

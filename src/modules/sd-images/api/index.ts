@@ -3,6 +3,7 @@ import { type IModel } from './models-config'
 import { getLoraByParam, type ILora } from './loras-config'
 import { getParamsFromPrompt, NEGATIVE_PROMPT } from './helpers'
 import { type OnMessageContext, type OnCallBackQueryData } from '../../types'
+import config from '../../../config'
 
 export * from './models-config'
 
@@ -51,6 +52,15 @@ export class SDNodeApi {
       params.promptWithoutParams = `logo, ${params.promptWithoutParams}, LogoRedAF`
     }
 
+    let serverConfig;
+
+    if (options.model.serverNumber === 2) {
+      serverConfig = {
+        host: config.comfyHost2,
+        wsHost: config.comfyWsHost2,
+      }
+    }
+
     const { images } = await this.client.txt2img({
       prompt: params.promptWithoutParams,
       negativePrompt: params.negativePrompt,
@@ -64,7 +74,7 @@ export class SDNodeApi {
       seed: options.seed ?? params.seed,
       model: options.model.path,
       batchSize: 1
-    })
+    }, serverConfig)
 
     return images[0]
   }

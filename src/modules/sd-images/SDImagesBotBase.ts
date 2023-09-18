@@ -38,6 +38,7 @@ export class SDImagesBotBase {
 
   private readonly sessions: ISession[] = []
   queue: string[] = []
+  queue2: string[] = []
 
   constructor () {
     this.sdNodeApi = new SDNodeApi()
@@ -109,12 +110,29 @@ export class SDImagesBotBase {
 
     // eslint-disable-next-line @typescript-eslint/naming-convention
     const { message_id } = await ctx.reply(
-            `You are #${idx + 1} in line for making images. The wait time is about ${(idx + 1) * 15} seconds.`, { message_thread_id: ctx.message?.message_thread_id }
+      `You are #${idx + 1} in line for making images. The wait time is about ${(idx + 1) * 15} seconds.`, { message_thread_id: ctx.message?.message_thread_id }
     )
     // waiting queue
     while (idx !== 0) {
       await sleep(3000 * this.queue.findIndex((v) => v === uuid))
       idx = this.queue.findIndex((v) => v === uuid)
+    }
+
+    return message_id
+  }
+
+  // TODO
+  waitingQueue2 = async (uuid: string, ctx: OnMessageContext | OnCallBackQueryData): Promise<number> => {
+    this.queue2.push(uuid)
+    let idx = this.queue2.findIndex((v) => v === uuid)
+
+    const { message_id } = await ctx.reply(
+      `You are #${idx + 1} in line for making images. The wait time is about ${(idx + 1) * 15} seconds.`, { message_thread_id: ctx.message?.message_thread_id }
+    )
+    // waiting queue
+    while (idx !== 0) {
+      await sleep(3000 * this.queue2.findIndex((v) => v === uuid))
+      idx = this.queue2.findIndex((v) => v === uuid)
     }
 
     return message_id
@@ -130,7 +148,13 @@ export class SDImagesBotBase {
     const uuid = uuidv4()
 
     try {
-      const queueMessageId = await this.waitingQueue(uuid, ctx)
+      let queueMessageId;
+
+      if (model.serverNumber === 2) {
+        queueMessageId = await this.waitingQueue2(uuid, ctx);
+      } else {
+        queueMessageId = await this.waitingQueue(uuid, ctx);
+      }
 
       ctx.chatAction = 'upload_photo'
 
@@ -169,7 +193,11 @@ export class SDImagesBotBase {
       refundCallback()
     }
 
-    this.queue = this.queue.filter((v) => v !== uuid)
+    if (model.serverNumber === 2) {
+      this.queue2 = this.queue2.filter((v) => v !== uuid)
+    } else {
+      this.queue = this.queue.filter((v) => v !== uuid)
+    }
   }
 
   generateImageByImage = async (
@@ -186,6 +214,7 @@ export class SDImagesBotBase {
       ctx.chatAction = 'upload_photo'
 
       let fileBuffer: Buffer
+      let width, height
       let fileName
 
       const photos = ctx.message?.photo ?? ctx.message?.reply_to_message?.photo
@@ -313,7 +342,7 @@ export class SDImagesBotBase {
           prompt: `<lora:${loraName}:1>`,
           command: COMMAND.TEXT_TO_IMAGE
         }),
-                `/${modelAlias} <lora:${loraName}:1>`
+        `/${modelAlias} <lora:${loraName}:1>`
       )
     } catch (e: any) {
       const topicId = ctx.message?.message_thread_id

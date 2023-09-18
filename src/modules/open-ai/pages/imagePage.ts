@@ -1,5 +1,4 @@
 import { Menu } from '@grammyjs/menu'
-
 import { appText } from '../utils/text'
 import { type BotContext } from '../../types'
 import { isAdmin } from '../utils/context'
@@ -9,7 +8,7 @@ import config from '../../../config'
 export const openAiMenuText = {
   helpText: `*🎨 DALL·E 2 Help*
 
-  I generate *${config.openAi.imageGen.sessionDefault.numImages} ${config.openAi.imageGen.sessionDefault.imgSize}* image(s) per prompt\n
+  I generate *${config.openAi.dalle.sessionDefault.numImages} ${config.openAi.dalle.sessionDefault.imgSize}* image(s) per prompt\n
   
   *1. GENERATE A STANDARD PROMPT*
   • Use */genImg* <TEXT>

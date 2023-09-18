@@ -233,7 +233,9 @@ async function main (): Promise<void> {
   const fileName = filenameHash.digest('hex') + '.png'
   console.log('### fileName', fileName)
 
-  const uploadResult = await comfyClient.uploadImage(fileName, qrImgBuffer)
+  const uploadResult = await comfyClient.uploadImage({
+    filename: fileName, fileBuffer: qrImgBuffer, override: true
+  })
   console.log('### uploadResult', uploadResult)
 
   const prompt = buildQrPrompt({ qrFilename: uploadResult.name, clientId: comfyClient.clientId })

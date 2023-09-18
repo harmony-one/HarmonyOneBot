@@ -4,7 +4,7 @@ import { type OnCallBackQueryData, type OnMessageContext } from '../../types'
 export const formatONEAmount = (num: number | string): string => {
   const twoDecimalsFormatter = new Intl.NumberFormat('en-US', {
     minimumFractionDigits: 0,
-    maximumFractionDigits: num < 100 ? 2 : 0
+    maximumFractionDigits: +num < 100 ? 2 : 0
   })
 
   return twoDecimalsFormatter.format(Number(num))
@@ -12,7 +12,7 @@ export const formatONEAmount = (num: number | string): string => {
 
 export const formatUSDAmount = (num: string | number): string => {
   const twoDecimalsFormatter = new Intl.NumberFormat('en-US', {
-    minimumFractionDigits: num < 10 ? 2 : 0,
+    minimumFractionDigits: +num < 10 ? 2 : 0,
     maximumFractionDigits: 2
   })
   return twoDecimalsFormatter.format(Number(num))
@@ -33,7 +33,7 @@ export const getUrl = (url: string, fullUrl = true): string => {
 export const getCommandNamePrompt = (
   ctx: OnMessageContext | OnCallBackQueryData,
   supportedCommands: any
-): { commandName: string, prompt: string | RegExpMatchArray } => {
+): { commandName: string, prompt: string } => {
   const hasCommand = ctx.hasCommand(
     Object.values(supportedCommands).map((command: any) => command.name)
   )

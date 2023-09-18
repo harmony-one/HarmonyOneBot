@@ -36,7 +36,16 @@ const removeSpaceFromBegin = (text: string): string => {
   return text.slice(idx)
 }
 
-const SPECIAL_IMG_CMD_SYMBOLS = [',', 'i.', 'l.', 'I.']
+const SPECIAL_IMG_CMD_SYMBOLS = ['i.', 'l.', 'I.', '?', '!', ':', ';', "r.", "R.", "d.", "D.","(", ")", "$", "&","<"];
+
+export const getPrefix = (prompt: string, prefixList: string[]): string => {
+  for (let i = 0; i < prefixList.length; i++) {
+    if (prompt.toLocaleLowerCase().startsWith(prefixList[i])) {
+      return prefixList[i];
+    }
+  }
+  return "";
+};
 
 const parsePrompts = (fullText: string): { modelId: string, prompt: string } => {
   let modelId = ''
@@ -107,7 +116,14 @@ export const parseCtx = (ctx: Context): IOperation | false => {
     }
 
     if (
-      hasCommand(ctx, 'logo') ?? hasCommand(ctx, 'l')
+      (hasCommand(ctx, 'image2') ?? hasCommand(ctx, 'imagine2')) ?? hasCommand(ctx, 'img2')
+    ) {
+      command = COMMAND.TEXT_TO_IMAGE
+      model = model && ({ ...model, serverNumber: 2 });
+    }
+
+    if (
+      hasCommand(ctx, 'logo') || hasCommand(ctx, 'l')
     ) {
       command = COMMAND.TEXT_TO_IMAGE
       model = model ?? getModelByParam('xl')
@@ -145,6 +161,8 @@ export const parseCtx = (ctx: Context): IOperation | false => {
     const startWithSpecialSymbol = SPECIAL_IMG_CMD_SYMBOLS.some(s => !!messageText?.startsWith(s))
 
     if (startWithSpecialSymbol) {
+      const prefix = getPrefix(messageText, SPECIAL_IMG_CMD_SYMBOLS)
+      model = getModelByParam(prefix);
       command = COMMAND.TEXT_TO_IMAGE
     }
 
@@ -166,7 +184,7 @@ export const parseCtx = (ctx: Context): IOperation | false => {
     }
 
     const messageHasPhoto = !!ctx.message?.photo?.length ||
-            !!ctx.message?.reply_to_message?.photo?.length
+      !!ctx.message?.reply_to_message?.photo?.length
 
     if (command === COMMAND.TEXT_TO_IMAGE && messageHasPhoto) {
       command = COMMAND.IMAGE_TO_IMAGE
