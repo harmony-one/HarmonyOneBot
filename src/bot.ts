@@ -130,6 +130,7 @@ bot.use(async (ctx: BotContext, next: NextFunction): Promise<void> => {
     const totalProcessingTime = performance.now() - startTime
     ES.add({
       command,
+      text: ctx.message?.text ?? '',
       module: ctx.session.analytics.module,
       userId,
       username,
