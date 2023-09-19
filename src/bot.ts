@@ -392,6 +392,11 @@ const onCallback = async (ctx: OnCallBackQueryData): Promise<void> => {
       return
     }
 
+    if (telegramPayments.isSupportedEvent(ctx)) {
+      await telegramPayments.onEvent(ctx)
+      return
+    }
+
     if (sdImagesBot.isSupportedEvent(ctx)) {
       await sdImagesBot.onEvent(ctx, (e) => {
         logger.info(e, '// TODO refund payment')
