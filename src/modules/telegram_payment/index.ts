@@ -1,11 +1,9 @@
-import { type OnMessageContext, type OnPreCheckoutContext, type OnSuccessfullPayment } from '../types'
+import { type OnMessageContext, type OnPreCheckoutContext, type OnSuccessfullPayment, Callbacks, type OnCallBackQueryData } from '../types'
 import { type LabeledPrice } from 'grammy/out/types'
 import config from '../../config'
 import { chatService, invoiceService } from '../../database/services'
 import { type BotPayments } from '../payment'
 import pino, { type Logger } from 'pino'
-import { Callbacks } from '../types';
-import { OnCallBackQueryData } from '../types';
 
 enum SupportedCommands {
   BUY = 'buy',
@@ -121,8 +119,8 @@ export class TelegramPayments {
       throw new Error('Couldn\'t get account ID.')
     }
 
-    console.log('### accountId', accountId);
-    console.log('### tgUserId', tgUserId);
+    console.log('### accountId', accountId)
+    console.log('### tgUserId', tgUserId)
 
     const chatId = getChatId()
     const title = 'AI Credits'

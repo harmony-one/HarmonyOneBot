@@ -5,7 +5,7 @@ import axios from 'axios'
 import bn, { BigNumber } from 'bignumber.js'
 import config from '../../config'
 import { chatService, statsService } from '../../database/services'
-import { type OnMessageContext } from '../types'
+import { type OnMessageContext, Callbacks, type OnCallBackQueryData } from '../types'
 import { LRUCache } from 'lru-cache'
 import {
   oneTokenFeeCounter,
@@ -14,9 +14,7 @@ import {
 import { type BotPaymentLog } from '../../database/stats.service'
 import { sendMessage } from '../open-ai/helpers'
 import * as Sentry from '@sentry/node'
-import { InlineKeyboard } from 'grammy';
-import { Callbacks } from '../types';
-import { OnCallBackQueryData } from '../types';
+import { InlineKeyboard } from 'grammy'
 
 interface CoinGeckoResponse {
   harmony: {

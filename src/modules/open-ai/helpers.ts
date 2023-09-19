@@ -2,8 +2,7 @@ import config from '../../config'
 import { type OnMessageContext, type OnCallBackQueryData, type MessageExtras, type ChatPayload } from '../types'
 import { type ParseMode } from 'grammy/types'
 import { getChatModel, getChatModelPrice, getTokenNumber } from './api/openAi'
-import { type Message } from 'grammy/out/types'
-import { InlineKeyboardMarkup } from 'grammy/out/types';
+import { type Message, type InlineKeyboardMarkup } from 'grammy/out/types'
 
 export const SupportedCommands = {
   chat: { name: 'chat' },

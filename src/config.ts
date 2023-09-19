@@ -141,5 +141,10 @@ export default {
   },
   betteruptime: { botHeartBitId: process.env.BOT_HEARTBIT_ID ?? '' },
   telegramPayments: { token: process.env.TELEGRAM_PAYMENTS_TOKEN ?? '' },
-  sentry: { dsn: process.env.SENTRY_DSN }
+  sentry: { dsn: process.env.SENTRY_DSN },
+  es: {
+    url: process.env.ES_URL ?? '',
+    username: process.env.ES_USERNAME ?? '',
+    password: process.env.ES_PASSWORD ?? ''
+  }
 }

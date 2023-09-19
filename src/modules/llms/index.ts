@@ -7,7 +7,7 @@ import {
   type OnMessageContext,
   type OnCallBackQueryData,
   type ChatConversation,
-  type ChatPayload
+  type ChatPayload, type PayableBot, SessionState
 } from '../types'
 import { appText } from '../open-ai/utils/text'
 import { chatService } from '../../database/services'
@@ -27,7 +27,8 @@ import { vertexCompletion } from './api/vertex'
 import { type LlmCompletion, llmCompletion } from './api/liteLlm'
 import { LlmsModelsEnum } from './types'
 import * as Sentry from '@sentry/node'
-export class LlmsBot {
+export class LlmsBot implements PayableBot {
+  public readonly module = 'LlmsBot'
   private readonly logger: Logger
   private readonly payments: BotPayments
   private botSuspended: boolean
@@ -65,6 +66,7 @@ export class LlmsBot {
   }
 
   public async onEvent (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
+    ctx.session.analytics.module = this.module
     const isSupportedEvent = this.isSupportedEvent(ctx)
     if (!isSupportedEvent && ctx.chat?.type !== 'private') {
       this.logger.warn(`### unsupported command ${ctx.message?.text}`)
@@ -81,9 +83,11 @@ export class LlmsBot {
     }
 
     this.logger.warn('### unsupported command')
+    ctx.session.analytics.sessionState = SessionState.Error
     await sendMessage(ctx, '### unsupported command').catch(async (e) => {
       await this.onError(ctx, e, MAX_TRIES, '### unsupported command')
     })
+    ctx.session.analytics.actualResponseTime = performance.now()
   }
 
   private async hasBalance (ctx: OnMessageContext | OnCallBackQueryData): Promise<boolean> {
@@ -153,7 +157,9 @@ export class LlmsBot {
   async onPrefix (ctx: OnMessageContext | OnCallBackQueryData, model: string): Promise<void> {
     try {
       if (this.botSuspended) {
+        ctx.session.analytics.sessionState = SessionState.Error
         sendMessage(ctx, 'The bot is suspended').catch(async (e) => { await this.onError(ctx, e) })
+        ctx.session.analytics.actualResponseTime = performance.now()
         return
       }
       const { prompt } = getCommandNamePrompt(
@@ -179,7 +185,9 @@ export class LlmsBot {
   async onChat (ctx: OnMessageContext | OnCallBackQueryData, model: string): Promise<void> {
     try {
       if (this.botSuspended) {
+        ctx.session.analytics.sessionState = SessionState.Error
         sendMessage(ctx, 'The bot is suspended').catch(async (e) => { await this.onError(ctx, e) })
+        ctx.session.analytics.actualResponseTime = performance.now()
         return
       }
       const prompt = ctx.match ? ctx.match : ctx.message?.text
@@ -213,7 +221,11 @@ export class LlmsBot {
                     chatConversation[chatConversation.length - 1].content
                   }_`
                 : appText.introText
-            await sendMessage(ctx, msg, { parseMode: 'Markdown' }).catch(async (e) => { await this.onError(ctx, e) })
+            ctx.session.analytics.sessionState = SessionState.Success
+            await sendMessage(ctx, msg, { parseMode: 'Markdown' }).catch(async (e) => {
+              await this.onError(ctx, e)
+            })
+            ctx.session.analytics.actualResponseTime = performance.now()
             return
           }
           const chat: ChatConversation = {
@@ -264,7 +276,9 @@ export class LlmsBot {
     const balanceMessage = appText.notEnoughBalance
       .replaceAll('$CREDITS', balanceOne)
       .replaceAll('$WALLET_ADDRESS', account?.address ?? '')
+    ctx.session.analytics.sessionState = SessionState.Success
     await sendMessage(ctx, balanceMessage, { parseMode: 'Markdown' }).catch(async (e) => { await this.onError(ctx, e) })
+    ctx.session.analytics.actualResponseTime = performance.now()
   }
 
   async onError (
@@ -273,6 +287,7 @@ export class LlmsBot {
     retryCount: number = MAX_TRIES,
     msg?: string
   ): Promise<void> {
+    ctx.session.analytics.sessionState = SessionState.Error
     Sentry.setContext('llms', { retryCount, msg })
     Sentry.captureException(e)
     if (retryCount === 0) {
@@ -286,6 +301,7 @@ export class LlmsBot {
           ctx,
           'Error: The bot does not have permission to send photos in chat'
         )
+        ctx.session.analytics.actualResponseTime = performance.now()
       } else if (e.error_code === 429) {
         this.botSuspended = true
         const retryAfter = e.parameters.retry_after
@@ -302,6 +318,7 @@ export class LlmsBot {
             ctx.from.username ? ctx.from.username : ''
           } Bot has reached limit, wait ${retryAfter} seconds`
         ).catch(async (e) => { await this.onError(ctx, e, retryCount - 1) })
+        ctx.session.analytics.actualResponseTime = performance.now()
         if (method === 'editMessageText') {
           ctx.session.llms.chatConversation.pop() // deletes last prompt
         }
@@ -311,11 +328,12 @@ export class LlmsBot {
         this.logger.error(
           `On method "${e.method}" | ${e.error_code} - ${e.description}`
         )
+        ctx.session.analytics.actualResponseTime = performance.now()
       }
     } else {
       this.logger.error(`${e.toString()}`)
-      await sendMessage(ctx, 'Error handling your request').catch(async (e) => { await this.onError(ctx, e, retryCount - 1) }
-      )
+      await sendMessage(ctx, 'Error handling your request').catch(async (e) => { await this.onError(ctx, e, retryCount - 1) })
+      ctx.session.analytics.actualResponseTime = performance.now()
     }
   }
 }
