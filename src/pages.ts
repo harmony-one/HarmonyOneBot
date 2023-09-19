@@ -5,10 +5,10 @@ import { sdImagesMenu } from './modules/sd-images/menu'
 import { voiceMemoMenu } from './modules/voice-memo/menu'
 import { MenuIds, commandsHelpText, menuText } from './constants'
 import { BotPayments } from './modules/payment'
-// import { walletMenu } from "./modules/wallet/menu";
-// import { qrCodeBotMenu } from "./modules/qrcode/menu";
+import { TelegramPayments } from './modules/telegram_payment'
 
 const payments = new BotPayments()
+const telegramPayments = new TelegramPayments(payments)
 
 export const getStartMenuText = async (ctx: BotContext): Promise<string> => {
   if (!ctx.from?.id) {
@@ -44,7 +44,9 @@ export const mainMenu = new Menu<BotContext>(MenuIds.MAIN_MENU)
         console.log('### ex', ex)
       })
   })
-
+  .text('/buy', async (ctx) => {
+    await telegramPayments.createPaymentInvoice(ctx)
+  })
   .submenu(menuText.voiceMemoMenu.menuName, MenuIds.VOICE_MEMO_MAIN, (ctx) => {
     ctx
       .editMessageText(menuText.voiceMemoMenu.helpText, {

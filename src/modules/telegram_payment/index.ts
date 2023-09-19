@@ -72,7 +72,7 @@ export class TelegramPayments {
     this.logger.info(`Payment from @${ctx.message.from.username} $${invoice.amount / 100} was completed!`)
   }
 
-  private async createPaymentInvoice (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
+  public async createPaymentInvoice (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
     const accountId = this.payments.getAccountId(ctx)
     let tgUserId = accountId
     if (ctx.update?.message?.chat.type === 'group' || ctx.callbackQuery?.message?.chat.type === 'group') {
