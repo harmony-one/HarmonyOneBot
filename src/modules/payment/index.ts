@@ -58,6 +58,15 @@ export class BotPayments {
     this.runHotWalletsTask()
   }
 
+  // async test () {
+  //   const accountId = 185899121
+  //   const creditsPayAmount = new bn(300)
+  //   const balanceBefore = await chatService.getUserCredits(accountId)
+  //   const balanceAfter = await chatService.withdrawCredits(accountId, creditsPayAmount)
+  //   console.log('balanceBefore', balanceBefore.totalCreditsAmount.toString())
+  //   console.log('balanceAfter', balanceAfter.totalCreditsAmount.toString())
+  // }
+
   private async transferUserFundsToHolder(
     accountId: number,
     userAccount: Account,
@@ -399,30 +408,29 @@ export class BotPayments {
     const fee = await this.getTransactionFee()
     amountToPay = amountToPay.plus(fee)
     const balance = await this.getUserBalance(accountId)
-    const credits = await chatService.getBalance(accountId)
-    const fiatCredits = await chatService.getFiatBalance(accountId)
-    const balanceTotal = balance.plus(credits).plus(fiatCredits)
+    const { totalCreditsAmount} = await chatService.getUserCredits(accountId)
+    const balanceTotal = balance.plus(totalCreditsAmount)
     const balanceDelta = balanceTotal.minus(amountToPay)
 
-    const creditsPayAmount = bn.min(amountToPay, credits)
-    const fiatCreditsPayAmount = bn.min(amountToPay.minus(creditsPayAmount), fiatCredits)
-    const oneTokensPayAmount = bn.min(amountToPay.minus(creditsPayAmount).minus(fiatCreditsPayAmount), balance)
+    const creditsPayAmount = bn.min(amountToPay, totalCreditsAmount)
 
     if (this.skipPayment(ctx, amountUSD)) {
       await this.writePaymentLog(ctx, BigNumber(0), BigNumber(0), BigNumber(0))
       return true
     }
 
+    const balanceAfter = await chatService.withdrawCredits(accountId, creditsPayAmount)
+
     this.logger.info(
       `[@${
         from.username
-      }] credits: ${credits.toFixed()}, ONE balance: ${balance.toFixed()}, to withdraw: ${amountToPay.toFixed()}, balance after: ${balanceDelta.toFixed()}`
+      }] credits total: ${totalCreditsAmount.toFixed()}, ONE balance: ${balance.toFixed()}, to withdraw: ${amountToPay.toFixed()}, balance after: ${balanceAfter.totalCreditsAmount.toFixed()}`
     )
     if (balanceDelta.gte(0)) {
-      if (amountToPay.gt(0) && credits.gt(0)) {
-        await chatService.withdrawAmount(accountId, creditsPayAmount.toFixed())
+      if (amountToPay.gt(0) && totalCreditsAmount.gt(0)) {
+        await chatService.withdrawCredits(accountId, creditsPayAmount)
         amountToPay = amountToPay.minus(creditsPayAmount)
-        freeCreditsFeeCounter.inc(this.convertBigNumber(creditsPayAmount))
+        // freeCreditsFeeCounter.inc(this.convertBigNumber(creditsPayAmount))
         this.logger.info(
           `[@${
             from.username
@@ -430,17 +438,11 @@ export class BotPayments {
         )
       }
 
-      if (amountToPay.gt(0) && fiatCredits.gte(0)) {
-        await chatService.withdrawFiatAmount(accountId, fiatCreditsPayAmount.toFixed())
-        amountToPay = amountToPay.minus(fiatCreditsPayAmount)
-        this.logger.info(`[@${from.username}] paid from fiat credits: ${fiatCreditsPayAmount.toFixed()}, left to pay: ${amountToPay.toFixed()}`)
-      }
-
       if (amountToPay.gt(0)) {
         try {
           const tx = await this.transferFunds(
             userAccount,
-            this.hotWallet.address,
+            this.holderAddress,
             amountToPay
           )
           if (tx) {
@@ -465,7 +467,7 @@ export class BotPayments {
           })
         }
       }
-      await this.writePaymentLog(ctx, creditsPayAmount, oneTokensPayAmount, fiatCreditsPayAmount)
+      // await this.writePaymentLog(ctx, creditsPayAmount, oneTokensPayAmount)
       return true
     } else {
       const addressBalance = await this.getAddressBalance(userAccount.address)

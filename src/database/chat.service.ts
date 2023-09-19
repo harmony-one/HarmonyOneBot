@@ -50,40 +50,6 @@ export class ChatService {
     return Boolean(account)
   }
 
-  public async withdrawAmount (accountId: number, amount: string): Promise<UpdateResult> {
-    const chat = await this.getAccountById(accountId)
-    if (!chat) {
-      throw new Error(`${accountId} Cannot find credits account`)
-    }
-    if (bn(amount).lt(0)) {
-      throw new Error(`${accountId} Amount cant be less than zero: ${amount}`)
-    }
-    const newAmount = bn(chat.creditAmount).minus(bn(amount))
-
-    if (newAmount.lt(0)) {
-      throw new Error(`${accountId} Insufficient credits: can not withdraw ${amount}, current balance ${chat.creditAmount}`)
-    }
-
-    return await chatRepository.update({ accountId }, { creditAmount: newAmount.toFixed() })
-  }
-
-  public async withdrawFiatAmount (accountId: number, amount: string): Promise<UpdateResult> {
-    const chat = await this.getAccountById(accountId)
-    if (!chat) {
-      throw new Error(`${accountId} Cannot find fiat credits account`)
-    }
-    if (bn(amount).lt(0)) {
-      throw new Error(`${accountId} Amount cant be less than zero: ${amount}`)
-    }
-    const newAmount = bn(chat.fiatCreditAmount).minus(bn(amount))
-
-    if (newAmount.lt(0)) {
-      throw new Error(`${accountId} Insufficient fiat credits: cannot withdraw ${amount}, current balance ${chat.fiatCreditAmount}`)
-    }
-
-    return await chatRepository.update({ accountId }, { fiatCreditAmount: newAmount.toFixed() })
-  }
-
   public async setAmount (accountId: number, amount: string): Promise<UpdateResult> {
     const account = await this.getAccountById(accountId)
     if (!account) {
@@ -130,6 +96,64 @@ export class ChatService {
       return bn(account.fiatCreditAmount)
     }
     return bn(0)
+  }
+
+  public async getUserCredits (
+    accountId: number
+  ): Promise<{
+    creditAmount: bn,
+    fiatCreditAmount: bn,
+    oneCreditAmount: bn,
+    totalCreditsAmount: bn
+  }> {
+    const account = await this.getAccountById(accountId)
+
+    const creditAmount = account ? bn(account.creditAmount) : bn(0)
+    const fiatCreditAmount = account ? bn(account.fiatCreditAmount) : bn(0)
+    const oneCreditAmount = account ? bn(account.oneCreditAmount) : bn(0)
+    const totalCreditsAmount = creditAmount
+      .plus(fiatCreditAmount)
+      .plus(oneCreditAmount)
+
+    return {
+      creditAmount,
+      fiatCreditAmount,
+      oneCreditAmount,
+      totalCreditsAmount
+    }
+  }
+
+  public async withdrawCredits(accountId: number, payAmount: bn) {
+    const {
+      totalCreditsAmount,
+      creditAmount,
+      oneCreditAmount,
+      fiatCreditAmount
+    } = await this.getUserCredits(accountId)
+
+    if(payAmount.gt(totalCreditsAmount)) {
+      throw new Error(`Cannot withdraw credits, insufficient balance ${accountId}. On balance: ${totalCreditsAmount.toString()}, requested to withdraw: ${payAmount.toString()}.`)
+    }
+
+    let leftToPay = payAmount
+    const creditsPayAmount = bn.min(leftToPay, creditAmount)
+    const creditsAmountNext = creditAmount.minus(creditsPayAmount)
+    leftToPay = leftToPay.minus(creditsPayAmount)
+
+    const oneCreditsPay = bn.min(leftToPay, oneCreditAmount)
+    const oneCreditsNext = oneCreditAmount.minus(oneCreditsPay)
+    leftToPay = leftToPay.minus(oneCreditsPay)
+
+    const fiatCreditPay = bn.min(leftToPay, fiatCreditAmount)
+    const fiatCreditNext = fiatCreditAmount.minus(fiatCreditPay)
+    leftToPay = leftToPay.minus(oneCreditsPay)
+
+    await chatRepository.update({ accountId }, {
+      creditAmount: creditsAmountNext.toFixed(),
+      oneCreditAmount: oneCreditsNext.toFixed(),
+      fiatCreditAmount: fiatCreditNext.toFixed()
+    })
+    return await this.getUserCredits(accountId)
   }
 
   public async initChat ({ tgUserId, accountId, tgUsername = '' }: { tgUserId: number, accountId: number, tgUsername?: string }): Promise<Chat> {
