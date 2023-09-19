@@ -252,11 +252,8 @@ export class OpenAIBot {
   private async hasBalance (ctx: OnMessageContext | OnCallBackQueryData): Promise<boolean> {
     const accountId = this.payments.getAccountId(ctx as OnMessageContext)
     const addressBalance = await this.payments.getUserBalance(accountId)
-    const creditsBalance = await chatService.getBalance(accountId)
-    const fiatCreditsBalance = await chatService.getFiatBalance(accountId)
-    const balance = addressBalance
-      .plus(creditsBalance)
-      .plus(fiatCreditsBalance)
+    const { totalCreditsAmount } = await chatService.getUserCredits(accountId)
+    const balance = addressBalance.plus(totalCreditsAmount)
     const balanceOne = this.payments.toONE(balance, false)
     return (
       (+balanceOne > +config.openAi.chatGpt.minimumBalance) ||
@@ -698,11 +695,8 @@ export class OpenAIBot {
     const accountId = this.payments.getAccountId(ctx as OnMessageContext)
     const account = this.payments.getUserAccount(accountId)
     const addressBalance = await this.payments.getUserBalance(accountId)
-    const creditsBalance = await chatService.getBalance(accountId)
-    const fiatCreditsBalance = await chatService.getFiatBalance(accountId)
-    const balance = addressBalance
-      .plus(creditsBalance)
-      .plus(fiatCreditsBalance)
+    const { totalCreditsAmount } = await chatService.getUserCredits(accountId)
+    const balance = addressBalance.plus(totalCreditsAmount)
     const balanceOne = this.payments.toONE(balance, false).toFixed(2)
     const balanceMessage = appText.notEnoughBalance
       .replaceAll('$CREDITS', balanceOne)

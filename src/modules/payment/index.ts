@@ -56,16 +56,8 @@ export class BotPayments {
 
   public bootstrap() {
     this.runHotWalletsTask()
+    this.getOneRate()
   }
-
-  // async test () {
-  //   const accountId = 185899121
-  //   const creditsPayAmount = new bn(300)
-  //   const balanceBefore = await chatService.getUserCredits(accountId)
-  //   const balanceAfter = await chatService.withdrawCredits(accountId, creditsPayAmount)
-  //   console.log('balanceBefore', balanceBefore.totalCreditsAmount.toString())
-  //   console.log('balanceAfter', balanceAfter.totalCreditsAmount.toString())
-  // }
 
   private async transferUserFundsToHolder(
     accountId: number,
@@ -116,13 +108,11 @@ export class BotPayments {
           this.logger.error(`Cannot get user balance ${accountId} ${userAccount.address}`)
         }
 
-        console.log('availableBalance', availableBalance.toString())
-
         if(availableBalance.minus(txFee).gt(0)) {
           try {
             await this.transferUserFundsToHolder(accountId, userAccount, availableBalance);
-            const userCreditsBalance = await chatService.getBalance(accountId)
-            this.logger.info(`User ${accountId} ${userAccount.address} hot wallet funds "${availableBalance.toString()}" ONE transferred to holder address ${this.holderAddress}. ONE credits balance: ${userCreditsBalance.toString()}.`)
+            const { totalCreditsAmount } = await chatService.getUserCredits(accountId)
+            this.logger.info(`User ${accountId} ${userAccount.address} hot wallet funds "${availableBalance.toString()}" ONE transferred to holder address ${this.holderAddress}. ONE credits balance: ${totalCreditsAmount.toString()}.`)
           } catch (e) {
             this.logger.error(
               `Cannot transfer user "${userAccount.address}" funds to holder "${this.holderAddress}": ${(e as Error).message}`
@@ -156,7 +146,8 @@ export class BotPayments {
     }
     this.ONERate = oneRate
     this.ONERateUpdateTimestamp = Date.now()
-    return this.ONERate
+    this.logger.info(`Updated ONE token rate: ${oneRate}`)
+    return oneRate
   }
 
   public getUserAccount (
@@ -286,58 +277,8 @@ export class BotPayments {
     }
 
     if (this.ONERate === 0) {
-      this.logger.warn('ONE token rate is 0, skip payment')
+      this.logger.error('ONE token rate is 0, skip payment')
       return true
-    }
-
-    return false
-  }
-
-  public async refundPayment (
-    reason = '',
-    ctx: OnMessageContext,
-    amountUSD: number
-  ): Promise<boolean> {
-    const { id: userId, username = '' } = ctx.update.message.from
-
-    this.logger.error(
-      `[${userId} @${username}] refund payment: $${amountUSD}, reason: "${reason}"`
-    )
-
-    if (this.skipPayment(ctx, amountUSD)) {
-      this.logger.info(`[${userId} @${username}] skip refund`)
-      return true
-    }
-
-    const accountId = this.getAccountId(ctx)
-    const userAccount = this.getUserAccount(accountId)
-    if (userAccount) {
-      const amountONE = await this.getPriceInONE(amountUSD)
-      const fee = await this.getTransactionFee()
-      try {
-        const tx = await this.transferFunds(
-          this.hotWallet,
-          userAccount.address,
-          amountONE.minus(fee)
-        )
-        if (tx) {
-          this.logger.info(
-            `[${userId} @${username}] refund successful, from: ${
-              tx.from
-            }, to: ${tx.to}, amount ONE: ${amountONE.toFixed()}, txHash: ${
-              tx.transactionHash
-            }`
-          )
-        }
-        return true
-      } catch (e) {
-        this.logger.error(
-          `[${userId} @${username}] amountONE: ${amountONE.toFixed()} refund error : ${
-            (e as Error).message
-          }`
-        )
-        return false
-      }
     }
 
     return false
@@ -404,55 +345,52 @@ export class BotPayments {
       `Pay event @${from.username}(${from.id}) in chat ${chat.id} (${chat.type}), accountId: ${accountId}, account address: ${userAccount.address}`
     )
 
-    let amountToPay = await this.getPriceInONE(amountUSD)
-    const fee = await this.getTransactionFee()
-    amountToPay = amountToPay.plus(fee)
-    const balance = await this.getUserBalance(accountId)
-    const { totalCreditsAmount} = await chatService.getUserCredits(accountId)
-    const balanceTotal = balance.plus(totalCreditsAmount)
-    const balanceDelta = balanceTotal.minus(amountToPay)
-
-    const creditsPayAmount = bn.min(amountToPay, totalCreditsAmount)
-
     if (this.skipPayment(ctx, amountUSD)) {
       await this.writePaymentLog(ctx, BigNumber(0), BigNumber(0), BigNumber(0))
       return true
     }
 
-    const balanceAfter = await chatService.withdrawCredits(accountId, creditsPayAmount)
+    const fee = await this.getTransactionFee()
+    const balance = await this.getUserBalance(accountId)
+    const priceInOneTokens = await this.getPriceInONE(amountUSD)
+    const totalPayAmount = priceInOneTokens.plus(fee)
+    const { totalCreditsAmount} = await chatService.getUserCredits(accountId)
+    const totalUserBalance = totalCreditsAmount.plus(balance)
+    const totalBalanceDelta = totalUserBalance.minus(totalPayAmount)
+
+    const creditsPayAmount = bn.min(totalPayAmount, totalCreditsAmount)
+    const tokenPayAmount = totalPayAmount.minus(creditsPayAmount)
 
     this.logger.info(
-      `[@${
+      `[${from.id} @${
         from.username
-      }] credits total: ${totalCreditsAmount.toFixed()}, ONE balance: ${balance.toFixed()}, to withdraw: ${amountToPay.toFixed()}, balance after: ${balanceAfter.totalCreditsAmount.toFixed()}`
+      }] credits total: ${totalCreditsAmount.toFixed()}, blockchain ONE balance: ${balance.toFixed()}, to withdraw: ${totalPayAmount.toFixed()}, total balance after: ${totalBalanceDelta.toFixed()}`
     )
-    if (balanceDelta.gte(0)) {
-      if (amountToPay.gt(0) && totalCreditsAmount.gt(0)) {
-        await chatService.withdrawCredits(accountId, creditsPayAmount)
-        amountToPay = amountToPay.minus(creditsPayAmount)
-        // freeCreditsFeeCounter.inc(this.convertBigNumber(creditsPayAmount))
-        this.logger.info(
-          `[@${
-            from.username
-          }] paid from credits: ${creditsPayAmount.toFixed()}, left to pay: ${amountToPay.toFixed()}`
-        )
-      }
 
-      if (amountToPay.gt(0)) {
+    if (totalBalanceDelta.gte(0)) {
+      const balanceAfter = await chatService.withdrawCredits(accountId, creditsPayAmount)
+
+      this.logger.info(`[${from.id} @${
+        from.username
+      }] successfully paid from credits, credits balance: ${balanceAfter.totalCreditsAmount}. Left to pay from ONE tokens: ${tokenPayAmount.toString()}.`)
+
+      freeCreditsFeeCounter.inc(this.convertBigNumber(balanceAfter.creditAmount))
+
+      if (tokenPayAmount.gt(0)) {
         try {
           const tx = await this.transferFunds(
             userAccount,
             this.holderAddress,
-            amountToPay
+            tokenPayAmount
           )
           if (tx) {
-            oneTokenFeeCounter.inc(this.convertBigNumber(amountToPay))
+            oneTokenFeeCounter.inc(this.convertBigNumber(tokenPayAmount))
             this.logger.info(
               `[${from.id} @${from.username}] withdraw successful, txHash: ${
                 tx.transactionHash
               }, from: ${tx.from}, to: ${
                 tx.to
-              }, amount ONE: ${amountToPay.toString()}`
+              }, amount ONE: ${tokenPayAmount.toString()}`
             )
           }
         } catch (e) {
@@ -470,13 +408,12 @@ export class BotPayments {
       // await this.writePaymentLog(ctx, creditsPayAmount, oneTokensPayAmount)
       return true
     } else {
-      const addressBalance = await this.getAddressBalance(userAccount.address)
-      const creditsBalance = await chatService.getBalance(accountId)
-      const fiatCreditsBalance = await chatService.getFiatBalance(accountId)
-      const balance = addressBalance.plus(creditsBalance).plus(fiatCreditsBalance)
-      const balanceOne = this.toONE(balance, false).toFixed(2)
+      const oneBalance = await this.getAddressBalance(userAccount.address)
+      const { totalCreditsAmount } = await chatService.getUserCredits(accountId)
+      const totalBalance = oneBalance.plus(totalCreditsAmount)
+      const creditsFormatted = this.toONE(totalBalance, false).toFixed(2)
       await sendMessage(ctx,
-        `Your credits: ${balanceOne} ONE tokens. To recharge, send to \`${userAccount.address}\`.`,
+        `Your credits: ${creditsFormatted} ONE tokens. To recharge, send to \`${userAccount.address}\`.`,
         {
           parseMode: 'Markdown',
           replyId: message_id
@@ -549,14 +486,13 @@ export class BotPayments {
     }
     if (text === '/credits') {
       try {
-        const freeCredits = await chatService.getBalance(accountId)
-        const fiatCredits = await chatService.getFiatBalance(accountId)
+        const { totalCreditsAmount } = await chatService.getUserCredits(accountId)
         const addressBalance = await this.getAddressBalance(account.address)
-        const balance = addressBalance.plus(freeCredits).plus(fiatCredits)
-        const balanceOne = this.toONE(balance, false)
+        const balanceTotal = totalCreditsAmount.plus(addressBalance)
+        const balanceFormatted = this.toONE(balanceTotal, false)
         await sendMessage(
           ctx,
-          `Your 1Bot credits in ONE tokens: ${balanceOne.toFixed(2)}
+          `Your 1Bot credits in ONE tokens: ${balanceFormatted.toFixed(2)}
 
 To recharge, send to: \`${account.address}\`. Buy tokens on harmony.one/buy.`,
           {

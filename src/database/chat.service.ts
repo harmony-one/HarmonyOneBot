@@ -82,22 +82,6 @@ export class ChatService {
     return await chatRepository.update({ accountId }, { oneCreditAmount: newValue.toString() })
   }
 
-  public async getBalance (accountId: number): Promise<bn> {
-    const account = await this.getAccountById(accountId)
-    if (account) {
-      return bn(account.creditAmount)
-    }
-    return bn(0)
-  }
-
-  public async getFiatBalance (accountId: number): Promise<bn> {
-    const account = await this.getAccountById(accountId)
-    if (account) {
-      return bn(account.fiatCreditAmount)
-    }
-    return bn(0)
-  }
-
   public async getUserCredits (
     accountId: number
   ): Promise<{

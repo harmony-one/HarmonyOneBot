@@ -315,13 +315,9 @@ const UtilityBots: Record<string, UtilityBot> = {
 }
 
 const executeOrRefund = (ctx: OnMessageContext, price: number, bot: PayableBot): void => {
-  const refund = (reason?: string): void => {
-    payments.refundPayment(reason, ctx, price).catch((ex: any) => {
-      logger.error('Refund error', reason, ex)
-    })
-  }
+  const refund = (reason?: string): void => {}
   bot.onEvent(ctx, refund).catch((ex: any) => {
-    refund(ex?.message ?? 'Unknown error')
+    logger.error(ex?.message ?? 'Unknown error')
   })
 }
 
@@ -407,9 +403,8 @@ bot.command(['start', 'help', 'menu'], async (ctx) => {
   await writeCommandLog(ctx as OnMessageContext)
 
   const addressBalance = await payments.getAddressBalance(account.address)
-  const credits = await chatService.getBalance(accountId)
-  const fiatCredits = await chatService.getFiatBalance(accountId)
-  const balance = addressBalance.plus(credits).plus(fiatCredits)
+  const { totalCreditsAmount } = await chatService.getUserCredits(accountId)
+  const balance = addressBalance.plus(totalCreditsAmount)
   const balanceOne = payments.toONE(balance, false).toFixed(2)
   const startText = commandsHelpText.start
     .replaceAll('$CREDITS', balanceOne + '')
