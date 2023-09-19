@@ -71,7 +71,7 @@ bot.use(
   limit({
     // Allow only 3 message to be handled every 3 seconds.
     timeFrame: 3000,
-    limit: 3,
+    limit: 10,
 
     // This is called when the limit is exceeded.
     onLimitExceeded: (ctx): void => {
