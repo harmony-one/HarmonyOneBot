@@ -3,11 +3,12 @@ import asyncHandler from 'express-async-handler'
 import {
   Bot,
   type Enhance,
+  enhanceStorage,
   GrammyError,
   HttpError,
   MemorySessionStorage,
-  enhanceStorage,
-  session, type NextFunction
+  type NextFunction,
+  session
 } from 'grammy'
 import { autoChatAction } from '@grammyjs/auto-chat-action'
 import { limit } from '@grammyjs/ratelimiter'
@@ -17,7 +18,8 @@ import {
   type BotContext,
   type BotSessionData,
   type OnCallBackQueryData,
-  type OnMessageContext, type RefundCallback
+  type OnMessageContext, type PayableBot, type PayableBotConfig,
+  SessionState, type UtilityBot
 } from './modules/types'
 import { mainMenu } from './pages'
 import { TranslateBot } from './modules/translate/TranslateBot'
@@ -32,14 +34,7 @@ import { BotSchedule } from './modules/schedule'
 import { LlmsBot } from './modules/llms'
 import { DocumentHandler } from './modules/document-handler'
 import config from './config'
-import {
-  commandsHelpText,
-  TERMS,
-  SUPPORT,
-  FEEDBACK,
-  LOVE,
-  MODELS
-} from './constants'
+import { commandsHelpText, FEEDBACK, LOVE, MODELS, SUPPORT, TERMS } from './constants'
 import prometheusRegister, { PrometheusMetrics } from './metrics/prometheus'
 
 import { chatService, statsService } from './database/services'
@@ -53,6 +48,7 @@ import { TelegramPayments } from './modules/telegram_payment'
 import * as Sentry from '@sentry/node'
 import * as Events from 'events'
 import { ProfilingIntegration } from '@sentry/profiling-node'
+import { ES } from './es'
 
 Events.EventEmitter.defaultMaxListeners = 30
 
@@ -95,15 +91,21 @@ Sentry.init({
   tracesSampleRate: 1.0, // Performance Monitoring. Should use 0.1 in production
   profilesSampleRate: 1.0 // Set sampling rate for profiling - this is relative to tracesSampleRate
 })
+
+ES.init()
+
 bot.use(async (ctx: BotContext, next: NextFunction): Promise<void> => {
   const transaction = Sentry.startTransaction({ name: 'bot-command' })
   const entities = ctx.entities()
+  const startTime = performance.now()
+  let command = ''
   for (const ent of entities) {
     if (ent.type === 'bot_command') {
-      const command = ent.text.substring(1)
+      command = ent.text.substring(1)
       const userId = ctx.message?.from?.id
+      const username = ctx.message?.from?.username
       if (userId) {
-        Sentry.setUser({ id: userId })
+        Sentry.setUser({ id: userId, username })
       }
       if (command) {
         Sentry.setTag('command', command)
@@ -114,6 +116,32 @@ bot.use(async (ctx: BotContext, next: NextFunction): Promise<void> => {
   }
   await next()
   transaction.finish()
+  if (ctx.session.analytics.module) {
+    const userId = Number(ctx.message?.from?.id ?? '0')
+    const username = ctx.message?.from?.username ?? ''
+    if (!ctx.session.analytics.actualResponseTime) {
+      ctx.session.analytics.actualResponseTime = performance.now()
+    }
+    if (!ctx.session.analytics.firstResponseTime) {
+      ctx.session.analytics.firstResponseTime = ctx.session.analytics.actualResponseTime
+    }
+    const firstResponseTime = ctx.session.analytics.firstResponseTime - startTime
+    const actualResponseTime = ctx.session.analytics.actualResponseTime - startTime
+    const totalProcessingTime = performance.now() - startTime
+    ES.add({
+      command,
+      module: ctx.session.analytics.module,
+      userId,
+      username,
+      firstResponseTime,
+      actualResponseTime,
+      refunded: ctx.session.refunded,
+      sessionState: ctx.session.analytics.sessionState,
+      totalProcessingTime
+    }).catch((ex: any) => {
+      logger.error('Failed to add data to ES', ex)
+    })
+  }
 })
 
 function createInitialSessionData (): BotSessionData {
@@ -148,7 +176,13 @@ function createInitialSessionData (): BotSessionData {
       isProcessingQueue: false,
       requestQueue: []
     },
-    refunded: false
+    refunded: false,
+    analytics: {
+      module: '',
+      firstResponseTime: 0,
+      actualResponseTime: 0,
+      sessionState: SessionState.Initial
+    }
   }
 }
 
@@ -280,20 +314,6 @@ const writeCommandLog = async (
       `Cannot write unsupported command log: ${(e as Error).message}`
     )
   }
-}
-
-interface PayableBot {
-  getEstimatedPrice: (ctx: OnMessageContext) => number
-  isSupportedEvent: (ctx: OnMessageContext) => boolean
-  onEvent: (ctx: OnMessageContext, refundCallback: RefundCallback) => Promise<any>
-}
-interface UtilityBot {
-  isSupportedEvent: (ctx: OnMessageContext) => boolean
-  onEvent: (ctx: OnMessageContext) => Promise<any>
-}
-interface PayableBotConfig {
-  bot: PayableBot
-  enabled?: (ctx: OnMessageContext) => boolean
 }
 
 const PayableBots: Record<string, PayableBotConfig> = {

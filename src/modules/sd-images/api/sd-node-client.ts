@@ -184,7 +184,7 @@ export class Client {
     })
 
     // TODO
-    const trainServer = config.sdTrainHost;
+    const trainServer = config.sdTrainHost
 
     try {
       let attempts = 3

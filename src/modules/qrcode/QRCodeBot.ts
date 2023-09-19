@@ -1,17 +1,14 @@
 import { Automatic1111Client } from './Automatic1111Client'
-import {
-  createQRCode,
-  isQRCodeReadable,
-  normalizeUrl,
-  retryAsync
-} from './utils'
+import { createQRCode, isQRCodeReadable, normalizeUrl, retryAsync } from './utils'
 import config from '../../config'
 import { GrammyError, InlineKeyboard, InputFile } from 'grammy'
 import {
   type MessageExtras,
   type OnCallBackQueryData,
   type OnMessageContext,
-  type RefundCallback
+  type PayableBot,
+  type RefundCallback,
+  SessionState
 } from '../types'
 import { type Automatic1111Config } from './Automatic1111Configs'
 import { automatic1111DefaultConfig } from './Automatic1111DefaultConfig'
@@ -31,7 +28,8 @@ enum Callbacks {
 
 type ParsedCommand = { command: string, url: string, prompt: string, error: boolean } | { command: string, url: string, prompt: string, error?: undefined }
 
-export class QRCodeBot {
+export class QRCodeBot implements PayableBot {
+  public readonly module = 'QRCodeBot'
   private readonly logger: Logger
   constructor () {
     this.logger = pino({
@@ -60,9 +58,13 @@ export class QRCodeBot {
     ctx: OnMessageContext | OnCallBackQueryData,
     refundCallback: RefundCallback
   ): Promise<void> {
+    ctx.session.analytics.module = this.module
     if (!this.isSupportedEvent(ctx)) {
       await ctx.reply(`Unsupported command: ${ctx.message?.text}`, { message_thread_id: ctx.message?.message_thread_id })
-      refundCallback('Unsupported command'); return
+      ctx.session.analytics.sessionState = SessionState.Error
+      ctx.session.analytics.actualResponseTime = performance.now()
+      refundCallback('Unsupported command')
+      return
     }
 
     try {
@@ -81,37 +83,51 @@ export class QRCodeBot {
 
         if (!msg) {
           await ctx.reply('Error: message is too old')
-          refundCallback('Error: message is too old'); return
+          ctx.session.analytics.sessionState = SessionState.Error
+          ctx.session.analytics.actualResponseTime = performance.now()
+          refundCallback('Error: message is too old')
+          return
         }
 
         const cmd = this.parseQrCommand(msg)
 
         if (cmd.error ?? !cmd.command ?? !cmd.url ?? !cmd.prompt) {
           await ctx.reply("Message haven't contain command: " + msg, { message_thread_id: ctx.message?.message_thread_id })
-          refundCallback("Message haven't contain command: "); return
+          ctx.session.analytics.sessionState = SessionState.Error
+          ctx.session.analytics.actualResponseTime = performance.now()
+          refundCallback("Message haven't contain command: ")
+          return
         }
 
         if (cmd.command === SupportedCommands.QR) {
-          await this.onQr(ctx, msg, 'img2img'); return
+          await this.onQr(ctx, msg, 'img2img')
+          return
         }
       }
 
       if (ctx.hasCommand(SupportedCommands.QR)) {
-        await this.onQr(ctx, ctx.message.text, 'img2img'); return
+        await this.onQr(ctx, ctx.message.text, 'img2img')
+        return
       }
     } catch (ex) {
       Sentry.captureException(ex)
+      ctx.session.analytics.sessionState = SessionState.Error
+      ctx.session.analytics.actualResponseTime = performance.now()
       if (ex instanceof Error) {
         this.logger.info('Error ' + ex.message)
-        refundCallback(ex.message); return
+        refundCallback(ex.message)
+        return
       }
 
       this.logger.info(`Error ${ex}`)
-      refundCallback('Unknown error'); return
+      refundCallback('Unknown error')
+      return
     }
 
     await ctx.reply('Unsupported command', { message_thread_id: ctx.message?.message_thread_id })
     this.logger.info('Unsupported command')
+    ctx.session.analytics.sessionState = SessionState.Error
+    ctx.session.analytics.actualResponseTime = performance.now()
     refundCallback('Unsupported command')
   }
 
@@ -189,6 +205,8 @@ export class QRCodeBot {
     } catch (ex) {
       Sentry.captureException(ex)
       ctx.chatAction = null
+      ctx.session.analytics.sessionState = SessionState.Error
+      ctx.session.analytics.actualResponseTime = performance.now()
       this.logger.error(`ex ${ex}`)
       await ctx.reply('Internal error', { message_thread_id: ctx.message?.message_thread_id })
       throw new Error('Internal error')
@@ -209,6 +227,7 @@ export class QRCodeBot {
         }
       )
       this.logger.info('sent qr code')
+      ctx.session.analytics.sessionState = SessionState.Success
       return true
     } catch (e: any) {
       Sentry.captureException(e)
@@ -239,7 +258,10 @@ export class QRCodeBot {
           msgExtras
         )
       }
+      ctx.session.analytics.sessionState = SessionState.Error
       return false
+    } finally {
+      ctx.session.analytics.actualResponseTime = performance.now()
     }
   }
 
