@@ -291,8 +291,6 @@ export class BotPayments {
   private async writePaymentLog (
     ctx: OnMessageContext,
     amountCredits: BigNumber,
-    amountOne: BigNumber,
-    amountFiatCredits: BigNumber
   ): Promise<void> {
     const { from, text = '', audio, voice = '', chat } = ctx.update.message
 
@@ -316,8 +314,9 @@ export class BotPayments {
         message: text || '',
         isSupportedCommand: true,
         amountCredits: this.convertBigNumber(amountCredits),
-        amountOne: this.convertBigNumber(amountOne),
-        amountFiatCredits: this.convertBigNumber(amountFiatCredits)
+        // TODO: remove fields from DB
+        amountOne: 0,
+        amountFiatCredits: 0
       }
       await statsService.writeLog(log)
     } catch (e) {
@@ -342,70 +341,42 @@ export class BotPayments {
     }
 
     this.logger.info(
-      `Pay event @${from.username}(${from.id}) in chat ${chat.id} (${chat.type}), accountId: ${accountId}, account address: ${userAccount.address}`
+      `Payment requested @${from.username}(${from.id}) in chat ${chat.id} (${chat.type}), accountId: ${accountId}, account address: ${userAccount.address}`
     )
 
     if (this.skipPayment(ctx, amountUSD)) {
-      await this.writePaymentLog(ctx, BigNumber(0), BigNumber(0), BigNumber(0))
+      await this.writePaymentLog(ctx, BigNumber(0))
       return true
     }
 
-    const fee = await this.getTransactionFee()
-    const balance = await this.getUserBalance(accountId)
-    const priceInOneTokens = await this.getPriceInONE(amountUSD)
-    const totalPayAmount = priceInOneTokens.plus(fee)
-    const { totalCreditsAmount} = await chatService.getUserCredits(accountId)
-    const totalUserBalance = totalCreditsAmount.plus(balance)
-    const totalBalanceDelta = totalUserBalance.minus(totalPayAmount)
+    const userBalance = await this.getUserBalance(accountId)
+    if(userBalance.gt(0)) {
+      const fee = await this.getTransactionFee()
+      if(userBalance.minus(fee).gt(0)) {
+        this.logger.info(`Found user with ONE balance. Start transferring ${userBalance.toString()} ONE to holder address ${this.holderAddress}...`)
+        await this.transferUserFundsToHolder(accountId, userAccount, userBalance);
+        this.logger.info(`Funds transferred from ${accountId} ${userAccount.address} to holder address ${this.holderAddress}, amount: ${userBalance.toString()}`)
+      }
+    }
 
-    const creditsPayAmount = bn.min(totalPayAmount, totalCreditsAmount)
-    const tokenPayAmount = totalPayAmount.minus(creditsPayAmount)
+    const totalPayAmount = await this.getPriceInONE(amountUSD)
+    const { totalCreditsAmount} = await chatService.getUserCredits(accountId)
+    const totalBalanceDelta = totalCreditsAmount.minus(totalPayAmount)
 
     this.logger.info(
       `[${from.id} @${
         from.username
-      }] credits total: ${totalCreditsAmount.toFixed()}, blockchain ONE balance: ${balance.toFixed()}, to withdraw: ${totalPayAmount.toFixed()}, total balance after: ${totalBalanceDelta.toFixed()}`
+      }] credits total: ${totalCreditsAmount.toFixed()}, to withdraw: ${totalPayAmount.toFixed()}, total balance after: ${totalBalanceDelta.toFixed()}`
     )
 
     if (totalBalanceDelta.gte(0)) {
-      const balanceAfter = await chatService.withdrawCredits(accountId, creditsPayAmount)
-
+      const balanceAfter = await chatService.withdrawCredits(accountId, totalPayAmount)
       this.logger.info(`[${from.id} @${
         from.username
-      }] successfully paid from credits, credits balance: ${balanceAfter.totalCreditsAmount}. Left to pay from ONE tokens: ${tokenPayAmount.toString()}.`)
+      }] successfully paid from credits, credits balance after: ${balanceAfter.totalCreditsAmount}`)
 
       freeCreditsFeeCounter.inc(this.convertBigNumber(balanceAfter.creditAmount))
-
-      if (tokenPayAmount.gt(0)) {
-        try {
-          const tx = await this.transferFunds(
-            userAccount,
-            this.holderAddress,
-            tokenPayAmount
-          )
-          if (tx) {
-            oneTokenFeeCounter.inc(this.convertBigNumber(tokenPayAmount))
-            this.logger.info(
-              `[${from.id} @${from.username}] withdraw successful, txHash: ${
-                tx.transactionHash
-              }, from: ${tx.from}, to: ${
-                tx.to
-              }, amount ONE: ${tokenPayAmount.toString()}`
-            )
-          }
-        } catch (e) {
-          this.logger.error(
-            `[${from.id}] withdraw error: "${JSON.stringify(
-              (e as Error).message
-            )}"`
-          )
-          await sendMessage(ctx, 'Payment error, try again later', {
-            parseMode: 'Markdown',
-            replyId: message_id
-          })
-        }
-      }
-      // await this.writePaymentLog(ctx, creditsPayAmount, oneTokensPayAmount)
+      await this.writePaymentLog(ctx, totalPayAmount)
       return true
     } else {
       const oneBalance = await this.getAddressBalance(userAccount.address)
