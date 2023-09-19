@@ -1,7 +1,16 @@
 import { Client } from '@elastic/elasticsearch'
 import config from '../config'
 import { type WriteResponseBase } from '@elastic/elasticsearch/lib/api/types'
+import { pino } from 'pino'
 let client: Client | null = null
+
+const logger = pino({
+  name: 'es',
+  transport: {
+    target: 'pino-pretty',
+    options: { colorize: true }
+  }
+})
 
 export enum ESIndex {
   BotLogs = 'bot-logs'
@@ -21,7 +30,11 @@ export interface BotLogData {
 }
 
 export const ES = {
-  init: (): Client => {
+  init: (): Client | null => {
+    if (!config.es.url) {
+      logger.info('Skipped initializing ES')
+      return null
+    }
     client = new Client({
       node: config.es.url,
       auth: { username: config.es.username, password: config.es.password },
