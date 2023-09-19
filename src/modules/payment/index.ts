@@ -518,7 +518,7 @@ export class BotPayments {
         const balanceOne = this.toONE(balance, false)
 
         const buyCreditsButton = new InlineKeyboard().text(
-          'Buy now',
+          'Buy Now',
           Callbacks.CreditsFiatBuy
         )
 
@@ -526,7 +526,7 @@ export class BotPayments {
           ctx,
           `Your 1Bot credits in ONE tokens: ${balanceOne.toFixed(2)}
 
-          Click “Buy now” below to recharge. Or, send to \`${account.address}\` with tokens from harmony.one/buy.`,
+          Click “Buy Now" below to recharge. Or, send to \`${account.address}\` with tokens from harmony.one/buy.`,
           {
             parseMode: 'Markdown',
             disable_web_page_preview: true,

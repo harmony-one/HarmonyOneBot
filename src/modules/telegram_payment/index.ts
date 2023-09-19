@@ -123,8 +123,8 @@ export class TelegramPayments {
     console.log('### tgUserId', tgUserId)
 
     const chatId = getChatId()
-    const title = 'AI Credits'
-    const description = `Purchase up to $10.`
+    const title = 'Harmony 1Bot Credits'
+    const description = ` `
     const providerToken = config.telegramPayments.token
     const currency = 'USD'
     const creditsAmount = await this.payments.getPriceInONE(amount)
