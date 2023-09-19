@@ -1,5 +1,5 @@
 import { InlineKeyboard, InputFile } from 'grammy'
-import { type OnMessageContext, type OnCallBackQueryData } from '../types'
+import { type OnMessageContext, type OnCallBackQueryData, type PayableBot, SessionState } from '../types'
 import { SDImagesBotBase } from './SDImagesBotBase'
 import { COMMAND, type IOperation, parseCtx, promptHasBadWords } from './helpers'
 import { getModelByParam, MODELS_CONFIGS } from './api'
@@ -7,7 +7,8 @@ import { uuidv4 } from './utils'
 import { sendMessage } from '../open-ai/helpers'
 import * as Sentry from '@sentry/node'
 
-export class SDImagesBot extends SDImagesBotBase {
+export class SDImagesBot extends SDImagesBotBase implements PayableBot {
+  public readonly module = 'SDImagesBot'
   public isSupportedEvent (
     ctx: OnMessageContext | OnCallBackQueryData
   ): boolean {
@@ -48,6 +49,7 @@ export class SDImagesBot extends SDImagesBotBase {
     ctx: OnMessageContext | OnCallBackQueryData,
     refundCallback: (reason?: string) => void
   ): Promise<void> {
+    ctx.session.analytics.module = this.module
     if (this.isSupportedCallbackQuery(ctx)) {
       await this.onImgSelected(ctx, refundCallback)
       return
@@ -58,6 +60,8 @@ export class SDImagesBot extends SDImagesBotBase {
     if (!operation) {
       console.log(`### unsupported command ${ctx.message?.text}`)
       await sendMessage(ctx, '### unsupported command')
+      ctx.session.analytics.sessionState = SessionState.Error
+      ctx.session.analytics.actualResponseTime = performance.now()
       refundCallback('Unsupported command'); return
     }
 
@@ -72,12 +76,17 @@ export class SDImagesBot extends SDImagesBotBase {
         ctx,
         'Your prompt has been flagged for potentially generating illegal or malicious content. If you believe there has been a mistake, please reach out to support.'
       )
+      ctx.session.analytics.sessionState = SessionState.Error
+      ctx.session.analytics.actualResponseTime = performance.now()
       refundCallback('Prompt has bad words'); return
     }
 
     if (prompt.length > 1000) {
       await ctx.reply('Your prompt is too long. Please shorten your prompt and try again.')
-      refundCallback('Prompt is too long'); return
+      ctx.session.analytics.sessionState = SessionState.Error
+      ctx.session.analytics.actualResponseTime = performance.now()
+      refundCallback('Prompt is too long')
+      return
     }
 
     switch (operation.command) {
@@ -124,11 +133,15 @@ export class SDImagesBot extends SDImagesBotBase {
             `${model.name}: ${model.link} \n \nUsing: /${model.aliases[0]} /${model.aliases[1]} /${model.aliases[2]} \n`
           )
         }
+        ctx.session.analytics.actualResponseTime = performance.now()
+        ctx.session.analytics.sessionState = SessionState.Success
         return
     }
 
     console.log('### unsupported command')
     await sendMessage(ctx, '### unsupported command')
+    ctx.session.analytics.actualResponseTime = performance.now()
+    ctx.session.analytics.sessionState = SessionState.Error
   }
 
   onImagesCmd = async (
@@ -174,10 +187,14 @@ export class SDImagesBot extends SDImagesBotBase {
           message_thread_id: ctx.message?.message_thread_id
         }
       )
+      ctx.session.analytics.sessionState = SessionState.Success
     } catch (e: any) {
       Sentry.captureException(e)
       refundCallback(e.message)
       await sendMessage(ctx, 'Error: something went wrong...')
+      ctx.session.analytics.sessionState = SessionState.Error
+    } finally {
+      ctx.session.analytics.actualResponseTime = performance.now()
     }
 
     this.queue = this.queue.filter((v) => v !== uuid)
@@ -235,10 +252,14 @@ export class SDImagesBot extends SDImagesBotBase {
           seed: session?.all_seeds && Number(session.all_seeds[+params - 1])
         })
       }
+      ctx.session.analytics.sessionState = SessionState.Success
     } catch (e: any) {
       Sentry.captureException(e)
       refundCallback(e.message)
       await sendMessage(ctx, 'Error: something went wrong...')
+      ctx.session.analytics.sessionState = SessionState.Error
+    } finally {
+      ctx.session.analytics.actualResponseTime = performance.now()
     }
   }
 
@@ -275,10 +296,14 @@ export class SDImagesBot extends SDImagesBotBase {
         reply_markup: keyboard,
         message_thread_id: ctx.message?.message_thread_id
       })
+      ctx.session.analytics.sessionState = SessionState.Success
     } catch (e: any) {
       Sentry.captureException(e)
       refundCallback(e)
       await sendMessage(ctx, 'Error: something went wrong...')
+      ctx.session.analytics.sessionState = SessionState.Error
+    } finally {
+      ctx.session.analytics.actualResponseTime = performance.now()
     }
   }
 }

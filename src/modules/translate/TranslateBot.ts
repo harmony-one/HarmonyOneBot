@@ -1,4 +1,4 @@
-import { type OnMessageContext, type RefundCallback } from '../types'
+import { type OnMessageContext, type PayableBot, type RefundCallback, SessionState } from '../types'
 import pino, { type Logger } from 'pino'
 import { chatCompletion, getChatModel, getChatModelPrice, getTokenNumber } from '../open-ai/api/openAi'
 import config from '../../config'
@@ -8,7 +8,8 @@ enum SupportedCommands {
   TranslateStop = 'translatestop'
 }
 
-export class TranslateBot {
+export class TranslateBot implements PayableBot {
+  public readonly module = 'TranslateBot'
   private readonly logger: Logger
   constructor () {
     this.logger = pino({
@@ -51,32 +52,34 @@ export class TranslateBot {
     return ctx.hasCommand(Object.values(SupportedCommands)) || (!hasCommand && ctx.session.translate.enable)
   }
 
-  public async onEvent (ctx: OnMessageContext, refundCallback: RefundCallback): Promise<{ next: boolean }> {
+  public async onEvent (ctx: OnMessageContext, refundCallback: RefundCallback): Promise<void> {
+    ctx.session.analytics.module = this.module
     if (!this.isSupportedEvent(ctx)) {
       await ctx.reply(`Unsupported command: ${ctx.message?.text}`, { message_thread_id: ctx.message?.message_thread_id })
+      ctx.session.analytics.actualResponseTime = performance.now()
+      ctx.session.analytics.sessionState = SessionState.Error
       refundCallback('Unsupported command')
-      return { next: true }
+      return
     }
 
     if (ctx.hasCommand(SupportedCommands.Translate)) {
       await this.runTranslate(ctx)
-      return { next: false }
+      return
     }
 
     if (ctx.hasCommand(SupportedCommands.TranslateStop)) {
       await this.stopTranslate(ctx)
-      return { next: false }
+      return
     }
 
     const hasCommand = ctx.entities().find((ent) => ent.type === 'bot_command')
 
     if (!hasCommand && ctx.session.translate.enable) {
       await this.onTranslate(ctx)
-      return { next: false }
+      return
     }
 
     refundCallback('Unsupported command')
-    return { next: true }
   }
 
   public parseCommand (message: string): string[] {
@@ -98,21 +101,28 @@ export class TranslateBot {
 ${langList.join(', ')}
 
 To disable translation, use the command /translatestop.`)
+    ctx.session.analytics.actualResponseTime = performance.now()
+    ctx.session.analytics.sessionState = SessionState.Success
   }
 
   public async stopTranslate (ctx: OnMessageContext): Promise<void> {
     ctx.chatAction = 'typing'
     ctx.session.translate.enable = false
     await ctx.reply('Translation is disabled', { message_thread_id: ctx.message?.message_thread_id })
+    ctx.session.analytics.actualResponseTime = performance.now()
+    ctx.session.analytics.sessionState = SessionState.Success
   }
 
   public async onTranslate (ctx: OnMessageContext): Promise<void> {
     const message = ctx.message.text
 
     const progressMessage = await ctx.reply('...', { message_thread_id: ctx.message?.message_thread_id })
+    ctx.session.analytics.firstResponseTime = performance.now()
     ctx.chatAction = 'typing'
 
     if (!message) {
+      ctx.session.analytics.actualResponseTime = performance.now()
+      ctx.session.analytics.sessionState = SessionState.Success
       return
     }
 
@@ -122,5 +132,7 @@ To disable translation, use the command /translatestop.`)
     const response = await chatCompletion(conversation)
 
     await ctx.api.editMessageText(ctx.chat?.id, progressMessage.message_id, response.completion, { parse_mode: 'Markdown' })
+    ctx.session.analytics.actualResponseTime = performance.now()
+    ctx.session.analytics.sessionState = SessionState.Success
   }
 }

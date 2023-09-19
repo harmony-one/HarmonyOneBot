@@ -1,0 +1,36 @@
+{
+  "mappings": {
+    "properties": {
+      "command": {
+        "type": "keyword"
+      },
+      "module": {
+        "type": "keyword"
+      },
+      "text": {
+        "type": "text"
+      },
+      "userId": {
+        "type": "integer"
+      },
+      "username": {
+        "type": "keyword"
+      },
+      "totalProcessingTime": {
+        "type": "double"
+      },
+      "firstResponseTime": {
+        "type": "double"
+      },
+      "actualResponseTime": {
+        "type": "double"
+      },
+      "refunded": {
+        "type": "boolean"
+      },
+      "sessionState": {
+        "type": "keyword"
+      }
+    }
+  }
+}

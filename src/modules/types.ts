@@ -73,12 +73,27 @@ export interface TranslateBotData {
   enable: boolean
 }
 
+export enum SessionState {
+  Initial = 'initial',
+  Error = 'error',
+  Success = 'success'
+}
+
+export interface Analytics {
+  firstResponseTime: number
+  actualResponseTime: number
+  sessionState: SessionState
+  module: string
+
+}
+
 export interface BotSessionData {
   oneCountry: OneCountryData
   openAi: OpenAiSessionData
   translate: TranslateBotData
   llms: LmmsSessionData
   refunded: boolean
+  analytics: Analytics
 }
 
 export type BotContext = Context &
@@ -97,3 +112,17 @@ MenuFlavor
 export type BotConversation = Conversation<BotContext>
 
 export type RefundCallback = (reason?: string) => void
+
+export interface PayableBot {
+  getEstimatedPrice: (ctx: OnMessageContext) => number
+  isSupportedEvent: (ctx: OnMessageContext) => boolean
+  onEvent: (ctx: OnMessageContext, refundCallback: RefundCallback) => Promise<any>
+}
+export interface UtilityBot {
+  isSupportedEvent: (ctx: OnMessageContext) => boolean
+  onEvent: (ctx: OnMessageContext) => Promise<any>
+}
+export interface PayableBotConfig {
+  bot: PayableBot
+  enabled?: (ctx: OnMessageContext) => boolean
+}

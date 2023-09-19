@@ -98,7 +98,7 @@ export class TelegramPayments {
     const amount = Math.ceil(fixedUsdAmount * 100) // cents
 
     const chatId = ctx.message.chat.id
-    const title = "AI Credits"
+    const title = 'AI Credits'
     const description = 'Purchase up to $10.'
     const providerToken = config.telegramPayments.token
     const currency = 'USD'
