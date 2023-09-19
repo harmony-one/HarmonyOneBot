@@ -95,7 +95,12 @@ export class TelegramPayments {
     }
 
     if (usdAmount < 1) {
-      await ctx.reply('The value should be greater than 1')
+      await ctx.reply('$1 Purchase Minimum')
+      return;
+    }
+
+    if (usdAmount > 10) {
+      await ctx.reply('$10 Purchase Maximum')
       return;
     }
 
@@ -121,7 +126,7 @@ export class TelegramPayments {
 
     const chatId = getChatId()
     const title = 'AI Credits'
-    const description = `Purchase up to $${fixedUsdAmount}.`
+    const description = `Purchase up to $10.`
     const providerToken = config.telegramPayments.token
     const currency = 'USD'
     const creditsAmount = await this.payments.getPriceInONE(amount)

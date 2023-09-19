@@ -528,7 +528,7 @@ export class BotPayments {
           ctx,
           `Your 1Bot credits in ONE tokens: ${balanceOne.toFixed(2)}
 
-To recharge, send to: \`${account.address}\`. Buy tokens on harmony.one/buy.`,
+          Click “Buy now” below to recharge. Or, send to \`${account.address}\` with tokens from harmony.one/buy.`,
           {
             parseMode: 'Markdown',
             disable_web_page_preview: true,
