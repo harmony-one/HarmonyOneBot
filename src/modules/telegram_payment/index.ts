@@ -72,7 +72,7 @@ export class TelegramPayments {
     this.logger.info(`Payment from @${ctx.message.from.username} $${invoice.amount / 100} was completed!`)
   }
 
-  private async createPaymentInvoice (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
+  public async createPaymentInvoice (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
     const accountId = this.payments.getAccountId(ctx)
     let tgUserId = accountId
     if (ctx.update?.message?.chat.type === 'group' || ctx.callbackQuery?.message?.chat.type === 'group') {
@@ -94,12 +94,12 @@ export class TelegramPayments {
 
     if (usdAmount < 1) {
       await ctx.reply('$1 Purchase Minimum')
-      return;
+      return
     }
 
     if (usdAmount > 10) {
       await ctx.reply('$10 Purchase Maximum')
-      return;
+      return
     }
 
     const fixedUsdAmount = parseFloat(usdAmount.toFixed(2))
@@ -124,7 +124,7 @@ export class TelegramPayments {
 
     const chatId = getChatId()
     const title = 'Harmony 1Bot Credits'
-    const description = ` `
+    const description = ' '
     const providerToken = config.telegramPayments.token
     const currency = 'USD'
     const creditsAmount = await this.payments.getPriceInONE(amount)

@@ -572,9 +572,9 @@ bot.catch((err) => {
     logger.error(`Error in message: ${JSON.stringify(ctx.message)}`)
   } else if (e instanceof HttpError) {
     logger.error('Could not contact Telegram:', e)
-  } else {
-    logger.error('Unknown error:', e)
-    logger.error('global error others', err)
+  } else if (e instanceof Error) {
+    logger.error({ errorMsg: e.message }, 'Unknown error')
+    logger.error({ error: err }, 'global error others')
   }
   logger.error('global error', err)
 })
