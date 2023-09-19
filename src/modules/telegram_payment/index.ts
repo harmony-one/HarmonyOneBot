@@ -1,4 +1,4 @@
-import { type OnMessageContext, type OnPreCheckoutContext, type OnSuccessfullPayment } from '../types'
+import { type OnMessageContext, type OnPreCheckoutContext, type OnSuccessfullPayment, Callbacks, type OnCallBackQueryData } from '../types'
 import { type LabeledPrice } from 'grammy/out/types'
 import config from '../../config'
 import { chatService, invoiceService } from '../../database/services'
@@ -25,12 +25,12 @@ export class TelegramPayments {
     })
   }
 
-  public isSupportedEvent (ctx: OnMessageContext): boolean {
-    return ctx.hasCommand(Object.values(SupportedCommands)) || ctx.has('message:successful_payment')
+  public isSupportedEvent (ctx: OnMessageContext | OnCallBackQueryData): boolean {
+    return ctx.hasCommand(Object.values(SupportedCommands)) || ctx.has('message:successful_payment') || ctx.hasCallbackQuery(Callbacks.CreditsFiatBuy)
   }
 
-  public async onEvent (ctx: OnMessageContext): Promise<void> {
-    if (ctx.hasCommand(SupportedCommands.BUY)) {
+  public async onEvent (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
+    if (ctx.hasCommand(SupportedCommands.BUY) || ctx.hasCallbackQuery(Callbacks.CreditsFiatBuy)) {
       await this.createPaymentInvoice(ctx)
       return
     }
@@ -72,10 +72,10 @@ export class TelegramPayments {
     this.logger.info(`Payment from @${ctx.message.from.username} $${invoice.amount / 100} was completed!`)
   }
 
-  private async createPaymentInvoice (ctx: OnMessageContext): Promise<void> {
+  private async createPaymentInvoice (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
     const accountId = this.payments.getAccountId(ctx)
     let tgUserId = accountId
-    if (ctx.update.message.chat.type === 'group') {
+    if (ctx.update?.message?.chat.type === 'group' || ctx.callbackQuery?.message?.chat.type === 'group') {
       const members = await ctx.getChatAdministrators()
       const creator = members.find((member) => member.status === 'creator')
       if (creator) {
@@ -92,14 +92,34 @@ export class TelegramPayments {
       return
     }
 
+    if (usdAmount < 1) {
+      await ctx.reply('The value should be greater than 1')
+      return
+    }
+
     const fixedUsdAmount = parseFloat(usdAmount.toFixed(2))
 
     const itemId = 'recharging-usd-' + fixedUsdAmount.toString()
     const amount = Math.ceil(fixedUsdAmount * 100) // cents
 
-    const chatId = ctx.message.chat.id
+    const getChatId = (): number => {
+      if (ctx.message) {
+        return ctx.message.chat.id
+      }
+
+      if (ctx.callbackQuery && ctx.callbackQuery.message) {
+        return ctx.callbackQuery.message.chat.id
+      }
+
+      throw new Error('Couldn\'t get account ID.')
+    }
+
+    console.log('### accountId', accountId)
+    console.log('### tgUserId', tgUserId)
+
+    const chatId = getChatId()
     const title = 'AI Credits'
-    const description = 'Purchase up to $10.'
+    const description = `Purchase up to $${fixedUsdAmount}.`
     const providerToken = config.telegramPayments.token
     const currency = 'USD'
     const creditsAmount = await this.payments.getPriceInONE(amount)

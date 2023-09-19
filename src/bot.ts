@@ -67,7 +67,7 @@ bot.use(
   limit({
     // Allow only 3 message to be handled every 3 seconds.
     timeFrame: 3000,
-    limit: 3,
+    limit: 10,
 
     // This is called when the limit is exceeded.
     onLimitExceeded: (ctx): void => {
@@ -409,6 +409,11 @@ const onCallback = async (ctx: OnCallBackQueryData): Promise<void> => {
       await qrCodeBot.onEvent(ctx, (reason) => {
         logger.error(`qr generate error: ${reason}`)
       })
+      return
+    }
+
+    if (telegramPayments.isSupportedEvent(ctx)) {
+      await telegramPayments.onEvent(ctx)
       return
     }
 

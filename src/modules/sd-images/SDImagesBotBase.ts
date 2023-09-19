@@ -173,7 +173,7 @@ export class SDImagesBotBase {
           : `${session.message} ${prompt}`
         : `/${model.aliases[0]} ${prompt}`
       await ctx.replyWithPhoto(new InputFile(imageBuffer), {
-        caption: reqMessage,
+        caption: specialMessage ?? reqMessage,
         message_thread_id: ctx.message?.message_thread_id
       })
       if (ctx.chat?.id && queueMessageId) {

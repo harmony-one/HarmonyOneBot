@@ -5,7 +5,7 @@ import axios from 'axios'
 import bn, { BigNumber } from 'bignumber.js'
 import config from '../../config'
 import { chatService, statsService } from '../../database/services'
-import { type OnMessageContext } from '../types'
+import { type OnMessageContext, Callbacks, type OnCallBackQueryData } from '../types'
 import { LRUCache } from 'lru-cache'
 import {
   oneTokenFeeCounter,
@@ -14,6 +14,7 @@ import {
 import { type BotPaymentLog } from '../../database/stats.service'
 import { sendMessage } from '../open-ai/helpers'
 import * as Sentry from '@sentry/node'
+import { InlineKeyboard } from 'grammy'
 
 interface CoinGeckoResponse {
   harmony: {
@@ -474,11 +475,23 @@ export class BotPayments {
     return ['/credits', '/migrate'].includes(text)
   }
 
-  public getAccountId (ctx: OnMessageContext): number {
-    const { chat, from } = ctx.update.message
-    const { id: userId } = from
-    const { id: chatId, type } = chat
-    return type === 'private' ? userId : chatId
+  public getAccountId (ctx: OnMessageContext | OnCallBackQueryData): number {
+    if (ctx.callbackQuery?.message) {
+      const { from } = ctx.callbackQuery
+      const { chat } = ctx.callbackQuery.message
+      const { id: userId } = from
+      const { id: chatId, type } = chat
+      return type === 'private' && userId ? userId : chatId
+    }
+
+    if (ctx.update.message) {
+      const { chat, from } = ctx.update.message
+      const { id: userId } = from
+      const { id: chatId, type } = chat
+      return type === 'private' ? userId : chatId
+    }
+
+    throw new Error('Couldn\'t get account ID.')
   }
 
   public async onEvent (ctx: OnMessageContext): Promise<void> {
@@ -503,6 +516,12 @@ export class BotPayments {
         const addressBalance = await this.getAddressBalance(account.address)
         const balance = addressBalance.plus(freeCredits).plus(fiatCredits)
         const balanceOne = this.toONE(balance, false)
+
+        const buyCreditsButton = new InlineKeyboard().text(
+          'Buy now',
+          Callbacks.CreditsFiatBuy
+        )
+
         await sendMessage(
           ctx,
           `Your 1Bot credits in ONE tokens: ${balanceOne.toFixed(2)}
@@ -510,7 +529,8 @@ export class BotPayments {
 To recharge, send to: \`${account.address}\`. Buy tokens on harmony.one/buy.`,
           {
             parseMode: 'Markdown',
-            disable_web_page_preview: true
+            disable_web_page_preview: true,
+            reply_markup: buyCreditsButton
           }
         )
       } catch (e) {

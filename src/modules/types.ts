@@ -10,6 +10,7 @@ import {
 } from '@grammyjs/conversations'
 import { type AutoChatActionFlavor } from '@grammyjs/auto-chat-action'
 import { type ParseMode } from 'grammy/types'
+import { type InlineKeyboardMarkup } from 'grammy/out/types'
 
 export interface ImageGenSessionData {
   numImages: number
@@ -23,6 +24,7 @@ export interface MessageExtras {
   parse_mode?: ParseMode
   reply_to_message_id?: number
   disable_web_page_preview?: boolean
+  reply_markup?: InlineKeyboardMarkup
 }
 export interface ChatCompletion {
   completion: string
@@ -125,4 +127,8 @@ export interface UtilityBot {
 export interface PayableBotConfig {
   bot: PayableBot
   enabled?: (ctx: OnMessageContext) => boolean
+}
+
+export enum Callbacks {
+  CreditsFiatBuy = 'credits-fiat-buy'
 }
