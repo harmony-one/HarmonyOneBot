@@ -42,11 +42,11 @@ export const llmCompletion = async (
       price: 0,
     };
   } catch (error: any) {
-    if (error instanceof AxiosError) {
-      console.log(error.code);
-      console.log(error.message);
-      console.log(error.stack);
-    }
+    // if (error instanceof AxiosError) {
+    //   console.log(error.code);
+    //   console.log(error.message);
+    //   console.log(error.stack);
+    // }
     throw error;
   }
 };
@@ -56,12 +56,18 @@ export const llmWebCrawler = async (
   text: string[],
   prompt: string,
   model: string,
+  chadId: number, 
+  msgId: number
 ): Promise<LlmCompletion> => {
   try {
     const data = {
       text: text,
-      prompt: prompt
+      prompt: prompt,
+      chatId: ""+chadId,
+      msgId: ""+msgId,
+      token: ""+config.telegramBotAuthToken
     };
+    console.log({data})
     const url = `${API_ENDPOINT}/llama-index/text`;
     const response = await axios.post(url, data);
     console.log(response.data)
@@ -71,7 +77,7 @@ export const llmWebCrawler = async (
       const completion = response.data
       return {
         completion: {
-          content: completion,
+          content: completion ?? '',
           role: "system",
           model: model,
         },
@@ -85,11 +91,7 @@ export const llmWebCrawler = async (
       price: 0,
     };
   } catch (error: any) {
-    if (error instanceof AxiosError) {
-      console.log(error.code);
-      console.log(error.message);
-      console.log(error.stack);
-    }
+    console.log('ERROR FLAG')
     throw error;
   }
 };

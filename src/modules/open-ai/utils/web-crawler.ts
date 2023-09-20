@@ -24,30 +24,15 @@ interface WebContent {
   oneFees: number;
 }
 
+interface TelegramUserProfile {
+  username: string;
+  displayName: string;
+  bio: string;
+}
 interface CrawlerElement {
   text: string;
   tagName: string;
 }
-
-const urlRegex =
-  /^(https?:\/\/)?([\w.-]+\.[a-zA-Z]{2,}|[\w.-]+\.[a-zA-Z]{1,3}\.[a-zA-Z]{1,3})(\/\S*)?$/;
-
-export const isValidUrl = (url: string): boolean => {
-  return urlRegex.test(url);
-};
-
-function parseWebContent(
-  inputArray: CrawlerElement[],
-): string[] {
-  let parsedArray = inputArray.filter(t => t.tagName !== 'a' && t.tagName !== 'code').map(t => t.text) 
-  return parsedArray;
-}
-
-export const getCrawlerPrice = async (
-  networkTraffic: number
-): Promise<number> => {
-  return 0.5; //cents
-};
 
 export const getWebContentKagi = async (
   url: string,
@@ -73,6 +58,53 @@ export const getWebContentKagi = async (
   }
 };
 
+
+const urlRegex =
+  /^(https?:\/\/)?([\w.-]+\.[a-zA-Z]{2,}|[\w.-]+\.[a-zA-Z]{1,3}\.[a-zA-Z]{1,3})(\/\S*)?$/;
+
+export const isValidUrl = (url: string): boolean => {
+  return urlRegex.test(url);
+};
+
+function cleanWebCrawl(chunks: CrawlerElement[]) {
+  const filterChunks = chunks.filter(i => i.tagName !== 'a' && i.tagName !== 'code')
+  return filterChunks.map(i => i.text)
+}
+
+function parseWebContent(
+  inputArray: CrawlerElement[],
+  maxTokens: number
+): string[] {
+  let concatenatedText = ''
+  let currentTokenCount = 0
+  let chunks: string[] = []
+  console.log(inputArray.length)
+  const noDuplicates = [... new Set(cleanWebCrawl(inputArray))]
+  console.log(noDuplicates.length)
+  for (const item of noDuplicates) {
+    const tokenCount = getTokenNumber(item)
+    if (currentTokenCount + tokenCount <= maxTokens) {
+      concatenatedText += item + ' '
+      currentTokenCount += tokenCount
+    } else {
+      chunks.push(concatenatedText)
+      concatenatedText = ''
+      currentTokenCount = 0
+    }
+  }
+  if (concatenatedText != '') {
+    chunks.push(concatenatedText)
+  }
+  console.log(chunks.length)
+  return chunks
+}
+
+export const getCrawlerPrice = async (
+  networkTraffic: number
+): Promise<number> => {
+  return 0.5; //cents
+};
+
 export const getWebContent = async (
   url: string,
   maxTokens: number,
@@ -90,13 +122,12 @@ export const getWebContent = async (
     const response = await axios.get(request);
     const result = response.data;
     logger.info(
-      `Webcrawling ${url} => Tags processed: ${
-        result.elements ? result.elements.length : 0
+      `Webcrawling ${url} => Tags processed: ${result.elements ? result.elements.length : 0
       }`
     );
-    const text = parseWebContent(result.elements);
+    const chunks = parseWebContent(result.elements, maxTokens);
     return {
-      urlText: text,
+      urlText: chunks,
       elapsedTime: result.elapsedTime,
       networkTraffic: result.networkTraffic,
       fees: await getCrawlerPrice(result.networkTraffic),
@@ -106,12 +137,6 @@ export const getWebContent = async (
     throw e;
   }
 };
-
-interface TelegramUserProfile {
-  username: string;
-  displayName: string;
-  bio: string;
-}
 
 export const getChatMemberInfo = async (
   username: string

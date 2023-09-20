@@ -40,6 +40,7 @@ import {
 } from "./helpers";
 import { getWebContent, getCrawlerPrice } from "./utils/web-crawler";
 import { llmWebCrawler } from "../llms/api/liteLlm";
+import { AxiosError } from "axios";
 
 export class OpenAIBot {
   private logger: Logger;
@@ -312,17 +313,17 @@ export class OpenAIBot {
           imgs!.map(async (img: any) => {
             if (img && img.url) {
               await ctx
-              .replyWithPhoto(img.url, {
-                message_thread_id: ctx.message?.message_thread_id,
-              })
-              .catch((e) => {
-                this.onError(
-                  ctx,
-                  e,
-                  MAX_TRIES,
-                  "There was an error while generating the image"
-                );
-              });
+                .replyWithPhoto(img.url, {
+                  message_thread_id: ctx.message?.message_thread_id,
+                })
+                .catch((e) => {
+                  this.onError(
+                    ctx,
+                    e,
+                    MAX_TRIES,
+                    "There was an error while generating the image"
+                  );
+                });
             }
           });
         }
@@ -367,8 +368,7 @@ export class OpenAIBot {
       if (completion) {
         const price = getPromptPrice(completion, data);
         this.logger.info(
-          `streamChatCompletion result = tokens: ${
-            price.promptTokens + price.completionTokens
+          `streamChatCompletion result = tokens: ${price.promptTokens + price.completionTokens
           } | ${model} | price: ${price}¢`
         );
         return {
@@ -437,7 +437,7 @@ export class OpenAIBot {
       }
       let price = 0;
       ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_35_TURBO_16K; // GPT_4_32K;
-      const model = ChatGPTModelsEnum.GPT_35_TURBO_16K //GPT_4_32K;
+      const model = ChatGPTModelsEnum.GPT_4_32K; //to create the web crawler chunks
       const chatModel = getChatModel(model);
       const webCrawlerMaxTokens =
         chatModel.maxContextTokens - config.openAi.chatGpt.maxTokens * 2;
@@ -459,33 +459,20 @@ export class OpenAIBot {
           })
         ).message_id;
       }
-      // const webContent = await getWebContent(
-      //   url,
-      //   webCrawlerMaxTokens,
-      //   user,
-      //   password
-      // );
-      const webContent = {
-        urlText: [
-          'Upcoming features for our beloved @harmony1bot: Expert shortcuts + context loading; Chat on website or documents or transcripts; Custom image models or characters; Phone conversations with intent. Join our development + user group @onebotlove!',
-          'Our Q4 goals are 100 custom Stable Diffusion models (from CivitAI and HuggingFace), 1000 public and private data sources (as GPT4 context or embeddings), and $100K @harmony1bot revenues and tokens with 5 developers or modelers or trainers.',
-          'Let’s focus on G – not for AGI (artificial general intelligence), but Gen (generative) AI with large language model (LLM). We are, NOT just generative or general AI – but the Generation AI. To prioritize, follow the wisdom of market-product-team fit: generative agents, $1 fees, and twice daily. That is, is Harmony riding the 100x wave of the decade? Are users paying for what they ask and deserve? Do yourselves use the feature as often as toothbrush?',
-          'ONE Bot’s 3 key metrics are: the total fees users pay in ONE tokens (excluding the initial 100 ONE credits), weekly active users (the total unique Telegram accounts in the last 7 days), daily user engagement (the total messages sent to bot in the last 24 hours).',
-          'Harmony’s 3 categories of key metrics are: (1) the 7-day moving averages for network transaction fees, for unique wallet addresses, and for ONE token price on Binance; (2) the total value locked (TVL) of assets from multiple bridges, the 30-day trading volume from swap.country and DeFira, and the total delegated stakes on all validators; and, (3) the ONE Bot’s metrics above.'],
-          fees: 0,
-          networkTraffic: 0,
-          elapsedTime: 0
-      }
-      console.log(webContent.urlText)
+      const webContent = await getWebContent(
+        url,
+        webCrawlerMaxTokens,
+        user,
+        password
+      );
       if (webContent.urlText.length > 0) {
         if (
           !(await this.payments.pay(ctx as OnMessageContext, webContent.fees))
         ) {
           this.onNotBalanceMessage(ctx);
         } else {
-          const response = llmWebCrawler(webContent.urlText,prompt,model)
-          // chat = [...result.chat];
-          price += 0 // result.price;
+          const chatId = await ctx.chat?.id!
+          const response = await llmWebCrawler(webContent.urlText, prompt, model, chatId, msgId)
           if (!(await this.payments.pay(ctx as OnMessageContext, price))) {
             this.onNotBalanceMessage(ctx);
           }
@@ -611,9 +598,8 @@ export class OpenAIBot {
           if (prompt === "") {
             const msg =
               chatConversation.length > 0
-                ? `${appText.gptLast}\n_${
-                    chatConversation[chatConversation.length - 1].content
-                  }_`
+                ? `${appText.gptLast}\n_${chatConversation[chatConversation.length - 1].content
+                }_`
                 : appText.introText;
             await sendMessage(ctx, msg, {
               parseMode: "Markdown",
@@ -727,8 +713,7 @@ export class OpenAIBot {
         this.logger.error(errorMessage);
         await sendMessage(
           ctx,
-          `${
-            ctx.from.username ? ctx.from.username : ""
+          `${ctx.from.username ? ctx.from.username : ""
           } Bot has reached limit, wait ${retryAfter} seconds`
         ).catch((e) => this.onError(ctx, e, retryCount - 1));
         if (method === "editMessageText") {
@@ -756,6 +741,10 @@ export class OpenAIBot {
           `Error accessing OpenAI (ChatGPT). Please try later`
         ).catch((e) => this.onError(ctx, e, retryCount - 1));
       }
+    } else if (e instanceof AxiosError) {
+      await sendMessage(ctx, "Error handling your request").catch((e) =>
+        this.onError(ctx, e, retryCount - 1)
+      );
     } else {
       this.logger.error(`${e.toString()}`);
       await sendMessage(ctx, "Error handling your request").catch((e) =>
