@@ -54,9 +54,10 @@ export default {
       webCrawlerContext: 'You will receive a web crawling text. Please get keys concepts, but try to stay within 4000 words in your response.',
       maxTokens: parseInt(process.env.OPENAI_MAX_TOKENS ?? '800'), // telegram messages has a char limit
       wordLimit: 30,
-      wordCountBetween: process.env.WORD_COUNT_BETWEEN
-        ? parseInt(process.env.WORD_COUNT_BETWEEN)
-        : 10,
+      wordCountBetween: 10, 
+      // process.env.WORD_COUNT_BETWEEN
+      //   ? parseInt(process.env.WORD_COUNT_BETWEEN)
+      //   : 10,
       priceAdjustment: process.env.PRICE_ADJUSTMENT
         ? parseInt(process.env.PRICE_ADJUSTMENT)
         : 2,
