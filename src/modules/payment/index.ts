@@ -5,7 +5,7 @@ import axios from 'axios'
 import bn, { BigNumber } from 'bignumber.js'
 import config from '../../config'
 import { chatService, invoiceService, statsService } from '../../database/services'
-import { type OnMessageContext } from '../types'
+import {OnCallBackQueryData, type OnMessageContext} from '../types'
 import { LRUCache } from 'lru-cache'
 import { freeCreditsFeeCounter } from '../../metrics/prometheus'
 import { type BotPaymentLog } from '../../database/stats.service'
@@ -446,11 +446,23 @@ export class BotPayments {
     return ['/credits', '/migrate'].includes(text)
   }
 
-  public getAccountId (ctx: OnMessageContext): number {
-    const { chat, from } = ctx.update.message
-    const { id: userId } = from
-    const { id: chatId, type } = chat
-    return type === 'private' ? userId : chatId
+  public getAccountId (ctx: OnMessageContext | OnCallBackQueryData): number {
+    if (ctx.callbackQuery?.message) {
+      const { from } = ctx.callbackQuery
+      const { chat } = ctx.callbackQuery.message
+      const { id: userId } = from
+      const { id: chatId, type } = chat
+      return type === 'private' && userId ? userId : chatId
+    }
+
+    if (ctx.update.message) {
+      const { chat, from } = ctx.update.message
+      const { id: userId } = from
+      const { id: chatId, type } = chat
+      return type === 'private' ? userId : chatId
+    }
+
+    throw new Error('Couldn\'t get account ID.')
   }
 
   public async onEvent (ctx: OnMessageContext): Promise<void> {
