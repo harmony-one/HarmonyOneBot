@@ -1,5 +1,5 @@
-import { SDNodeApi, type IModel, getModelByParam } from './api'
-import { type OnMessageContext, type OnCallBackQueryData } from '../types'
+import { getModelByParam, type IModel, SDNodeApi } from './api'
+import { type OnCallBackQueryData, type OnMessageContext, SessionState } from '../types'
 import { getTelegramFileUrl, loadFile, sleep, uuidv4 } from './utils'
 import { GrammyError, InputFile } from 'grammy'
 import { COMMAND } from './helpers'
@@ -112,6 +112,7 @@ export class SDImagesBotBase {
     const { message_id } = await ctx.reply(
       `You are #${idx + 1} in line for making images. The wait time is about ${(idx + 1) * 15} seconds.`, { message_thread_id: ctx.message?.message_thread_id }
     )
+    ctx.session.analytics.firstResponseTime = performance.now()
     // waiting queue
     while (idx !== 0) {
       await sleep(3000 * this.queue.findIndex((v) => v === uuid))
@@ -126,16 +127,17 @@ export class SDImagesBotBase {
     this.queue2.push(uuid)
     let idx = this.queue2.findIndex((v) => v === uuid)
 
-    const { message_id } = await ctx.reply(
+    const { message_id: messageId } = await ctx.reply(
       `You are #${idx + 1} in line for making images. The wait time is about ${(idx + 1) * 15} seconds.`, { message_thread_id: ctx.message?.message_thread_id }
     )
+    ctx.session.analytics.firstResponseTime = performance.now()
     // waiting queue
     while (idx !== 0) {
       await sleep(3000 * this.queue2.findIndex((v) => v === uuid))
       idx = this.queue2.findIndex((v) => v === uuid)
     }
 
-    return message_id
+    return messageId
   }
 
   generateImage = async (
@@ -148,12 +150,12 @@ export class SDImagesBotBase {
     const uuid = uuidv4()
 
     try {
-      let queueMessageId;
+      let queueMessageId
 
       if (model.serverNumber === 2) {
-        queueMessageId = await this.waitingQueue2(uuid, ctx);
+        queueMessageId = await this.waitingQueue2(uuid, ctx)
       } else {
-        queueMessageId = await this.waitingQueue(uuid, ctx);
+        queueMessageId = await this.waitingQueue(uuid, ctx)
       }
 
       ctx.chatAction = 'upload_photo'
@@ -171,12 +173,13 @@ export class SDImagesBotBase {
           : `${session.message} ${prompt}`
         : `/${model.aliases[0]} ${prompt}`
       await ctx.replyWithPhoto(new InputFile(imageBuffer), {
-        caption: reqMessage,
+        caption: specialMessage ?? reqMessage,
         message_thread_id: ctx.message?.message_thread_id
       })
       if (ctx.chat?.id && queueMessageId) {
         await ctx.api.deleteMessage(ctx.chat?.id, queueMessageId)
       }
+      ctx.session.analytics.sessionState = SessionState.Success
     } catch (e: any) {
       ctx.chatAction = null
       const msgExtras: MessageExtras = { message_thread_id: ctx.message?.message_thread_id }
@@ -190,6 +193,7 @@ export class SDImagesBotBase {
         this.logger.error(e.toString())
         await ctx.reply('Error: something went wrong... Refunding payments', msgExtras)
       }
+      ctx.session.analytics.sessionState = SessionState.Error
       refundCallback()
     }
 
@@ -214,7 +218,6 @@ export class SDImagesBotBase {
       ctx.chatAction = 'upload_photo'
 
       let fileBuffer: Buffer
-      let width, height
       let fileName
 
       const photos = ctx.message?.photo ?? ctx.message?.reply_to_message?.photo
@@ -267,6 +270,7 @@ export class SDImagesBotBase {
       if (ctx.chat?.id && queueMessageId) {
         await ctx.api.deleteMessage(ctx.chat?.id, queueMessageId)
       }
+      ctx.session.analytics.sessionState = SessionState.Success
     } catch (e: any) {
       const msgExtras: MessageExtras = { message_thread_id: ctx.message?.message_thread_id }
       if (e instanceof GrammyError) {
@@ -279,7 +283,10 @@ export class SDImagesBotBase {
         this.logger.error(e.toString())
         await ctx.reply('Error: something went wrong... Refunding payments', msgExtras)
       }
+      ctx.session.analytics.sessionState = SessionState.Error
       refundCallback()
+    } finally {
+      ctx.session.analytics.actualResponseTime = performance.now()
     }
 
     this.queue = this.queue.filter((v) => v !== uuid)
@@ -344,6 +351,7 @@ export class SDImagesBotBase {
         }),
         `/${modelAlias} <lora:${loraName}:1>`
       )
+      ctx.session.analytics.sessionState = SessionState.Success
     } catch (e: any) {
       const topicId = ctx.message?.message_thread_id
       const msgExtras: MessageExtras = {}
@@ -360,7 +368,10 @@ export class SDImagesBotBase {
         this.logger.error(e.toString())
         await ctx.reply('Error: something went wrong... Refunding payments', msgExtras)
       }
+      ctx.session.analytics.sessionState = SessionState.Error
       refundCallback()
+    } finally {
+      ctx.session.analytics.actualResponseTime = performance.now()
     }
   }
 }

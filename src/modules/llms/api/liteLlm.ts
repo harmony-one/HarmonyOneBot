@@ -29,7 +29,7 @@ export const llmCompletion = async (
 
       return {
         completion: {
-          content: completion[0].message?.content!,
+          content: completion[0].message?.content,
           role: 'system',
           model
         },

@@ -7,10 +7,11 @@ import config from '../../config'
 import {chatService, invoiceService, statsService} from '../../database/services'
 import {type OnMessageContext} from '../types'
 import {LRUCache} from 'lru-cache'
-import {freeCreditsFeeCounter, oneTokenFeeCounter} from '../../metrics/prometheus'
+import {freeCreditsFeeCounter} from '../../metrics/prometheus'
 import {type BotPaymentLog} from '../../database/stats.service'
 import {sendMessage} from '../open-ai/helpers'
 import {InvoiceParams} from "../../database/invoice.service";
+import * as Sentry from '@sentry/node'
 
 interface CoinGeckoResponse {
   harmony: {
@@ -81,7 +82,9 @@ export class BotPayments {
     while (true) {
       try {
         await this.checkHotWallets()
-      } catch (e) {}
+      } catch (e) {
+        Sentry.captureException(e)
+      }
       await new Promise(resolve => setTimeout(resolve, 60 * 1000))
     }
   }
@@ -91,6 +94,7 @@ export class BotPayments {
     try {
       accounts = await statsService.getLasInteractingAccounts(24)
     } catch (e) {
+      Sentry.captureException(e)
       this.logger.error(`Cannot get last interacted accounts: ${(e as Error).message}`)
     }
 
@@ -105,6 +109,7 @@ export class BotPayments {
           availableBalance = await this.getUserBalance(accountId)
           // availableBalance = BigNumber.max(availableBalance.minus(txFee), 0)
         } catch (e) {
+          Sentry.captureException(e)
           this.logger.error(`Cannot get user balance ${accountId} ${userAccount.address}`)
         }
 
@@ -114,6 +119,7 @@ export class BotPayments {
             const { totalCreditsAmount } = await chatService.getUserCredits(accountId)
             this.logger.info(`User ${accountId} ${userAccount.address} hot wallet funds "${availableBalance.toString()}" ONE transferred to holder address ${this.holderAddress}. ONE credits balance: ${totalCreditsAmount.toString()}.`)
           } catch (e) {
+            Sentry.captureException(e)
             this.logger.error(
               `Cannot transfer user "${userAccount.address}" funds to holder "${this.holderAddress}": ${(e as Error).message}`
             )
@@ -140,6 +146,7 @@ export class BotPayments {
       )
       oneRate = +data.harmony.usd
     } catch (e) {
+      Sentry.captureException(e)
       this.logger.error(
         `Cannot get ONE rates: ${JSON.stringify((e as Error).message)}`
       )
@@ -229,6 +236,7 @@ export class BotPayments {
         value: web3.utils.toHex(txValue),
       })
     } catch (e) {
+      Sentry.captureException(e)
       const message = (e as Error).message || ''
       if (
         message &&
@@ -320,6 +328,7 @@ export class BotPayments {
       }
       await statsService.writeLog(log)
     } catch (e) {
+      Sentry.captureException(e)
       this.logger.error(
         `Cannot write payments log: ${JSON.stringify((e as Error).message)}`
       )
@@ -472,6 +481,7 @@ To recharge, send to: \`${account.address}\`. Buy tokens on harmony.one/buy.`,
           }
         )
       } catch (e) {
+        Sentry.captureException(e)
         this.logger.error(e)
         await sendMessage(ctx, 'Error retrieving credits')
       }

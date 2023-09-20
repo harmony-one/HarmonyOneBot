@@ -3,11 +3,12 @@ import { relayApi } from './api/relayApi'
 import { AxiosError } from 'axios'
 import { isDomainAvailable, validateDomainName } from './utils/domain'
 import { appText } from './utils/text'
-import { type OnMessageContext, type OnCallBackQueryData } from '../types'
+import { type OnMessageContext, type OnCallBackQueryData, type PayableBot, SessionState } from '../types'
 import { getCommandNamePrompt, getUrl } from './utils/'
 import { type Logger, pino } from 'pino'
 import { isAdmin } from '../open-ai/utils/context'
 import config from '../../config'
+import * as Sentry from '@sentry/node'
 
 export const SupportedCommands = {
   register: {
@@ -47,7 +48,8 @@ export const SupportedCommands = {
 //   SUBDOMAIN = "subdomain",
 // }
 
-export class OneCountryBot {
+export class OneCountryBot implements PayableBot {
+  public readonly module = 'OneCountryBot'
   private readonly logger: Logger
 
   constructor () {
@@ -130,6 +132,7 @@ export class OneCountryBot {
   }
 
   public async onEvent (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
+    ctx.session.analytics.module = this.module
     if (!this.isSupportedEvent(ctx)) {
       this.logger.warn(`### unsupported command ${ctx.message?.text}`)
       return
@@ -182,11 +185,15 @@ export class OneCountryBot {
 
     this.logger.warn('### unsupported command')
     await ctx.reply('### unsupported command', { message_thread_id: ctx.message?.message_thread_id })
+    ctx.session.analytics.actualResponseTime = performance.now()
+    ctx.session.analytics.sessionState = SessionState.Error
   }
 
   onVistitCmd = async (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> => {
     if (!ctx.match) {
       await ctx.reply('Error: Missing 1.country domain', { message_thread_id: ctx.message?.message_thread_id })
+      ctx.session.analytics.actualResponseTime = performance.now()
+      ctx.session.analytics.sessionState = SessionState.Error
       return
     }
 
@@ -197,6 +204,8 @@ export class OneCountryBot {
       reply_markup: keyboard,
       message_thread_id: ctx.message?.message_thread_id
     })
+    ctx.session.analytics.actualResponseTime = performance.now()
+    ctx.session.analytics.sessionState = SessionState.Success
   }
 
   onRenewCmd = async (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> => {
@@ -257,6 +266,8 @@ export class OneCountryBot {
     if (await isAdmin(ctx, false, true)) {
       if (!ctx.match) {
         await ctx.reply('Error: Missing 1.country domain', { message_thread_id: ctx.message?.message_thread_id })
+        ctx.session.analytics.sessionState = SessionState.Error
+        ctx.session.analytics.actualResponseTime = performance.now()
         return
       }
       const url = getUrl(ctx.match as string)
@@ -264,19 +275,27 @@ export class OneCountryBot {
         const response = await relayApi().createCert({ domain: url })
         if (!response.error) {
           await ctx.reply(`The SSL certificate of ${url} was renewed`, { message_thread_id: ctx.message?.message_thread_id })
+          ctx.session.analytics.sessionState = SessionState.Success
         } else {
           await ctx.reply(`${response.error}`, { message_thread_id: ctx.message?.message_thread_id })
+          ctx.session.analytics.sessionState = SessionState.Error
         }
       } catch (e) {
+        Sentry.captureException(e)
         this.logger.error(
           e instanceof AxiosError ? e.response?.data.error : appText.axiosError
         )
         await ctx.reply(
           e instanceof AxiosError ? e.response?.data.error : appText.axiosError, { message_thread_id: ctx.message?.message_thread_id }
         )
+        ctx.session.analytics.sessionState = SessionState.Error
+      } finally {
+        ctx.session.analytics.actualResponseTime = performance.now()
       }
     } else {
       await ctx.reply('This command is reserved', { message_thread_id: ctx.message?.message_thread_id })
+      ctx.session.analytics.sessionState = SessionState.Error
+      ctx.session.analytics.actualResponseTime = performance.now()
     }
   }
 
@@ -286,7 +305,9 @@ export class OneCountryBot {
       try {
         await relayApi().genNFT({ domain: url })
         await ctx.reply('NFT metadata generated', { message_thread_id: ctx.message?.message_thread_id })
+        ctx.session.analytics.sessionState = SessionState.Success
       } catch (e) {
+        Sentry.captureException(e)
         this.logger.error(
           e instanceof AxiosError
             ? e.response?.data.error
@@ -297,9 +318,14 @@ export class OneCountryBot {
             ? e.response?.data.error
             : 'There was an error processing your request',
           { message_thread_id: ctx.message?.message_thread_id })
+        ctx.session.analytics.sessionState = SessionState.Error
+      } finally {
+        ctx.session.analytics.actualResponseTime = performance.now()
       }
     } else {
       await ctx.reply('This command is reserved', { message_thread_id: ctx.message?.message_thread_id })
+      ctx.session.analytics.sessionState = SessionState.Error
+      ctx.session.analytics.actualResponseTime = performance.now()
     }
   }
 
@@ -325,9 +351,12 @@ export class OneCountryBot {
         parse_mode: 'Markdown',
         message_thread_id: ctx.message?.message_thread_id
       })
+      ctx.session.analytics.sessionState = SessionState.Success
     } else {
       await ctx.reply('This command is reserved', { message_thread_id: ctx.message?.message_thread_id })
+      ctx.session.analytics.sessionState = SessionState.Error
     }
+    ctx.session.analytics.actualResponseTime = performance.now()
   }
 
   async onRegister (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
@@ -336,6 +365,8 @@ export class OneCountryBot {
     let msgId = 0
     if (!prompt && !lastDomain) {
       await ctx.reply('Write a domain name', { message_thread_id: ctx.message?.message_thread_id })
+      ctx.session.analytics.actualResponseTime = performance.now()
+      ctx.session.analytics.sessionState = SessionState.Error
       return
     }
     if (!prompt && lastDomain) {
@@ -347,6 +378,8 @@ export class OneCountryBot {
         reply_markup: keyboard,
         message_thread_id: ctx.message?.message_thread_id
       })
+      ctx.session.analytics.actualResponseTime = performance.now()
+      ctx.session.analytics.sessionState = SessionState.Success
       return
     }
     const domain = this.cleanInput(
@@ -358,10 +391,13 @@ export class OneCountryBot {
         parse_mode: 'Markdown',
         message_thread_id: ctx.message?.message_thread_id
       })
+      ctx.session.analytics.actualResponseTime = performance.now()
+      ctx.session.analytics.sessionState = SessionState.Error
       return
     }
     ctx.session.oneCountry.lastDomain = domain
     msgId = (await ctx.reply('Checking name...')).message_id
+    ctx.session.analytics.firstResponseTime = performance.now()
     const response = await isDomainAvailable(domain)
     const domainAvailable = response.isAvailable
     let msg = `The name *${domain}* `
@@ -381,6 +417,8 @@ export class OneCountryBot {
     if (ctx.chat?.id) {
       await ctx.api.editMessageText(ctx.chat.id, msgId, msg, { parse_mode: 'Markdown' })
     }
+    ctx.session.analytics.sessionState = SessionState.Success
+    ctx.session.analytics.actualResponseTime = performance.now()
   }
 
   onEnableSubomain = async (ctx: OnMessageContext): Promise<void> => {
@@ -398,6 +436,7 @@ export class OneCountryBot {
         try {
           await relayApi().enableSubdomains(domain)
         } catch (e) {
+          Sentry.captureException(e)
           this.logger.error(
             e instanceof AxiosError
               ? e.response?.data

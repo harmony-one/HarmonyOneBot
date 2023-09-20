@@ -1,4 +1,4 @@
-import { type OnMessageContext, type RefundCallback } from '../types'
+import { type OnMessageContext, type PayableBot, SessionState } from '../types'
 import pino, { type Logger } from 'pino'
 import { initTelegramClient } from './MTProtoAPI'
 import { NewMessage, type NewMessageEvent } from 'telegram/events'
@@ -12,13 +12,15 @@ import { Kagi } from './kagi'
 import MessageMediaDocument = Api.MessageMediaDocument
 import { InputFile } from 'grammy'
 import { bot } from '../../bot'
+import * as Sentry from '@sentry/node'
 
 interface TranslationJob {
   filePath: string
   publicFileUrl: string
 }
 
-export class VoiceMemo {
+export class VoiceMemo implements PayableBot {
+  public readonly module = 'VoiceMemo'
   private readonly logger: Logger
   private readonly tempDirectory = 'public'
   private telegramClient?: TelegramClient
@@ -37,6 +39,7 @@ export class VoiceMemo {
     })
     if (config.voiceMemo.isEnabled) {
       this.initTgClient().catch((ex) => {
+        Sentry.captureException(ex)
         this.logger.error(`Error initTgClient ${ex}`)
       })
     } else {
@@ -68,7 +71,11 @@ export class VoiceMemo {
 
   private async initTgClient (): Promise<void> {
     this.telegramClient = await initTelegramClient()
-    this.telegramClient.addEventHandler(() => { this.onTelegramClientEvent.bind(this) }, new NewMessage({}))
+    this.telegramClient.addEventHandler((event) => {
+      this.onTelegramClientEvent(event).catch((e) => {
+        this.logger.error(`Telegram event error: ${(e as Error).message}}`)
+      })
+    }, new NewMessage({}))
     this.logger.info('VoiceMemo bot started')
   }
 
@@ -146,6 +153,7 @@ export class VoiceMemo {
   }
 
   public async onEvent (ctx: OnMessageContext): Promise<void> {
+    ctx.session.analytics.module = this.module
     const { voice, audio, from } = ctx.update.message
     const fileSize = (voice ?? audio)?.file_size
     const requestKey = `${from.id}_${fileSize}`
@@ -196,14 +204,20 @@ export class VoiceMemo {
           } else {
             await ctx.reply(text, { message_thread_id: ctx.message?.message_thread_id })
           }
+          ctx.session.analytics.sessionState = SessionState.Success
         }
       } catch (e) {
+        Sentry.captureException(e)
         this.logger.error(`Translation error: ${(e as Error).message}`)
+        ctx.session.analytics.sessionState = SessionState.Error
       } finally {
+        ctx.session.analytics.actualResponseTime = performance.now()
         this.deleteTempFile(filePath)
       }
     } else {
       this.logger.error(`Cannot find translation job ${requestKey}, skip`)
+      ctx.session.analytics.actualResponseTime = performance.now()
+      ctx.session.analytics.sessionState = SessionState.Success
     }
   }
 }

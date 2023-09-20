@@ -1,4 +1,4 @@
-import { type OnMessageContext, type OnPreCheckoutContext, type OnSuccessfullPayment } from '../types'
+import { type OnMessageContext, type OnPreCheckoutContext, type OnSuccessfullPayment, Callbacks, type OnCallBackQueryData } from '../types'
 import { type LabeledPrice } from 'grammy/out/types'
 import config from '../../config'
 import { chatService, invoiceService } from '../../database/services'
@@ -6,7 +6,7 @@ import { type BotPayments } from '../payment'
 import pino, { type Logger } from 'pino'
 
 enum SupportedCommands {
-  DEPOSIT = 'deposit',
+  BUY = 'buy',
 }
 
 export class TelegramPayments {
@@ -25,12 +25,12 @@ export class TelegramPayments {
     })
   }
 
-  public isSupportedEvent (ctx: OnMessageContext): boolean {
-    return ctx.hasCommand(Object.values(SupportedCommands)) || ctx.has('message:successful_payment')
+  public isSupportedEvent (ctx: OnMessageContext | OnCallBackQueryData): boolean {
+    return ctx.hasCommand(Object.values(SupportedCommands)) || ctx.has('message:successful_payment') || ctx.hasCallbackQuery(Callbacks.CreditsFiatBuy)
   }
 
-  public async onEvent (ctx: OnMessageContext): Promise<void> {
-    if (ctx.hasCommand(SupportedCommands.DEPOSIT)) {
+  public async onEvent (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
+    if (ctx.hasCommand(SupportedCommands.BUY) || ctx.hasCallbackQuery(Callbacks.CreditsFiatBuy)) {
       await this.createPaymentInvoice(ctx)
       return
     }
@@ -72,10 +72,10 @@ export class TelegramPayments {
     this.logger.info(`Payment from @${ctx.message.from.username} $${invoice.amount / 100} was completed!`)
   }
 
-  private async createPaymentInvoice (ctx: OnMessageContext): Promise<void> {
+  public async createPaymentInvoice (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
     const accountId = this.payments.getAccountId(ctx)
     let tgUserId = accountId
-    if (ctx.update.message.chat.type === 'group') {
+    if (ctx.update?.message?.chat.type === 'group' || ctx.callbackQuery?.message?.chat.type === 'group') {
       const members = await ctx.getChatAdministrators()
       const creator = members.find((member) => member.status === 'creator')
       if (creator) {
@@ -84,11 +84,21 @@ export class TelegramPayments {
     }
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const [_, usdAmountText = '10'] = ctx.message?.text?.split(' ') ?? []
+    const [_, usdAmountText = '5'] = ctx.message?.text?.split(' ') ?? []
 
     const usdAmount = parseFloat(usdAmountText)
     if (isNaN(usdAmount)) {
       await ctx.reply('The value should be a valid number: 10 or 10.45')
+      return
+    }
+
+    if (usdAmount < 1) {
+      await ctx.reply('$1 Purchase Minimum')
+      return
+    }
+
+    if (usdAmount > 10) {
+      await ctx.reply('$10 Purchase Maximum')
       return
     }
 
@@ -97,9 +107,24 @@ export class TelegramPayments {
     const itemId = 'recharging-usd-' + fixedUsdAmount.toString()
     const amount = Math.ceil(fixedUsdAmount * 100) // cents
 
-    const chatId = ctx.message.chat.id
-    const title = 'Buy AI Credits'
-    const description = 'Purchase up to $10 of AI Credits'
+    const getChatId = (): number => {
+      if (ctx.message) {
+        return ctx.message.chat.id
+      }
+
+      if (ctx.callbackQuery && ctx.callbackQuery.message) {
+        return ctx.callbackQuery.message.chat.id
+      }
+
+      throw new Error('Couldn\'t get account ID.')
+    }
+
+    console.log('### accountId', accountId)
+    console.log('### tgUserId', tgUserId)
+
+    const chatId = getChatId()
+    const title = 'Harmony 1Bot Credits'
+    const description = ' '
     const providerToken = config.telegramPayments.token
     const currency = 'USD'
     const creditsAmount = await this.payments.getPriceInONE(amount)
@@ -111,7 +136,7 @@ export class TelegramPayments {
     const invoice = await invoiceService.create({ tgUserId, accountId, itemId, amount })
     const payload = JSON.stringify({ uuid: invoice.uuid })
     this.logger.info(`Send invoice: ${JSON.stringify({ tgUserId, accountId, itemId, amount })}`)
-    const photoUrl = 'https://pbs.twimg.com/media/F5SofMsbgAApd2Y?format=png&name=small'
-    await ctx.api.sendInvoice(chatId, title, description, payload, providerToken, currency, prices, { start_parameter: 'createInvoice', photo_url: photoUrl, photo_width: 502, photo_height: 502 })
+    // const photoUrl = 'https://pbs.twimg.com/media/F5SofMsbgAApd2Y?format=png&name=small'
+    await ctx.api.sendInvoice(chatId, title, description, payload, providerToken, currency, prices, { start_parameter: 'createInvoice' })
   }
 }

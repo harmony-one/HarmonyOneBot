@@ -10,6 +10,7 @@ import {
 } from '@grammyjs/conversations'
 import { type AutoChatActionFlavor } from '@grammyjs/auto-chat-action'
 import { type ParseMode } from 'grammy/types'
+import { type InlineKeyboardMarkup } from 'grammy/out/types'
 
 export interface ImageGenSessionData {
   numImages: number
@@ -23,6 +24,7 @@ export interface MessageExtras {
   parse_mode?: ParseMode
   reply_to_message_id?: number
   disable_web_page_preview?: boolean
+  reply_markup?: InlineKeyboardMarkup
 }
 export interface ChatCompletion {
   completion: string
@@ -73,11 +75,27 @@ export interface TranslateBotData {
   enable: boolean
 }
 
+export enum SessionState {
+  Initial = 'initial',
+  Error = 'error',
+  Success = 'success'
+}
+
+export interface Analytics {
+  firstResponseTime: number
+  actualResponseTime: number
+  sessionState: SessionState
+  module: string
+
+}
+
 export interface BotSessionData {
   oneCountry: OneCountryData
   openAi: OpenAiSessionData
   translate: TranslateBotData
   llms: LmmsSessionData
+  refunded: boolean
+  analytics: Analytics
 }
 
 export type BotContext = Context &
@@ -96,3 +114,21 @@ MenuFlavor
 export type BotConversation = Conversation<BotContext>
 
 export type RefundCallback = (reason?: string) => void
+
+export interface PayableBot {
+  getEstimatedPrice: (ctx: OnMessageContext) => number
+  isSupportedEvent: (ctx: OnMessageContext) => boolean
+  onEvent: (ctx: OnMessageContext, refundCallback: RefundCallback) => Promise<any>
+}
+export interface UtilityBot {
+  isSupportedEvent: (ctx: OnMessageContext) => boolean
+  onEvent: (ctx: OnMessageContext) => Promise<any>
+}
+export interface PayableBotConfig {
+  bot: PayableBot
+  enabled?: (ctx: OnMessageContext) => boolean
+}
+
+export enum Callbacks {
+  CreditsFiatBuy = 'credits-fiat-buy'
+}

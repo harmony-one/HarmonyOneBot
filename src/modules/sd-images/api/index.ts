@@ -52,12 +52,12 @@ export class SDNodeApi {
       params.promptWithoutParams = `logo, ${params.promptWithoutParams}, LogoRedAF`
     }
 
-    let serverConfig;
+    let serverConfig
 
     if (options.model.serverNumber === 2) {
       serverConfig = {
         host: config.comfyHost2,
-        wsHost: config.comfyWsHost2,
+        wsHost: config.comfyWsHost2
       }
     }
 

@@ -2,7 +2,7 @@ import config from '../../config'
 import { type OnMessageContext, type OnCallBackQueryData, type MessageExtras, type ChatPayload } from '../types'
 import { type ParseMode } from 'grammy/types'
 import { getChatModel, getChatModelPrice, getTokenNumber } from './api/openAi'
-import { type Message } from 'grammy/out/types'
+import { type Message, type InlineKeyboardMarkup } from 'grammy/out/types'
 
 export const SupportedCommands = {
   chat: { name: 'chat' },
@@ -161,6 +161,7 @@ interface GetMessagesExtras {
   parseMode?: ParseMode | undefined
   caption?: string | undefined
   replyId?: number | undefined
+  reply_markup?: InlineKeyboardMarkup
   disable_web_page_preview?: boolean
 }
 
@@ -178,6 +179,9 @@ export const getMessageExtras = (params: GetMessagesExtras): MessageExtras => {
   }
   if (disableWebPagePreview) {
     extras.disable_web_page_preview = disableWebPagePreview
+  }
+  if (params.reply_markup) {
+    extras.reply_markup = params.reply_markup
   }
   return extras
 }

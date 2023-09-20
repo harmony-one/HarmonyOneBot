@@ -3,11 +3,12 @@ import asyncHandler from 'express-async-handler'
 import {
   Bot,
   type Enhance,
+  enhanceStorage,
   GrammyError,
   HttpError,
   MemorySessionStorage,
-  enhanceStorage,
-  session, type NextFunction
+  type NextFunction,
+  session
 } from 'grammy'
 import { autoChatAction } from '@grammyjs/auto-chat-action'
 import { limit } from '@grammyjs/ratelimiter'
@@ -17,7 +18,8 @@ import {
   type BotContext,
   type BotSessionData,
   type OnCallBackQueryData,
-  type OnMessageContext, type RefundCallback
+  type OnMessageContext, type PayableBot, type PayableBotConfig,
+  SessionState, type UtilityBot
 } from './modules/types'
 import { mainMenu } from './pages'
 import { TranslateBot } from './modules/translate/TranslateBot'
@@ -32,14 +34,7 @@ import { BotSchedule } from './modules/schedule'
 import { LlmsBot } from './modules/llms'
 import { DocumentHandler } from './modules/document-handler'
 import config from './config'
-import {
-  commandsHelpText,
-  TERMS,
-  SUPPORT,
-  FEEDBACK,
-  LOVE,
-  MODELS
-} from './constants'
+import { commandsHelpText, FEEDBACK, LOVE, MODELS, SUPPORT, TERMS } from './constants'
 import prometheusRegister, { PrometheusMetrics } from './metrics/prometheus'
 
 import { chatService, statsService } from './database/services'
@@ -53,6 +48,7 @@ import { TelegramPayments } from './modules/telegram_payment'
 import * as Sentry from '@sentry/node'
 import * as Events from 'events'
 import { ProfilingIntegration } from '@sentry/profiling-node'
+import { ES } from './es'
 
 Events.EventEmitter.defaultMaxListeners = 30
 
@@ -71,7 +67,7 @@ bot.use(
   limit({
     // Allow only 3 message to be handled every 3 seconds.
     timeFrame: 3000,
-    limit: 3,
+    limit: 10,
 
     // This is called when the limit is exceeded.
     onLimitExceeded: (ctx): void => {
@@ -95,15 +91,21 @@ Sentry.init({
   tracesSampleRate: 1.0, // Performance Monitoring. Should use 0.1 in production
   profilesSampleRate: 1.0 // Set sampling rate for profiling - this is relative to tracesSampleRate
 })
+
+ES.init()
+
 bot.use(async (ctx: BotContext, next: NextFunction): Promise<void> => {
   const transaction = Sentry.startTransaction({ name: 'bot-command' })
   const entities = ctx.entities()
+  const startTime = performance.now()
+  let command = ''
   for (const ent of entities) {
     if (ent.type === 'bot_command') {
-      const command = ent.text.substring(1)
+      command = ent.text.substring(1)
       const userId = ctx.message?.from?.id
+      const username = ctx.message?.from?.username
       if (userId) {
-        Sentry.setUser({ id: userId })
+        Sentry.setUser({ id: userId, username })
       }
       if (command) {
         Sentry.setTag('command', command)
@@ -114,6 +116,33 @@ bot.use(async (ctx: BotContext, next: NextFunction): Promise<void> => {
   }
   await next()
   transaction.finish()
+  if (ctx.session.analytics.module) {
+    const userId = Number(ctx.message?.from?.id ?? '0')
+    const username = ctx.message?.from?.username ?? ''
+    if (!ctx.session.analytics.actualResponseTime) {
+      ctx.session.analytics.actualResponseTime = performance.now()
+    }
+    if (!ctx.session.analytics.firstResponseTime) {
+      ctx.session.analytics.firstResponseTime = ctx.session.analytics.actualResponseTime
+    }
+    const firstResponseTime = ctx.session.analytics.firstResponseTime - startTime
+    const actualResponseTime = ctx.session.analytics.actualResponseTime - startTime
+    const totalProcessingTime = performance.now() - startTime
+    ES.add({
+      command,
+      text: ctx.message?.text ?? '',
+      module: ctx.session.analytics.module,
+      userId,
+      username,
+      firstResponseTime,
+      actualResponseTime,
+      refunded: ctx.session.refunded,
+      sessionState: ctx.session.analytics.sessionState,
+      totalProcessingTime
+    }).catch((ex: any) => {
+      logger.error({ errorMsg: ex.message }, 'Failed to add data to ES')
+    })
+  }
 })
 
 function createInitialSessionData (): BotSessionData {
@@ -147,6 +176,13 @@ function createInitialSessionData (): BotSessionData {
       usage: 0,
       isProcessingQueue: false,
       requestQueue: []
+    },
+    refunded: false,
+    analytics: {
+      module: '',
+      firstResponseTime: 0,
+      actualResponseTime: 0,
+      sessionState: SessionState.Initial
     }
   }
 }
@@ -190,8 +226,9 @@ bot.on('message:new_chat_members:me', async (ctx) => {
     const tgUsername = ctx.message.from.username ?? ''
 
     await chatService.initChat({ tgUserId, accountId, tgUsername })
-  } catch (err) {
-    logger.info(`Create chat error ${err}`)
+  } catch (ex) {
+    Sentry.captureException(ex)
+    logger.error('Create chat error', ex)
   }
 })
 
@@ -220,6 +257,7 @@ const assignFreeCredits = async (ctx: OnMessageContext): Promise<boolean> => {
     await chatService.initChat({ accountId, tgUserId, tgUsername })
     // logger.info(`credits transferred to accountId ${accountId} chat ${chat.type} ${chat.id}`)
   } catch (e) {
+    Sentry.captureException(e)
     logger.error(
       `Cannot check account ${accountId} credits: ${(e as Error).message}`
     )
@@ -239,6 +277,7 @@ bot.use(async (ctx, next) => {
         command: entity.text.replace('/', ''),
         rawMessage: ''
       }).catch((ex: any) => {
+        Sentry.captureException(ex)
         logger.error('Error logging stats', ex)
       })
     }
@@ -271,24 +310,11 @@ const writeCommandLog = async (
     }
     await statsService.writeLog(log)
   } catch (e) {
+    Sentry.captureException(e)
     logger.error(
       `Cannot write unsupported command log: ${(e as Error).message}`
     )
   }
-}
-
-interface PayableBot {
-  getEstimatedPrice: (ctx: OnMessageContext) => number
-  isSupportedEvent: (ctx: OnMessageContext) => boolean
-  onEvent: (ctx: OnMessageContext, refundCallback: RefundCallback) => Promise<any>
-}
-interface UtilityBot {
-  isSupportedEvent: (ctx: OnMessageContext) => boolean
-  onEvent: (ctx: OnMessageContext) => Promise<any>
-}
-interface PayableBotConfig {
-  bot: PayableBot
-  enabled?: (ctx: OnMessageContext) => boolean
 }
 
 const PayableBots: Record<string, PayableBotConfig> = {
@@ -317,6 +343,7 @@ const UtilityBots: Record<string, UtilityBot> = {
 const executeOrRefund = (ctx: OnMessageContext, price: number, bot: PayableBot): void => {
   const refund = (reason?: string): void => {}
   bot.onEvent(ctx, refund).catch((ex: any) => {
+    Sentry.captureException(ex)
     logger.error(ex?.message ?? 'Unknown error')
   })
 }
@@ -367,7 +394,8 @@ const onMessage = async (ctx: OnMessageContext): Promise<void> => {
       await writeCommandLog(ctx, false)
     }
   } catch (ex: any) {
-    logger.error('onMessage error', ex)
+    Sentry.captureException(ex)
+    logger.error({ errorMsg: ex.message }, 'onMessage error')
   }
 }
 
@@ -380,13 +408,19 @@ const onCallback = async (ctx: OnCallBackQueryData): Promise<void> => {
       return
     }
 
+    if (telegramPayments.isSupportedEvent(ctx)) {
+      await telegramPayments.onEvent(ctx)
+      return
+    }
+
     if (sdImagesBot.isSupportedEvent(ctx)) {
       await sdImagesBot.onEvent(ctx, (e) => {
         logger.info(e, '// TODO refund payment')
       })
     }
   } catch (ex: any) {
-    logger.error('onMessage error', ex)
+    Sentry.captureException(ex)
+    logger.error({ errorMsg: ex.message }, 'onCallback error')
   }
 }
 
@@ -418,8 +452,13 @@ bot.command(['start', 'help', 'menu'], async (ctx) => {
   })
 })
 
+const logErrorHandler = (ex: any): void => {
+  Sentry.captureException(ex)
+  logger.error(ex)
+}
+
 bot.command('more', async (ctx) => {
-  writeCommandLog(ctx as OnMessageContext).catch(logger.error)
+  writeCommandLog(ctx as OnMessageContext).catch(logErrorHandler)
   return await ctx.reply(commandsHelpText.more, {
     parse_mode: 'Markdown',
     disable_web_page_preview: true,
@@ -428,7 +467,7 @@ bot.command('more', async (ctx) => {
 })
 
 bot.command('terms', async (ctx) => {
-  writeCommandLog(ctx as OnMessageContext).catch(logger.error)
+  writeCommandLog(ctx as OnMessageContext).catch(logErrorHandler)
   return await ctx.reply(TERMS.text, {
     parse_mode: 'Markdown',
     disable_web_page_preview: true,
@@ -437,7 +476,7 @@ bot.command('terms', async (ctx) => {
 })
 
 bot.command('support', async (ctx) => {
-  writeCommandLog(ctx as OnMessageContext).catch(logger.error)
+  writeCommandLog(ctx as OnMessageContext).catch(logErrorHandler)
   return await ctx.reply(SUPPORT.text, {
     parse_mode: 'Markdown',
     disable_web_page_preview: true,
@@ -446,7 +485,7 @@ bot.command('support', async (ctx) => {
 })
 
 bot.command('models', async (ctx) => {
-  writeCommandLog(ctx as OnMessageContext).catch(logger.error)
+  writeCommandLog(ctx as OnMessageContext).catch(logErrorHandler)
   return await ctx.reply(MODELS.text, {
     parse_mode: 'Markdown',
     disable_web_page_preview: true
@@ -454,7 +493,7 @@ bot.command('models', async (ctx) => {
 })
 
 bot.command('feedback', async (ctx) => {
-  writeCommandLog(ctx as OnMessageContext).catch(logger.error)
+  writeCommandLog(ctx as OnMessageContext).catch(logErrorHandler)
   return await ctx.reply(FEEDBACK.text, {
     parse_mode: 'Markdown',
     disable_web_page_preview: true,
@@ -463,7 +502,7 @@ bot.command('feedback', async (ctx) => {
 })
 
 bot.command('love', async (ctx) => {
-  writeCommandLog(ctx as OnMessageContext).catch(logger.error)
+  writeCommandLog(ctx as OnMessageContext).catch(logErrorHandler)
   return await ctx.reply(LOVE.text, {
     parse_mode: 'Markdown',
     disable_web_page_preview: true,
@@ -528,9 +567,9 @@ bot.catch((err) => {
     logger.error(`Error in message: ${JSON.stringify(ctx.message)}`)
   } else if (e instanceof HttpError) {
     logger.error('Could not contact Telegram:', e)
-  } else {
-    logger.error('Unknown error:', e)
-    logger.error('global error others', err)
+  } else if (e instanceof Error) {
+    logger.error({ errorMsg: e.message }, 'Unknown error')
+    logger.error({ error: err }, 'global error others')
   }
   logger.error('global error', err)
 })
@@ -588,6 +627,7 @@ async function bootstrap (): Promise<void> {
 
       process.exit(0)
     } catch (ex) {
+      Sentry.captureException(ex)
       console.error('An error occurred while terminating', ex)
       process.exit(1)
     }

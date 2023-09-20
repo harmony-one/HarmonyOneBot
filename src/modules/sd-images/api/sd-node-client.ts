@@ -25,12 +25,10 @@ export interface Txt2ImgResponse {
 const getRandomSeed = (): number => Math.round(Math.random() * 1e15)
 
 export class Client {
-constructor () { }
-
   txt2img = async (options: Txt2ImgOptions, serverConfig?: { host: string, wsHost: string }): Promise<Txt2ImgResponse> => {
-    const comfyClient = new ComfyClient(serverConfig || {
+    const comfyClient = new ComfyClient(serverConfig ?? {
       host: config.comfyHost,
-      wsHost: config.comfyWsHost,
+      wsHost: config.comfyWsHost
     })
 
     try {
@@ -186,7 +184,7 @@ constructor () { }
     })
 
     // TODO
-    const trainServer = config.comfyHost.split(':')[0] + ':7860'
+    const trainServer = config.sdTrainHost
 
     try {
       let attempts = 3

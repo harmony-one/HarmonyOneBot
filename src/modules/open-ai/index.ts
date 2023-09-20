@@ -5,10 +5,12 @@ import { type Logger, pino } from 'pino'
 import { getCommandNamePrompt } from '../1country/utils'
 import { type BotPayments } from '../payment'
 import {
-  type OnMessageContext,
-  type OnCallBackQueryData,
   type ChatConversation,
-  type ChatPayload
+  type ChatPayload,
+  type OnCallBackQueryData,
+  type OnMessageContext,
+  type PayableBot,
+  SessionState
 } from '../types'
 import {
   alterGeneratedImg,
@@ -38,9 +40,11 @@ import {
   sendMessage,
   SupportedCommands
 } from './helpers'
-import { getWebContent, getCrawlerPrice } from './utils/web-crawler'
+import { getCrawlerPrice, getWebContent } from './utils/web-crawler'
+import * as Sentry from '@sentry/node'
 
-export class OpenAIBot {
+export class OpenAIBot implements PayableBot {
+  public readonly module = 'OpenAIBot'
   private readonly logger: Logger
   private readonly payments: BotPayments
   private botSuspended: boolean
@@ -118,6 +122,7 @@ export class OpenAIBot {
       }
       return 0
     } catch (e) {
+      Sentry.captureException(e)
       this.logger.error(`getEstimatedPrice error ${e}`)
       throw e
     }
@@ -135,11 +140,14 @@ export class OpenAIBot {
   }
 
   public async onEvent (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
+    ctx.session.analytics.module = this.module
     if (!(this.isSupportedEvent(ctx)) && ctx.chat?.type !== 'private') {
+      ctx.session.analytics.sessionState = SessionState.Error
       this.logger.warn(`### unsupported command ${ctx.message?.text}`)
       return
     }
 
+    ctx.session.analytics.sessionState = SessionState.Success
     if (
       ctx.hasCommand(SupportedCommands.chat.name) ||
       (ctx.message?.text?.startsWith('chat ') && ctx.chat?.type === 'private')
@@ -245,8 +253,12 @@ export class OpenAIBot {
     }
 
     this.logger.warn('### unsupported command')
+    ctx.session.analytics.sessionState = SessionState.Error
     await sendMessage(ctx, '### unsupported command')
-      .catch(async (e) => { await this.onError(ctx, e, MAX_TRIES, '### unsupported command') })
+      .catch(async (e) => {
+        await this.onError(ctx, e, MAX_TRIES, '### unsupported command')
+      })
+    ctx.session.analytics.actualResponseTime = performance.now()
   }
 
   private async hasBalance (ctx: OnMessageContext | OnCallBackQueryData): Promise<boolean> {
@@ -273,14 +285,19 @@ export class OpenAIBot {
         const imgSize = ctx.session.openAi.imageGen.imgSize
         const imgs = await postGenerateImg(prompt, numImages, imgSize)
         const msgExtras = getMessageExtras({ caption: `/dalle ${prompt}` })
-        imgs.map(async (img: any) => {
+        await Promise.all(imgs.map(async (img: any) => {
           await ctx.replyWithPhoto(img.url, msgExtras).catch(async (e) => {
             await this.onError(ctx, e, MAX_TRIES)
           })
-        })
+        }))
+        ctx.session.analytics.sessionState = SessionState.Success
+        ctx.session.analytics.actualResponseTime = performance.now()
       } else {
-        sendMessage(ctx, 'Bot disabled').catch(async (e) => { await this.onError(ctx, e, MAX_TRIES, 'Bot disabled') }
-        )
+        ctx.session.analytics.sessionState = SessionState.Error
+        await sendMessage(ctx, 'Bot disabled').catch(async (e) => {
+          await this.onError(ctx, e, MAX_TRIES, 'Bot disabled')
+        })
+        ctx.session.analytics.actualResponseTime = performance.now()
       }
     } catch (e) {
       await this.onError(
@@ -301,6 +318,7 @@ export class OpenAIBot {
         const fileId = photo?.pop()?.file_id // with pop() get full image quality
         if (!fileId) {
           await ctx.reply('Cannot retrieve the image file. Please try again.')
+          ctx.session.analytics.actualResponseTime = performance.now()
           return
         }
         const file = await ctx.api.getFile(fileId)
@@ -340,6 +358,7 @@ export class OpenAIBot {
     const { conversation, ctx, model } = data
     try {
       if (!msgId) {
+        ctx.session.analytics.firstResponseTime = performance.now()
         msgId = (
           await ctx.reply('...', {
             message_thread_id:
@@ -363,6 +382,8 @@ export class OpenAIBot {
         ctx.chatAction = null
       }
       if (completion) {
+        ctx.session.analytics.sessionState = SessionState.Success
+        ctx.session.analytics.actualResponseTime = performance.now()
         const price = getPromptPrice(completion, data)
         this.logger.info(
           `streamChatCompletion result = tokens: ${
@@ -379,6 +400,7 @@ export class OpenAIBot {
         chat: conversation
       }
     } catch (e: any) {
+      Sentry.captureException(e)
       ctx.chatAction = null
       throw e
     }
@@ -386,8 +408,11 @@ export class OpenAIBot {
 
   async onSum (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
     if (this.botSuspended) {
-      sendMessage(ctx, 'The bot is suspended').catch(async (e) => { await this.onError(ctx, e) }
-      )
+      ctx.session.analytics.sessionState = SessionState.Error
+      await sendMessage(ctx, 'The bot is suspended').catch(async (e) => {
+        await this.onError(ctx, e)
+      })
+      ctx.session.analytics.actualResponseTime = performance.now()
       return
     }
     try {
@@ -403,8 +428,11 @@ export class OpenAIBot {
           'sum'
         )
       } else {
-        await sendMessage(ctx, 'Error: Missing url').catch(async (e) => { await this.onError(ctx, e) }
-        )
+        ctx.session.analytics.sessionState = SessionState.Error
+        await sendMessage(ctx, 'Error: Missing url').catch(async (e) => {
+          await this.onError(ctx, e)
+        })
+        ctx.session.analytics.actualResponseTime = performance.now()
       }
     } catch (e) {
       await this.onError(ctx, e)
@@ -427,11 +455,15 @@ export class OpenAIBot {
     }> {
     try {
       if (retryCount === 0) {
+        ctx.session.analytics.sessionState = SessionState.Error
         await sendMessage(
           ctx,
           'Url not supported, incorrect web site address or missing user credentials',
           { parseMode: 'Markdown' }
-        ).catch(async (e) => { await this.onError(ctx, e) })
+        ).catch(async (e) => {
+          await this.onError(ctx, e)
+        })
+        ctx.session.analytics.actualResponseTime = performance.now()
         return
       }
       let price = 0
@@ -447,7 +479,9 @@ export class OpenAIBot {
         if (ctx.chat?.id && ctx.message?.message_id) {
           await ctx.api.deleteMessage(ctx.chat?.id, ctx.message?.message_id)
         }
+        ctx.session.analytics.sessionState = SessionState.Success
         await sendMessage(ctx, maskedPrompt)
+        ctx.session.analytics.actualResponseTime = performance.now()
       }
       const msgId = (
         await ctx.reply('...', {
@@ -456,6 +490,7 @@ export class OpenAIBot {
             ctx.message?.reply_to_message?.message_thread_id
         })
       ).message_id
+      ctx.session.analytics.firstResponseTime = performance.now()
       const webContent = await getWebContent(
         url,
         webCrawlerMaxTokens,
@@ -531,7 +566,11 @@ export class OpenAIBot {
   async onMention (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
     try {
       if (this.botSuspended) {
-        await sendMessage(ctx, 'The bot is suspended').catch(async (e) => { await this.onError(ctx, e) })
+        ctx.session.analytics.sessionState = SessionState.Error
+        await sendMessage(ctx, 'The bot is suspended').catch(async (e) => {
+          await this.onError(ctx, e)
+        })
+        ctx.session.analytics.actualResponseTime = performance.now()
         return
       }
       const { username } = ctx.me
@@ -553,8 +592,11 @@ export class OpenAIBot {
   async onPrefix (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
     try {
       if (this.botSuspended) {
-        sendMessage(ctx, 'The bot is suspended').catch(async (e) => { await this.onError(ctx, e) }
-        )
+        ctx.session.analytics.sessionState = SessionState.Error
+        sendMessage(ctx, 'The bot is suspended').catch(async (e) => {
+          await this.onError(ctx, e)
+        })
+        ctx.session.analytics.actualResponseTime = performance.now()
         return
       }
       const { prompt } = getCommandNamePrompt(
@@ -579,8 +621,9 @@ export class OpenAIBot {
   async onPrivateChat (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
     try {
       if (this.botSuspended) {
-        sendMessage(ctx, 'The bot is suspended').catch(async (e) => { await this.onError(ctx, e) }
-        )
+        ctx.session.analytics.sessionState = SessionState.Error
+        sendMessage(ctx, 'The bot is suspended').catch(async (e) => { await this.onError(ctx, e) })
+        ctx.session.analytics.actualResponseTime = performance.now()
         return
       }
       ctx.session.openAi.chatGpt.requestQueue.push(
@@ -600,7 +643,9 @@ export class OpenAIBot {
   async onChat (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
     try {
       if (this.botSuspended) {
+        ctx.session.analytics.sessionState = SessionState.Error
         await sendMessage(ctx, 'The bot is suspended').catch(async (e) => { await this.onError(ctx, e) })
+        ctx.session.analytics.actualResponseTime = performance.now()
         return
       }
       const prompt = ctx.match ? ctx.match : ctx.message?.text
@@ -631,7 +676,9 @@ export class OpenAIBot {
                     chatConversation[chatConversation.length - 1].content
                   }_`
                 : appText.introText
+            ctx.session.analytics.sessionState = SessionState.Success
             await sendMessage(ctx, msg, { parseMode: 'Markdown' }).catch(async (e) => { await this.onError(ctx, e) })
+            ctx.session.analytics.actualResponseTime = performance.now()
             return
           }
           const { url } = hasUrl(ctx, prompt)
@@ -674,14 +721,18 @@ export class OpenAIBot {
   async onLast (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
     if (ctx.session.openAi.chatGpt.chatConversation.length > 0) {
       const chat = ctx.session.openAi.chatGpt.chatConversation
+      ctx.session.analytics.sessionState = SessionState.Success
       await sendMessage(
         ctx,
         `${appText.gptLast}\n_${chat[chat.length - 1].content}_`,
         { parseMode: 'Markdown' }
       ).catch(async (e) => { await this.onError(ctx, e) })
+      ctx.session.analytics.actualResponseTime = performance.now()
     } else {
+      ctx.session.analytics.sessionState = SessionState.Error
       await sendMessage(ctx, 'To start a conversation please write */ask*', { parseMode: 'Markdown' })
         .catch(async (e) => { await this.onError(ctx, e) })
+      ctx.session.analytics.actualResponseTime = performance.now()
     }
   }
 
@@ -701,35 +752,41 @@ export class OpenAIBot {
     const balanceMessage = appText.notEnoughBalance
       .replaceAll('$CREDITS', balanceOne)
       .replaceAll('$WALLET_ADDRESS', account?.address ?? '')
+    ctx.session.analytics.sessionState = SessionState.Error
     await sendMessage(ctx, balanceMessage, { parseMode: 'Markdown' }).catch(async (e) => { await this.onError(ctx, e) })
+    ctx.session.analytics.actualResponseTime = performance.now()
   }
 
   async onError (
     ctx: OnMessageContext | OnCallBackQueryData,
-    e: any,
+    ex: any,
     retryCount: number = MAX_TRIES,
     msg?: string
   ): Promise<void> {
+    ctx.session.analytics.sessionState = SessionState.Error
+    Sentry.setContext('open-ai', { retryCount, msg })
+    Sentry.captureException(ex)
     if (retryCount === 0) {
       // Retry limit reached, log an error or take alternative action
-      this.logger.error(`Retry limit reached for error: ${e}`)
+      this.logger.error(`Retry limit reached for error: ${ex}`)
       return
     }
-    if (e instanceof GrammyError) {
-      if (e.error_code === 400 && e.description.includes('not enough rights')) {
+    if (ex instanceof GrammyError) {
+      if (ex.error_code === 400 && ex.description.includes('not enough rights')) {
         await sendMessage(
           ctx,
           'Error: The bot does not have permission to send photos in chat'
         )
-      } else if (e.error_code === 429) {
+        ctx.session.analytics.actualResponseTime = performance.now()
+      } else if (ex.error_code === 429) {
         this.botSuspended = true
-        const retryAfter = e.parameters.retry_after
-          ? e.parameters.retry_after < 60
+        const retryAfter = ex.parameters.retry_after
+          ? ex.parameters.retry_after < 60
             ? 60
-            : e.parameters.retry_after * 2
+            : ex.parameters.retry_after * 2
           : 60
-        const method = e.method
-        const errorMessage = `On method "${method}" | ${e.error_code} - ${e.description}`
+        const method = ex.method
+        const errorMessage = `On method "${method}" | ${ex.error_code} - ${ex.description}`
         this.logger.error(errorMessage)
         await sendMessage(
           ctx,
@@ -737,6 +794,7 @@ export class OpenAIBot {
             ctx.from.username ? ctx.from.username : ''
           } Bot has reached limit, wait ${retryAfter} seconds`
         ).catch(async (e) => { await this.onError(ctx, e, retryCount - 1) })
+        ctx.session.analytics.actualResponseTime = performance.now()
         if (method === 'editMessageText') {
           ctx.session.openAi.chatGpt.chatConversation.pop() // deletes last prompt
         }
@@ -744,27 +802,30 @@ export class OpenAIBot {
         this.botSuspended = false
       } else {
         this.logger.error(
-          `On method "${e.method}" | ${e.error_code} - ${e.description}`
+          `On method "${ex.method}" | ${ex.error_code} - ${ex.description}`
         )
       }
-    } else if (e instanceof OpenAI.APIError) {
+    } else if (ex instanceof OpenAI.APIError) {
       // 429 RateLimitError
       // e.status = 400 || e.code = BadRequestError
-      this.logger.error(`OPENAI Error ${e.status}(${e.code}) - ${e.message}`)
-      if (e.code === 'context_length_exceeded') {
-        await sendMessage(ctx, e.message).catch(async (e) => { await this.onError(ctx, e, retryCount - 1) })
+      this.logger.error(`OPENAI Error ${ex.status}(${ex.code}) - ${ex.message}`)
+      if (ex.code === 'context_length_exceeded') {
+        await sendMessage(ctx, ex.message).catch(async (e) => { await this.onError(ctx, e, retryCount - 1) })
+        ctx.session.analytics.actualResponseTime = performance.now()
         await this.onEnd(ctx)
       } else {
         await sendMessage(
           ctx,
           'Error accessing OpenAI (ChatGPT). Please try later'
         ).catch(async (e) => { await this.onError(ctx, e, retryCount - 1) })
+        ctx.session.analytics.actualResponseTime = performance.now()
       }
     } else {
-      this.logger.error(`${e.toString()}`)
+      this.logger.error(`${ex.toString()}`)
       await sendMessage(ctx, 'Error handling your request')
         .catch(async (e) => { await this.onError(ctx, e, retryCount - 1) }
         )
+      ctx.session.analytics.actualResponseTime = performance.now()
     }
   }
 }
