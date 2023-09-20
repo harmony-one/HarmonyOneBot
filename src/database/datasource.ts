@@ -12,6 +12,7 @@ export const AppDataSource = new DataSource({
   url: config.db.url,
   entities: [Chat, User, StatBotCommand, BotLog, Invoice],
   migrations: ['./src/database/migrations/**/*.{.ts,.js}'],
+  synchronize: false,
   // The ".ts" extension does not work with the built application.
   // migrations: ['./src/database/migrations/**/*.ts'],
   logging: false
