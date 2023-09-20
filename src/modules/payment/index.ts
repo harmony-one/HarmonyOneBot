@@ -375,7 +375,7 @@ export class BotPayments {
         from.username
       }] successfully paid from credits, credits balance after: ${balanceAfter.totalCreditsAmount}`)
 
-      freeCreditsFeeCounter.inc(this.convertBigNumber(balanceAfter.creditAmount))
+      freeCreditsFeeCounter.inc(this.convertBigNumber(totalPayAmount))
       await this.writePaymentLog(ctx, totalPayAmount)
       return true
     } else {
