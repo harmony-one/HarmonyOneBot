@@ -140,7 +140,7 @@ bot.use(async (ctx: BotContext, next: NextFunction): Promise<void> => {
       sessionState: ctx.session.analytics.sessionState,
       totalProcessingTime
     }).catch((ex: any) => {
-      logger.error('Failed to add data to ES', ex)
+      logger.error({ errorMsg: ex.message }, 'Failed to add data to ES')
     })
   }
 })
