@@ -24,6 +24,9 @@ export const getStartMenuText = async (ctx: BotContext): Promise<string> => {
 }
 
 export const mainMenu = new Menu<BotContext>(MenuIds.MAIN_MENU)
+  .text('💳 /buy', async (ctx) => {
+    await telegramPayments.createPaymentInvoice(ctx)
+  })
   .submenu(menuText.askMenu.menuName, MenuIds.CHAT_GPT_MAIN, (ctx) => {
     ctx
       .editMessageText(menuText.askMenu.helpText, {
@@ -43,9 +46,6 @@ export const mainMenu = new Menu<BotContext>(MenuIds.MAIN_MENU)
       .catch((ex: any) => {
         console.log('### ex', ex)
       })
-  })
-  .text('/buy', async (ctx) => {
-    await telegramPayments.createPaymentInvoice(ctx)
   })
   .submenu(menuText.voiceMemoMenu.menuName, MenuIds.VOICE_MEMO_MAIN, (ctx) => {
     ctx

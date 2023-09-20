@@ -36,7 +36,7 @@ export const commandsHelpText = {
 
 /help Show this message. Join user group @onebotlove or read docs at harmony.one/bot.
   
-Your credits in ONE tokens: $CREDITS
+Your credits in 1Bot Credits: $CREDITS
 
 Send to: \`$WALLET_ADDRESS\`
 `,
@@ -76,14 +76,14 @@ export const menuText = {
 🤖 welcome to the [harmony ONE bot](https://stse.substack.com/p/one-bot-for-all-generative-ai-on)! access ai models, agents, characters, services pay-per-use.`
   },
   askMenu: {
-    menuName: '💬 /ask ChatGPT4',
+    menuName: '💬 /ask',
     helpText: `*ask me anything*
         
 \`/ask act like elon musk, expand our q4 roadmap "telegram ai bot"\`
 `
   },
   imageMenu: {
-    menuName: '📸 /image Stability',
+    menuName: '📸 /image',
     backButton: '⬅️ Back',
     helpText: `*make an image*
         

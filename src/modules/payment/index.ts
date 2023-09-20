@@ -524,9 +524,8 @@ export class BotPayments {
 
         await sendMessage(
           ctx,
-          `Your 1Bot credits in ONE tokens: ${balanceOne.toFixed(2)}
-
-          Click “Buy Now" below to recharge. Or, send to \`${account.address}\` with tokens from harmony.one/buy.`,
+          `Your 1Bot Credits: ${balanceOne.toFixed(2)}` +
+          `\n\nClick “Buy Now" below to recharge. Or, send to \`${account.address}\` with tokens from harmony.one/buy.`,
           {
             parseMode: 'Markdown',
             disable_web_page_preview: true,
