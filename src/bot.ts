@@ -640,7 +640,7 @@ async function bootstrap (): Promise<void> {
     const task = await runBotHeartBit(runner, config.betteruptime.botHeartBitId)
     const stopHeartBit = (): void => {
       logger.info('heart bit stopping')
-      // task.stop()
+      task.stop()
     }
     process.once('SIGINT', stopHeartBit)
     process.once('SIGTERM', stopHeartBit)

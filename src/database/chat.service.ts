@@ -14,6 +14,13 @@ const userRepository = AppDataSource.getRepository(User)
 const MAX_CHAT_COUNT: number = config.credits.maxChats
 const CREDITS_AMOUNT: string = config.credits.creditsAmount
 
+interface UserCredits {
+  creditAmount: bn
+  fiatCreditAmount: bn
+  oneCreditAmount: bn
+  totalCreditsAmount: bn
+}
+
 export class ChatService {
   creditsAssignedCache = new LRUCache<number, boolean>({ max: 1000, ttl: 24 * 60 * 60 * 1000 })
 
@@ -70,7 +77,7 @@ export class ChatService {
     return await chatRepository.update({ accountId }, { fiatCreditAmount: newValue.toString() })
   }
 
-  public async depositOneCredits (accountId: number, amount: string) {
+  public async depositOneCredits (accountId: number, amount: string): Promise<UpdateResult> {
     const account = await this.getAccountById(accountId)
     if (!account) {
       throw new Error(`${accountId} Cannot find credits account`)
@@ -84,12 +91,7 @@ export class ChatService {
 
   public async getUserCredits (
     accountId: number
-  ): Promise<{
-    creditAmount: bn,
-    fiatCreditAmount: bn,
-    oneCreditAmount: bn,
-    totalCreditsAmount: bn
-  }> {
+  ): Promise<UserCredits> {
     const account = await this.getAccountById(accountId)
 
     const creditAmount = account ? bn(account.creditAmount) : bn(0)
@@ -107,7 +109,7 @@ export class ChatService {
     }
   }
 
-  public async withdrawCredits(accountId: number, payAmount: bn) {
+  public async withdrawCredits (accountId: number, payAmount: bn): Promise<UserCredits> {
     const {
       totalCreditsAmount,
       creditAmount,
@@ -115,7 +117,7 @@ export class ChatService {
       fiatCreditAmount
     } = await this.getUserCredits(accountId)
 
-    if(payAmount.gt(totalCreditsAmount)) {
+    if (payAmount.gt(totalCreditsAmount)) {
       throw new Error(`Cannot withdraw credits, insufficient balance ${accountId}. On balance: ${totalCreditsAmount.toString()}, requested to withdraw: ${payAmount.toString()}.`)
     }
 

@@ -1,7 +1,7 @@
-import {AppDataSource} from './datasource'
-import {StatBotCommand} from './entities/StatBotCommand'
+import { AppDataSource } from './datasource'
+import { StatBotCommand } from './entities/StatBotCommand'
 import moment from 'moment-timezone'
-import {BotLog} from './entities/Log'
+import { BotLog } from './entities/Log'
 
 const statBotCommandRepository = AppDataSource.getRepository(StatBotCommand)
 const logRepository = AppDataSource.getRepository(BotLog)
@@ -123,7 +123,7 @@ export class StatsService {
     return await statBotCommandRepository.save(stat)
   }
 
-  public async getLasInteractingAccounts (hourPeriod: number): Promise<{accountId: string}[]> {
+  public async getLasInteractingAccounts (hourPeriod: number): Promise<Array<{ accountId: string }>> {
     const dateStart = moment().subtract(hourPeriod, 'hour').unix()
 
     const queryBuilder = logRepository.createQueryBuilder('logs')

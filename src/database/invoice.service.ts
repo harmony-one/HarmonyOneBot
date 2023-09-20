@@ -20,7 +20,7 @@ export class InvoiceService {
     invoice.status = 'init'
     invoice.itemId = data.itemId
     invoice.amount = data.amount
-    invoice.currency = data.currency || 'USD'
+    invoice.currency = data.currency ?? 'USD'
 
     return await invoiceRepository.save(invoice)
   }

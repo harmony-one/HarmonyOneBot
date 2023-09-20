@@ -1,16 +1,16 @@
-import pino, {type Logger} from 'pino'
+import pino, { type Logger } from 'pino'
 import Web3 from 'web3'
 import { type Account, type TransactionReceipt } from 'web3-core'
 import axios from 'axios'
-import bn, {BigNumber} from 'bignumber.js'
+import bn, { BigNumber } from 'bignumber.js'
 import config from '../../config'
-import {chatService, invoiceService, statsService} from '../../database/services'
-import {type OnMessageContext} from '../types'
-import {LRUCache} from 'lru-cache'
-import {freeCreditsFeeCounter} from '../../metrics/prometheus'
-import {type BotPaymentLog} from '../../database/stats.service'
-import {sendMessage} from '../open-ai/helpers'
-import {InvoiceParams} from "../../database/invoice.service";
+import { chatService, invoiceService, statsService } from '../../database/services'
+import { type OnMessageContext } from '../types'
+import { LRUCache } from 'lru-cache'
+import { freeCreditsFeeCounter } from '../../metrics/prometheus'
+import { type BotPaymentLog } from '../../database/stats.service'
+import { sendMessage } from '../open-ai/helpers'
+import { type InvoiceParams } from '../../database/invoice.service'
 import * as Sentry from '@sentry/node'
 
 interface CoinGeckoResponse {
@@ -55,16 +55,20 @@ export class BotPayments {
     this.logger.info(`Hot wallet address: ${this.hotWallet.address}`)
   }
 
-  public bootstrap() {
-    this.runHotWalletsTask()
-    this.getOneRate()
+  public bootstrap (): void {
+    this.runHotWalletsTask().catch(e => {
+      Sentry.captureException(e)
+    })
+    this.getOneRate().catch(e => {
+      Sentry.captureException(e)
+    })
   }
 
-  private async transferUserFundsToHolder(
+  private async transferUserFundsToHolder (
     accountId: number,
     userAccount: Account,
     amount: BigNumber
-  ) {
+  ): Promise<void> {
     const invoiceData: InvoiceParams = {
       tgUserId: accountId,
       accountId,
@@ -73,12 +77,12 @@ export class BotPayments {
       currency: 'ONE'
     }
     const invoice = await invoiceService.create(invoiceData)
-    await this.transferFunds(userAccount, this.holderAddress, amount);
+    await this.transferFunds(userAccount, this.holderAddress, amount)
     await chatService.depositOneCredits(accountId, amount.toString())
     await invoiceService.setSuccessStatus({ uuid: invoice.uuid, providerPaymentChargeId: '', telegramPaymentChargeId: '' })
   }
 
-  private async runHotWalletsTask () {
+  private async runHotWalletsTask (): Promise<void> {
     while (true) {
       try {
         await this.checkHotWallets()
@@ -89,8 +93,8 @@ export class BotPayments {
     }
   }
 
-  private async checkHotWallets() {
-    let accounts: {accountId: string}[] = []
+  private async checkHotWallets (): Promise<void> {
+    let accounts: Array<{ accountId: string }> = []
     try {
       accounts = await statsService.getLasInteractingAccounts(24)
     } catch (e) {
@@ -100,10 +104,10 @@ export class BotPayments {
 
     const txFee = await this.getTransactionFee()
 
-    for(let acc of accounts) {
+    for (const acc of accounts) {
       const accountId = +acc.accountId
       const userAccount = this.getUserAccount(accountId)
-      if(userAccount) {
+      if (userAccount) {
         let availableBalance = new BigNumber(0)
         try {
           availableBalance = await this.getUserBalance(accountId)
@@ -113,9 +117,9 @@ export class BotPayments {
           this.logger.error(`Cannot get user balance ${accountId} ${userAccount.address}`)
         }
 
-        if(availableBalance.minus(txFee).gt(0)) {
+        if (availableBalance.minus(txFee).gt(0)) {
           try {
-            await this.transferUserFundsToHolder(accountId, userAccount, availableBalance);
+            await this.transferUserFundsToHolder(accountId, userAccount, availableBalance)
             const { totalCreditsAmount } = await chatService.getUserCredits(accountId)
             this.logger.info(`User ${accountId} ${userAccount.address} hot wallet funds "${availableBalance.toString()}" ONE transferred to holder address ${this.holderAddress}. ONE credits balance: ${totalCreditsAmount.toString()}.`)
           } catch (e) {
@@ -233,7 +237,7 @@ export class BotPayments {
         ...txBody,
         gasPrice,
         gas: web3.utils.toHex(estimatedGas),
-        value: web3.utils.toHex(txValue),
+        value: web3.utils.toHex(txValue)
       })
     } catch (e) {
       Sentry.captureException(e)
@@ -298,7 +302,7 @@ export class BotPayments {
 
   private async writePaymentLog (
     ctx: OnMessageContext,
-    amountCredits: BigNumber,
+    amountCredits: BigNumber
   ): Promise<void> {
     const { from, text = '', audio, voice = '', chat } = ctx.update.message
 
@@ -359,17 +363,17 @@ export class BotPayments {
     }
 
     const userBalance = await this.getUserBalance(accountId)
-    if(userBalance.gt(0)) {
+    if (userBalance.gt(0)) {
       const fee = await this.getTransactionFee()
-      if(userBalance.minus(fee).gt(0)) {
+      if (userBalance.minus(fee).gt(0)) {
         this.logger.info(`Found user with ONE balance. Start transferring ${userBalance.toString()} ONE to holder address ${this.holderAddress}...`)
-        await this.transferUserFundsToHolder(accountId, userAccount, userBalance);
+        await this.transferUserFundsToHolder(accountId, userAccount, userBalance)
         this.logger.info(`Funds transferred from ${accountId} ${userAccount.address} to holder address ${this.holderAddress}, amount: ${userBalance.toString()}`)
       }
     }
 
     const totalPayAmount = await this.getPriceInONE(amountUSD)
-    const { totalCreditsAmount} = await chatService.getUserCredits(accountId)
+    const { totalCreditsAmount } = await chatService.getUserCredits(accountId)
     const totalBalanceDelta = totalCreditsAmount.minus(totalPayAmount)
 
     this.logger.info(
