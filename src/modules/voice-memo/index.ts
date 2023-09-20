@@ -71,7 +71,11 @@ export class VoiceMemo implements PayableBot {
 
   private async initTgClient (): Promise<void> {
     this.telegramClient = await initTelegramClient()
-    this.telegramClient.addEventHandler(() => { this.onTelegramClientEvent.bind(this) }, new NewMessage({}))
+    this.telegramClient.addEventHandler((event) => {
+      this.onTelegramClientEvent(event).catch((e) => {
+        this.logger.error(`Telegram event error: ${(e as Error).message}}`)
+      })
+    }, new NewMessage({}))
     this.logger.info('VoiceMemo bot started')
   }
 
