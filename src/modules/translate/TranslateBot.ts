@@ -126,12 +126,48 @@ To disable translation, use the command /translatestop.`)
       return
     }
 
-    const prompt = `Translate the message below into: ${ctx.session.translate.languages.join(', ')}\n Message: ${message}`
-    const conversation = [{ role: 'user', content: prompt }]
+    const conversation0 = [
+      {
+        role: 'system',
+        content: 'You will be provided with a sentence, and your task is detect original language.' +
+          'Use language codes for response.' +
+          "If you can't detect language use word 'unknown' for response." +
+          'When prompted, only respond with the translation, no explanation, or additional text ever.' +
+          'Also, if multiple translations are prompted, split each one with an empty line.'
+      },
+      { role: 'user', content: message }
+    ]
+
+    const completion01 = await chatCompletion(conversation0)
+    const originalLangCode = completion01.completion
+
+    // can't detect original language
+    if (completion01.completion === 'unknown') {
+      await ctx.api.deleteMessage(ctx.chat.id, progressMessage.message_id)
+      ctx.session.analytics.actualResponseTime = performance.now()
+      ctx.session.analytics.sessionState = SessionState.Success
+      return
+    }
+
+    // translation not required.
+    if (ctx.session.translate.languages.includes(originalLangCode)) {
+      await ctx.api.deleteMessage(ctx.chat.id, progressMessage.message_id)
+      ctx.session.analytics.actualResponseTime = performance.now()
+      ctx.session.analytics.sessionState = SessionState.Success
+      return
+    }
+
+    const targetLanguages = ctx.session.translate.languages.join(', ')
+
+    const conversation = [
+      { role: 'system', content: `You will be provided with a sentence in ${originalLangCode}, and your task is to translate it into ${targetLanguages}.` },
+      { role: 'user', content: message }
+    ]
 
     const response = await chatCompletion(conversation)
 
-    await ctx.api.editMessageText(ctx.chat?.id, progressMessage.message_id, response.completion, { parse_mode: 'Markdown' })
+    await ctx.api.editMessageText(ctx.chat.id, progressMessage.message_id, response.completion, { parse_mode: 'Markdown' })
+
     ctx.session.analytics.actualResponseTime = performance.now()
     ctx.session.analytics.sessionState = SessionState.Success
   }
