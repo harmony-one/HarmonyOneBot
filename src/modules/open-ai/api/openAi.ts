@@ -17,6 +17,7 @@ import {
   type DalleGPTModel,
   DalleGPTModels
 } from '../types'
+import type fs from 'fs'
 
 const openai = new OpenAI({ apiKey: config.openAiKey })
 
@@ -244,4 +245,13 @@ export function getGrammy429Error (): GrammyError {
     'editMessageText',
     { parameters: { retry_after: 33 } }
   )
+}
+
+export async function speechToText (readStream: fs.ReadStream): Promise<string> {
+  const result = await openai.audio.transcriptions.create({
+    file: readStream,
+    model: 'whisper-1'
+  })
+
+  return result.text
 }
