@@ -12,6 +12,8 @@ import { type BotPaymentLog } from '../../database/stats.service'
 import { sendMessage } from '../open-ai/helpers'
 import { type InvoiceParams } from '../../database/invoice.service'
 import * as Sentry from '@sentry/node'
+import {Api} from "telegram";
+import account = Api.account;
 
 interface CoinGeckoResponse {
   harmony: {
@@ -78,7 +80,7 @@ export class BotPayments {
     }
     const invoice = await invoiceService.create(invoiceData)
     await this.transferFunds(userAccount, this.holderAddress, amount)
-    await chatService.depositOneCredits(accountId, amount.toString())
+    await chatService.depositOneCredits(accountId, amount.toFixed())
     await invoiceService.setSuccessStatus({ uuid: invoice.uuid, providerPaymentChargeId: '', telegramPaymentChargeId: '' })
   }
 
@@ -96,7 +98,7 @@ export class BotPayments {
   private async checkHotWallets (): Promise<void> {
     let accounts: Array<{ accountId: string }> = []
     try {
-      accounts = await statsService.getLasInteractingAccounts(24)
+      accounts = await statsService.getLastInteractingAccounts(24)
     } catch (e) {
       Sentry.captureException(e)
       this.logger.error(`Cannot get last interacted accounts: ${(e as Error).message}`)
@@ -119,6 +121,7 @@ export class BotPayments {
 
         if (availableBalance.minus(txFee).gt(0)) {
           try {
+            this.logger.info(`User ${accountId} transfer funds ${availableBalance.toString()} ONE to multisig wallet: ${this.holderAddress}...`)
             await this.transferUserFundsToHolder(accountId, userAccount, availableBalance)
             const { totalCreditsAmount } = await chatService.getUserCredits(accountId)
             this.logger.info(`User ${accountId} ${userAccount.address} hot wallet funds "${availableBalance.toString()}" ONE transferred to holder address ${this.holderAddress}. ONE credits balance: ${totalCreditsAmount.toString()}.`)

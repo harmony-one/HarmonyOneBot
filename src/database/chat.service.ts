@@ -83,8 +83,8 @@ export class ChatService {
       throw new Error(`${accountId} Cannot find credits account`)
     }
 
-    const oldValue = BigInt(account.oneCreditAmount)
-    const newValue = oldValue + BigInt(amount)
+    const oldValue = new bn(account.oneCreditAmount)
+    const newValue = new bn(amount).plus(oldValue)
 
     return await chatRepository.update({ accountId }, { oneCreditAmount: newValue.toString() })
   }
