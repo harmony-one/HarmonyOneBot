@@ -56,7 +56,7 @@ export default {
       wordLimit: 30,
       wordCountBetween: process.env.WORD_COUNT_BETWEEN
         ? parseInt(process.env.WORD_COUNT_BETWEEN)
-        : 100,
+        : 10,
       priceAdjustment: process.env.PRICE_ADJUSTMENT
         ? parseInt(process.env.PRICE_ADJUSTMENT)
         : 2,

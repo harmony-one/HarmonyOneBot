@@ -113,7 +113,7 @@ export const streamChatCompletion = async (
   limitTokens = true
 ): Promise<string> => {
   let completion = ''
-  const wordCountMinimum = config.openAi.chatGpt.wordCountBetween
+  let wordCountMinimum = config.openAi.chatGpt.wordCountBetween
   const stream = await openai.chat.completions.create({
     model,
     messages: conversation as OpenAI.Chat.Completions.CreateChatCompletionRequestMessage[],
@@ -134,9 +134,12 @@ export const streamChatCompletion = async (
     // if (wordCount > 20) {
     //   throw getGrammy429Error()
     // }
-    if (chunck === '.' && wordCount > wordCountMinimum) {
-      completion = completion.replaceAll('..', '')
-      completion += '..'
+    if (wordCount > wordCountMinimum) { // if (chunck === '.' && wordCount > wordCountMinimum) {
+      if (wordCountMinimum < 60) {
+        wordCountMinimum += 10
+      }
+      completion = completion.replaceAll('...', '')
+      completion += '...'
       wordCount = 0
       await ctx.api
         .editMessageText(ctx.chat?.id, msgId, completion)
@@ -153,7 +156,7 @@ export const streamChatCompletion = async (
         })
     }
   }
-  completion = completion.replaceAll('..', '')
+  completion = completion.replaceAll('...', '')
 
   await ctx.api
     .editMessageText(ctx.chat?.id, msgId, completion)
