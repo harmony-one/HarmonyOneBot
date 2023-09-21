@@ -135,7 +135,7 @@ export const streamChatCompletion = async (
     //   throw getGrammy429Error()
     // }
     if (wordCount > wordCountMinimum) { // if (chunck === '.' && wordCount > wordCountMinimum) {
-      if (wordCountMinimum < 60) {
+      if (wordCountMinimum < 50) {
         wordCountMinimum += 10
       }
       completion = completion.replaceAll('...', '')
