@@ -486,7 +486,7 @@ export class OpenAIBot implements PayableBot {
         await sendMessage(ctx, maskedPrompt)
         ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
       }
-      const msgId = (
+      const webCrawlerStatusMsgId = (
         await ctx.reply('...', {
           message_thread_id:
             ctx.message?.message_thread_id ??
@@ -501,12 +501,25 @@ export class OpenAIBot implements PayableBot {
         password
       )
       if (webContent.urlText !== '') {
-        price = await getCrawlerPrice(webContent.networkTraffic)
+        const oneFee = await this.payments.getPriceInONE(webContent.fees)
+        const statusMsg = `Processed ${(webContent.networkTraffic / 1048576).toFixed(2
+          )} MB in ${(webContent.elapsedTime / 1000).toFixed(2)} sec (${this.payments.toONE(oneFee, false).toFixed(2)} ONE)`
+        await ctx.api.editMessageText(ctx.chat?.id ?? '', webCrawlerStatusMsgId, statusMsg, { parse_mode: 'Markdown' }).catch(async (e) => {
+          await this.onError(ctx, e)
+        })
+        price = webContent.fees
         if (
           !(await this.payments.pay(ctx as OnMessageContext, webContent.fees))
         ) {
           await this.onNotBalanceMessage(ctx)
         } else {
+          const msgId = (
+            await ctx.reply('...', {
+              message_thread_id:
+                ctx.message?.message_thread_id ??
+                ctx.message?.reply_to_message?.message_thread_id
+            })
+          ).message_id
           let newPrompt: string
           const webCrawlConversation: ChatConversation[] = []
           if (command !== 'sum') {

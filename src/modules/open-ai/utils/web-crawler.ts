@@ -17,7 +17,6 @@ interface WebContent {
   elapsedTime: number
   networkTraffic: number
   fees: number
-  oneFees: number
 }
 
 interface CrawlerElement {
@@ -61,7 +60,7 @@ function parseWebContent (
 export const getCrawlerPrice = async (
   networkTraffic: number
 ): Promise<number> => {
-  return 0.5 // cents
+  return 1 // cents
 }
 
 // export const getWebContentKagi = async (
@@ -109,8 +108,7 @@ export const getWebContent = async (
     urlText: text,
     elapsedTime: result.elapsedTime,
     networkTraffic: result.networkTraffic,
-    fees: await getCrawlerPrice(result.networkTraffic),
-    oneFees: 0.5
+    fees: await getCrawlerPrice(result.networkTraffic)
   }
 }
 
