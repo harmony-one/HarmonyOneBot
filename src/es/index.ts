@@ -12,22 +12,20 @@ const logger = pino({
   }
 })
 
-export enum ESIndex {
-  BotLogs = 'bot-logs'
-}
-
 export interface BotLogData {
   command: string
   module: string
   text?: string
-  userId: number
+  userId: number // long integer
   username?: string
-  totalProcessingTime: number
-  firstResponseTime: number
-  actualResponseTime: number
+  totalProcessingTime: string // converted from bigint
+  firstResponseTime: string // converted from bigint
+  actualResponseTime: string // converted from bigint
   refunded: boolean
   sessionState: string
 }
+
+const Index = config.es.index ?? 'bot-logs'
 
 export const ES = {
   init: (): Client | null => {
@@ -42,7 +40,7 @@ export const ES = {
     })
     return client
   },
-  add: async ({ index = ESIndex.BotLogs, ...props }: BotLogData & { index?: ESIndex }): Promise<undefined | WriteResponseBase> => {
+  add: async ({ index = Index, ...props }: BotLogData & { index?: string }): Promise<undefined | WriteResponseBase> => {
     if (!client) {
       return
     }

@@ -146,6 +146,7 @@ export default {
   es: {
     url: process.env.ES_URL ?? '',
     username: process.env.ES_USERNAME ?? '',
-    password: process.env.ES_PASSWORD ?? ''
+    password: process.env.ES_PASSWORD ?? '',
+    index: process.env.ES_INDEX
   }
 }

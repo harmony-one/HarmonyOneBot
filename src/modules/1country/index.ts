@@ -185,14 +185,14 @@ export class OneCountryBot implements PayableBot {
 
     this.logger.warn('### unsupported command')
     await ctx.reply('### unsupported command', { message_thread_id: ctx.message?.message_thread_id })
-    ctx.session.analytics.actualResponseTime = performance.now()
+    ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
     ctx.session.analytics.sessionState = SessionState.Error
   }
 
   onVistitCmd = async (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> => {
     if (!ctx.match) {
       await ctx.reply('Error: Missing 1.country domain', { message_thread_id: ctx.message?.message_thread_id })
-      ctx.session.analytics.actualResponseTime = performance.now()
+      ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
       ctx.session.analytics.sessionState = SessionState.Error
       return
     }
@@ -204,7 +204,7 @@ export class OneCountryBot implements PayableBot {
       reply_markup: keyboard,
       message_thread_id: ctx.message?.message_thread_id
     })
-    ctx.session.analytics.actualResponseTime = performance.now()
+    ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
     ctx.session.analytics.sessionState = SessionState.Success
   }
 
@@ -267,7 +267,7 @@ export class OneCountryBot implements PayableBot {
       if (!ctx.match) {
         await ctx.reply('Error: Missing 1.country domain', { message_thread_id: ctx.message?.message_thread_id })
         ctx.session.analytics.sessionState = SessionState.Error
-        ctx.session.analytics.actualResponseTime = performance.now()
+        ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
         return
       }
       const url = getUrl(ctx.match as string)
@@ -290,12 +290,12 @@ export class OneCountryBot implements PayableBot {
         )
         ctx.session.analytics.sessionState = SessionState.Error
       } finally {
-        ctx.session.analytics.actualResponseTime = performance.now()
+        ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
       }
     } else {
       await ctx.reply('This command is reserved', { message_thread_id: ctx.message?.message_thread_id })
       ctx.session.analytics.sessionState = SessionState.Error
-      ctx.session.analytics.actualResponseTime = performance.now()
+      ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
     }
   }
 
@@ -320,12 +320,12 @@ export class OneCountryBot implements PayableBot {
           { message_thread_id: ctx.message?.message_thread_id })
         ctx.session.analytics.sessionState = SessionState.Error
       } finally {
-        ctx.session.analytics.actualResponseTime = performance.now()
+        ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
       }
     } else {
       await ctx.reply('This command is reserved', { message_thread_id: ctx.message?.message_thread_id })
       ctx.session.analytics.sessionState = SessionState.Error
-      ctx.session.analytics.actualResponseTime = performance.now()
+      ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
     }
   }
 
@@ -356,7 +356,7 @@ export class OneCountryBot implements PayableBot {
       await ctx.reply('This command is reserved', { message_thread_id: ctx.message?.message_thread_id })
       ctx.session.analytics.sessionState = SessionState.Error
     }
-    ctx.session.analytics.actualResponseTime = performance.now()
+    ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
   }
 
   async onRegister (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
@@ -365,7 +365,7 @@ export class OneCountryBot implements PayableBot {
     let msgId = 0
     if (!prompt && !lastDomain) {
       await ctx.reply('Write a domain name', { message_thread_id: ctx.message?.message_thread_id })
-      ctx.session.analytics.actualResponseTime = performance.now()
+      ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
       ctx.session.analytics.sessionState = SessionState.Error
       return
     }
@@ -378,7 +378,7 @@ export class OneCountryBot implements PayableBot {
         reply_markup: keyboard,
         message_thread_id: ctx.message?.message_thread_id
       })
-      ctx.session.analytics.actualResponseTime = performance.now()
+      ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
       ctx.session.analytics.sessionState = SessionState.Success
       return
     }
@@ -391,13 +391,13 @@ export class OneCountryBot implements PayableBot {
         parse_mode: 'Markdown',
         message_thread_id: ctx.message?.message_thread_id
       })
-      ctx.session.analytics.actualResponseTime = performance.now()
+      ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
       ctx.session.analytics.sessionState = SessionState.Error
       return
     }
     ctx.session.oneCountry.lastDomain = domain
     msgId = (await ctx.reply('Checking name...')).message_id
-    ctx.session.analytics.firstResponseTime = performance.now()
+    ctx.session.analytics.firstResponseTime = process.hrtime.bigint()
     const response = await isDomainAvailable(domain)
     const domainAvailable = response.isAvailable
     let msg = `The name *${domain}* `
@@ -418,7 +418,7 @@ export class OneCountryBot implements PayableBot {
       await ctx.api.editMessageText(ctx.chat.id, msgId, msg, { parse_mode: 'Markdown' })
     }
     ctx.session.analytics.sessionState = SessionState.Success
-    ctx.session.analytics.actualResponseTime = performance.now()
+    ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
   }
 
   onEnableSubomain = async (ctx: OnMessageContext): Promise<void> => {

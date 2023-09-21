@@ -5,6 +5,7 @@
     "outDir": "dist",
     "types": ["node"],
     "lib": ["es2022"],
+    "target": "es2022",
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "strictPropertyInitialization": false,
