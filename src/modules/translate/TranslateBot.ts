@@ -1,12 +1,15 @@
 import { type OnMessageContext, type PayableBot, type RefundCallback, SessionState } from '../types'
 import pino, { type Logger } from 'pino'
-import { chatCompletion, getChatModel, getChatModelPrice, getTokenNumber } from '../open-ai/api/openAi'
+import { getChatModel, getChatModelPrice, getTokenNumber } from '../open-ai/api/openAi'
 import config from '../../config'
+import { mapToTargetLang, translator } from './deeplClient'
 
 enum SupportedCommands {
   Translate = 'translate',
   TranslateStop = 'translatestop'
 }
+
+const SupportedLangCommands = ['bg', 'cs', 'da', 'de', 'el', 'es', 'et', 'fi', 'fr', 'hu', 'id', 'it', 'ja', 'ko', 'lt', 'lv', 'nb', 'nl', 'pl', 'ro', 'ru', 'sk', 'sl', 'sv', 'tr', 'uk', 'zh', 'en', 'pt']
 
 export class TranslateBot implements PayableBot {
   public readonly module = 'TranslateBot'
@@ -26,7 +29,7 @@ export class TranslateBot implements PayableBot {
       return 0
     }
 
-    const hasCommand = this.isCtxHasCommand(ctx)
+    const hasCommand = this.isCtxHasAnyCommand(ctx)
 
     if (!hasCommand && ctx.session.translate.enable) {
       const message = ctx.message.text ?? ''
@@ -42,14 +45,48 @@ export class TranslateBot implements PayableBot {
     return 0
   }
 
-  public isCtxHasCommand (ctx: OnMessageContext): boolean {
+  public isCtxHasAnyCommand (ctx: OnMessageContext): boolean {
     const command = ctx.entities().find((ent) => ent.type === 'bot_command')
     return !!command
   }
 
   public isSupportedEvent (ctx: OnMessageContext): boolean {
-    const hasCommand = this.isCtxHasCommand(ctx)
-    return ctx.hasCommand(Object.values(SupportedCommands)) || (!hasCommand && ctx.session.translate.enable)
+    // /translate
+    if (ctx.hasCommand(Object.values(SupportedCommands))) {
+      return true
+    }
+
+    const hasShortcut = this.isCtxHasLangShortcut(ctx)
+    const hasLangCommand = this.isCtxHasLangCommand(ctx)
+
+    // en. de. ru. ||  /en /de /ru
+    if (hasShortcut || hasLangCommand) {
+      return true
+    }
+
+    // Plain text and enabled translation
+    const isPlainText = !this.isCtxHasAnyCommand(ctx)
+    return !!(isPlainText && ctx.session.translate.enable)
+  }
+
+  public isCtxHasLangCommand (ctx: OnMessageContext): boolean {
+    return ctx.hasCommand(SupportedLangCommands)
+  }
+
+  public isCtxHasLangShortcut (ctx: OnMessageContext): boolean {
+    const message = ctx.message.text
+
+    if (!message) {
+      return false
+    }
+
+    for (const supportedShortCut of SupportedLangCommands) {
+      if (message.toLowerCase().startsWith(supportedShortCut + '.')) {
+        return true
+      }
+    }
+
+    return false
   }
 
   public async onEvent (ctx: OnMessageContext, refundCallback: RefundCallback): Promise<void> {
@@ -59,6 +96,10 @@ export class TranslateBot implements PayableBot {
       ctx.session.analytics.actualResponseTime = performance.now()
       ctx.session.analytics.sessionState = SessionState.Error
       refundCallback('Unsupported command')
+      return
+    }
+
+    if (!ctx.message.text) {
       return
     }
 
@@ -72,10 +113,38 @@ export class TranslateBot implements PayableBot {
       return
     }
 
-    const hasCommand = ctx.entities().find((ent) => ent.type === 'bot_command')
+    if (this.isCtxHasLangCommand(ctx)) {
+      const command = ctx.entities().find(item => item.type === 'bot_command' && item.offset === 0)
+      if (!command) {
+        await ctx.reply('Unexpected error')
+        return
+      }
 
-    if (!hasCommand && ctx.session.translate.enable) {
-      await this.onTranslate(ctx)
+      const langCode = command?.text.replace('/', '') ?? null
+      console.log('### langCode', langCode)
+
+      const message = ctx.message.text.slice(command.text.length + 1, ctx.message.text.length).trim()
+      await this.onTranslateShortcut(ctx, message, langCode)
+      return
+    }
+
+    if (this.isCtxHasLangShortcut(ctx)) {
+      const langCode = ctx.message.text.split('.')[0] || null
+
+      if (!langCode) {
+        await ctx.reply('Unexpected error')
+        return
+      }
+
+      const message = ctx.message.text.slice(langCode.length + 1, ctx.message.text.length).trim()
+      await this.onTranslateShortcut(ctx, message, langCode)
+      return
+    }
+
+    const isPlainText = !this.isCtxHasAnyCommand(ctx)
+
+    if (isPlainText && ctx.session.translate.enable) {
+      await this.onTranslatePlainText(ctx)
       return
     }
 
@@ -113,7 +182,25 @@ To disable translation, use the command /translatestop.`)
     ctx.session.analytics.sessionState = SessionState.Success
   }
 
-  public async onTranslate (ctx: OnMessageContext): Promise<void> {
+  public async onTranslateShortcut (ctx: OnMessageContext, message: string, targetLangCode: string): Promise<void> {
+    const targetLanguage = mapToTargetLang(targetLangCode)
+
+    if (targetLanguage === null) {
+      await ctx.reply(`Unsupported language: ${targetLangCode}`)
+      return
+    }
+
+    const result = await translator.translateText(message, null, targetLanguage)
+
+    if (!result.text) {
+      await ctx.reply('Unexpected error')
+      return
+    }
+
+    await ctx.reply(result.text)
+  }
+
+  public async onTranslatePlainText (ctx: OnMessageContext): Promise<void> {
     const message = ctx.message.text
 
     const progressMessage = await ctx.reply('...', { message_thread_id: ctx.message?.message_thread_id })
@@ -126,47 +213,33 @@ To disable translation, use the command /translatestop.`)
       return
     }
 
-    const conversation0 = [
-      {
-        role: 'system',
-        content: 'You will be provided with a sentence, and your task is detect original language.' +
-          'Use language codes for response.' +
-          "If you can't detect language use word 'unknown' for response." +
-          'When prompted, only respond with the translation, no explanation, or additional text ever.' +
-          'Also, if multiple translations are prompted, split each one with an empty line.'
-      },
-      { role: 'user', content: message }
-    ]
+    const targetLanguages = ctx.session.translate.languages
 
-    const completion01 = await chatCompletion(conversation0)
-    const originalLangCode = completion01.completion
+    const translateResults: string[] = []
+    for (const targetLangCode of targetLanguages) {
+      const targetLanguage = mapToTargetLang(targetLangCode)
 
-    // can't detect original language
-    if (completion01.completion === 'unknown') {
+      if (targetLanguage === null) {
+        translateResults.push(`Unsupported language: ${targetLangCode}`)
+        continue
+      }
+
+      const result = await translator.translateText(message, null, targetLanguage)
+      if (result.detectedSourceLang !== targetLangCode) {
+        translateResults.push(result.text)
+      }
+    }
+
+    if (translateResults.length === 0) {
       await ctx.api.deleteMessage(ctx.chat.id, progressMessage.message_id)
       ctx.session.analytics.actualResponseTime = performance.now()
       ctx.session.analytics.sessionState = SessionState.Success
       return
     }
 
-    // translation not required.
-    if (ctx.session.translate.languages.includes(originalLangCode)) {
-      await ctx.api.deleteMessage(ctx.chat.id, progressMessage.message_id)
-      ctx.session.analytics.actualResponseTime = performance.now()
-      ctx.session.analytics.sessionState = SessionState.Success
-      return
-    }
+    const responseMessage = translateResults.join('\n\n')
 
-    const targetLanguages = ctx.session.translate.languages.join(', ')
-
-    const conversation = [
-      { role: 'system', content: `You will be provided with a sentence in ${originalLangCode}, and your task is to translate it into ${targetLanguages}.` },
-      { role: 'user', content: message }
-    ]
-
-    const response = await chatCompletion(conversation)
-
-    await ctx.api.editMessageText(ctx.chat.id, progressMessage.message_id, response.completion, { parse_mode: 'Markdown' })
+    await ctx.api.editMessageText(ctx.chat.id, progressMessage.message_id, responseMessage, { parse_mode: 'Markdown' })
 
     ctx.session.analytics.actualResponseTime = performance.now()
     ctx.session.analytics.sessionState = SessionState.Success
