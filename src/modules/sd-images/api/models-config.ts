@@ -45,7 +45,7 @@ export const MODELS_CONFIGS: IModel[] = [
       "majic",
       "4333",
       "h7e2",
-      "?",
+      "? ",
       "mj"
     ],
     "defaultPrompt": "1girl,sitting on a cozy couch,crossing legs,soft light"
@@ -62,7 +62,7 @@ export const MODELS_CONFIGS: IModel[] = [
       "3",
       "leo",
       "real",
-      "!",
+      "! ",
       "r.",
       "R.",
       "r",
@@ -87,7 +87,7 @@ export const MODELS_CONFIGS: IModel[] = [
       "D.",
       "d",
       "ds",
-      ":"
+      ": "
     ],
     "defaultPrompt": "8k portrait of beautiful cyborg with brown hair, intricate, elegant, highly detailed, majestic, digital photography, art by artgerm and ruan jia and greg rutkowski surreal painting gold butterfly filigree, broken glass, (masterpiece, sidelighting, finely detailed beautiful eyes: 1.2), hdr"
   },
@@ -105,7 +105,7 @@ export const MODELS_CONFIGS: IModel[] = [
       "rev",
       "7371",
       "h419",
-      ";",
+      "; ",
       "ra"
     ],
     "defaultPrompt": "best quality, ultra high res, photorealistic, sfw, armored wizard, magical tattoos, apprentice, 1girl, looking at viewer, upper body, slender, small breasts, purple hair with white stripes, white croptop, (dark and moody universe:1.3), (elden ring style:1.3), (warhammer style:1.1), floating rocks, glowing pebbles, fiery dust, concept artist, global illumination, depth of field, gloomy, unsettling, splash art, art by artgerm and greg rutkowski and viktoria gavrilenko, scary smile, purple light, rule of the thirds --cfg 8.5 --steps 30 --seed 1463146050 --d 1280x853 --no girls, (worst quality:1.2), (low quality:1.2), (lowres:1.1), (monochrome:1.1), (greyscale), multiple views, comic, sketch, (((bad anatomy))), (((deformed))), (((disfigured))), watermark, multiple_views, mutation hands, mutation fingers, extra fingers, missing fingers, watermark"
@@ -123,7 +123,7 @@ export const MODELS_CONFIGS: IModel[] = [
       "nsfw",
       "perf",
       "pw",
-      "("
+      "( "
     ],
     "defaultPrompt": "(masterpiece:1.2), (best quality:1.2), 1woman, 1boy, short hair, blonde hair, breast focus, slim and petite body, nude, black stockings, black high heels, silver necklace, orgasm, mouth open, aroused, <lora:murkysSuspendedOn_1:0.9>, suspendedonpenisms, sex, arm grab, sex from behind, dangling legs, size difference, in the luxurious living room, --no (worst quality:1.2), (bad quality:1.2), (poor quality:1.2), bad artist, extra limbs, bad anatomy, missing legs --seed 780544502378871 --steps 20 --sampler euler --cfg 8 --d 512x512"
   },
@@ -158,7 +158,7 @@ export const MODELS_CONFIGS: IModel[] = [
       "xl_dif",
       "8404",
       "hef9",
-      "$",
+      "$ ",
       "ud"
     ],
     "defaultPrompt": "pastel color, from above, upper body, depth of field, masterpiece, best quality, best quality, girl sitting on a swing, school uniform, black hair, blue eyes, autumn, park"
@@ -179,7 +179,7 @@ export const MODELS_CONFIGS: IModel[] = [
       "2352",
       "h4be",
       "ap",
-      "&"
+      "& "
     ],
     "defaultPrompt": "masterpiece, best quality, ultra-detailed, illustration, beautiful detailed eyes, looking at viewer, close up, pink hair, shy, cat ears"
   },
