@@ -82,8 +82,8 @@ export enum SessionState {
 }
 
 export interface Analytics {
-  firstResponseTime: number
-  actualResponseTime: number
+  firstResponseTime: bigint
+  actualResponseTime: bigint
   sessionState: SessionState
   module: string
 

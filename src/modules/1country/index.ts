@@ -185,14 +185,14 @@ export class OneCountryBot implements PayableBot {
 
     this.logger.warn('### unsupported command')
     await ctx.reply('### unsupported command', { message_thread_id: ctx.message?.message_thread_id })
-    ctx.session.analytics.actualResponseTime = performance.now()
+    ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
     ctx.session.analytics.sessionState = SessionState.Error
   }
 
   onVistitCmd = async (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> => {
     if (!ctx.match) {
       await ctx.reply('Error: Missing 1.country domain', { message_thread_id: ctx.message?.message_thread_id })
-      ctx.session.analytics.actualResponseTime = performance.now()
+      ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
       ctx.session.analytics.sessionState = SessionState.Error
       return
     }
@@ -204,7 +204,7 @@ export class OneCountryBot implements PayableBot {
       reply_markup: keyboard,
       message_thread_id: ctx.message?.message_thread_id
     })
-    ctx.session.analytics.actualResponseTime = performance.now()
+    ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
     ctx.session.analytics.sessionState = SessionState.Success
   }
 
@@ -267,7 +267,7 @@ export class OneCountryBot implements PayableBot {
       if (!ctx.match) {
         await ctx.reply('Error: Missing 1.country domain', { message_thread_id: ctx.message?.message_thread_id })
         ctx.session.analytics.sessionState = SessionState.Error
-        ctx.session.analytics.actualResponseTime = performance.now()
+        ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
         return
       }
       const url = getUrl(ctx.match as string)
@@ -290,12 +290,12 @@ export class OneCountryBot implements PayableBot {
         )
         ctx.session.analytics.sessionState = SessionState.Error
       } finally {
-        ctx.session.analytics.actualResponseTime = performance.now()
+        ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
       }
     } else {
       await ctx.reply('This command is reserved', { message_thread_id: ctx.message?.message_thread_id })
       ctx.session.analytics.sessionState = SessionState.Error
-      ctx.session.analytics.actualResponseTime = performance.now()
+      ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
     }
   }
 
@@ -320,12 +320,12 @@ export class OneCountryBot implements PayableBot {
           { message_thread_id: ctx.message?.message_thread_id })
         ctx.session.analytics.sessionState = SessionState.Error
       } finally {
-        ctx.session.analytics.actualResponseTime = performance.now()
+        ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
       }
     } else {
       await ctx.reply('This command is reserved', { message_thread_id: ctx.message?.message_thread_id })
       ctx.session.analytics.sessionState = SessionState.Error
-      ctx.session.analytics.actualResponseTime = performance.now()
+      ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
     }
   }
 
@@ -356,56 +356,59 @@ export class OneCountryBot implements PayableBot {
       await ctx.reply('This command is reserved', { message_thread_id: ctx.message?.message_thread_id })
       ctx.session.analytics.sessionState = SessionState.Error
     }
-    ctx.session.analytics.actualResponseTime = performance.now()
+    ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
   }
 
   async onRegister (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
-    try {
-      const { prompt } = getCommandNamePrompt(ctx, SupportedCommands)
-      const lastDomain = ctx.session.oneCountry.lastDomain
-      let msgId = 0
-      if (!prompt && !lastDomain) {
-        await ctx.reply('Write a domain name', { message_thread_id: ctx.message?.message_thread_id })
-        ctx.session.analytics.actualResponseTime = performance.now()
-        ctx.session.analytics.sessionState = SessionState.Error
-        return
-      }
-      if (!prompt && lastDomain) {
-        const keyboard = new InlineKeyboard().webApp(
-          'Rent in 1.country',
-          `${config.country.hostname}?domain=${lastDomain}`
-        )
-        await ctx.reply(`Rent ${lastDomain}`, {
-          reply_markup: keyboard,
-          message_thread_id: ctx.message?.message_thread_id
-        })
-        ctx.session.analytics.actualResponseTime = performance.now()
-        ctx.session.analytics.sessionState = SessionState.Success
-        return
-      }
-      const domain = this.cleanInput(
-        this.hasPrefix(prompt) ? prompt.slice(1) : prompt
+    const { prompt } = getCommandNamePrompt(ctx, SupportedCommands)
+    const lastDomain = ctx.session.oneCountry.lastDomain
+    let msgId = 0
+    if (!prompt && !lastDomain) {
+      await ctx.reply('Write a domain name', { message_thread_id: ctx.message?.message_thread_id })
+      ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
+      ctx.session.analytics.sessionState = SessionState.Error
+      return
+    }
+    if (!prompt && lastDomain) {
+      const keyboard = new InlineKeyboard().webApp(
+        'Rent in 1.country',
+        `${config.country.hostname}?domain=${lastDomain}`
       )
-      const validate = validateDomainName(domain)
-      if (!validate.valid) {
-        await ctx.reply(validate.error, {
-          parse_mode: 'Markdown',
-          message_thread_id: ctx.message?.message_thread_id
-        })
-        ctx.session.analytics.actualResponseTime = performance.now()
-        ctx.session.analytics.sessionState = SessionState.Error
-        return
-      }
-      ctx.session.oneCountry.lastDomain = domain
-      msgId = (await ctx.reply('Checking name...')).message_id
-      ctx.session.analytics.firstResponseTime = performance.now()
-      const response = await isDomainAvailable(domain)
-      const domainAvailable = response.isAvailable
-      let msg = `The name *${domain}* `
-      if (!domainAvailable && response.isInGracePeriod) {
-        msg += 'is in grace period ❌. Only the owner is able to renew the domain'
-      } else if (!domainAvailable) {
-        msg += `is unavailable ❌.\n${appText.registerKeepWriting}`
+      await ctx.reply(`Rent ${lastDomain}`, {
+        reply_markup: keyboard,
+        message_thread_id: ctx.message?.message_thread_id
+      })
+      ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
+      ctx.session.analytics.sessionState = SessionState.Success
+      return
+    }
+    const domain = this.cleanInput(
+      this.hasPrefix(prompt) ? prompt.slice(1) : prompt
+    )
+    const validate = validateDomainName(domain)
+    if (!validate.valid) {
+      await ctx.reply(validate.error, {
+        parse_mode: 'Markdown',
+        message_thread_id: ctx.message?.message_thread_id
+      })
+      ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
+      ctx.session.analytics.sessionState = SessionState.Error
+      return
+    }
+    ctx.session.oneCountry.lastDomain = domain
+    msgId = (await ctx.reply('Checking name...')).message_id
+    ctx.session.analytics.firstResponseTime = process.hrtime.bigint()
+    const response = await isDomainAvailable(domain)
+    const domainAvailable = response.isAvailable
+    let msg = `The name *${domain}* `
+    if (!domainAvailable && response.isInGracePeriod) {
+      msg += 'is in grace period ❌. Only the owner is able to renew the domain'
+    } else if (!domainAvailable) {
+      msg += `is unavailable ❌.\n${appText.registerKeepWriting}`
+    } else {
+      msg += 'is available ✅.\n'
+      if (!response.priceUSD.error) {
+        msg += `${response.priceOne} ONE = ${response.priceUSD.price} USD for 30 days\n`
       } else {
         msg += 'is available ✅.\n'
         if (!response.priceUSD.error) {
@@ -423,6 +426,8 @@ export class OneCountryBot implements PayableBot {
     } catch (e) {
       console.log(e)
     }
+    ctx.session.analytics.sessionState = SessionState.Success
+    ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
   }
 
   onEnableSubomain = async (ctx: OnMessageContext): Promise<void> => {

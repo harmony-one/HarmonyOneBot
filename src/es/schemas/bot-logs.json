@@ -4,26 +4,30 @@
       "command": {
         "type": "keyword"
       },
+      "time": {
+        "type": "date"
+      },
       "module": {
         "type": "keyword"
       },
       "text": {
-        "type": "text"
+        "type": "text",
+        "fielddata": true
       },
       "userId": {
-        "type": "integer"
+        "type": "long"
       },
       "username": {
         "type": "keyword"
       },
       "totalProcessingTime": {
-        "type": "double"
+        "type": "long"
       },
       "firstResponseTime": {
-        "type": "double"
+        "type": "long"
       },
       "actualResponseTime": {
-        "type": "double"
+        "type": "long"
       },
       "refunded": {
         "type": "boolean"

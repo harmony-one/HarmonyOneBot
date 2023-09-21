@@ -112,7 +112,7 @@ export class SDImagesBotBase {
     const { message_id } = await ctx.reply(
       `You are #${idx + 1} in line for making images. The wait time is about ${(idx + 1) * 15} seconds.`, { message_thread_id: ctx.message?.message_thread_id }
     )
-    ctx.session.analytics.firstResponseTime = performance.now()
+    ctx.session.analytics.firstResponseTime = process.hrtime.bigint()
     // waiting queue
     while (idx !== 0) {
       await sleep(3000 * this.queue.findIndex((v) => v === uuid))
@@ -130,7 +130,7 @@ export class SDImagesBotBase {
     const { message_id: messageId } = await ctx.reply(
       `You are #${idx + 1} in line for making images. The wait time is about ${(idx + 1) * 15} seconds.`, { message_thread_id: ctx.message?.message_thread_id }
     )
-    ctx.session.analytics.firstResponseTime = performance.now()
+    ctx.session.analytics.firstResponseTime = process.hrtime.bigint()
     // waiting queue
     while (idx !== 0) {
       await sleep(3000 * this.queue2.findIndex((v) => v === uuid))
@@ -286,7 +286,7 @@ export class SDImagesBotBase {
       ctx.session.analytics.sessionState = SessionState.Error
       refundCallback()
     } finally {
-      ctx.session.analytics.actualResponseTime = performance.now()
+      ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
     }
 
     this.queue = this.queue.filter((v) => v !== uuid)
@@ -371,7 +371,7 @@ export class SDImagesBotBase {
       ctx.session.analytics.sessionState = SessionState.Error
       refundCallback()
     } finally {
-      ctx.session.analytics.actualResponseTime = performance.now()
+      ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
     }
   }
 }

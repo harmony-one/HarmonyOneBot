@@ -56,7 +56,7 @@ export class TranslateBot implements PayableBot {
     ctx.session.analytics.module = this.module
     if (!this.isSupportedEvent(ctx)) {
       await ctx.reply(`Unsupported command: ${ctx.message?.text}`, { message_thread_id: ctx.message?.message_thread_id })
-      ctx.session.analytics.actualResponseTime = performance.now()
+      ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
       ctx.session.analytics.sessionState = SessionState.Error
       refundCallback('Unsupported command')
       return
@@ -101,7 +101,7 @@ export class TranslateBot implements PayableBot {
 ${langList.join(', ')}
 
 To disable translation, use the command /translatestop.`)
-    ctx.session.analytics.actualResponseTime = performance.now()
+    ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
     ctx.session.analytics.sessionState = SessionState.Success
   }
 
@@ -109,7 +109,7 @@ To disable translation, use the command /translatestop.`)
     ctx.chatAction = 'typing'
     ctx.session.translate.enable = false
     await ctx.reply('Translation is disabled', { message_thread_id: ctx.message?.message_thread_id })
-    ctx.session.analytics.actualResponseTime = performance.now()
+    ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
     ctx.session.analytics.sessionState = SessionState.Success
   }
 
@@ -117,11 +117,11 @@ To disable translation, use the command /translatestop.`)
     const message = ctx.message.text
 
     const progressMessage = await ctx.reply('...', { message_thread_id: ctx.message?.message_thread_id })
-    ctx.session.analytics.firstResponseTime = performance.now()
+    ctx.session.analytics.firstResponseTime = process.hrtime.bigint()
     ctx.chatAction = 'typing'
 
     if (!message) {
-      ctx.session.analytics.actualResponseTime = performance.now()
+      ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
       ctx.session.analytics.sessionState = SessionState.Success
       return
     }
@@ -144,7 +144,7 @@ To disable translation, use the command /translatestop.`)
     // can't detect original language
     if (completion01.completion === 'unknown') {
       await ctx.api.deleteMessage(ctx.chat.id, progressMessage.message_id)
-      ctx.session.analytics.actualResponseTime = performance.now()
+      ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
       ctx.session.analytics.sessionState = SessionState.Success
       return
     }
@@ -152,7 +152,7 @@ To disable translation, use the command /translatestop.`)
     // translation not required.
     if (ctx.session.translate.languages.includes(originalLangCode)) {
       await ctx.api.deleteMessage(ctx.chat.id, progressMessage.message_id)
-      ctx.session.analytics.actualResponseTime = performance.now()
+      ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
       ctx.session.analytics.sessionState = SessionState.Success
       return
     }
@@ -168,7 +168,7 @@ To disable translation, use the command /translatestop.`)
 
     await ctx.api.editMessageText(ctx.chat.id, progressMessage.message_id, response.completion, { parse_mode: 'Markdown' })
 
-    ctx.session.analytics.actualResponseTime = performance.now()
+    ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
     ctx.session.analytics.sessionState = SessionState.Success
   }
 }
