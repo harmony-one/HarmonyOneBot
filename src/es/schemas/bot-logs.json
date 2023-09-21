@@ -11,19 +11,19 @@
         "type": "text"
       },
       "userId": {
-        "type": "integer"
+        "type": "long"
       },
       "username": {
         "type": "keyword"
       },
       "totalProcessingTime": {
-        "type": "double"
+        "type": "long"
       },
       "firstResponseTime": {
-        "type": "double"
+        "type": "long"
       },
       "actualResponseTime": {
-        "type": "double"
+        "type": "long"
       },
       "refunded": {
         "type": "boolean"

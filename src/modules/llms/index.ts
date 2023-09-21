@@ -87,7 +87,7 @@ export class LlmsBot implements PayableBot {
     await sendMessage(ctx, '### unsupported command').catch(async (e) => {
       await this.onError(ctx, e, MAX_TRIES, '### unsupported command')
     })
-    ctx.session.analytics.actualResponseTime = performance.now()
+    ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
   }
 
   private async hasBalance (ctx: OnMessageContext | OnCallBackQueryData): Promise<boolean> {
@@ -159,7 +159,7 @@ export class LlmsBot implements PayableBot {
       if (this.botSuspended) {
         ctx.session.analytics.sessionState = SessionState.Error
         sendMessage(ctx, 'The bot is suspended').catch(async (e) => { await this.onError(ctx, e) })
-        ctx.session.analytics.actualResponseTime = performance.now()
+        ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
         return
       }
       const { prompt } = getCommandNamePrompt(
@@ -187,7 +187,7 @@ export class LlmsBot implements PayableBot {
       if (this.botSuspended) {
         ctx.session.analytics.sessionState = SessionState.Error
         sendMessage(ctx, 'The bot is suspended').catch(async (e) => { await this.onError(ctx, e) })
-        ctx.session.analytics.actualResponseTime = performance.now()
+        ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
         return
       }
       const prompt = ctx.match ? ctx.match : ctx.message?.text
@@ -225,7 +225,7 @@ export class LlmsBot implements PayableBot {
             await sendMessage(ctx, msg, { parseMode: 'Markdown' }).catch(async (e) => {
               await this.onError(ctx, e)
             })
-            ctx.session.analytics.actualResponseTime = performance.now()
+            ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
             return
           }
           const chat: ChatConversation = {
@@ -278,7 +278,7 @@ export class LlmsBot implements PayableBot {
       .replaceAll('$WALLET_ADDRESS', account?.address ?? '')
     ctx.session.analytics.sessionState = SessionState.Success
     await sendMessage(ctx, balanceMessage, { parseMode: 'Markdown' }).catch(async (e) => { await this.onError(ctx, e) })
-    ctx.session.analytics.actualResponseTime = performance.now()
+    ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
   }
 
   async onError (
@@ -301,7 +301,7 @@ export class LlmsBot implements PayableBot {
           ctx,
           'Error: The bot does not have permission to send photos in chat'
         )
-        ctx.session.analytics.actualResponseTime = performance.now()
+        ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
       } else if (e.error_code === 429) {
         this.botSuspended = true
         const retryAfter = e.parameters.retry_after
@@ -318,7 +318,7 @@ export class LlmsBot implements PayableBot {
             ctx.from.username ? ctx.from.username : ''
           } Bot has reached limit, wait ${retryAfter} seconds`
         ).catch(async (e) => { await this.onError(ctx, e, retryCount - 1) })
-        ctx.session.analytics.actualResponseTime = performance.now()
+        ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
         if (method === 'editMessageText') {
           ctx.session.llms.chatConversation.pop() // deletes last prompt
         }
@@ -328,12 +328,12 @@ export class LlmsBot implements PayableBot {
         this.logger.error(
           `On method "${e.method}" | ${e.error_code} - ${e.description}`
         )
-        ctx.session.analytics.actualResponseTime = performance.now()
+        ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
       }
     } else {
       this.logger.error(`${e.toString()}`)
       await sendMessage(ctx, 'Error handling your request').catch(async (e) => { await this.onError(ctx, e, retryCount - 1) })
-      ctx.session.analytics.actualResponseTime = performance.now()
+      ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
     }
   }
 }

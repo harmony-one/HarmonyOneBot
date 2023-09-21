@@ -20,11 +20,11 @@ export interface BotLogData {
   command: string
   module: string
   text?: string
-  userId: number
+  userId: number // long integer
   username?: string
-  totalProcessingTime: number
-  firstResponseTime: number
-  actualResponseTime: number
+  totalProcessingTime: string // converted from bigint
+  firstResponseTime: string // converted from bigint
+  actualResponseTime: string // converted from bigint
   refunded: boolean
   sessionState: string
 }
