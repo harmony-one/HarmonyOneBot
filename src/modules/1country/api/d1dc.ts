@@ -90,7 +90,7 @@ class DcClient {
     const amount = price.toString();
     return {
       amount,
-      formatted: web3Utils.fromWei(amount),
+      formatted: web3Utils.fromWei(amount, 'wei'),
     };
   }
 
@@ -115,7 +115,7 @@ class DcClient {
       expirationTime: expirationTime.toNumber() * 1000,
       lastPrice: {
         amount: lastPrice,
-        formatted: web3Utils.fromWei(lastPrice),
+        formatted: web3Utils.fromWei(lastPrice, 'wei'),
       },
       url,
       prev,

@@ -459,12 +459,22 @@ export class OpenAIBot {
           })
         ).message_id;
       }
-      const webContent = await getWebContent(
-        url,
-        webCrawlerMaxTokens,
-        user,
-        password
-      );
+      const webContent = {
+        urlText: [
+          'Upcoming features for our beloved @harmony1bot: Expert shortcuts + context loading; Chat on website or documents or transcripts; Custom image models or characters; Phone conversations with intent. Join our development + user group @onebotlove! Our Q4 goals are 100 custom Stable Diffusion models (from CivitAI and HuggingFace), 1000 public and private data sources (as GPT4 context or embeddings), and $100K @harmony1bot revenues and tokens with 5 developers or modelers or trainers. Let’s focus on G – not for AGI (artificial general intelligence), but Gen (generative) AI with large language model (LLM). We are, NOT just generative or general AI – but the Generation AI. To prioritize, follow the wisdom of market-product-team fit: generative agents, $1 fees, and twice daily. That is, is Harmony riding the 100x wave of the decade? Are users paying for what they ask and deserve? Do yourselves use the feature as often as toothbrush? ONE Bot’s 3 key metrics are: the total fees users pay in ONE tokens (excluding the initial 100 ONE credits), weekly active users (the total unique Telegram accounts in the last 7 days), daily user engagement (the total messages sent to bot in the last 24 hours). Harmony’s 3 categories of key metrics are: (1) the 7-day moving averages for network transaction fees, for unique wallet addresses, and for ONE token price on Binance; (2) the total value locked (TVL) of assets from multiple bridges, the 30-day trading volume from swap.country and DeFira, and the total delegated stakes on all validators; and, (3) the ONE Bot’s metrics above. These are fully public; anyone can check them via /stats command, while the bot sends them to the team group at 8am PST every day. For examples, Network weekly fees, wallets, price: 37.5k, 13.4k, $0.00961 37.5k Total assets, monthly stakes, weekly swaps: $3.8m, 5.01b, $38.9k 5.01b Bot total earns, weekly users, daily messages: 5.62k, 252, 493 5.62k 🎿OnlyBots: Gen (AI) Tokens for Models, Embeds & Trainings 🎿 OnlyBots: Gen (AI) Tokens for Models, Embeds & Trainings 💍 ONE Bot on Telegram for ALL Your AI (Wishes) 🧚Can you access ALL possible AI models, agents, characters, ', 
+          'services… as ONE bot in a harmonious interface that already has 1 billion users? How about Pay-per-Use rather than $20 monthly subscriptions for each of the hundreds of automation, intelligence, personalization… yet to come?https://blog.s.country/p/one-bot-for-all-generative-ai-on 💍 ONE Bot on Telegram for ALL Your AI (Wishes) 🧚 Can you access ALL possible AI models, agents, characters, services… as ONE bot in a harmonious interface that already has 1 billion users? How about Pay-per-Use rather than $20 monthly subscriptions for each of the hundreds of automation, intelligence, personalization… yet to come? https://blog.s.country/p/one-bot-for-all-generative-ai-on ONE (Bot) LoveYou can view and join @onebotlove right away.https://t.me/onebotlove ONE (Bot) Love You can view and join @onebotlove right away. https://t.me/onebotlove 💍 ONE (Bot) Love – For ALL your AI (Wishes) 🧚‍♀️! @onebotloveMany models, agents, characters.. as ONE bot @harmony1bot.A user group to #build 100+ productivity, entertainment, personalization.. in harmony.Pay-PER-Use, not $20 monthly. SMALL social groups, discreet & omnipresent. 💍 ONE (Bot) Love – For ALL your AI (Wishes) 🧚‍♀️! @onebotlove Many models, agents, characters.. as ONE bot @harmony1bot. A user group to #build 100+ productivity, entertainment, personalization.. in harmony. Pay-PER-Use, not $20 monthly. SMALL social groups, discreet & omnipresent. Priorities: ✅Done, ❤️‍🔥Now, 🔥Today, 🏃‍♀️Soon, 💡Anytime, 🚫Hold. Efforts: 3 Hours ⏳, 3 Days 🌅, 3 Weeks 🌙. 🌊Sun 🦑Julia ⚽Theo 💻Aaron 🌼Yuriy 🚎Artem 🐙Sergey 🫕Frank 🔓Theo 🐍Adam 💬 /ask: Ask Me Anything – ChatGPT4 🐙🔥 /translate LANGUAGE1 LANGUAGE2: Auto-detect source language, and repeat all chat messages with translation in multiple target languages. E.g. /translate en zh-HK zh-CN. 🫕 /bard or b. PROMPT. Support Google’s Bard API (137B parameters) or soon DeepMind’s Gemini API (1.4T parameters for Chinchilla, 5.0T for MassiveText), instead of OpenAI’s ChatGPT4 or Meta’s Llama or Stability’s Stable Vicuña, for the fresh content as Google indexes the open web in real time. Already possible in Bard’s chat console: industry news and latest YouTube videos', 
+          'with full transcript – within days. See 60+ model comparision. 🚎🔥 /sum URL: Crawl the website URL in our backend, then summarize the content with OpenAI ChatGPT4 + 32K context. To showcase GPT4, prioritize for long-form content and large language context: Reddit, Twitter, LinkedIn, Hacker News comments, Medium, GitHub, Wikipedia, Stack Exchange, Discord forums. ✅ E.g. /ask harmony.one/dear or . harmony.one/dear. \n', 
+          '(1024 bytes downloaded, 0.42 time elapsed, 0.3 ONE fees paid.)✅ E.g. /sum harmony.one/dear, or /sum harmony.one/dear in 30 words. Then, all Substack and Notion content. 🔥 /sum URL as USER with PASSWORD: use login credentials in plaintext for gated access, or via archive.org and archive.is for paywalls. E.g.  /sum www.wsj.com/articles/amazon-shines-during-apples-off-season-7f27fc58 with user email and password.✅ Alias as “/ask summarize URL”,  and preprocess to expand all URL in /ask queries. E.g. /ask project mission inharmony.one/dear. Support dynamic or generated pages via a headless browser with Javascript execution. Later, support LangChain’s document loaders & transformers. 🫕 Compare results with GPT4 (with plugins) on parsing and extracting – versus HTML/CSS preprocessed as plain text with optimized parsers. 🚎🔥 /sum URL: Crawl the website URL in our backend, then summarize the content with OpenAI ChatGPT4 + 32K context. To showcase GPT4, prioritize for long-form content and large language context: Reddit, Twitter, LinkedIn, Hacker News comments, Medium, GitHub, Wikipedia, Stack Exchange, Discord forums. ✅ E.g. /ask harmony.one/dear or . harmony.one/dear. \n'],
+        fees: 0,
+        networkTraffic: 0,
+        elapsedTime: 0
+      }
+      // await getWebContent(
+      //   url,
+      //   webCrawlerMaxTokens,
+      //   user,
+      //   password
+      // );
       if (webContent.urlText.length > 0) {
         if (
           !(await this.payments.pay(ctx as OnMessageContext, webContent.fees))
@@ -472,7 +482,7 @@ export class OpenAIBot {
           this.onNotBalanceMessage(ctx);
         } else {
           const chatId = await ctx.chat?.id!
-          const response = await llmWebCrawler(webContent.urlText, prompt, model, chatId, msgId)
+          await llmWebCrawler(prompt, model, chatId, msgId, url)
           if (!(await this.payments.pay(ctx as OnMessageContext, price))) {
             this.onNotBalanceMessage(ctx);
           }

@@ -53,24 +53,26 @@ export const llmCompletion = async (
 
 
 export const llmWebCrawler = async (
-  text: string[],
   prompt: string,
   model: string,
   chadId: number, 
-  msgId: number
+  msgId: number,
+  url: string
 ): Promise<LlmCompletion> => {
   try {
+    if (!url.startsWith("https://")) {
+      url = `https://${url}`;
+    }
     const data = {
-      text: text,
       prompt: prompt,
       chatId: ""+chadId,
       msgId: ""+msgId,
-      token: ""+config.telegramBotAuthToken
+      token: ""+config.telegramBotAuthToken,
+      url: url
     };
-    console.log({data})
-    const url = `${API_ENDPOINT}/llama-index/text`;
-    const response = await axios.post(url, data);
-    console.log(response.data)
+    console.log(url)
+    const urlApi = `${API_ENDPOINT}/llama-index/text`;
+    const response = await axios.post(urlApi, data);
     if (response.data) {
       const totalInputTokens = 0 // response.data.usage.prompt_tokens;
       const totalOutputTokens = 0 // response.data.usage.completion_tokens;
