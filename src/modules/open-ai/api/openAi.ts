@@ -113,8 +113,7 @@ export const streamChatCompletion = async (
   limitTokens = true
 ): Promise<string> => {
   let completion = ''
-  
-  let wordCountMinimum = 2;
+  let wordCountMinimum = 2
   const stream = await openai.chat.completions.create({
     model,
     messages: conversation as OpenAI.Chat.Completions.CreateChatCompletionRequestMessage[],
@@ -139,7 +138,7 @@ export const streamChatCompletion = async (
     console.log(wordCount, wordCountMinimum)
     if (wordCount > wordCountMinimum) { // if (chunck === '.' && wordCount > wordCountMinimum) {
       if (wordCountMinimum < 64) {
-        wordCountMinimum *= 2;
+        wordCountMinimum *= 2
       }
       completion = completion.replaceAll('...', '')
       completion += '...'
