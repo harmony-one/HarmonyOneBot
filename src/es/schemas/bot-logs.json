@@ -11,7 +11,8 @@
         "type": "keyword"
       },
       "text": {
-        "type": "text"
+        "type": "text",
+        "fielddata": true
       },
       "userId": {
         "type": "long"
