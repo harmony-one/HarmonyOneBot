@@ -4,6 +4,9 @@
       "command": {
         "type": "keyword"
       },
+      "time": {
+        "type": "date"
+      },
       "module": {
         "type": "keyword"
       },
