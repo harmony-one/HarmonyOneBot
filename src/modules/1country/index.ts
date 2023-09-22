@@ -192,8 +192,8 @@ export class OneCountryBot implements PayableBot {
       const params = (ctx.match as string).split(' ')
       if (params.length === 3) {
         const [domain, subdomain, url] = params
-        const notAvailable = await isDomainAvailable(domain)
-        if (notAvailable.isAvailable) {
+        const isDomain = await isDomainAvailable(domain)
+        if (isDomain.isAvailable) {
           await ctx.reply(`The domain ${domain} doesn't exist`, {
             message_thread_id: ctx.message?.message_thread_id,
             parse_mode: 'Markdown'
