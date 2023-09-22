@@ -539,9 +539,7 @@ export class OpenAIBot implements PayableBot {
             true
           )
           price += webCrawlerResult.price
-          
           // console.log("1: ", webContent.fees)
-
           if (prompt !== '') {
             newPrompt = `${
               command === 'sum' ? 'Summarize' : ''
