@@ -181,7 +181,7 @@ export class OneCountryBot implements PayableBot {
         return
       }
       if (!ctx.match) {
-        await ctx.reply('Parameter error.\n*/set <domain> <subdomain> <url>*', {
+        await ctx.reply(appText.setParameterError, {
           message_thread_id: ctx.message?.message_thread_id,
           parse_mode: 'Markdown'
         }).catch(async (e) => {
@@ -222,7 +222,7 @@ export class OneCountryBot implements PayableBot {
         ctx.session.analytics.sessionState = SessionState.Success
         // ****** ////
       } else {
-        await ctx.reply('Parameter error.\n*/set <domain> <subdomain> <url>*', {
+        await ctx.reply(appText.setParameterError, {
           message_thread_id: ctx.message?.message_thread_id,
           parse_mode: 'Markdown'
         }).catch(async (e) => {
