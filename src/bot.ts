@@ -377,6 +377,7 @@ const onMessage = async (ctx: OnMessageContext): Promise<void> => {
         const price = bot.getEstimatedPrice(ctx)
         const isPaid = await payments.pay(ctx, price)
         if (isPaid) {
+          logger.info(`command controller: ${bot.constructor.name}`)
           executeOrRefund(ctx, price, bot)
         }
         return
@@ -385,6 +386,7 @@ const onMessage = async (ctx: OnMessageContext): Promise<void> => {
         if (!bot.isSupportedEvent(ctx)) {
           continue
         }
+        logger.info(`command controller: ${bot.constructor.name}`)
         await bot.onEvent(ctx)
         return
       }

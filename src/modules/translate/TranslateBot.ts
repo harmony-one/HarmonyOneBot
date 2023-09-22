@@ -120,11 +120,11 @@ export class TranslateBot implements PayableBot {
         return
       }
 
-      const langCode = command?.text.replace('/', '') ?? null
-      console.log('### langCode', langCode)
+      const langCode = command.text.replace('/', '') ?? null
 
-      const message = ctx.message.text.slice(command.text.length + 1, ctx.message.text.length).trim()
-      await this.onTranslateShortcut(ctx, message, langCode)
+      // Reply message text takes priority
+      const message = ctx.message.reply_to_message?.text ?? ctx.message.text.slice(command.text.length, ctx.message.text.length).trim()
+      await this.translateMessage(ctx, message, langCode)
       return
     }
 
@@ -136,8 +136,8 @@ export class TranslateBot implements PayableBot {
         return
       }
 
-      const message = ctx.message.text.slice(langCode.length + 1, ctx.message.text.length).trim()
-      await this.onTranslateShortcut(ctx, message, langCode)
+      const message = ctx.message.reply_to_message?.text ?? ctx.message.text.slice(langCode.length + 1, ctx.message.text.length).trim()
+      await this.translateMessage(ctx, message, langCode)
       return
     }
 
@@ -182,7 +182,7 @@ To disable translation, use the command /translatestop.`)
     ctx.session.analytics.sessionState = SessionState.Success
   }
 
-  public async onTranslateShortcut (ctx: OnMessageContext, message: string, targetLangCode: string): Promise<void> {
+  public async translateMessage (ctx: OnMessageContext, message: string, targetLangCode: string): Promise<void> {
     const targetLanguage = mapToTargetLang(targetLangCode)
 
     if (targetLanguage === null) {
