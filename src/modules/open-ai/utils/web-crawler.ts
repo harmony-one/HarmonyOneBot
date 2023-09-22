@@ -60,7 +60,12 @@ function parseWebContent (
 export const getCrawlerPrice = async (
   networkTraffic: number
 ): Promise<number> => {
-  return 1 // cents
+  let finalPrice = 0
+  const PRICE_PER_MB = 0.1
+  networkTraffic = networkTraffic / 1048576 //convert to mb
+  finalPrice = PRICE_PER_MB * networkTraffic
+  console.log(finalPrice);
+  return finalPrice // in ONE
 }
 
 // export const getWebContentKagi = async (
@@ -104,6 +109,7 @@ export const getWebContent = async (
       }`
   )
   const text = parseWebContent(result.elements, maxTokens)
+  console.log(result.networkTraffic)
   return {
     urlText: text,
     elapsedTime: result.elapsedTime,
