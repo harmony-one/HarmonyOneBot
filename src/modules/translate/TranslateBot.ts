@@ -1,7 +1,5 @@
 import { type OnMessageContext, type PayableBot, type RefundCallback, SessionState } from '../types'
 import pino, { type Logger } from 'pino'
-import { getChatModel, getChatModelPrice, getTokenNumber } from '../open-ai/api/openAi'
-import config from '../../config'
 import { mapToTargetLang, translator } from './deeplClient'
 
 enum SupportedCommands {
@@ -25,24 +23,9 @@ export class TranslateBot implements PayableBot {
   }
 
   public getEstimatedPrice (ctx: OnMessageContext): number {
-    if (ctx.hasCommand(Object.values(SupportedCommands))) {
-      return 0
-    }
-
-    const hasCommand = this.isCtxHasAnyCommand(ctx)
-
-    if (!hasCommand && ctx.session.translate.enable) {
-      const message = ctx.message.text ?? ''
-      const promptTokens = getTokenNumber(message)
-      const modelPrice = getChatModel(config.openAi.chatGpt.model)
-
-      const languageCount = ctx.session.translate.languages.length
-
-      return getChatModelPrice(modelPrice, true, promptTokens, promptTokens * languageCount) *
-        config.openAi.chatGpt.priceAdjustment
-    }
-
-    return 0
+    const text = ctx.message.reply_to_message?.text ?? ctx.message.text ?? ''
+    const len = text.length
+    return len * 0.00005
   }
 
   public isCtxHasAnyCommand (ctx: OnMessageContext): boolean {
@@ -228,14 +211,14 @@ To disable translation, use the command /translatestop.`)
       if (result.detectedSourceLang !== targetLangCode) {
         translateResults.push(result.text)
       }
-// =======
-//     // can't detect original language
-//     if (completion01.completion === 'unknown') {
-//       await ctx.api.deleteMessage(ctx.chat.id, progressMessage.message_id)
-//       ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
-//       ctx.session.analytics.sessionState = SessionState.Success
-//       return
-// >>>>>>> master
+      // =======
+      //     // can't detect original language
+      //     if (completion01.completion === 'unknown') {
+      //       await ctx.api.deleteMessage(ctx.chat.id, progressMessage.message_id)
+      //       ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
+      //       ctx.session.analytics.sessionState = SessionState.Success
+      //       return
+      // >>>>>>> master
     }
 
     if (translateResults.length === 0) {

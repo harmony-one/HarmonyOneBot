@@ -502,6 +502,7 @@ export class OpenAIBot implements PayableBot {
       )
       if (webContent.urlText !== '') {
         const oneFee = await this.payments.getPriceInONE(webContent.fees)
+        // console.log(+oneFee.toFixed() + 3500000000000000);
         const statusMsg = `Processed ${(webContent.networkTraffic / 1048576).toFixed(2
           )} MB in ${(webContent.elapsedTime / 1000).toFixed(2)} sec (${this.payments.toONE(oneFee, false).toFixed(2)} ONE)`
         await ctx.api.editMessageText(ctx.chat?.id ?? '', webCrawlerStatusMsgId, statusMsg, { parse_mode: 'Markdown' }).catch(async (e) => {
@@ -538,6 +539,9 @@ export class OpenAIBot implements PayableBot {
             true
           )
           price += webCrawlerResult.price
+          
+          // console.log("1: ", webContent.fees)
+
           if (prompt !== '') {
             newPrompt = `${
               command === 'sum' ? 'Summarize' : ''
