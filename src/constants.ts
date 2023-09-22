@@ -126,6 +126,39 @@ export const MODELS = {
 '
 }
 
+export const LANG = {
+  text: `
+  bg - Bulgarian
+cs - Czech
+da - Danish
+de - German
+el - Greek
+en - English (American)
+es - Spanish
+et - Estonian
+fi - Finnish
+fr - French
+hu - Hungarian
+id - Indonesian
+it - Italian
+ja - Japanese
+ko - Korean
+lt - Lithuanian
+lv - Latvian
+nb - Norwegian (Bokmål)
+nl - Dutch
+pl - Polish
+ro - Romanian
+ru - Russian
+sk - Slovak
+sl - Slovenian
+sv - Swedish
+tr - Turkish
+uk - Ukrainian
+zh - Chinese (simplified)
+  `
+}
+
 export const TERMS = {
   text: `1. Overview
 Welcome to our Telegram Bot. The following Terms of Service ("Terms") outline your rights and responsibilities when using our Bot ("Service"), which is owned and operated by Harmony ONE. By engaging with our Service, you are accepting and agreeing to abide by these Terms.

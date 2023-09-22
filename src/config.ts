@@ -148,5 +148,6 @@ export default {
     username: process.env.ES_USERNAME ?? '',
     password: process.env.ES_PASSWORD ?? '',
     index: process.env.ES_INDEX
-  }
+  },
+  deepL: { apikey: process.env.DEEPL_API_KEY ?? '' }
 }
