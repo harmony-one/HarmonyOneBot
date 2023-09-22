@@ -323,6 +323,10 @@ export class BotPayments {
     }
   }
 
+  public async rent (ctx: OnMessageContext, domainName: string): Promise<boolean> {
+    return true
+  }
+
   public async pay (ctx: OnMessageContext, amountUSD: number): Promise<boolean> {
     // eslint-disable-next-line @typescript-eslint/naming-convention
     const { from, message_id, chat } = ctx.update.message
