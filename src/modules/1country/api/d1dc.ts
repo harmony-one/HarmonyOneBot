@@ -1,6 +1,8 @@
 import { ethers } from 'ethers'
-import web3Utils from 'web3-utils'
+// import web3Utils from 'web3-utils'
+import Web3 from 'web3'
 import pino, { type Logger } from 'pino'
+// import bn, { BigNumber } from 'bignumber.js'
 
 import DCv2Abi from '../contracts/DCv2'
 import config from '../../../config'
@@ -76,7 +78,7 @@ class DcClient {
     const amount = price.toString()
     return {
       amount,
-      formatted: web3Utils.fromWei(amount, 'wei')
+      formatted: Web3.utils.fromWei(amount)
     }
   }
 
@@ -101,7 +103,7 @@ class DcClient {
       expirationTime: expirationTime.toNumber() * 1000,
       lastPrice: {
         amount: lastPrice,
-        formatted: web3Utils.fromWei(lastPrice, 'wei')
+        formatted: Web3.utils.fromWei(lastPrice)
       },
       url,
       prev,

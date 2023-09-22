@@ -97,7 +97,7 @@ ES.init()
 bot.use(async (ctx: BotContext, next: NextFunction): Promise<void> => {
   const transaction = Sentry.startTransaction({ name: 'bot-command' })
   const entities = ctx.entities()
-  const startTime = performance.now()
+  const startTime = process.hrtime.bigint()
   let command = ''
   for (const ent of entities) {
     if (ent.type === 'bot_command') {
@@ -120,14 +120,14 @@ bot.use(async (ctx: BotContext, next: NextFunction): Promise<void> => {
     const userId = Number(ctx.message?.from?.id ?? '0')
     const username = ctx.message?.from?.username ?? ''
     if (!ctx.session.analytics.actualResponseTime) {
-      ctx.session.analytics.actualResponseTime = performance.now()
+      ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
     }
     if (!ctx.session.analytics.firstResponseTime) {
       ctx.session.analytics.firstResponseTime = ctx.session.analytics.actualResponseTime
     }
-    const firstResponseTime = ctx.session.analytics.firstResponseTime - startTime
-    const actualResponseTime = ctx.session.analytics.actualResponseTime - startTime
-    const totalProcessingTime = performance.now() - startTime
+    const firstResponseTime = ((ctx.session.analytics.firstResponseTime - startTime) / 1000n).toString()
+    const actualResponseTime = ((ctx.session.analytics.actualResponseTime - startTime) / 1000n).toString()
+    const totalProcessingTime = (process.hrtime.bigint() - startTime).toString()
     ES.add({
       command,
       text: ctx.message?.text ?? '',
@@ -180,8 +180,8 @@ function createInitialSessionData (): BotSessionData {
     refunded: false,
     analytics: {
       module: '',
-      firstResponseTime: 0,
-      actualResponseTime: 0,
+      firstResponseTime: 0n,
+      actualResponseTime: 0n,
       sessionState: SessionState.Initial
     }
   }

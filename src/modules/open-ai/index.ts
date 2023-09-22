@@ -258,7 +258,7 @@ export class OpenAIBot implements PayableBot {
       .catch(async (e) => {
         await this.onError(ctx, e, MAX_TRIES, '### unsupported command')
       })
-    ctx.session.analytics.actualResponseTime = performance.now()
+    ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
   }
 
   private async hasBalance (ctx: OnMessageContext | OnCallBackQueryData): Promise<boolean> {
@@ -294,13 +294,13 @@ export class OpenAIBot implements PayableBot {
           })
         }))
         ctx.session.analytics.sessionState = SessionState.Success
-        ctx.session.analytics.actualResponseTime = performance.now()
+        ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
       } else {
         ctx.session.analytics.sessionState = SessionState.Error
         await sendMessage(ctx, 'Bot disabled').catch(async (e) => {
           await this.onError(ctx, e, MAX_TRIES, 'Bot disabled')
         })
-        ctx.session.analytics.actualResponseTime = performance.now()
+        ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
       }
     } catch (e) {
       await this.onError(
@@ -321,7 +321,7 @@ export class OpenAIBot implements PayableBot {
         const fileId = photo?.pop()?.file_id // with pop() get full image quality
         if (!fileId) {
           await ctx.reply('Cannot retrieve the image file. Please try again.')
-          ctx.session.analytics.actualResponseTime = performance.now()
+          ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
           return
         }
         const file = await ctx.api.getFile(fileId)
@@ -361,7 +361,7 @@ export class OpenAIBot implements PayableBot {
     const { conversation, ctx, model } = data
     try {
       if (!msgId) {
-        ctx.session.analytics.firstResponseTime = performance.now()
+        ctx.session.analytics.firstResponseTime = process.hrtime.bigint()
         msgId = (
           await ctx.reply('...', {
             message_thread_id:
@@ -386,7 +386,7 @@ export class OpenAIBot implements PayableBot {
       }
       if (completion) {
         ctx.session.analytics.sessionState = SessionState.Success
-        ctx.session.analytics.actualResponseTime = performance.now()
+        ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
         const price = getPromptPrice(completion, data)
         this.logger.info(
           `streamChatCompletion result = tokens: ${
@@ -415,7 +415,7 @@ export class OpenAIBot implements PayableBot {
       await sendMessage(ctx, 'The bot is suspended').catch(async (e) => {
         await this.onError(ctx, e)
       })
-      ctx.session.analytics.actualResponseTime = performance.now()
+      ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
       return
     }
     try {
@@ -435,7 +435,7 @@ export class OpenAIBot implements PayableBot {
         await sendMessage(ctx, 'Error: Missing url').catch(async (e) => {
           await this.onError(ctx, e)
         })
-        ctx.session.analytics.actualResponseTime = performance.now()
+        ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
       }
     } catch (e) {
       await this.onError(ctx, e)
@@ -466,7 +466,7 @@ export class OpenAIBot implements PayableBot {
         ).catch(async (e) => {
           await this.onError(ctx, e)
         })
-        ctx.session.analytics.actualResponseTime = performance.now()
+        ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
         return
       }
       let price = 0
@@ -484,16 +484,16 @@ export class OpenAIBot implements PayableBot {
         }
         ctx.session.analytics.sessionState = SessionState.Success
         await sendMessage(ctx, maskedPrompt)
-        ctx.session.analytics.actualResponseTime = performance.now()
+        ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
       }
-      const msgId = (
+      const webCrawlerStatusMsgId = (
         await ctx.reply('...', {
           message_thread_id:
             ctx.message?.message_thread_id ??
             ctx.message?.reply_to_message?.message_thread_id
         })
       ).message_id
-      ctx.session.analytics.firstResponseTime = performance.now()
+      ctx.session.analytics.firstResponseTime = process.hrtime.bigint()
       const webContent = await getWebContent(
         url,
         webCrawlerMaxTokens,
@@ -501,12 +501,25 @@ export class OpenAIBot implements PayableBot {
         password
       )
       if (webContent.urlText !== '') {
-        price = await getCrawlerPrice(webContent.networkTraffic)
+        const oneFee = await this.payments.getPriceInONE(webContent.fees)
+        const statusMsg = `Processed ${(webContent.networkTraffic / 1048576).toFixed(2
+          )} MB in ${(webContent.elapsedTime / 1000).toFixed(2)} sec (${this.payments.toONE(oneFee, false).toFixed(2)} ONE)`
+        await ctx.api.editMessageText(ctx.chat?.id ?? '', webCrawlerStatusMsgId, statusMsg, { parse_mode: 'Markdown' }).catch(async (e) => {
+          await this.onError(ctx, e)
+        })
+        price = webContent.fees
         if (
           !(await this.payments.pay(ctx as OnMessageContext, webContent.fees))
         ) {
           await this.onNotBalanceMessage(ctx)
         } else {
+          const msgId = (
+            await ctx.reply('...', {
+              message_thread_id:
+                ctx.message?.message_thread_id ??
+                ctx.message?.reply_to_message?.message_thread_id
+            })
+          ).message_id
           let newPrompt: string
           const webCrawlConversation: ChatConversation[] = []
           if (command !== 'sum') {
@@ -573,7 +586,7 @@ export class OpenAIBot implements PayableBot {
         await sendMessage(ctx, 'The bot is suspended').catch(async (e) => {
           await this.onError(ctx, e)
         })
-        ctx.session.analytics.actualResponseTime = performance.now()
+        ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
         return
       }
       const { username } = ctx.me
@@ -599,7 +612,7 @@ export class OpenAIBot implements PayableBot {
         sendMessage(ctx, 'The bot is suspended').catch(async (e) => {
           await this.onError(ctx, e)
         })
-        ctx.session.analytics.actualResponseTime = performance.now()
+        ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
         return
       }
       const { prompt } = getCommandNamePrompt(
@@ -626,7 +639,7 @@ export class OpenAIBot implements PayableBot {
       if (this.botSuspended) {
         ctx.session.analytics.sessionState = SessionState.Error
         sendMessage(ctx, 'The bot is suspended').catch(async (e) => { await this.onError(ctx, e) })
-        ctx.session.analytics.actualResponseTime = performance.now()
+        ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
         return
       }
       ctx.session.openAi.chatGpt.requestQueue.push(
@@ -648,7 +661,7 @@ export class OpenAIBot implements PayableBot {
       if (this.botSuspended) {
         ctx.session.analytics.sessionState = SessionState.Error
         await sendMessage(ctx, 'The bot is suspended').catch(async (e) => { await this.onError(ctx, e) })
-        ctx.session.analytics.actualResponseTime = performance.now()
+        ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
         return
       }
       const prompt = ctx.match ? ctx.match : ctx.message?.text
@@ -681,7 +694,7 @@ export class OpenAIBot implements PayableBot {
                 : appText.introText
             ctx.session.analytics.sessionState = SessionState.Success
             await sendMessage(ctx, msg, { parseMode: 'Markdown' }).catch(async (e) => { await this.onError(ctx, e) })
-            ctx.session.analytics.actualResponseTime = performance.now()
+            ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
             return
           }
           const { url } = hasUrl(ctx, prompt)
@@ -730,12 +743,12 @@ export class OpenAIBot implements PayableBot {
         `${appText.gptLast}\n_${chat[chat.length - 1].content}_`,
         { parseMode: 'Markdown' }
       ).catch(async (e) => { await this.onError(ctx, e) })
-      ctx.session.analytics.actualResponseTime = performance.now()
+      ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
     } else {
       ctx.session.analytics.sessionState = SessionState.Error
       await sendMessage(ctx, 'To start a conversation please write */ask*', { parseMode: 'Markdown' })
         .catch(async (e) => { await this.onError(ctx, e) })
-      ctx.session.analytics.actualResponseTime = performance.now()
+      ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
     }
   }
 
@@ -760,7 +773,7 @@ export class OpenAIBot implements PayableBot {
       .replaceAll('$WALLET_ADDRESS', account?.address ?? '')
     ctx.session.analytics.sessionState = SessionState.Error
     await sendMessage(ctx, balanceMessage, { parseMode: 'Markdown' }).catch(async (e) => { await this.onError(ctx, e) })
-    ctx.session.analytics.actualResponseTime = performance.now()
+    ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
   }
 
   async onError (
@@ -783,7 +796,7 @@ export class OpenAIBot implements PayableBot {
           ctx,
           'Error: The bot does not have permission to send photos in chat'
         )
-        ctx.session.analytics.actualResponseTime = performance.now()
+        ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
       } else if (ex.error_code === 429) {
         this.botSuspended = true
         const retryAfter = ex.parameters.retry_after
@@ -800,7 +813,7 @@ export class OpenAIBot implements PayableBot {
             ctx.from.username ? ctx.from.username : ''
           } Bot has reached limit, wait ${retryAfter} seconds`
         ).catch(async (e) => { await this.onError(ctx, e, retryCount - 1) })
-        ctx.session.analytics.actualResponseTime = performance.now()
+        ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
         if (method === 'editMessageText') {
           ctx.session.openAi.chatGpt.chatConversation.pop() // deletes last prompt
         }
@@ -817,21 +830,21 @@ export class OpenAIBot implements PayableBot {
       this.logger.error(`OPENAI Error ${ex.status}(${ex.code}) - ${ex.message}`)
       if (ex.code === 'context_length_exceeded') {
         await sendMessage(ctx, ex.message).catch(async (e) => { await this.onError(ctx, e, retryCount - 1) })
-        ctx.session.analytics.actualResponseTime = performance.now()
+        ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
         await this.onEnd(ctx)
       } else {
         await sendMessage(
           ctx,
           'Error accessing OpenAI (ChatGPT). Please try later'
         ).catch(async (e) => { await this.onError(ctx, e, retryCount - 1) })
-        ctx.session.analytics.actualResponseTime = performance.now()
+        ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
       }
     } else {
       this.logger.error(`${ex.toString()}`)
       await sendMessage(ctx, 'Error handling your request')
         .catch(async (e) => { await this.onError(ctx, e, retryCount - 1) }
         )
-      ctx.session.analytics.actualResponseTime = performance.now()
+      ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
     }
   }
 }
