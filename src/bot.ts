@@ -34,7 +34,7 @@ import { BotSchedule } from './modules/schedule'
 import { LlmsBot } from './modules/llms'
 import { DocumentHandler } from './modules/document-handler'
 import config from './config'
-import { commandsHelpText, FEEDBACK, LOVE, MODELS, SUPPORT, TERMS } from './constants'
+import { commandsHelpText, FEEDBACK, LOVE, MODELS, SUPPORT, TERMS, LANG } from './constants'
 import prometheusRegister, { PrometheusMetrics } from './metrics/prometheus'
 
 import { chatService, statsService } from './database/services'
@@ -495,6 +495,14 @@ bot.command('support', async (ctx) => {
 bot.command('models', async (ctx) => {
   writeCommandLog(ctx as OnMessageContext).catch(logErrorHandler)
   return await ctx.reply(MODELS.text, {
+    parse_mode: 'Markdown',
+    disable_web_page_preview: true
+  })
+})
+
+bot.command('lang', async (ctx) => {
+  writeCommandLog(ctx as OnMessageContext).catch(logErrorHandler)
+  return await ctx.reply(LANG.text, {
     parse_mode: 'Markdown',
     disable_web_page_preview: true
   })
