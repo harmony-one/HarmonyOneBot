@@ -129,6 +129,7 @@ export class BotPayments {
 
   private async getTransactionFee (): Promise<bn> {
     const gasPrice = await this.web3.eth.getGasPrice()
+    // console.log("Gas Price: ", gasPrice);
     return bn(gasPrice.toString()).multipliedBy(35000)
   }
 
