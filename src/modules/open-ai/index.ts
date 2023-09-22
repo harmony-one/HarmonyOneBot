@@ -501,10 +501,10 @@ export class OpenAIBot implements PayableBot {
         password
       )
       if (webContent.urlText !== '') {
-        //const oneFeeForCrawl = webContent.fees
+        // const oneFeeForCrawl = webContent.fees
         price = webContent.fees
 
-        console.log("1", price)
+        console.log('1', price)
 
         if (
           !(await this.payments.pay(ctx as OnMessageContext, webContent.fees))
@@ -537,8 +537,7 @@ export class OpenAIBot implements PayableBot {
           )
           price += webCrawlerResult.price
 
-          console.log("2", price)
-
+          console.log('2', price)
 
           if (prompt !== '') {
             newPrompt = `${
@@ -558,22 +557,15 @@ export class OpenAIBot implements PayableBot {
             model: model || config.openAi.chatGpt.model,
             ctx
           }
-
-      /*------------------------------------------------------------------------------------------*/
           const statusMsg = `Processed ${(webContent.networkTraffic / 1048576).toFixed(2
             )} MB in ${(webContent.elapsedTime / 1000).toFixed(2)} sec (${price.toFixed(2)} ONE)`
-              await ctx.api.editMessageText(ctx.chat?.id ?? '', webCrawlerStatusMsgId, statusMsg, { parse_mode: 'Markdown' }).catch(async (e) => {
-              await this.onError(ctx, e)
+          await ctx.api.editMessageText(ctx.chat?.id ?? '', webCrawlerStatusMsgId, statusMsg, { parse_mode: 'Markdown' }).catch(async (e) => {
+            await this.onError(ctx, e)
           })
-      /*------------------------------------------------------------------------------------------*/
           const result = await this.promptGen(payload, msgId)
           // chat = [...result.chat]
           price += result.price
-
-          console.log("3", price)
-
-
-
+          console.log('3', price)
           if (!(await this.payments.pay(ctx as OnMessageContext, price))) {
             await this.onNotBalanceMessage(ctx)
           }

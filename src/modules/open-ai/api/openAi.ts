@@ -135,7 +135,7 @@ export const streamChatCompletion = async (
     // if (wordCount > 20) {
     //   throw getGrammy429Error()
     // }
-    //console.log(wordCount, wordCountMinimum)
+    // console.log(wordCount, wordCountMinimum)
     if (wordCount > wordCountMinimum) { // if (chunck === '.' && wordCount > wordCountMinimum) {
       if (wordCountMinimum < 64) {
         wordCountMinimum *= 2
@@ -206,12 +206,10 @@ export const getChatModelPrice = (
   inputTokens: number,
   outPutTokens?: number
 ): number => {
-  let price = 0;
-  let inputPrice = model.inputPrice * inputTokens
-  let outputPrice = outPutTokens ? outPutTokens * model.outputPrice : model.maxContextTokens * model.outputPrice
-  
+  let price = 0
+  const inputPrice = model.inputPrice * inputTokens
+  const outputPrice = outPutTokens ? outPutTokens * model.outputPrice : model.maxContextTokens * model.outputPrice
   price = inputPrice + outputPrice
-
   price = inCents ? price * 100 : price
   return price / 1000
 }
