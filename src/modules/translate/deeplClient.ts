@@ -1,8 +1,8 @@
 import * as deepl from 'deepl-node'
 import type { TargetLanguageCode } from 'deepl-node/dist/types'
+import config from '../../config'
 
-const authKey = 'da6c508b-1a83-2bbe-5d83-12ec2215b141:fx'
-export const translator = new deepl.Translator(authKey)
+export const translator = new deepl.Translator(config.deepL.apikey)
 
 const LANG_MAP: Record<string, TargetLanguageCode> = {
   en: 'en-US',
