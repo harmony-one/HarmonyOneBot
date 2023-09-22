@@ -193,7 +193,6 @@ export class OneCountryBot implements PayableBot {
       if (params.length === 3) {
         const [domain, subdomain, url] = params
         const notAvailable = await isDomainAvailable(domain)
-        console.log(notAvailable)
         if (notAvailable.isAvailable) {
           await ctx.reply(`The domain ${domain} doesn't exist`, {
             message_thread_id: ctx.message?.message_thread_id,
@@ -201,6 +200,8 @@ export class OneCountryBot implements PayableBot {
           }).catch(async (e) => {
             await this.onError(ctx, e)
           })
+          ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
+          ctx.session.analytics.sessionState = SessionState.Error
           return
         }
         if (!isValidUrl(url)) {
@@ -210,11 +211,15 @@ export class OneCountryBot implements PayableBot {
           }).catch(async (e) => {
             await this.onError(ctx, e)
           })
+          ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
+          ctx.session.analytics.sessionState = SessionState.Error
           return
         }
-        /// ****** SET dcContract and payment logic
+        // ************** dc set process ********************
         await ctx.reply('Subdomain created')
         console.log(subdomain)
+        ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
+        ctx.session.analytics.sessionState = SessionState.Success
         // ****** ////
       } else {
         await ctx.reply('Parameter error.\n*/set <domain> <subdomain> <url>*', {
@@ -251,7 +256,7 @@ export class OneCountryBot implements PayableBot {
         return
       }
       if (!prompt && lastDomain) {
-        // ************** purchase process ********************
+        // ************** dc rent process ********************
         if (
           !(await this.payments.rent(ctx as OnMessageContext, lastDomain)) // to be implemented
         ) {
