@@ -135,7 +135,6 @@ export const streamChatCompletion = async (
     // if (wordCount > 20) {
     //   throw getGrammy429Error()
     // }
-    console.log(wordCount, wordCountMinimum)
     if (wordCount > wordCountMinimum) { // if (chunck === '.' && wordCount > wordCountMinimum) {
       if (wordCountMinimum < 64) {
         wordCountMinimum *= 2
