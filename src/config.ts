@@ -134,7 +134,7 @@ export default {
   walletConnect: { projectId: process.env.WALLET_CONNECT_PROJECT_ID ?? '' },
   db: { url: process.env.DATABASE_URL ?? '' },
   credits: {
-    maxChats: 10,
+    maxChats: 3,
     maxChatsWhitelist: (process.env.CREDITS_CHATS_WHITELIST ?? 'stephentse')
       .split(',')
       .map((item) => item.toString().toLowerCase()),

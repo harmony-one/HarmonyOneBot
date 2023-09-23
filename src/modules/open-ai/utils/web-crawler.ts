@@ -62,7 +62,7 @@ export const getCrawlerPrice = async (
 ): Promise<number> => {
   const PRICE_PER_MB = 0.1
   networkTraffic = networkTraffic / 1048576 // convert to mb
-  let finalPrice = PRICE_PER_MB * networkTraffic
+  const finalPrice = PRICE_PER_MB * networkTraffic
   // console.log(networkTraffic, ": ", finalPrice)
   return +finalPrice.toFixed(2) // cents
 }
