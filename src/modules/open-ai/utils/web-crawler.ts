@@ -60,7 +60,7 @@ function parseWebContent (
 export const getCrawlerPrice = async (
   networkTraffic: number
 ): Promise<number> => {
-  const PRICE_PER_MB = 0.1
+  const PRICE_PER_MB = 1
   networkTraffic = networkTraffic / 1048576 // convert to mb
   const finalPrice = PRICE_PER_MB * networkTraffic
   // console.log(networkTraffic, ": ", finalPrice)

@@ -135,7 +135,7 @@ export default {
   db: { url: process.env.DATABASE_URL ?? '' },
   credits: {
     maxChats: 3,
-    maxChatsWhitelist: (process.env.CREDITS_CHATS_WHITELIST ?? 'stephentse')
+    maxChatsWhitelist: (process.env.CREDITS_CHATS_WHITELIST ?? '')
       .split(',')
       .map((item) => item.toString().toLowerCase()),
     creditsAmount: '100'
