@@ -1,6 +1,5 @@
 import { ComfyClient } from '../../qrcode/comfy/ComfyClient'
 import { type OnMessageContext, type OnCallBackQueryData } from '../../types'
-import config from '../../../config'
 import { sleep } from '../utils'
 import {
   buildImgPromptLora,
@@ -15,6 +14,12 @@ import {
 import { waitingExecute } from './helpers'
 import axios from 'axios'
 
+export interface ISDServerConfig {
+  trainAPI: string
+  comfyHost: string
+  comfyWsHost: string
+}
+
 export interface Txt2ImgResponse {
   images: Buffer[]
   parameters: object
@@ -25,10 +30,10 @@ export interface Txt2ImgResponse {
 const getRandomSeed = (): number => Math.round(Math.random() * 1e15)
 
 export class Client {
-  txt2img = async (options: Txt2ImgOptions, serverConfig?: { host: string, wsHost: string }): Promise<Txt2ImgResponse> => {
-    const comfyClient = new ComfyClient(serverConfig ?? {
-      host: config.comfyHost,
-      wsHost: config.comfyWsHost
+  txt2img = async (options: Txt2ImgOptions, serverConfig: ISDServerConfig): Promise<Txt2ImgResponse> => {
+    const comfyClient = new ComfyClient({
+      host: serverConfig.comfyHost,
+      wsHost: serverConfig.comfyWsHost
     })
 
     try {
@@ -77,12 +82,11 @@ export class Client {
   img2img = async (
     fileBuffer: Buffer,
     options: Img2ImgOptions,
-    serverConfig?: { host: string, wsHost: string }
+    serverConfig: ISDServerConfig
   ): Promise<Txt2ImgResponse> => {
     const comfyClient = new ComfyClient({
-      host: config.comfyHost,
-      wsHost: config.comfyWsHost,
-      ...serverConfig
+      host: serverConfig.comfyHost,
+      wsHost: serverConfig.comfyWsHost
     })
 
     try {
@@ -156,12 +160,12 @@ export class Client {
       comfyClient.abortWebsocket()
 
       const result: Txt2ImgResponse =
-       {
-         images,
-         parameters: {},
-         all_seeds: [String(seed)],
-         info: ''
-       }
+      {
+        images,
+        parameters: {},
+        all_seeds: [String(seed)],
+        info: ''
+      }
 
       return result
     } catch (e) {
@@ -175,16 +179,15 @@ export class Client {
     loraName: string,
     modelAlias: string,
     ctx: OnMessageContext | OnCallBackQueryData,
-    serverConfig?: { host: string, wsHost: string }
+    serverConfig: ISDServerConfig
   ): Promise<void> => {
     const comfyClient = new ComfyClient({
-      host: config.comfyHost,
-      wsHost: config.comfyWsHost,
-      ...serverConfig
+      host: serverConfig.comfyHost,
+      wsHost: serverConfig.comfyWsHost
     })
 
     // TODO
-    const trainServer = config.sdTrainHost
+    const trainServer = serverConfig.trainAPI
 
     try {
       let attempts = 3
@@ -210,7 +213,7 @@ export class Client {
       let res = await axios.get(`${trainServer}/add/${loraName}/${modelPath}`)
       let train = res.data
 
-      await ctx.reply(`Starting training with ${fileBuffers.length} images, your number is ${train.numberInQueue}`)
+      await ctx.reply(`Starting training ${loraName} with ${fileBuffers.length} images`)
 
       while (train.status === 'IN_PROGRESS' || train.status === 'WAITING') {
         await sleep(1000)

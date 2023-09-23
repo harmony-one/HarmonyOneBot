@@ -8,9 +8,7 @@ export default {
     [],
   telegramBotAuthToken: process.env.TELEGRAM_BOT_AUTH_TOKEN ?? '',
   openAiKey: process.env.OPENAI_API_KEY,
-  comfyHost: process.env.COMFY_HOST ?? '',
-  sdTrainHost: process.env.SD_TRAIN_HOST ?? '',
-  comfyWsHost: process.env.COMFY_WS_HOST ?? '',
+  sdBalancer: process.env.SD_BALANCER ?? '',
   comfyHost2: process.env.COMFY_HOST2 ?? '',
   comfyWsHost2: process.env.COMFY_WS_HOST2 ?? '',
   stableDiffusion: {
