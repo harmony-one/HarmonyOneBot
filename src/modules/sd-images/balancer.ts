@@ -22,6 +22,7 @@ export interface IBalancerOperation {
   id: string
   status: OPERATION_STATUS
   queueNumber: number
+  serverNumber: number
   server: {
     comfyAPI: string
     trainAPI: string

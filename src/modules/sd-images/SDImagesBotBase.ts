@@ -118,7 +118,7 @@ export class SDImagesBotBase {
 
     // eslint-disable-next-line @typescript-eslint/naming-convention
     const { message_id } = await ctx.reply(
-      `You are #${balancerOperaton.queueNumber + 1} in line for making images. The wait time is about ${(balancerOperaton.queueNumber + 1) * 15} seconds.`, { message_thread_id: ctx.message?.message_thread_id }
+      `You are #${balancerOperaton.queueNumber + 1} on the ${balancerOperaton.serverNumber + 1} server, in line for making images. The wait time is about ${(balancerOperaton.queueNumber + 1) * 15} seconds.`, { message_thread_id: ctx.message?.message_thread_id }
     )
     ctx.session.analytics.firstResponseTime = process.hrtime.bigint()
     // waiting queue
@@ -156,6 +156,10 @@ export class SDImagesBotBase {
         lora
       }, balancerOperaton.server)
 
+      if (balancerOperatonId) {
+        await completeOperation(balancerOperatonId, OPERATION_STATUS.SUCCESS)
+      }
+
       const reqMessage = session.message
         ? session.message.split(' ').length > 1
           ? session.message
@@ -170,6 +174,10 @@ export class SDImagesBotBase {
       }
       ctx.session.analytics.sessionState = SessionState.Success
     } catch (e: any) {
+      if (balancerOperatonId) {
+        await completeOperation(balancerOperatonId, OPERATION_STATUS.ERROR)
+      }
+
       ctx.chatAction = null
       const msgExtras: MessageExtras = { message_thread_id: ctx.message?.message_thread_id }
       if (e instanceof GrammyError) {
@@ -184,10 +192,6 @@ export class SDImagesBotBase {
       }
       ctx.session.analytics.sessionState = SessionState.Error
       refundCallback()
-    }
-
-    if (balancerOperatonId) {
-      await completeOperation(balancerOperatonId, OPERATION_STATUS.SUCCESS)
     }
   }
 
