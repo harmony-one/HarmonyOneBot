@@ -73,6 +73,9 @@ export class OpenAIBot implements PayableBot {
     if (isMentioned(ctx)) {
       return true
     }
+    if (ctx.session.openAi.chatGpt.isFreePromptChatGroups) {
+      return true
+    }
     const hasReply = this.isSupportedImageReply(ctx)
     const chatPrefix = hasPrefix(ctx.message?.text ?? '')
     if (chatPrefix !== '') {
@@ -141,7 +144,7 @@ export class OpenAIBot implements PayableBot {
 
   public async onEvent (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
     ctx.session.analytics.module = this.module
-    if (!(this.isSupportedEvent(ctx)) && ctx.chat?.type !== 'private') {
+    if (!(this.isSupportedEvent(ctx)) && (ctx.chat?.type !== 'private')) { // && (ctx.chat?.type !== 'private' || ctx.session.openAi.chatGpt.isFreePromptChatGroups)
       ctx.session.analytics.sessionState = SessionState.Error
       this.logger.warn(`### unsupported command ${ctx.message?.text}`)
       return
@@ -247,7 +250,7 @@ export class OpenAIBot implements PayableBot {
       return
     }
 
-    if (ctx.chat?.type === 'private') {
+    if (ctx.chat?.type === 'private' || ctx.session.openAi.chatGpt.isFreePromptChatGroups) {
       await this.onPrivateChat(ctx)
       return
     }
@@ -658,6 +661,20 @@ export class OpenAIBot implements PayableBot {
     }
   }
 
+  private async freePromptChatGroup (ctx: OnMessageContext | OnCallBackQueryData, prompt: string): Promise<boolean> {
+    if (prompt === 'on' || prompt === 'On') {
+      ctx.session.openAi.chatGpt.isFreePromptChatGroups = true
+      await ctx.reply('Command free Open AI is enabled').catch(async (e) => { await this.onError(ctx, e) })
+      return true
+    }
+    if (prompt === 'off' || prompt === 'Off') {
+      ctx.session.openAi.chatGpt.isFreePromptChatGroups = false
+      await ctx.reply('Command free Open AI is disabled').catch(async (e) => { await this.onError(ctx, e) })
+      return true
+    }
+    return false
+  }
+
   async onChat (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
     try {
       if (this.botSuspended) {
@@ -667,6 +684,9 @@ export class OpenAIBot implements PayableBot {
         return
       }
       const prompt = ctx.match ? ctx.match : ctx.message?.text
+      if (await this.freePromptChatGroup(ctx, prompt as string)) {
+        return
+      }
       ctx.session.openAi.chatGpt.requestQueue.push(
         await preparePrompt(ctx, prompt as string)
       )

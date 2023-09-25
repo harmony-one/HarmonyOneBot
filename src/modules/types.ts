@@ -45,6 +45,7 @@ export interface ChatConversation {
 export interface ChatGptSessionData {
   model: string
   isEnabled: boolean
+  isFreePromptChatGroups: boolean
   chatConversation: ChatConversation[]
   usage: number
   price: number
