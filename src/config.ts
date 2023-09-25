@@ -54,9 +54,10 @@ export default {
       webCrawlerContext: 'You will receive a web crawling text. Please get keys concepts, but try to stay within 4000 words in your response.',
       maxTokens: parseInt(process.env.OPENAI_MAX_TOKENS ?? '800'), // telegram messages has a char limit
       wordLimit: 30,
-      wordCountBetween: process.env.WORD_COUNT_BETWEEN
-        ? parseInt(process.env.WORD_COUNT_BETWEEN)
-        : 100,
+      wordCountBetween: 10,
+      // process.env.WORD_COUNT_BETWEEN
+      //   ? parseInt(process.env.WORD_COUNT_BETWEEN)
+      //   : 10,
       priceAdjustment: process.env.PRICE_ADJUSTMENT
         ? parseInt(process.env.PRICE_ADJUSTMENT)
         : 2,
@@ -133,8 +134,8 @@ export default {
   walletConnect: { projectId: process.env.WALLET_CONNECT_PROJECT_ID ?? '' },
   db: { url: process.env.DATABASE_URL ?? '' },
   credits: {
-    maxChats: 10,
-    maxChatsWhitelist: (process.env.CREDITS_CHATS_WHITELIST ?? 'stephentse')
+    maxChats: 3,
+    maxChatsWhitelist: (process.env.CREDITS_CHATS_WHITELIST ?? '')
       .split(',')
       .map((item) => item.toString().toLowerCase()),
     creditsAmount: '100'
@@ -145,6 +146,8 @@ export default {
   es: {
     url: process.env.ES_URL ?? '',
     username: process.env.ES_USERNAME ?? '',
-    password: process.env.ES_PASSWORD ?? ''
-  }
+    password: process.env.ES_PASSWORD ?? '',
+    index: process.env.ES_INDEX
+  },
+  deepL: { apikey: process.env.DEEPL_API_KEY ?? '' }
 }

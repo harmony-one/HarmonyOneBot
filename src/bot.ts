@@ -34,7 +34,7 @@ import { BotSchedule } from './modules/schedule'
 import { LlmsBot } from './modules/llms'
 import { DocumentHandler } from './modules/document-handler'
 import config from './config'
-import { commandsHelpText, FEEDBACK, LOVE, MODELS, SUPPORT, TERMS } from './constants'
+import { commandsHelpText, FEEDBACK, LOVE, MODELS, SUPPORT, TERMS, LANG } from './constants'
 import prometheusRegister, { PrometheusMetrics } from './metrics/prometheus'
 
 import { chatService, statsService } from './database/services'
@@ -97,7 +97,7 @@ ES.init()
 bot.use(async (ctx: BotContext, next: NextFunction): Promise<void> => {
   const transaction = Sentry.startTransaction({ name: 'bot-command' })
   const entities = ctx.entities()
-  const startTime = performance.now()
+  const startTime = process.hrtime.bigint()
   let command = ''
   for (const ent of entities) {
     if (ent.type === 'bot_command') {
@@ -120,14 +120,14 @@ bot.use(async (ctx: BotContext, next: NextFunction): Promise<void> => {
     const userId = Number(ctx.message?.from?.id ?? '0')
     const username = ctx.message?.from?.username ?? ''
     if (!ctx.session.analytics.actualResponseTime) {
-      ctx.session.analytics.actualResponseTime = performance.now()
+      ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
     }
     if (!ctx.session.analytics.firstResponseTime) {
       ctx.session.analytics.firstResponseTime = ctx.session.analytics.actualResponseTime
     }
-    const firstResponseTime = ctx.session.analytics.firstResponseTime - startTime
-    const actualResponseTime = ctx.session.analytics.actualResponseTime - startTime
-    const totalProcessingTime = performance.now() - startTime
+    const firstResponseTime = ((ctx.session.analytics.firstResponseTime - startTime) / 1000n).toString()
+    const actualResponseTime = ((ctx.session.analytics.actualResponseTime - startTime) / 1000n).toString()
+    const totalProcessingTime = (process.hrtime.bigint() - startTime).toString()
     ES.add({
       command,
       text: ctx.message?.text ?? '',
@@ -180,8 +180,8 @@ function createInitialSessionData (): BotSessionData {
     refunded: false,
     analytics: {
       module: '',
-      firstResponseTime: 0,
-      actualResponseTime: 0,
+      firstResponseTime: 0n,
+      actualResponseTime: 0n,
       sessionState: SessionState.Initial
     }
   }
@@ -372,6 +372,7 @@ const onMessage = async (ctx: OnMessageContext): Promise<void> => {
         const price = bot.getEstimatedPrice(ctx)
         const isPaid = await payments.pay(ctx, price)
         if (isPaid) {
+          logger.info(`command controller: ${bot.constructor.name}`)
           executeOrRefund(ctx, price, bot)
         }
         return
@@ -380,6 +381,7 @@ const onMessage = async (ctx: OnMessageContext): Promise<void> => {
         if (!bot.isSupportedEvent(ctx)) {
           continue
         }
+        logger.info(`command controller: ${bot.constructor.name}`)
         await bot.onEvent(ctx)
         return
       }
@@ -487,6 +489,14 @@ bot.command('support', async (ctx) => {
 bot.command('models', async (ctx) => {
   writeCommandLog(ctx as OnMessageContext).catch(logErrorHandler)
   return await ctx.reply(MODELS.text, {
+    parse_mode: 'Markdown',
+    disable_web_page_preview: true
+  })
+})
+
+bot.command('lang', async (ctx) => {
+  writeCommandLog(ctx as OnMessageContext).catch(logErrorHandler)
+  return await ctx.reply(LANG.text, {
     parse_mode: 'Markdown',
     disable_web_page_preview: true
   })

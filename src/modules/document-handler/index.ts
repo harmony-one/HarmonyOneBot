@@ -21,7 +21,7 @@ export class DocumentHandler implements PayableBot {
       await ctx.reply('you failed kid')
       ctx.session.analytics.sessionState = SessionState.Error
     } finally {
-      ctx.session.analytics.actualResponseTime = performance.now()
+      ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
     }
   }
 

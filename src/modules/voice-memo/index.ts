@@ -211,12 +211,12 @@ export class VoiceMemo implements PayableBot {
         this.logger.error(`Translation error: ${(e as Error).message}`)
         ctx.session.analytics.sessionState = SessionState.Error
       } finally {
-        ctx.session.analytics.actualResponseTime = performance.now()
+        ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
         this.deleteTempFile(filePath)
       }
     } else {
       this.logger.error(`Cannot find translation job ${requestKey}, skip`)
-      ctx.session.analytics.actualResponseTime = performance.now()
+      ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
       ctx.session.analytics.sessionState = SessionState.Success
     }
   }

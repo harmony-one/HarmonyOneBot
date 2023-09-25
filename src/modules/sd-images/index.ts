@@ -61,7 +61,7 @@ export class SDImagesBot extends SDImagesBotBase implements PayableBot {
       console.log(`### unsupported command ${ctx.message?.text}`)
       await sendMessage(ctx, '### unsupported command')
       ctx.session.analytics.sessionState = SessionState.Error
-      ctx.session.analytics.actualResponseTime = performance.now()
+      ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
       refundCallback('Unsupported command'); return
     }
 
@@ -77,14 +77,14 @@ export class SDImagesBot extends SDImagesBotBase implements PayableBot {
         'Your prompt has been flagged for potentially generating illegal or malicious content. If you believe there has been a mistake, please reach out to support.'
       )
       ctx.session.analytics.sessionState = SessionState.Error
-      ctx.session.analytics.actualResponseTime = performance.now()
+      ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
       refundCallback('Prompt has bad words'); return
     }
 
     if (prompt.length > 1000) {
       await ctx.reply('Your prompt is too long. Please shorten your prompt and try again.')
       ctx.session.analytics.sessionState = SessionState.Error
-      ctx.session.analytics.actualResponseTime = performance.now()
+      ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
       refundCallback('Prompt is too long')
       return
     }
@@ -133,14 +133,14 @@ export class SDImagesBot extends SDImagesBotBase implements PayableBot {
             `${model.name}: ${model.link} \n \nUsing: /${model.aliases[0]} /${model.aliases[1]} /${model.aliases[2]} \n`
           )
         }
-        ctx.session.analytics.actualResponseTime = performance.now()
+        ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
         ctx.session.analytics.sessionState = SessionState.Success
         return
     }
 
     console.log('### unsupported command')
     await sendMessage(ctx, '### unsupported command')
-    ctx.session.analytics.actualResponseTime = performance.now()
+    ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
     ctx.session.analytics.sessionState = SessionState.Error
   }
 
@@ -194,7 +194,7 @@ export class SDImagesBot extends SDImagesBotBase implements PayableBot {
       await sendMessage(ctx, 'Error: something went wrong...')
       ctx.session.analytics.sessionState = SessionState.Error
     } finally {
-      ctx.session.analytics.actualResponseTime = performance.now()
+      ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
     }
 
     this.queue = this.queue.filter((v) => v !== uuid)
@@ -259,7 +259,7 @@ export class SDImagesBot extends SDImagesBotBase implements PayableBot {
       await sendMessage(ctx, 'Error: something went wrong...')
       ctx.session.analytics.sessionState = SessionState.Error
     } finally {
-      ctx.session.analytics.actualResponseTime = performance.now()
+      ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
     }
   }
 
@@ -303,7 +303,7 @@ export class SDImagesBot extends SDImagesBotBase implements PayableBot {
       await sendMessage(ctx, 'Error: something went wrong...')
       ctx.session.analytics.sessionState = SessionState.Error
     } finally {
-      ctx.session.analytics.actualResponseTime = performance.now()
+      ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
     }
   }
 }

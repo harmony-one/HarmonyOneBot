@@ -33,6 +33,24 @@ export const MODELS_CONFIGS: IModel[] = [
     "defaultPrompt": "A bunny is sitting in a kimono, in the style of renaissance - inspired chiaroscuro, hyper - realistic portraiture, nicolas mignard, old master influenced fantasy, portraitures with hidden meanings, dom qwek, art of burma"
   },
   {
+    "path": "126470.safetensors",
+    "name": "majicMIX realistic 麦橘写实",
+    "id": "43331",
+    "hash": "D7E2AC2F4A",
+    "shortName": "majicmix-realistic",
+    "link": "https://civitai.com/models/43331/majicmix-realistic",
+    "baseModel": "SD 1.5",
+    "aliases": [
+      "2",
+      "majic",
+      "4333",
+      "h7e2",
+      "? ",
+      "mj"
+    ],
+    "defaultPrompt": "1girl,sitting on a cozy couch,crossing legs,soft light"
+  },
+  {
     "path": "150851.safetensors",
     "name": "leosams_helloworld",
     "id": "43977",
@@ -44,7 +62,7 @@ export const MODELS_CONFIGS: IModel[] = [
       "3",
       "leo",
       "real",
-      "!",
+      "! ",
       "r.",
       "R.",
       "r",
@@ -69,9 +87,28 @@ export const MODELS_CONFIGS: IModel[] = [
       "D.",
       "d",
       "ds",
-      ":"
+      ": "
     ],
     "defaultPrompt": "8k portrait of beautiful cyborg with brown hair, intricate, elegant, highly detailed, majestic, digital photography, art by artgerm and ruan jia and greg rutkowski surreal painting gold butterfly filigree, broken glass, (masterpiece, sidelighting, finely detailed beautiful eyes: 1.2), hdr"
+  },
+  {
+    "path": "46846.safetensors",
+    "name": "ReV Animated",
+    "id": "7371",
+    "hash": "4199BCDD14",
+    "shortName": "rev-animated",
+    "link": "https://civitai.com/models/7371/rev-animated",
+    "baseModel": "SD 1.5",
+    "aliases": [
+      "5",
+      "magic",
+      "rev",
+      "7371",
+      "h419",
+      "; ",
+      "ra"
+    ],
+    "defaultPrompt": "best quality, ultra high res, photorealistic, sfw, armored wizard, magical tattoos, apprentice, 1girl, looking at viewer, upper body, slender, small breasts, purple hair with white stripes, white croptop, (dark and moody universe:1.3), (elden ring style:1.3), (warhammer style:1.1), floating rocks, glowing pebbles, fiery dust, concept artist, global illumination, depth of field, gloomy, unsettling, splash art, art by artgerm and greg rutkowski and viktoria gavrilenko, scary smile, purple light, rule of the thirds --cfg 8.5 --steps 30 --seed 1463146050 --d 1280x853 --no girls, (worst quality:1.2), (low quality:1.2), (lowres:1.1), (monochrome:1.1), (greyscale), multiple views, comic, sketch, (((bad anatomy))), (((deformed))), (((disfigured))), watermark, multiple_views, mutation hands, mutation fingers, extra fingers, missing fingers, watermark"
   },
   {
     "path": "129687.safetensors",
@@ -86,7 +123,7 @@ export const MODELS_CONFIGS: IModel[] = [
       "nsfw",
       "perf",
       "pw",
-      "("
+      "( "
     ],
     "defaultPrompt": "(masterpiece:1.2), (best quality:1.2), 1woman, 1boy, short hair, blonde hair, breast focus, slim and petite body, nude, black stockings, black high heels, silver necklace, orgasm, mouth open, aroused, <lora:murkysSuspendedOn_1:0.9>, suspendedonpenisms, sex, arm grab, sex from behind, dangling legs, size difference, in the luxurious living room, --no (worst quality:1.2), (bad quality:1.2), (poor quality:1.2), bad artist, extra limbs, bad anatomy, missing legs --seed 780544502378871 --steps 20 --sampler euler --cfg 8 --d 512x512"
   },
@@ -109,24 +146,6 @@ export const MODELS_CONFIGS: IModel[] = [
     "defaultPrompt": "a cute kitten made out of metal, (cyborg:1.1), ([tail | detailed wire]:1.3), (intricate details), hdr, (intricate details, hyperdetailed:1.2), cinematic shot, vignette, centered"
   },
   {
-    "path": "126470.safetensors",
-    "name": "majicMIX realistic 麦橘写实",
-    "id": "43331",
-    "hash": "D7E2AC2F4A",
-    "shortName": "majicmix-realistic",
-    "link": "https://civitai.com/models/43331/majicmix-realistic",
-    "baseModel": "SD 1.5",
-    "aliases": [
-      "2",
-      "majic",
-      "4333",
-      "h7e2",
-      "?",
-      "mj"
-    ],
-    "defaultPrompt": "1girl,sitting on a cozy couch,crossing legs,soft light"
-  },
-  {
     "path": "148515.safetensors",
     "name": "SDXL Unstable Diffusers ☛ YamerMIX",
     "id": "84040",
@@ -139,45 +158,30 @@ export const MODELS_CONFIGS: IModel[] = [
       "xl_dif",
       "8404",
       "hef9",
-      "$",
+      "$ ",
       "ud"
     ],
     "defaultPrompt": "pastel color, from above, upper body, depth of field, masterpiece, best quality, best quality, girl sitting on a swing, school uniform, black hair, blue eyes, autumn, park"
   },
   {
-    "path": "46846.safetensors",
-    "name": "ReV Animated",
-    "id": "7371",
-    "hash": "4199BCDD14",
-    "shortName": "rev-animated",
-    "link": "https://civitai.com/models/7371/rev-animated",
+    "path": "animePastelDream_softBakedVae.safetensors",
+    "name": "Anime Pastel Dream",
+    "id": "23521",
+    "hash": "4BE38C1A17",
+    "shortName": "anime-pastel-dream",
+    "link": "https://civitai.com/models/23521/anime-pastel-dream",
     "baseModel": "SD 1.5",
     "aliases": [
-      "5",
-      "magic",
-      "rev",
-      "7371",
-      "h419",
-      ";",
-      "ra"
+      "9",
+      "n",
+      "an",
+      "anime",
+      "2352",
+      "h4be",
+      "ap",
+      "& "
     ],
-    "defaultPrompt": "best quality, ultra high res, photorealistic, sfw, armored wizard, magical tattoos, apprentice, 1girl, looking at viewer, upper body, slender, small breasts, purple hair with white stripes, white croptop, (dark and moody universe:1.3), (elden ring style:1.3), (warhammer style:1.1), floating rocks, glowing pebbles, fiery dust, concept artist, global illumination, depth of field, gloomy, unsettling, splash art, art by artgerm and greg rutkowski and viktoria gavrilenko, scary smile, purple light, rule of the thirds --cfg 8.5 --steps 30 --seed 1463146050 --d 1280x853 --no girls, (worst quality:1.2), (low quality:1.2), (lowres:1.1), (monochrome:1.1), (greyscale), multiple views, comic, sketch, (((bad anatomy))), (((deformed))), (((disfigured))), watermark, multiple_views, mutation hands, mutation fingers, extra fingers, missing fingers, watermark"
-  },
-  {
-    "path": "138176.safetensors",
-    "name": "CyberRealistic",
-    "id": "15003",
-    "hash": "7A4DBBA12F",
-    "shortName": "cyberrealistic",
-    "link": "https://civitai.com/models/15003/cyberrealistic",
-    "baseModel": "SD 1.5",
-    "aliases": [
-      // "9",
-      "cyber",
-      "1500",
-      "h7a4"
-    ],
-    "defaultPrompt": "<lora:LowRA:0.6> (8k, RAW photo, highest quality), beautiful girl, close up, dress, (detailed eyes:0.8), defiance512, (looking at the camera:1.4), (highest quality), (best shadow), intricate details, interior, ginger hair:1.3, dark studio, muted colors, freckles   <lora:epiNoiseoffset_v2Pynoise:1.2>"
+    "defaultPrompt": "masterpiece, best quality, ultra-detailed, illustration, beautiful detailed eyes, looking at viewer, close up, pink hair, shy, cat ears"
   },
   {
     "path": "126688.safetensors",
@@ -1458,24 +1462,20 @@ export const MODELS_CONFIGS: IModel[] = [
     "defaultPrompt": "a young woman, street, laughing, ponytails, dramatic, complex background, cinematic"
   },
   {
-    "path": "animePastelDream_softBakedVae.safetensors",
-    "name": "Anime Pastel Dream",
-    "id": "23521",
-    "hash": "4BE38C1A17",
-    "shortName": "anime-pastel-dream",
-    "link": "https://civitai.com/models/23521/anime-pastel-dream",
+    "path": "138176.safetensors",
+    "name": "CyberRealistic",
+    "id": "15003",
+    "hash": "7A4DBBA12F",
+    "shortName": "cyberrealistic",
+    "link": "https://civitai.com/models/15003/cyberrealistic",
     "baseModel": "SD 1.5",
     "aliases": [
-      "9",
-      "n",
-      "an",
-      "anime",
-      "2352",
-      "h4be",
-      "ap",
-      "&"
+      "101",
+      "cyber",
+      "1500",
+      "h7a4"
     ],
-    "defaultPrompt": "masterpiece, best quality, ultra-detailed, illustration, beautiful detailed eyes, looking at viewer, close up, pink hair, shy, cat ears"
+    "defaultPrompt": "<lora:LowRA:0.6> (8k, RAW photo, highest quality), beautiful girl, close up, dress, (detailed eyes:0.8), defiance512, (looking at the camera:1.4), (highest quality), (best shadow), intricate details, interior, ginger hair:1.3, dark studio, muted colors, freckles   <lora:epiNoiseoffset_v2Pynoise:1.2>"
   },
   {
     "path": "v1-5-pruned-emaonly.safetensors",
