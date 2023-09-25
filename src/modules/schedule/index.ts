@@ -135,7 +135,7 @@ export class BotSchedule {
   public async generateReportEngagementByCommand (days: number): Promise<string> {
     const dbRows = await statsService.getUserEngagementByCommand(days)
 
-    const cropIndex = dbRows.length >= 10 ? 10 : dbRows.length - 1
+    const cropIndex = dbRows.length >= 50 ? 50 : dbRows.length - 1
 
     let otherCommandCount = 0
     for (let i = cropIndex; i < dbRows.length; i++) {
