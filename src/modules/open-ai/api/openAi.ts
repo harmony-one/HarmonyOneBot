@@ -210,6 +210,9 @@ export const getChatModelPrice = (
     ? outPutTokens * model.outputPrice
     : model.maxContextTokens * model.outputPrice
   price = inCents ? price * 100 : price
+  console.log(inputTokens, model.inputPrice)
+  console.log(outPutTokens, model.outputPrice)
+  console.log('Price: ', price)
   return price / 1000
 }
 
