@@ -16,7 +16,9 @@ export const SupportedCommands = {
   last: { name: 'last' },
   dalle: { name: 'DALLE' },
   dalleLC: { name: 'dalle' },
-  genImgEn: { name: 'genImgEn' }
+  genImgEn: { name: 'genImgEn' },
+  on: { name: 'on' },
+  off: { name: 'off' }
 }
 
 export const MAX_TRIES = 3
