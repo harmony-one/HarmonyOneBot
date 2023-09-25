@@ -156,7 +156,7 @@ function createInitialSessionData (): BotSessionData {
       chatGpt: {
         model: config.openAi.chatGpt.model,
         isEnabled: config.openAi.chatGpt.isEnabled,
-        isFreePromptChatGroups: false,
+        isFreePromptChatGroups: config.openAi.chatGpt.isFreePromptChatGroups,
         chatConversation: [],
         price: 0,
         usage: 0,

@@ -61,6 +61,7 @@ export default {
       priceAdjustment: process.env.PRICE_ADJUSTMENT
         ? parseInt(process.env.PRICE_ADJUSTMENT)
         : 2,
+      isFreePromptChatGroups: false,
       isEnabled: Boolean(parseInt(process.env.CHAT_GPT_ENABLED ?? '1')),
       isTypingEnabled: Boolean(
         parseInt(process.env.TYPING_STATUS_ENABLED ?? '1')
