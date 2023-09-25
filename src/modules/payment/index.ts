@@ -5,15 +5,13 @@ import axios from 'axios'
 import bn, { BigNumber } from 'bignumber.js'
 import config from '../../config'
 import { chatService, invoiceService, statsService } from '../../database/services'
-import {OnCallBackQueryData, type OnMessageContext} from '../types'
+import { type OnCallBackQueryData, type OnMessageContext } from '../types'
 import { LRUCache } from 'lru-cache'
 import { freeCreditsFeeCounter } from '../../metrics/prometheus'
 import { type BotPaymentLog } from '../../database/stats.service'
 import { sendMessage } from '../open-ai/helpers'
 import { type InvoiceParams } from '../../database/invoice.service'
 import * as Sentry from '@sentry/node'
-import {Api} from "telegram";
-import account = Api.account;
 
 interface CoinGeckoResponse {
   harmony: {
