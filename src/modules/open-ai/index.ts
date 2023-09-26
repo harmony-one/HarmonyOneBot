@@ -503,8 +503,8 @@ export class OpenAIBot implements PayableBot {
       if (webContent.urlText !== '') {
         const oneFee = await this.payments.getPriceInONE(webContent.fees)
         // console.log(+oneFee.toFixed() + 3500000000000000);
-        const statusMsg = `Processed ${(webContent.networkTraffic / 1048576).toFixed(2
-          )} MB in ${(webContent.elapsedTime / 1000).toFixed(2)} sec (${this.payments.toONE(oneFee, false).toFixed(2)} ONE)`
+        const statusMsg = `${url} downloaded: ${(webContent.networkTraffic / 1048576).toFixed(2
+          )}m size ${(webContent.elapsedTime / 1000).toFixed(2)}s time (${this.payments.toONE(oneFee, false).toFixed(2)} ONE fee)`
         await ctx.api.editMessageText(ctx.chat?.id ?? '', webCrawlerStatusMsgId, statusMsg, { parse_mode: 'Markdown' }).catch(async (e) => {
           await this.onError(ctx, e)
         })

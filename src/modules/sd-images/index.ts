@@ -30,7 +30,7 @@ export class SDImagesBot extends SDImagesBotBase implements PayableBot {
   }
 
   public getEstimatedPrice (ctx: any): number {
-    return 1.5
+    return 4
   }
 
   public isSupportedCallbackQuery (
