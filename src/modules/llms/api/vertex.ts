@@ -3,6 +3,7 @@ import config from '../../../config'
 import { type ChatConversation } from '../../types'
 import { type LlmCompletion } from './liteLlm'
 
+// const API_ENDPOINT = 'http://127.0.0.1:5000' // config.llms.apiEndpoint
 const API_ENDPOINT = config.llms.apiEndpoint
 
 export const vertexCompletion = async (
@@ -22,7 +23,7 @@ export const vertexCompletion = async (
       const totalOutputTokens = 5 // response.data.usage.completion_tokens;
       return {
         completion: {
-          content: response.data,
+          content: response.data._prediction_response[0][0].candidates[0].content,
           author: 'bot',
           model
         },
