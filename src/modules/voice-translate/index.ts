@@ -26,15 +26,46 @@ export class VoiceTranslateBot implements PayableBot {
   public isSupportedEvent (ctx: OnMessageContext): boolean {
     const { voice, audio } = ctx.update.message
 
-    return (!!voice || !!audio)
+    return (!!voice || !!audio) || ctx.hasCommand('voice')
   }
 
   public getEstimatedPrice (ctx: OnMessageContext): number {
     return 0
   }
 
+  public async onTextToSpeech (ctx: OnMessageContext, message: string): Promise<void> {
+    if (!message) {
+      await ctx.reply('/voice command should contain text.')
+      return
+    }
+
+    if (!ctx.chat?.id) {
+      throw new Error('Internal error')
+    }
+
+    const progressMessage = await ctx.reply('Waite a moment...')
+
+    const voiceResult = await textToSpeech(message)
+
+    if (!voiceResult) {
+      await ctx.api.editMessageText(ctx.chat.id, progressMessage.message_id, 'An error occurred during the process of generating the message.')
+      return
+    }
+
+    const inputFile = new InputFile(voiceResult)
+
+    await ctx.api.deleteMessage(ctx.chat.id, progressMessage.message_id)
+    await ctx.replyWithVoice(inputFile)
+  }
+
   public async onEvent (ctx: OnMessageContext): Promise<void> {
     const { voice, audio } = ctx.update.message
+
+    if (ctx.hasCommand('voice')) {
+      const text = ctx.match.toString()
+      await this.onTextToSpeech(ctx, text)
+      return
+    }
 
     if (!(!!voice || !!audio)) {
       return
