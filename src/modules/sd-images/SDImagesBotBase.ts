@@ -6,6 +6,7 @@ import { COMMAND } from './helpers'
 import { type Logger, pino } from 'pino'
 import { type ILora } from './api/loras-config'
 import { getParamsFromPrompt } from './api/helpers'
+import { type IBalancerOperation, OPERATION_STATUS, completeOperation, createOperation, getOperationById } from './balancer'
 
 export interface MessageExtras {
   caption?: string
@@ -37,9 +38,6 @@ export class SDImagesBotBase {
   private readonly mediaGroupCache: IMediaGroup[] = []
 
   private readonly sessions: ISession[] = []
-  queue: string[] = []
-  queue2: string[] = []
-
   constructor () {
     this.sdNodeApi = new SDNodeApi()
     this.logger = pino({
@@ -104,40 +102,35 @@ export class SDImagesBotBase {
 
   getSessionById = (id: string): ISession | undefined => this.sessions.find(s => s.id === id)
 
-  waitingQueue = async (uuid: string, ctx: OnMessageContext | OnCallBackQueryData): Promise<number> => {
-    this.queue.push(uuid)
-    let idx = this.queue.findIndex((v) => v === uuid)
+  waitingQueue = async (
+    session: ISession,
+    ctx: OnMessageContext | OnCallBackQueryData
+  ): Promise<{ queueMessageId: number, balancerOperaton: IBalancerOperation }> => {
+    const params = getParamsFromPrompt(session.prompt)
+
+    const lora = params.loraName ? `${params.loraName}.safetensors` : session.lora?.path
+
+    let balancerOperaton = await createOperation({
+      model: session.model.path,
+      lora,
+      type: session.command
+    })
 
     // eslint-disable-next-line @typescript-eslint/naming-convention
     const { message_id } = await ctx.reply(
-      `You are #${idx + 1} in line for making images. The wait time is about ${(idx + 1) * 15} seconds.`, { message_thread_id: ctx.message?.message_thread_id }
+      `You are #${balancerOperaton.queueTotalNumber + 1} in line for making images. The wait time is about ${(balancerOperaton.queueNumber + 1) * 15} seconds.`, { message_thread_id: ctx.message?.message_thread_id }
     )
     ctx.session.analytics.firstResponseTime = process.hrtime.bigint()
     // waiting queue
-    while (idx !== 0) {
-      await sleep(3000 * this.queue.findIndex((v) => v === uuid))
-      idx = this.queue.findIndex((v) => v === uuid)
+    while (balancerOperaton.status === OPERATION_STATUS.WAITING) {
+      await sleep(5000 * balancerOperaton.queueNumber || 500)
+      balancerOperaton = await getOperationById(balancerOperaton.id)
     }
 
-    return message_id
-  }
-
-  // TODO
-  waitingQueue2 = async (uuid: string, ctx: OnMessageContext | OnCallBackQueryData): Promise<number> => {
-    this.queue2.push(uuid)
-    let idx = this.queue2.findIndex((v) => v === uuid)
-
-    const { message_id: messageId } = await ctx.reply(
-      `You are #${idx + 1} in line for making images. The wait time is about ${(idx + 1) * 15} seconds.`, { message_thread_id: ctx.message?.message_thread_id }
-    )
-    ctx.session.analytics.firstResponseTime = process.hrtime.bigint()
-    // waiting queue
-    while (idx !== 0) {
-      await sleep(3000 * this.queue2.findIndex((v) => v === uuid))
-      idx = this.queue2.findIndex((v) => v === uuid)
+    return {
+      queueMessageId: message_id,
+      balancerOperaton
     }
-
-    return messageId
   }
 
   generateImage = async (
@@ -147,16 +140,12 @@ export class SDImagesBotBase {
     specialMessage?: string
   ): Promise<void> => {
     const { model, prompt, seed, lora } = session
-    const uuid = uuidv4()
+
+    let balancerOperatonId
 
     try {
-      let queueMessageId
-
-      if (model.serverNumber === 2) {
-        queueMessageId = await this.waitingQueue2(uuid, ctx)
-      } else {
-        queueMessageId = await this.waitingQueue(uuid, ctx)
-      }
+      const { queueMessageId, balancerOperaton } = await this.waitingQueue(session, ctx)
+      balancerOperatonId = balancerOperaton.id
 
       ctx.chatAction = 'upload_photo'
 
@@ -165,7 +154,11 @@ export class SDImagesBotBase {
         model,
         seed,
         lora
-      })
+      }, balancerOperaton.server)
+
+      if (balancerOperatonId) {
+        await completeOperation(balancerOperatonId, OPERATION_STATUS.SUCCESS)
+      }
 
       const reqMessage = session.message
         ? session.message.split(' ').length > 1
@@ -181,6 +174,10 @@ export class SDImagesBotBase {
       }
       ctx.session.analytics.sessionState = SessionState.Success
     } catch (e: any) {
+      if (balancerOperatonId) {
+        await completeOperation(balancerOperatonId, OPERATION_STATUS.ERROR)
+      }
+
       ctx.chatAction = null
       const msgExtras: MessageExtras = { message_thread_id: ctx.message?.message_thread_id }
       if (e instanceof GrammyError) {
@@ -196,12 +193,6 @@ export class SDImagesBotBase {
       ctx.session.analytics.sessionState = SessionState.Error
       refundCallback()
     }
-
-    if (model.serverNumber === 2) {
-      this.queue2 = this.queue2.filter((v) => v !== uuid)
-    } else {
-      this.queue = this.queue.filter((v) => v !== uuid)
-    }
   }
 
   generateImageByImage = async (
@@ -210,10 +201,12 @@ export class SDImagesBotBase {
     session: ISession
   ): Promise<void> => {
     const { model, prompt, seed, lora } = session
-    const uuid = uuidv4()
+
+    let balancerOperatonId
 
     try {
-      const queueMessageId = await this.waitingQueue(uuid, ctx)
+      const { queueMessageId, balancerOperaton } = await this.waitingQueue(session, ctx)
+      balancerOperatonId = balancerOperaton.id
 
       ctx.chatAction = 'upload_photo'
 
@@ -246,7 +239,7 @@ export class SDImagesBotBase {
         model,
         seed,
         lora
-      })
+      }, balancerOperaton.server)
 
       const reqMessage = session.message
         ? session.message.split(' ').length > 1
@@ -289,7 +282,9 @@ export class SDImagesBotBase {
       ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
     }
 
-    this.queue = this.queue.filter((v) => v !== uuid)
+    if (balancerOperatonId) {
+      await completeOperation(balancerOperatonId, OPERATION_STATUS.SUCCESS)
+    }
   }
 
   trainLoraByImages = async (
@@ -298,13 +293,18 @@ export class SDImagesBotBase {
     session: ISession
   ): Promise<void> => {
     const { model, prompt } = session
+    let balancerOperatonId
+
     try {
+      const { balancerOperaton } = await this.waitingQueue(session, ctx)
+      balancerOperatonId = balancerOperaton.id
+
       ctx.chatAction = 'upload_photo'
 
       let photosIds: string[] = []
-      let filesBuffer: Buffer[]
+      let filesBuffer: Buffer[] = []
 
-      const [,caption] = (ctx.message?.text ?? '').split(' ')
+      const [, caption] = (ctx.message?.text ?? '').split(' ')
 
       this.mediaGroupCache
         .filter(m => m.caption.replace('/train ', '') === caption)
@@ -330,16 +330,21 @@ export class SDImagesBotBase {
         throw new Error('User image not found')
       }
 
-      await this.sdNodeApi.train(
+      await this.sdNodeApi.train({
         filesBuffer,
         prompt,
-        ctx
-      )
+        ctx,
+        server: balancerOperaton.server
+      })
 
       const params = getParamsFromPrompt(prompt)
       const [loraName] = prompt.split(' ')
 
       const modelAlias = params.modelAlias || 'del'
+
+      if (balancerOperatonId) {
+        await completeOperation(balancerOperatonId, OPERATION_STATUS.SUCCESS)
+      }
 
       await this.generateImage(
         ctx,
@@ -370,6 +375,10 @@ export class SDImagesBotBase {
       }
       ctx.session.analytics.sessionState = SessionState.Error
       refundCallback()
+
+      if (balancerOperatonId) {
+        await completeOperation(balancerOperatonId, OPERATION_STATUS.ERROR)
+      }
     } finally {
       ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
     }

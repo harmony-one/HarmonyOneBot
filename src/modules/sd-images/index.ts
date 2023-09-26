@@ -3,9 +3,9 @@ import { type OnMessageContext, type OnCallBackQueryData, type PayableBot, Sessi
 import { SDImagesBotBase } from './SDImagesBotBase'
 import { COMMAND, type IOperation, parseCtx, promptHasBadWords } from './helpers'
 import { getModelByParam, MODELS_CONFIGS } from './api'
-import { uuidv4 } from './utils'
 import { sendMessage } from '../open-ai/helpers'
 import * as Sentry from '@sentry/node'
+import { OPERATION_STATUS, completeOperation } from './balancer'
 
 export class SDImagesBot extends SDImagesBotBase implements PayableBot {
   public readonly module = 'SDImagesBot'
@@ -149,16 +149,21 @@ export class SDImagesBot extends SDImagesBotBase implements PayableBot {
     refundCallback: (reason?: string) => void,
     operation: IOperation
   ): Promise<void> => {
-    const uuid = uuidv4()
+    let balancerOperatonId
 
     try {
-      await this.waitingQueue(uuid, ctx)
+      const { balancerOperaton } = await this.waitingQueue(
+        await this.createSession(ctx, operation), ctx
+      )
+
+      balancerOperatonId = balancerOperaton.id
+
       const { prompt, model } = operation
 
       const res = await this.sdNodeApi.generateImagesPreviews({
         prompt,
         model
-      })
+      }, balancerOperaton.server)
 
       const newSession = await this.createSession(ctx, {
         ...operation,
@@ -197,7 +202,9 @@ export class SDImagesBot extends SDImagesBotBase implements PayableBot {
       ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
     }
 
-    this.queue = this.queue.filter((v) => v !== uuid)
+    if (balancerOperatonId) {
+      await completeOperation(balancerOperatonId, OPERATION_STATUS.SUCCESS)
+    }
   }
 
   async onImgSelected (

@@ -1480,10 +1480,10 @@ export const MODELS_CONFIGS: IModel[] = [
   {
     "path": "v1-5-pruned-emaonly.safetensors",
     "name": "v1-5-pruned-emaonly",
-    "id": "",
-    "hash": "",
+    "id": "--none",
+    "hash": "--none",
     "shortName": "pruned-emaonly",
-    "link": "",
+    "link": "--none",
     "baseModel": "SD 1.5",
     "aliases": [
       "102",

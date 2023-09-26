@@ -1,9 +1,8 @@
-import { Client } from './sd-node-client'
+import { Client, type ISDServerConfig } from './sd-node-client'
 import { type IModel } from './models-config'
 import { getLoraByParam, type ILora } from './loras-config'
 import { getParamsFromPrompt, NEGATIVE_PROMPT } from './helpers'
 import { type OnMessageContext, type OnCallBackQueryData } from '../../types'
-import config from '../../../config'
 
 export * from './models-config'
 
@@ -16,6 +15,13 @@ interface IGenImageOptions {
   height?: number
 }
 
+interface ITrainImageOptions {
+  filesBuffer: Buffer[]
+  prompt: string
+  server: ISDServerConfig
+  ctx: OnMessageContext | OnCallBackQueryData
+}
+
 export class SDNodeApi {
   client: Client
 
@@ -23,7 +29,10 @@ export class SDNodeApi {
     this.client = new Client()
   }
 
-  generateImage = async (options: IGenImageOptions): Promise<Buffer> => {
+  generateImage = async (
+    options: IGenImageOptions,
+    server: ISDServerConfig
+  ): Promise<Buffer> => {
     const params = getParamsFromPrompt(options.prompt, options.model)
 
     let selectedLora
@@ -52,15 +61,6 @@ export class SDNodeApi {
       params.promptWithoutParams = `logo, ${params.promptWithoutParams}, LogoRedAF`
     }
 
-    let serverConfig
-
-    if (options.model.serverNumber === 2) {
-      serverConfig = {
-        host: config.comfyHost2,
-        wsHost: config.comfyWsHost2
-      }
-    }
-
     const { images } = await this.client.txt2img({
       prompt: params.promptWithoutParams,
       negativePrompt: params.negativePrompt,
@@ -74,13 +74,14 @@ export class SDNodeApi {
       seed: options.seed ?? params.seed,
       model: options.model.path,
       batchSize: 1
-    }, serverConfig)
+    }, server)
 
     return images[0]
   }
 
   generateImageByImage = async (
-    options: IGenImageOptions & { fileName: string, fileBuffer: Buffer }
+    options: IGenImageOptions & { fileName: string, fileBuffer: Buffer },
+    server: ISDServerConfig
   ): Promise<Buffer> => {
     const params = getParamsFromPrompt(options.prompt, options.model)
 
@@ -128,12 +129,15 @@ export class SDNodeApi {
         batchSize: 1,
         fileName: options.fileName,
         controlnetVersion: params.controlnetVersion
-      })
+      }, server)
 
     return images[0]
   }
 
-  generateImagesPreviews: (options: IGenImageOptions) => Promise<{ images: Buffer[], all_seeds: string[], parameters: unknown, info: string }> = async (options: IGenImageOptions) => {
+  generateImagesPreviews = async (
+    options: IGenImageOptions,
+    server: ISDServerConfig
+  ): Promise<{ images: Buffer[], all_seeds: string[], parameters: unknown, info: string }> => {
     const params = {
       prompt: options.prompt,
       negativePrompt: NEGATIVE_PROMPT,
@@ -146,10 +150,10 @@ export class SDNodeApi {
     }
 
     const res = await Promise.all([
-      this.client.txt2img(params),
-      this.client.txt2img(params),
-      this.client.txt2img(params),
-      this.client.txt2img(params)
+      this.client.txt2img(params, server),
+      this.client.txt2img(params, server),
+      this.client.txt2img(params, server),
+      this.client.txt2img(params, server)
     ])
 
     return {
@@ -160,15 +164,17 @@ export class SDNodeApi {
     }
   }
 
-  train = async (
-    fileBuffers: Buffer[],
-    prompt: string,
-    ctx: OnMessageContext | OnCallBackQueryData
-  ): Promise<void> => {
-    const params = getParamsFromPrompt(prompt)
+  train = async (options: ITrainImageOptions): Promise<void> => {
+    const params = getParamsFromPrompt(options.prompt)
 
-    const [loraName] = prompt.split(' ')
+    const [loraName] = options.prompt.split(' ')
 
-    await this.client.train(fileBuffers, loraName, params.modelAlias, ctx)
+    await this.client.train(
+      options.filesBuffer,
+      loraName,
+      params.modelAlias,
+      options.ctx,
+      options.server
+    )
   }
 }

@@ -228,7 +228,7 @@ async function main (): Promise<void> {
 
   console.log('### qrImgBuffer', qrImgBuffer)
 
-  const comfyClient = new ComfyClient({ host: config.comfyHost, wsHost: config.comfyWsHost })
+  const comfyClient = new ComfyClient({ host: config.comfyHost2, wsHost: config.comfyWsHost2 })
   const filenameHash = crypto.createHash('sha256').update(url, 'utf8')
   const fileName = filenameHash.digest('hex') + '.png'
   console.log('### fileName', fileName)
