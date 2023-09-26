@@ -73,9 +73,6 @@ export class OpenAIBot implements PayableBot {
     if (isMentioned(ctx)) {
       return true
     }
-    if (ctx.session.openAi.chatGpt.isFreePromptChatGroups) {
-      return true
-    }
     const hasReply = this.isSupportedImageReply(ctx)
     const chatPrefix = hasPrefix(ctx.message?.text ?? '')
     if (chatPrefix !== '') {
@@ -144,7 +141,7 @@ export class OpenAIBot implements PayableBot {
 
   public async onEvent (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
     ctx.session.analytics.module = this.module
-    if (!(this.isSupportedEvent(ctx)) && (ctx.chat?.type !== 'private')) { // && (ctx.chat?.type !== 'private' || ctx.session.openAi.chatGpt.isFreePromptChatGroups)
+    if (!(this.isSupportedEvent(ctx)) && (ctx.chat?.type !== 'private') && !ctx.session.openAi.chatGpt.isFreePromptChatGroups) {
       ctx.session.analytics.sessionState = SessionState.Error
       this.logger.warn(`### unsupported command ${ctx.message?.text}`)
       return
