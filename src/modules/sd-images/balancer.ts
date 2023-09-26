@@ -22,6 +22,7 @@ export interface IBalancerOperation {
   id: string
   status: OPERATION_STATUS
   queueNumber: number
+  queueTotalNumber: number
   serverNumber: number
   server: {
     comfyAPI: string
@@ -51,12 +52,4 @@ export const completeOperation = async (id: string, status: OPERATION_STATUS): P
 
     return res.data
   } catch (e) { }
-}
-
-export const getQueueNumber = async (id: string): Promise<number> => {
-  const res = await axios.get<IBalancerOperation[]>(`${config.sdBalancer}/operations`)
-
-  return res.data.filter(
-    op => [OPERATION_STATUS.WAITING, OPERATION_STATUS.IN_PROGRESS].includes(op.status)
-  ).findIndex(op => op.id === id)
 }

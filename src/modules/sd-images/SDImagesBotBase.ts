@@ -118,7 +118,7 @@ export class SDImagesBotBase {
 
     // eslint-disable-next-line @typescript-eslint/naming-convention
     const { message_id } = await ctx.reply(
-      `You are #${balancerOperaton.queueNumber + 1} on the ${balancerOperaton.serverNumber + 1} server, in line for making images. The wait time is about ${(balancerOperaton.queueNumber + 1) * 15} seconds.`, { message_thread_id: ctx.message?.message_thread_id }
+      `You are #${balancerOperaton.queueTotalNumber + 1} in line for making images. The wait time is about ${(balancerOperaton.queueNumber + 1) * 15} seconds.`, { message_thread_id: ctx.message?.message_thread_id }
     )
     ctx.session.analytics.firstResponseTime = process.hrtime.bigint()
     // waiting queue
