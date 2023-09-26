@@ -3,7 +3,7 @@ import config from "../../../config";
 import { ChatConversation } from "../../types";
 import { LlmCompletion } from "./liteLlm";
 
-const API_ENDPOINT = config.llms.apiEndpoint;
+const API_ENDPOINT = 'http://127.0.0.1:5000' //config.llms.apiEndpoint;
 
 export const vertexCompletion = async (
   conversation: ChatConversation[],
