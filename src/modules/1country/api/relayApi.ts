@@ -7,15 +7,35 @@ const base = axios.create({
   timeout: 10000
 })
 
+export type CheckDomainResult = {
+  isAvailable: any
+  renewPrice: any
+  responseText: any
+  isReserved: any
+  isRegistered: any
+  error: string
+  regPrice: any
+  restorePrice: any
+  transferPrice: any } | { error: string }
 export const relayApi = (): {
   enableSubdomains: (domainName: string) => Promise<void>
-  checkDomain: ({ sld }: { sld: string }) => Promise<{ isAvailable: any, renewPrice: any, responseText: any, isReserved: any, isRegistered: any, error: string, regPrice: any, restorePrice: any, transferPrice: any } | { error: string }>
+  checkDomain: ({ sld }: { sld: string }) => Promise<CheckDomainResult>
   createCert: ({
     domain,
     address,
     async
   }: { domain: string, address?: string, async?: boolean }) => Promise<{ success: any, sld: any, nakedJobId: any, error: any, mcJobId: any }>
   genNFT: ({ domain }: { domain: string }) => Promise<{ metadata: any, generated: any }>
+  purchaseDomain: (params: {
+    domain: string
+    txHash: string
+    address: string
+  }) => Promise<{ success: any
+    domainCreationDate: any
+    domainExpiryDate: any
+    traceId: any
+    reqTime: any
+    responseText: any }>
 } => {
   return {
     enableSubdomains: async (domainName: string) => {
@@ -75,6 +95,26 @@ export const relayApi = (): {
         mcJobId,
         nakedJobId,
         error
+      }
+    },
+    purchaseDomain: async ({ domain, txHash, address }) => {
+      const {
+        data: {
+          success,
+          domainCreationDate,
+          domainExpiryDate,
+          traceId,
+          reqTime,
+          responseText
+        }
+      } = await base.post('/purchase', { domain, txHash, address, fast: 1 })
+      return {
+        success,
+        domainCreationDate,
+        domainExpiryDate,
+        traceId,
+        reqTime,
+        responseText
       }
     }
   }

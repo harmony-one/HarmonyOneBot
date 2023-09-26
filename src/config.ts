@@ -92,7 +92,30 @@ export default {
       : ['metamask', 'walletconnect'],
     registerPrefix: process.env.COUNTRY_PREFIX
       ? process.env.COUNTRY_PREFIX.split(',')
-      : ['+', '%']
+      : ['+', '%'],
+    nameWrapperContract:
+      process.env.NAME_WRAPPER_CONTRACT ??
+      '0x4Cd2563118e57B19179d8DC033f2B0C5B5D69ff5',
+    domainNftImagesPath:
+      'https://storage.googleapis.com/radical-domain-nft-images',
+    domainMetadataPath: 'https://storage.googleapis.com/radical-domain-metadata',
+    domain: {
+      tiers: {
+        LEGENDARY: Number(process.env.TIER_LEGENDARY) || 1,
+        SUPER_RARE: Number(process.env.TIER_SUPER_RARE) || 6,
+        RARE: Number(process.env.TIER_RARE) || 9,
+        COMMON: Number(process.env.TIER_COMMON) || 10
+      },
+      reserved: Number(process.env.DOMAIN_RESERVED_LENGTH) || 6
+    },
+    explorer: {
+      explorerUrl:
+        process.env.EXPLORER_URL ?? 'https://explorer.harmony.one/#/tx/',
+      address: 'https://explorer.harmony.one/address/',
+      tx: 'https://explorer.harmony.one/tx/',
+      block: 'https://explorer.harmony.one/block/',
+      erc1155: 'https://explorer.harmony.one/inventory/erc1155/'
+    }
   },
   voiceMemo: {
     isEnabled: Boolean(parseInt(process.env.VOICE_MEMO_ENABLED ?? '1')),

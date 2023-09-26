@@ -4,7 +4,7 @@ import { relayApi } from '../api/relayApi'
 import { getUSDPrice } from '../api/coingecko'
 import { formatONEAmount } from '.'
 
-interface DomainInfo { isAvailable: boolean, priceOne: string, priceUSD: { price: string | null, error: string | null }, isInGracePeriod: boolean }
+interface DomainInfo { isAvailable: boolean, priceOne: string, priceWei: string, priceUSD: { price: string | null, error: string | null }, isInGracePeriod: boolean }
 
 export const isDomainAvailable = async (domainName: string): Promise<DomainInfo> => {
   const nameExpired = await dcClient.checkNameExpired({ name: domainName })
@@ -14,8 +14,11 @@ export const isDomainAvailable = async (domainName: string): Promise<DomainInfo>
   (web2IsAvailable && web3IsAvailable) || // initial comparsion
   (nameExpired.isExpired && !nameExpired.isInGracePeriod)) as boolean
   let domainPrice = ''
+  let domainPriceWei = ''
   if (isAvailable) {
-    domainPrice = (await dcClient.getPrice({ name: domainName })).formatted
+    const priceInfo = await dcClient.getPrice({ name: domainName })
+    domainPrice = priceInfo.formatted
+    domainPriceWei = priceInfo.amount
   }
   return {
     isAvailable:
@@ -24,6 +27,7 @@ export const isDomainAvailable = async (domainName: string): Promise<DomainInfo>
       (nameExpired.isExpired && !nameExpired.isInGracePeriod)) as boolean,
     isInGracePeriod: nameExpired.isInGracePeriod,
     priceOne: domainPrice && formatONEAmount(domainPrice),
+    priceWei: domainPriceWei,
     priceUSD: domainPrice ? await getUSDPrice(domainPrice) : { price: '0', error: null }
   }
 }

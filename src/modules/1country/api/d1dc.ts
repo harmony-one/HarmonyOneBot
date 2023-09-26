@@ -1,11 +1,52 @@
 import { ethers } from 'ethers'
-// import web3Utils from 'web3-utils'
 import Web3 from 'web3'
 import pino, { type Logger } from 'pino'
-// import bn, { BigNumber } from 'bignumber.js'
-
 import DCv2Abi from '../contracts/DCv2'
 import config from '../../../config'
+import type { TransactionReceipt, TransactionResponse } from '@ethersproject/abstract-provider'
+import { countryUtils } from './countryUtils'
+import type { Account } from 'web3-core'
+import type { ErrorCode } from '@ethersproject/logger'
+
+interface DCError extends Error {
+  reason: string
+  code: ErrorCode
+}
+
+export interface CallbackProps {
+  onTransactionHash?: (txHash: string) => void
+  onFailed?: (error: Error | unknown, flag?: boolean) => void
+  onSuccess?: (tx: TransactionReceipt) => void
+}
+
+export interface SendProps extends CallbackProps {
+  account: Account
+  amount?: string
+  methodName: string
+  parameters: unknown[]
+}
+
+export type SendResult = {
+  txReceipt: TransactionReceipt
+  error: null // Error
+} | {
+  txReceipt: null
+  error: DCError // Error
+}
+
+interface CommitProps extends CallbackProps {
+  name: string
+  secret: string
+  account: Account
+}
+
+interface RentProps extends CallbackProps {
+  name: string
+  owner: string
+  secret: string
+  amount: string
+  account: Account
+}
 
 export interface DomainRecord {
   renter: string
@@ -37,7 +78,7 @@ const defaultProvider = new ethers.providers.JsonRpcProvider(
 
 const EmptyAddress = '0x0000000000000000000000000000000000000000'
 
-class DcClient {
+export class DcClient {
   private readonly logger: Logger
   private readonly provider:
   | ethers.providers.Web3Provider
@@ -132,6 +173,90 @@ class DcClient {
   async checkAvailable ({ name }: { name: string }): Promise<boolean> {
     const isAvailable = await this.contractReadOnly.available(name)
     return isAvailable?.toString()?.toLowerCase() === 'true'
+  }
+
+  async rent ({
+    account,
+    name,
+    owner,
+    secret,
+    amount,
+    onFailed,
+    onSuccess,
+    onTransactionHash
+  }: RentProps): Promise<SendResult> {
+    const secretHash = countryUtils.keccak256(secret, true)
+    return await this.send({
+      account,
+      amount,
+      parameters: [name, owner, secretHash],
+      methodName: 'register',
+      onFailed,
+      onSuccess,
+      onTransactionHash
+    })
+  }
+
+  async commit ({
+    account,
+    name,
+    secret,
+    onFailed,
+    onSuccess,
+    onTransactionHash
+  }: CommitProps): Promise<SendResult> {
+    const wallet = new ethers.Wallet(account)
+
+    const secretHash = countryUtils.keccak256(secret, true)
+    const commitment = await this.contractReadOnly.makeCommitment(
+      name,
+      wallet.address,
+      secretHash
+    )
+    return await this.send({
+      account,
+      onFailed,
+      onSuccess,
+      onTransactionHash,
+      methodName: 'commit',
+      parameters: [commitment]
+    })
+  }
+
+  async send ({
+    amount,
+    account,
+    onFailed,
+    onTransactionHash = () => {},
+    onSuccess,
+    methodName,
+    parameters
+  }: SendProps): Promise<SendResult> {
+    const wallet = new ethers.Wallet(account, defaultProvider)
+    const contract = this.contractReadOnly.connect(wallet)
+
+    // const gasLimit = await contract.estimateGas[methodName](...parameters)
+    // console.log('### functionGasFees', gasLimit.toString())
+    // const feeData = await defaultProvider.getFeeData()
+
+    // const txGasPrice = gas.mul(feeData.gasPrice)
+
+    try {
+      console.log('send', amount, parameters)
+      const txResponse = (await contract[methodName](...parameters, {
+        value: amount
+        // gasPrice: feeData.gasPrice,
+        // gasLimit: ethers.utils.hexlify(300000)
+      })) as TransactionResponse
+      onTransactionHash(txResponse.hash)
+
+      const txReceipt = await txResponse.wait()
+      onSuccess?.(txReceipt)
+      return { txReceipt, error: null }
+    } catch (ex) {
+      onFailed?.(ex, true)
+      return { txReceipt: null, error: ex as DCError }
+    }
   }
 }
 

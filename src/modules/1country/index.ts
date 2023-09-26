@@ -15,6 +15,8 @@ import config from '../../config'
 import { MAX_TRIES, sendMessage } from '../open-ai/helpers'
 import { sleep } from '../sd-images/utils'
 import { isValidUrl } from '../open-ai/utils/web-crawler'
+import { dcClient } from './api/d1dc'
+import { ethers } from 'ethers'
 
 export const SupportedCommands = {
   register: { name: 'rent' },
@@ -247,42 +249,21 @@ export class OneCountryBot implements PayableBot {
         return
       }
       const { prompt } = getCommandNamePrompt(ctx, SupportedCommands)
-      const lastDomain = ctx.session.oneCountry.lastDomain
+
       let msgId = 0
-      if (!prompt && !lastDomain) {
+
+      const domainName = this.cleanInput(
+        this.hasPrefix(prompt) ? prompt.slice(1) : prompt
+      )
+
+      if (!domainName) {
         await ctx.reply('Write a domain name', { message_thread_id: ctx.message?.message_thread_id })
         ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
         ctx.session.analytics.sessionState = SessionState.Error
         return
       }
-      if (!prompt && lastDomain) {
-        // ************** dc rent process ********************
-        if (
-          !(await this.payments.rent(ctx as OnMessageContext, lastDomain)) // to be implemented
-        ) {
-          await this.onNotBalanceMessage(ctx)
-          ctx.session.analytics.sessionState = SessionState.Error
-          ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
-        } else {
-          const fullUrl = getUrl(lastDomain, true)
-          await ctx.reply(`The Domain ${fullUrl} was registered`, {
-            parse_mode: 'Markdown',
-            message_thread_id: ctx.message?.message_thread_id
-          })
-          // await ctx.reply(`The Domain [${fullUrl}](${config.country.hostname}/new?domain=${lastDomain}) was registered`, {
-          //   parse_mode: 'Markdown',
-          //   message_thread_id: ctx.message?.message_thread_id,
-          //   disable_web_page_preview: false
-          // })
-          ctx.session.analytics.sessionState = SessionState.Success
-          ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
-          return
-        }
-      }
-      const domain = this.cleanInput(
-        this.hasPrefix(prompt) ? prompt.slice(1) : prompt
-      )
-      const validate = validateDomainName(domain)
+
+      const validate = validateDomainName(domainName)
       if (!validate.valid) {
         await ctx.reply(validate.error, {
           parse_mode: 'Markdown',
@@ -292,12 +273,12 @@ export class OneCountryBot implements PayableBot {
         ctx.session.analytics.sessionState = SessionState.Error
         return
       }
-      ctx.session.oneCountry.lastDomain = domain
+      ctx.session.oneCountry.lastDomain = domainName
       msgId = (await ctx.reply('Checking name...')).message_id
       ctx.session.analytics.firstResponseTime = process.hrtime.bigint()
-      const response = await isDomainAvailable(domain)
+      const response = await isDomainAvailable(domainName)
       const domainAvailable = response.isAvailable
-      let msg = `The name *${domain}* `
+      let msg = `The name *${domainName}* `
       if (!domainAvailable && response.isInGracePeriod) {
         msg += 'is in grace period ❌. Only the owner is able to renew the domain'
       } else if (!domainAvailable) {
@@ -316,6 +297,101 @@ export class OneCountryBot implements PayableBot {
       if (ctx.chat?.id) {
         await ctx.api.editMessageText(ctx.chat.id, msgId, msg, { parse_mode: 'Markdown' })
       }
+
+      const domainInfo = await isDomainAvailable(domainName)
+
+      if (!domainInfo.isAvailable) {
+        await ctx.reply('This domain name is already registered')
+        return
+      }
+
+      const validateResult = validateDomainName(domainName)
+
+      if (validateResult.error) {
+        await ctx.reply(validateResult.error)
+        return
+      }
+
+      const accountId = this.payments.getAccountId(ctx as OnMessageContext)
+      const balance = await this.payments.getUserBalance(accountId)
+      const commissionFee = ethers.utils.parseUnits('2', 'ether')
+
+      console.log('### balance', balance.toString())
+      // console.log('### balance', ethers.utils.formatUnits(balance, 'ethers'))
+
+      console.log('### domainInfo.priceOne', domainInfo.priceOne)
+
+      if (balance.plus(commissionFee.toString()).lt(domainInfo.priceWei)) {
+        await this.onNotBalanceMessage(ctx)
+        return
+      }
+
+      const account = this.payments.getUserAccount(accountId)
+
+      if (!account) {
+        this.logger.error('account not found')
+        await ctx.reply('Unexpected error')
+        return
+      }
+
+      const secret = Math.random().toString(26).slice(2)
+      const commitResult = await dcClient.commit({ account, name: domainName, secret })
+
+      console.log('### commitResult', commitResult)
+      if (!commitResult.txReceipt) {
+        Sentry.captureException(commitResult.error)
+        console.log('### commitResult', commitResult.error)
+        this.logger.error('commit error')
+        await ctx.reply('Unexpected error')
+        return
+      }
+
+      await sleep(5000)
+      console.log('### rent', domainInfo.priceWei)
+
+      const rentResult = await dcClient.rent({
+        account,
+        name: domainName,
+        secret,
+        owner: account.address,
+        amount: domainInfo.priceWei
+      })
+
+      if (!rentResult.txReceipt) {
+        Sentry.captureException(rentResult.error)
+        console.log('### rentResult.error', rentResult.error)
+        await ctx.reply('Unexpected error')
+        return
+      }
+
+      await relayApi().purchaseDomain({
+        domain: domainName,
+        address: account.address,
+        txHash: rentResult.txReceipt.transactionHash
+      })
+
+      await relayApi().genNFT({ domain: domainName })
+
+      if (!rentResult) {
+        await this.onNotBalanceMessage(ctx)
+        ctx.session.analytics.sessionState = SessionState.Error
+        ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
+      } else {
+        const fullUrl = getUrl(domainName, true)
+        await ctx.reply(`The Domain ${fullUrl} was registered`, {
+          parse_mode: 'Markdown',
+          message_thread_id: ctx.message?.message_thread_id
+        })
+        // await ctx.reply(`The Domain [${fullUrl}](${config.country.hostname}/new?domain=${lastDomain}) was registered`, {
+        //   parse_mode: 'Markdown',
+        //   message_thread_id: ctx.message?.message_thread_id,
+        //   disable_web_page_preview: false
+        // })
+        ctx.session.analytics.sessionState = SessionState.Success
+        ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
+        return
+      }
+
       ctx.session.analytics.sessionState = SessionState.Success
       ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
     } catch (e) {
