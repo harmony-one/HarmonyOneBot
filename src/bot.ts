@@ -156,6 +156,7 @@ function createInitialSessionData (): BotSessionData {
       chatGpt: {
         model: config.openAi.chatGpt.model,
         isEnabled: config.openAi.chatGpt.isEnabled,
+        isFreePromptChatGroups: config.openAi.chatGpt.isFreePromptChatGroups,
         chatConversation: [],
         price: 0,
         usage: 0,
@@ -385,8 +386,8 @@ const onMessage = async (ctx: OnMessageContext): Promise<void> => {
         await bot.onEvent(ctx)
         return
       }
-      // Any message interacts with ChatGPT (only for private chats)
-      if (ctx.update.message.chat && ctx.chat.type === 'private') {
+      // Any message interacts with ChatGPT (only for private chats or /ask on enabled on group chats)
+      if (ctx.update.message.chat && (ctx.chat.type === 'private' || ctx.session.openAi.chatGpt.isFreePromptChatGroups)) {
         await openAiBot.onEvent(ctx)
         return
       }
