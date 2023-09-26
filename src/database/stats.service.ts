@@ -122,4 +122,15 @@ export class StatsService {
 
     return await statBotCommandRepository.save(stat)
   }
+
+  public async getLastInteractingAccounts (hourPeriod: number): Promise<Array<{ accountId: string }>> {
+    const dateStart = moment().subtract(hourPeriod, 'hour').unix()
+
+    const queryBuilder = logRepository.createQueryBuilder('logs')
+      .select('distinct(logs.accountId)')
+      .where(`logs.createdAt >= TO_TIMESTAMP(${dateStart})`)
+      .limit(20)
+
+    return await queryBuilder.execute()
+  }
 }

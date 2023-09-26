@@ -93,8 +93,8 @@ export class LlmsBot implements PayableBot {
   private async hasBalance (ctx: OnMessageContext | OnCallBackQueryData): Promise<boolean> {
     const accountId = this.payments.getAccountId(ctx as OnMessageContext)
     const addressBalance = await this.payments.getUserBalance(accountId)
-    const creditsBalance = await chatService.getBalance(accountId)
-    const balance = addressBalance.plus(creditsBalance)
+    const { totalCreditsAmount } = await chatService.getUserCredits(accountId)
+    const balance = addressBalance.plus(totalCreditsAmount)
     const balanceOne = this.payments.toONE(balance, false).toFixed(2)
     return (
       +balanceOne > +config.llms.minimumBalance ||
@@ -270,8 +270,8 @@ export class LlmsBot implements PayableBot {
     const accountId = this.payments.getAccountId(ctx as OnMessageContext)
     const account = this.payments.getUserAccount(accountId)
     const addressBalance = await this.payments.getUserBalance(accountId)
-    const creditsBalance = await chatService.getBalance(accountId)
-    const balance = addressBalance.plus(creditsBalance)
+    const { totalCreditsAmount } = await chatService.getUserCredits(accountId)
+    const balance = addressBalance.plus(totalCreditsAmount)
     const balanceOne = this.payments.toONE(balance, false).toFixed(2)
     const balanceMessage = appText.notEnoughBalance
       .replaceAll('$CREDITS', balanceOne)

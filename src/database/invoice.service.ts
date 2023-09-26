@@ -8,6 +8,7 @@ export interface InvoiceParams {
   accountId: number
   amount: number
   itemId: string
+  currency?: string
 }
 
 export class InvoiceService {
@@ -19,7 +20,7 @@ export class InvoiceService {
     invoice.status = 'init'
     invoice.itemId = data.itemId
     invoice.amount = data.amount
-    invoice.currency = 'USD'
+    invoice.currency = data.currency ?? 'USD'
 
     return await invoiceRepository.save(invoice)
   }
@@ -46,8 +47,8 @@ export class InvoiceService {
       throw new Error(`Invoice not found ${data.uuid}`)
     }
     invoice.status = 'success'
-    invoice.providerPaymentChargeId = data.providerPaymentChargeId
-    invoice.telegramPaymentChargeId = data.telegramPaymentChargeId
+    invoice.providerPaymentChargeId = data.providerPaymentChargeId || ''
+    invoice.telegramPaymentChargeId = data.telegramPaymentChargeId || ''
 
     return await invoiceRepository.save(invoice)
   }
