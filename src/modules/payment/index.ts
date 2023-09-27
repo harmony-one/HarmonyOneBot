@@ -304,7 +304,7 @@ export class BotPayments {
   }
 
   private convertBigNumber (value: BigNumber, precision = 8): number {
-    return +value.div(BigNumber(10).pow(18)).toPrecision(precision)
+    return +value.div(BigNumber(10).pow(18)).toFormat(precision)
   }
 
   private async writePaymentLog (
