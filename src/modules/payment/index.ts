@@ -4,13 +4,12 @@ import { type Account, type TransactionReceipt } from 'web3-core'
 import axios from 'axios'
 import bn, { BigNumber } from 'bignumber.js'
 import config from '../../config'
-import { chatService, invoiceService, statsService } from '../../database/services'
+import { chatService, statsService } from '../../database/services'
 import { type OnCallBackQueryData, type OnMessageContext } from '../types'
 import { LRUCache } from 'lru-cache'
 import { freeCreditsFeeCounter } from '../../metrics/prometheus'
 import { type BotPaymentLog } from '../../database/stats.service'
 import { sendMessage } from '../open-ai/helpers'
-import { type InvoiceParams } from '../../database/invoice.service'
 import * as Sentry from '@sentry/node'
 
 interface CoinGeckoResponse {
@@ -65,17 +64,17 @@ export class BotPayments {
     userAccount: Account,
     amount: BigNumber
   ): Promise<void> {
-    const invoiceData: InvoiceParams = {
-      tgUserId: accountId,
-      accountId,
-      amount: Math.round(this.convertBigNumber(amount)),
-      itemId: 'deposit_one',
-      currency: 'ONE'
-    }
-    const invoice = await invoiceService.create(invoiceData)
+    // const invoiceData: InvoiceParams = {
+    //   tgUserId: accountId,
+    //   accountId,
+    //   amount: this.convertBigNumber(amount),
+    //   itemId: 'deposit_one',
+    //   currency: 'ONE'
+    // }
+    // const invoice = await invoiceService.create(invoiceData)
     await this.transferFunds(userAccount, this.holderAddress, amount)
     await chatService.depositOneCredits(accountId, amount.toFixed())
-    await invoiceService.setSuccessStatus({ uuid: invoice.uuid, providerPaymentChargeId: '', telegramPaymentChargeId: '' })
+    // await invoiceService.setSuccessStatus({ uuid: invoice.uuid, providerPaymentChargeId: '', telegramPaymentChargeId: '' })
   }
 
   private async runHotWalletsTask (): Promise<void> {
@@ -107,7 +106,6 @@ export class BotPayments {
         let availableBalance = new BigNumber(0)
         try {
           availableBalance = await this.getUserBalance(accountId)
-          // availableBalance = BigNumber.max(availableBalance.minus(txFee), 0)
         } catch (e) {
           Sentry.captureException(e)
           this.logger.error(`Cannot get user balance ${accountId} ${userAccount.address}`)
@@ -118,7 +116,7 @@ export class BotPayments {
             this.logger.info(`User ${accountId} ${userAccount.address} transfer funds ${availableBalance.toFixed()} ONE to multisig wallet: ${this.holderAddress}...`)
             await this.transferUserFundsToHolder(accountId, userAccount, availableBalance)
             const { totalCreditsAmount } = await chatService.getUserCredits(accountId)
-            this.logger.info(`User ${accountId} ${userAccount.address} hot wallet funds "${availableBalance.toFixed()}" ONE transferred to holder address ${this.holderAddress}. ONE credits balance: ${totalCreditsAmount.toString()}.`)
+            this.logger.info(`User ${accountId} ${userAccount.address} hot wallet funds "${availableBalance.toFixed()}" ONE transferred to holder address ${this.holderAddress}. User credits balance: ${totalCreditsAmount.toString()}.`)
           } catch (e) {
             Sentry.captureException(e)
             this.logger.error(
@@ -306,7 +304,7 @@ export class BotPayments {
   }
 
   private convertBigNumber (value: BigNumber, precision = 8): number {
-    return +value.div(BigNumber(10).pow(18)).toFormat(precision)
+    return +value.div(BigNumber(10).pow(18)).toPrecision(precision)
   }
 
   private async writePaymentLog (
