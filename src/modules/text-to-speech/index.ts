@@ -26,9 +26,23 @@ export class TextToSpeechBot implements PayableBot {
   }
 
   public getEstimatedPrice (ctx: OnMessageContext): number {
-    const str = ctx.match?.toString() ?? ''
-
+    const str = this.getTextFromMessage(ctx)
     return str.length * 0.0001
+  }
+
+  public getTextFromMessage (ctx: OnMessageContext): string {
+    if (ctx.match?.toString()) {
+      return ctx.match.toString()
+    }
+
+    return ctx.message.reply_to_message?.text ?? ''
+  }
+
+  public async onEvent (ctx: OnMessageContext): Promise<void> {
+    if (ctx.hasCommand('voice')) {
+      const text = this.getTextFromMessage(ctx)
+      await this.onTextToSpeech(ctx, text)
+    }
   }
 
   public async onTextToSpeech (ctx: OnMessageContext, message: string): Promise<void> {
@@ -53,13 +67,6 @@ export class TextToSpeechBot implements PayableBot {
     const inputFile = new InputFile(voiceResult)
 
     await ctx.api.deleteMessage(ctx.chat.id, progressMessage.message_id)
-    await ctx.replyWithVoice(inputFile)
-  }
-
-  public async onEvent (ctx: OnMessageContext): Promise<void> {
-    if (ctx.hasCommand('voice')) {
-      const text = ctx.match.toString()
-      await this.onTextToSpeech(ctx, text)
-    }
+    await ctx.replyWithVoice(inputFile, { reply_to_message_id: ctx.message.message_id })
   }
 }
