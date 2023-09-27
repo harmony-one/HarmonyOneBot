@@ -1,7 +1,18 @@
 import * as dotenv from 'dotenv'
+import { execSync } from 'child_process'
 dotenv.config()
 
+let commitHash = ''
+try {
+  commitHash = execSync('git rev-parse HEAD').toString().trim()
+  console.log('### commitHash', commitHash)
+} catch (error) {
+  console.error('Error retrieving commit hash:', error)
+}
+
 export default {
+  botName: process.env.BOT_NAME ?? 'local',
+  commitHash,
   port: +(process.env.PORT ?? '3000'),
   appAdmins:
     (process.env.APP_ADMINS?.split(',').map((x) => parseInt(x))) ??
