@@ -119,10 +119,10 @@ export class BotPayments {
 
         if (availableBalance.minus(txFee).gt(0)) {
           try {
-            this.logger.info(`User ${accountId} transfer funds ${availableBalance.toString()} ONE to multisig wallet: ${this.holderAddress}...`)
+            this.logger.info(`User ${accountId} ${userAccount.address} transfer funds ${availableBalance.toFixed()} ONE to multisig wallet: ${this.holderAddress}...`)
             await this.transferUserFundsToHolder(accountId, userAccount, availableBalance)
             const { totalCreditsAmount } = await chatService.getUserCredits(accountId)
-            this.logger.info(`User ${accountId} ${userAccount.address} hot wallet funds "${availableBalance.toString()}" ONE transferred to holder address ${this.holderAddress}. ONE credits balance: ${totalCreditsAmount.toString()}.`)
+            this.logger.info(`User ${accountId} ${userAccount.address} hot wallet funds "${availableBalance.toFixed()}" ONE transferred to holder address ${this.holderAddress}. ONE credits balance: ${totalCreditsAmount.toString()}.`)
           } catch (e) {
             Sentry.captureException(e)
             this.logger.error(
