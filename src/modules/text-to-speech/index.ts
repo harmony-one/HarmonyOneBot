@@ -27,7 +27,7 @@ export class TextToSpeechBot implements PayableBot {
 
   public getEstimatedPrice (ctx: OnMessageContext): number {
     const str = this.getTextFromMessage(ctx)
-    return str.length * 0.0001
+    return str.length * 0.01
   }
 
   public getTextFromMessage (ctx: OnMessageContext): string {
