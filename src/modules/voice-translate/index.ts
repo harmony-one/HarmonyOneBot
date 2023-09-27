@@ -48,7 +48,7 @@ export class VoiceTranslateBot implements PayableBot {
       return
     }
 
-    const progressMessage = await ctx.reply('Waite a moment...')
+    const progressMessage = await ctx.reply('Generating...')
 
     if (!ctx.chat?.id) {
       throw Error('chat id is undefined')

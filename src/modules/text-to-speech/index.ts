@@ -55,7 +55,7 @@ export class TextToSpeechBot implements PayableBot {
       throw new Error('Internal error')
     }
 
-    const progressMessage = await ctx.reply('Waite a moment...')
+    const progressMessage = await ctx.reply('Generating...')
 
     const voiceResult = await gcTextToSpeedClient.textToSpeech(message)
 
@@ -67,6 +67,6 @@ export class TextToSpeechBot implements PayableBot {
     const inputFile = new InputFile(voiceResult)
 
     await ctx.api.deleteMessage(ctx.chat.id, progressMessage.message_id)
-    await ctx.replyWithVoice(inputFile, { reply_to_message_id: ctx.message.message_id })
+    await ctx.replyWithVoice(inputFile)
   }
 }
