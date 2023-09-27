@@ -200,13 +200,13 @@ export class BotPayments {
     return bn(estimatedFee)
   }
 
-  private async estimateTransferFee() {
+  private async estimateTransferFee (): Promise<number> {
     const web3 = new Web3(this.rpcURL)
     const gasPrice = await web3.eth.getGasPrice()
     const txBody = {
       from: this.holderAddress,
       to: this.holderAddress,
-      value: web3.utils.toHex('0'),
+      value: web3.utils.toHex('0')
     }
     const estimatedGas = await web3.eth.estimateGas(txBody)
     return estimatedGas * +gasPrice
