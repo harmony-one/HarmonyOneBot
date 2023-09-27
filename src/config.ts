@@ -131,6 +131,7 @@ export default {
       'https://api.thegraph.com/subgraphs/name/nick8319/uniswap-v3-harmony'
   },
   walletConnect: { projectId: process.env.WALLET_CONNECT_PROJECT_ID ?? '' },
+  voiceTranslate: { isEnabled: Boolean(parseInt(process.env.BOT_VOICE_TRANSLATE_ENABLE ?? '0')) },
   db: { url: process.env.DATABASE_URL ?? '' },
   credits: {
     maxChats: 3,

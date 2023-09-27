@@ -51,6 +51,7 @@ import { ProfilingIntegration } from '@sentry/profiling-node'
 import { ES } from './es'
 import { hydrateFiles } from '@grammyjs/files'
 import { VoiceTranslateBot } from './modules/voice-translate'
+import { TextToSpeechBot } from './modules/text-to-speech'
 
 Events.EventEmitter.defaultMaxListeners = 30
 
@@ -216,6 +217,7 @@ const llmsBot = new LlmsBot(payments)
 const documentBot = new DocumentHandler()
 const telegramPayments = new TelegramPayments(payments)
 const voiceTranslateBot = new VoiceTranslateBot(payments)
+const textToSpeechBot = new TextToSpeechBot(payments)
 
 bot.on('message:new_chat_members:me', async (ctx) => {
   try {
@@ -329,6 +331,7 @@ const PayableBots: Record<string, PayableBotConfig> = {
   voiceMemo: { bot: voiceMemo },
   documentBot: { bot: documentBot },
   translateBot: { bot: translateBot },
+  textToSpeech: { bot: textToSpeechBot },
   openAiBot: {
     enabled: (ctx: OnMessageContext) => ctx.session.openAi.imageGen.isEnabled,
     bot: openAiBot
@@ -664,6 +667,6 @@ async function bootstrap (): Promise<void> {
 }
 
 bootstrap().catch((error) => {
-  console.error(`bot bootstrap error ${error}`)
+  logger.error(`bot bootstrap error ${error}`)
   process.exit(1)
 })

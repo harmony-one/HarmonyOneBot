@@ -2,10 +2,12 @@ import fs from 'fs'
 import pino from 'pino'
 import { InputFile } from 'grammy'
 import type { Logger } from 'pino'
-import { textToSpeech } from './client'
+import { gcTextToSpeedClient } from '../../google-cloud/gcTextToSpeechClient'
 import type { BotPayments } from '../payment'
 import { speechToText } from '../open-ai/api/openAi'
 import type { OnMessageContext, PayableBot } from '../types'
+import config from '../../config'
+import { translator } from '../translate/deeplClient'
 
 export class VoiceTranslateBot implements PayableBot {
   private readonly payments: BotPayments
@@ -26,52 +28,27 @@ export class VoiceTranslateBot implements PayableBot {
   public isSupportedEvent (ctx: OnMessageContext): boolean {
     const { voice, audio } = ctx.update.message
 
-    return (!!voice || !!audio) || ctx.hasCommand('voice')
+    if (!config.voiceTranslate.isEnabled) {
+      return false
+    }
+
+    return (!!voice || !!audio)
   }
 
   public getEstimatedPrice (ctx: OnMessageContext): number {
-    return 0
-  }
-
-  public async onTextToSpeech (ctx: OnMessageContext, message: string): Promise<void> {
-    if (!message) {
-      await ctx.reply('/voice command should contain text.')
-      return
-    }
-
-    if (!ctx.chat?.id) {
-      throw new Error('Internal error')
-    }
-
-    const progressMessage = await ctx.reply('Waite a moment...')
-
-    const voiceResult = await textToSpeech(message)
-
-    if (!voiceResult) {
-      await ctx.api.editMessageText(ctx.chat.id, progressMessage.message_id, 'An error occurred during the process of generating the message.')
-      return
-    }
-
-    const inputFile = new InputFile(voiceResult)
-
-    await ctx.api.deleteMessage(ctx.chat.id, progressMessage.message_id)
-    await ctx.replyWithVoice(inputFile)
+    const { voice, audio } = ctx.update.message
+    const seconds = (voice?.duration ?? audio?.duration) ?? 0
+    return seconds * 0.005
   }
 
   public async onEvent (ctx: OnMessageContext): Promise<void> {
     const { voice, audio } = ctx.update.message
 
-    if (ctx.hasCommand('voice')) {
-      const text = ctx.match.toString()
-      await this.onTextToSpeech(ctx, text)
-      return
-    }
-
     if (!(!!voice || !!audio)) {
       return
     }
 
-    const message = await ctx.reply('Waite a moment...')
+    const progressMessage = await ctx.reply('Waite a moment...')
 
     if (!ctx.chat?.id) {
       throw Error('chat id is undefined')
@@ -92,14 +69,16 @@ export class VoiceTranslateBot implements PayableBot {
     const resultText = await speechToText(fs.createReadStream(filename))
     fs.rmSync(filename)
 
-    const voiceResult = await textToSpeech(resultText)
+    const translateResult = await translator.translateText(resultText, null, 'en-US')
+
+    const voiceResult = await gcTextToSpeedClient.textToSpeech(translateResult.text)
 
     if (!voiceResult) {
       await ctx.reply('voice generation error')
       return
     }
 
-    await ctx.api.editMessageText(ctx.chat.id, message.message_id, resultText)
+    await ctx.api.deleteMessage(ctx.chat.id, progressMessage.message_id)
 
     const inputFile = new InputFile(voiceResult)
 
