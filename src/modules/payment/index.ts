@@ -20,7 +20,6 @@ interface CoinGeckoResponse {
 }
 
 export class BotPayments {
-  private readonly hotWallet: Account
   private readonly holderAddress = config.payment.holderAddress
   private readonly logger: Logger
   private readonly web3: Web3
@@ -50,9 +49,6 @@ export class BotPayments {
     } else {
       this.logger.info(`Payments holder address: ${this.holderAddress}`)
     }
-
-    this.hotWallet = this.getUserAccount('hot_wallet') as Account
-    this.logger.info(`Hot wallet address: ${this.hotWallet.address}`)
   }
 
   public bootstrap (): void {
@@ -119,10 +115,10 @@ export class BotPayments {
 
         if (availableBalance.minus(txFee).gt(0)) {
           try {
-            this.logger.info(`User ${accountId} transfer funds ${availableBalance.toString()} ONE to multisig wallet: ${this.holderAddress}...`)
+            this.logger.info(`User ${accountId} ${userAccount.address} transfer funds ${availableBalance.toFixed()} ONE to multisig wallet: ${this.holderAddress}...`)
             await this.transferUserFundsToHolder(accountId, userAccount, availableBalance)
             const { totalCreditsAmount } = await chatService.getUserCredits(accountId)
-            this.logger.info(`User ${accountId} ${userAccount.address} hot wallet funds "${availableBalance.toString()}" ONE transferred to holder address ${this.holderAddress}. ONE credits balance: ${totalCreditsAmount.toString()}.`)
+            this.logger.info(`User ${accountId} ${userAccount.address} hot wallet funds "${availableBalance.toFixed()}" ONE transferred to holder address ${this.holderAddress}. ONE credits balance: ${totalCreditsAmount.toString()}.`)
           } catch (e) {
             Sentry.captureException(e)
             this.logger.error(
@@ -200,8 +196,20 @@ export class BotPayments {
   }
 
   private async getTransactionFee (): Promise<bn> {
-    const gasPrice = await this.web3.eth.getGasPrice()
-    return bn(gasPrice.toString()).multipliedBy(21000)
+    const estimatedFee = await this.estimateTransferFee()
+    return bn(estimatedFee)
+  }
+
+  private async estimateTransferFee (): Promise<number> {
+    const web3 = new Web3(this.rpcURL)
+    const gasPrice = await web3.eth.getGasPrice()
+    const txBody = {
+      from: this.holderAddress,
+      to: this.holderAddress,
+      value: web3.utils.toHex('0')
+    }
+    const estimatedGas = await web3.eth.estimateGas(txBody)
+    return estimatedGas * +gasPrice
   }
 
   private async transferFunds (

@@ -86,7 +86,7 @@ export class ChatService {
     const oldValue = new bn(account.oneCreditAmount)
     const newValue = new bn(amount).plus(oldValue)
 
-    return await chatRepository.update({ accountId }, { oneCreditAmount: newValue.toString() })
+    return await chatRepository.update({ accountId }, { oneCreditAmount: newValue.toFixed() })
   }
 
   public async getUserCredits (
