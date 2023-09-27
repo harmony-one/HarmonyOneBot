@@ -20,7 +20,6 @@ interface CoinGeckoResponse {
 }
 
 export class BotPayments {
-  private readonly hotWallet: Account
   private readonly holderAddress = config.payment.holderAddress
   private readonly logger: Logger
   private readonly web3: Web3
@@ -50,9 +49,6 @@ export class BotPayments {
     } else {
       this.logger.info(`Payments holder address: ${this.holderAddress}`)
     }
-
-    this.hotWallet = this.getUserAccount('hot_wallet') as Account
-    this.logger.info(`Hot wallet address: ${this.hotWallet.address}`)
   }
 
   public bootstrap (): void {
