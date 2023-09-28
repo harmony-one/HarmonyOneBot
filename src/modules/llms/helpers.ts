@@ -13,7 +13,8 @@ import { type Message } from 'grammy/out/types'
 
 export const SupportedCommands = {
   bardF: { name: 'bard' },
-  bard: { name: 'b' }
+  bard: { name: 'b' },
+  pdf: { name: 'pdf' }
 }
 
 export const MAX_TRIES = 3

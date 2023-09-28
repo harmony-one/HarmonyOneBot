@@ -27,6 +27,7 @@ import { vertexCompletion } from './api/vertex'
 import { type LlmCompletion, llmCompletion } from './api/liteLlm'
 import { LlmsModelsEnum } from './types'
 import * as Sentry from '@sentry/node'
+import { handlePdf } from './api/pdfHandler'
 export class LlmsBot implements PayableBot {
   public readonly module = 'LlmsBot'
   private readonly logger: Logger
@@ -82,6 +83,10 @@ export class LlmsBot implements PayableBot {
       return
     }
 
+    if (ctx.hasCommand(SupportedCommands.pdf.name)) {
+      await this.onPdfHandler(ctx)
+      return
+    }
     this.logger.warn('### unsupported command')
     ctx.session.analytics.sessionState = SessionState.Error
     await sendMessage(ctx, '### unsupported command').catch(async (e) => {
@@ -100,6 +105,40 @@ export class LlmsBot implements PayableBot {
       +balanceOne > +config.llms.minimumBalance ||
       (this.payments.isUserInWhitelist(ctx.from.id, ctx.from.username))
     )
+  }
+
+  private async onPdfHandler (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
+    if (!ctx.chat?.id) {
+      throw new Error('internal error')
+    }
+    try {
+      const { chatConversation } = ctx.session.llms
+      const msgId = (
+        await ctx.reply('...', { message_thread_id: ctx.message?.message_thread_id })
+      ).message_id
+      const prompt = ctx.match as string
+      const response = await handlePdf(prompt)
+      if (response.completion) {
+        await ctx.api.editMessageText(
+          ctx.chat.id,
+          msgId,
+          response.completion.content
+        ).catch(async (e: any) => { await this.onError(ctx, e) })
+        if (
+          !(await this.payments.pay(ctx as OnMessageContext, response.price))
+        ) {
+          await this.onNotBalanceMessage(ctx)
+          return
+        }
+        chatConversation.push({
+          content: prompt,
+          role: 'user'
+        })
+        chatConversation.push(response.completion)
+      }
+    } catch (e) {
+      await this.onError(ctx, e)
+    }
   }
 
   private async promptGen (data: ChatPayload): Promise<{ price: number, chat: ChatConversation[] }> {
