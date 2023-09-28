@@ -65,11 +65,11 @@ export class TelegramPayments {
     const providerPaymentChargeId = provider_payment_charge_id
 
     const invoice = await invoiceService.setSuccessStatus({ uuid, telegramPaymentChargeId, providerPaymentChargeId })
-    const fiatCredits = await this.payments.getPriceInONE(invoice.amount)
+    const fiatCredits = await this.payments.getPriceInONE(+invoice.amount)
 
     await chatService.depositFiatCredits(invoice.accountId, fiatCredits.toString())
 
-    this.logger.info(`Payment from @${ctx.message.from.username} $${invoice.amount / 100} was completed!`)
+    this.logger.info(`Payment from @${ctx.message.from.username} $${+invoice.amount / 100} was completed!`)
   }
 
   public async createPaymentInvoice (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
@@ -133,7 +133,7 @@ export class TelegramPayments {
       amount
     }]
 
-    const invoice = await invoiceService.create({ tgUserId, accountId, itemId, amount })
+    const invoice = await invoiceService.create({ tgUserId, accountId, itemId, amount: amount.toString() })
     const payload = JSON.stringify({ uuid: invoice.uuid })
     this.logger.info(`Send invoice: ${JSON.stringify({ tgUserId, accountId, itemId, amount })}`)
     // const photoUrl = 'https://pbs.twimg.com/media/F5SofMsbgAApd2Y?format=png&name=small'

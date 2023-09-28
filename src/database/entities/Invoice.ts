@@ -17,8 +17,8 @@ export class Invoice {
   @Column()
     itemId!: string
 
-  @Column()
-    amount!: number
+  @Column({ type: 'varchar' })
+    amount!: string
 
   @Column({ nullable: true })
     telegramPaymentChargeId!: string
