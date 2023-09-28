@@ -52,6 +52,7 @@ import { ES } from './es'
 import { hydrateFiles } from '@grammyjs/files'
 import { VoiceTranslateBot } from './modules/voice-translate'
 import { TextToSpeechBot } from './modules/text-to-speech'
+import { VoiceToTextBot } from './modules/voice-to-text'
 
 Events.EventEmitter.defaultMaxListeners = 30
 
@@ -221,6 +222,7 @@ const documentBot = new DocumentHandler()
 const telegramPayments = new TelegramPayments(payments)
 const voiceTranslateBot = new VoiceTranslateBot(payments)
 const textToSpeechBot = new TextToSpeechBot(payments)
+const voiceToTextBot = new VoiceToTextBot(payments)
 
 bot.on('message:new_chat_members:me', async (ctx) => {
   try {
@@ -335,6 +337,7 @@ const PayableBots: Record<string, PayableBotConfig> = {
   documentBot: { bot: documentBot },
   translateBot: { bot: translateBot },
   textToSpeech: { bot: textToSpeechBot },
+  voiceToText: { bot: voiceToTextBot },
   openAiBot: {
     enabled: (ctx: OnMessageContext) => ctx.session.openAi.imageGen.isEnabled,
     bot: openAiBot
