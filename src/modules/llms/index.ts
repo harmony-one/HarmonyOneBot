@@ -82,6 +82,11 @@ export class LlmsBot {
       return;
     }
 
+    if (ctx.hasCommand(SupportedCommands.jurasik.name)) {
+      this.onChat(ctx, LlmsModelsEnum.J2_ULTRA) // .J2_ULTRA);
+      return;
+    }
+
     this.logger.warn(`### unsupported command`);
     sendMessage(ctx, "### unsupported command").catch((e) =>
       this.onError(ctx, e, MAX_TRIES, "### unsupported command")

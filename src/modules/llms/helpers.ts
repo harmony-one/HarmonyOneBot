@@ -18,6 +18,9 @@ export const SupportedCommands = {
   bard: {
     name: "b",
   },
+  jurasik: {
+    name: 'j'
+  }
 };
 
 export const MAX_TRIES = 3;

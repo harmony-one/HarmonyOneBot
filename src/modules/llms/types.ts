@@ -3,6 +3,7 @@ import { ChatModel } from "../open-ai/types";
 export enum LlmsModelsEnum {
   GPT_4_32K = "gpt-4-32k",
   BISON = "chat-bison",
+  J2_ULTRA = "j2-ultra"
 }
 
 export const LlmsModels: Record<string, ChatModel> = {
@@ -20,4 +21,11 @@ export const LlmsModels: Record<string, ChatModel> = {
     maxContextTokens: 32000,
     chargeType: "TOKEN",
   },
+  "j2-ultra": {
+    name: 'j2-ultra',
+    inputPrice: 0.06,
+    outputPrice: 0.12,
+    maxContextTokens: 32000,
+    chargeType: "TOKEN",
+  }
 };
