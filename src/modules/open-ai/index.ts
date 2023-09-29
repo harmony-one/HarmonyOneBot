@@ -173,6 +173,7 @@ export class OpenAIBot implements PayableBot {
       ctx.hasCommand(SupportedCommands.ask.name) ||
       (ctx.message?.text?.startsWith('ask ') && ctx.chat?.type === 'private')
     ) {
+      console.log(ctx.session.collections.collectionList)
       ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_4
       await this.onChat(ctx)
       return
@@ -210,11 +211,6 @@ export class OpenAIBot implements PayableBot {
       await this.onGenImgCmd(ctx)
       return
     }
-
-    // if (ctx.hasCommand(SupportedCommands.genImgEn.name)) {
-    //   this.onGenImgEnCmd(ctx);
-    //   return;
-    // }
 
     if (this.isSupportedImageReply(ctx)) {
       await this.onAlterImage(ctx)

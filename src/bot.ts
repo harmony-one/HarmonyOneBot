@@ -178,6 +178,7 @@ function createInitialSessionData (): BotSessionData {
       languages: [],
       enable: false
     },
+    collections: { collectionList: [], docsJob: [] },
     llms: {
       model: config.llms.model,
       isEnabled: config.llms.isEnabled,

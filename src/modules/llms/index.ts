@@ -24,7 +24,7 @@ import {
 } from './helpers'
 import { preparePrompt, sendMessage } from '../open-ai/helpers'
 import { vertexCompletion } from './api/vertex'
-import { type LlmCompletion, llmCompletion } from './api/liteLlm'
+import { type LlmCompletion, llmCompletion } from './api/llmApi'
 import { LlmsModelsEnum } from './types'
 import * as Sentry from '@sentry/node'
 import { handlePdf } from './api/pdfHandler'

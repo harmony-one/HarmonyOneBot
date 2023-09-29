@@ -1,26 +1,28 @@
 import axios, { AxiosError } from 'axios'
 import config from '../../../config'
-import { type ChatConversation, type OnCallBackQueryData, type OnMessageContext } from '../../types'
+import { type ChatConversation } from '../../types'
 
-const API_ENDPOINT = config.llms.apiEndpoint
+const API_ENDPOINT = 'http://127.0.0.1:5000' // config.llms.apiEndpoint
+
 export interface LlmCompletion {
   completion: ChatConversation | undefined
   usage: number
   price: number
 }
 
-export const llmAddUrlDocument = async (ctx: OnMessageContext | OnCallBackQueryData, chatId: number, url: string): Promise<void> => {
+export const llmAddUrlDocument = async (chatId: number, pdfUrl: string, fileName: string): Promise<string> => {
   try {
     const data = {
       chatId: `${chatId}`,
-      url
+      pdfUrl,
+      fileName
     }
     const endpointUrl = `${API_ENDPOINT}/collections/document`
-    console.log(endpointUrl, data)
     const response = await axios.post(endpointUrl, data)
     if (response) {
-      console.log(response.data)
+      return response.data
     }
+    return ''
   } catch (error: any) {
     if (error instanceof AxiosError) {
       console.log(error.code)

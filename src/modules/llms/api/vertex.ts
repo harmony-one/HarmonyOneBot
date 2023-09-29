@@ -1,7 +1,7 @@
 import axios, { AxiosError } from 'axios'
 import config from '../../../config'
 import { type ChatConversation } from '../../types'
-import { type LlmCompletion } from './liteLlm'
+import { type LlmCompletion } from './llmApi'
 
 // const API_ENDPOINT = 'http://127.0.0.1:5000' // config.llms.apiEndpoint
 const API_ENDPOINT = config.llms.apiEndpoint

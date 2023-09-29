@@ -83,6 +83,24 @@ export enum SessionState {
   Success = 'success'
 }
 
+export interface Collection {
+  collectionName: string
+  collectionType: 'URL' | 'PDF'
+  collectionStatus: 'PROCESSING' | 'READY'
+  fileName?: string
+  url?: string
+  prompt?: string
+}
+
+export interface FileDoc {
+  fileName: string
+  fileType: string
+  fileSize: number
+}
+export interface CollectionSessionData {
+  collectionList: Collection[]
+  docsJob: FileDoc[]
+}
 export interface Analytics {
   firstResponseTime: bigint
   actualResponseTime: bigint
@@ -93,6 +111,7 @@ export interface Analytics {
 
 export interface BotSessionData {
   oneCountry: OneCountryData
+  collections: CollectionSessionData
   openAi: OpenAiSessionData
   translate: TranslateBotData
   llms: LmmsSessionData
