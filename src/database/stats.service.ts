@@ -129,6 +129,7 @@ export class StatsService {
     const queryBuilder = logRepository.createQueryBuilder('logs')
       .select('distinct(logs.accountId)')
       .where(`logs.createdAt >= TO_TIMESTAMP(${dateStart})`)
+      .orderBy('logs.createdAt desc')
       .limit(20)
 
     return await queryBuilder.execute()
