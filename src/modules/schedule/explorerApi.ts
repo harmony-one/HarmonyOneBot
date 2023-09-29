@@ -1,6 +1,6 @@
 import axios from 'axios'
-import config from "../../config";
-import {abbreviateNumber, getPercentDiff} from "./utils";
+import config from '../../config'
+import { abbreviateNumber, getPercentDiff } from './utils'
 
 export interface MetricsDaily {
   date: string
@@ -17,26 +17,22 @@ export enum MetricsDailyType {
   totalFee = 'total_fee',
 }
 
-export const getDailyMetrics = async (type: MetricsDailyType, limit: number) => {
+export const getDailyMetrics = async (type: MetricsDailyType, limit: number): Promise<MetricsDaily[]> => {
   const feesUrl = `${apiUrl}/v0/metrics?type=${type}&limit=${limit}`
-  const { data } = await axios.get<MetricsDaily[]>(feesUrl, {
-    headers: {
-      'X-API-KEY': apiKey
-    }
-  })
+  const { data } = await axios.get<MetricsDaily[]>(feesUrl, { headers: { 'X-API-KEY': apiKey } })
   return data
 }
 
-export const getFeeStats = async () => {
+export const getFeeStats = async (): Promise<{ change: string, value: string }> => {
   const metrics = await getDailyMetrics(MetricsDailyType.totalFee, 14)
 
-  let feesWeek1 = 0, feesWeek2 = 0
+  let feesWeek1 = 0; let feesWeek2 = 0
 
   metrics.forEach((item, index) => {
     const value = +item.value
-    if(index < 7) {
+    if (index < 7) {
       feesWeek1 += value
-    } else if(index < 14) {
+    } else if (index < 14) {
       feesWeek2 += value
     }
   })
@@ -49,7 +45,7 @@ export const getFeeStats = async () => {
   const value = feesWeek1
   const average = (feesWeek1 + feesWeek2) / 2
   let change = getPercentDiff(average, value).toFixed(1)
-  if(+change > 0) {
+  if (+change > 0) {
     change = `+${change}`
   }
 

@@ -1,7 +1,7 @@
 import axios from 'axios'
 import moment from 'moment'
-import {abbreviateNumber, getPercentDiff} from "./utils";
-import { BigNumber } from "bignumber.js";
+import { abbreviateNumber, getPercentDiff } from './utils'
+import { BigNumber } from 'bignumber.js'
 
 const bridgeUrl = 'https://hmy-lz-api-token.fly.dev'
 const stakeApiUrl = 'https://api.stake.hmny.io'
@@ -66,46 +66,43 @@ export const getTokensList = async (): Promise<BridgeToken[]> => {
 }
 
 interface StakingHistoryItem {
-  "total-staking": number,
+  'total-staking': number
   current_epoch: number
 }
 
-interface StakingHistory {
-  [key: string]: StakingHistoryItem
-}
+type StakingHistory = Record<string, StakingHistoryItem>
 
-export const getStakingStats = async () => {
-  const { data } = await axios.get<{ "total-staking": string, history: StakingHistory }>(`${stakeApiUrl}/networks/harmony/network_info_lite`)
+export const getStakingStats = async (): Promise<{ 'total-staking': string, history: StakingHistory }> => {
+  const { data } = await axios.get<{ 'total-staking': string, history: StakingHistory }>(`${stakeApiUrl}/networks/harmony/network_info_lite`)
   return data
 }
 
-export const getBridgeStats = async () => {
+export const getBridgeStats = async (): Promise<{ change: string, value: string }> => {
   const daysCount = 7
-  const weekTimestamp = moment().subtract(daysCount - 1,'days').unix()
-  const yesterdayTimestamp = moment().subtract(1,'days').unix()
+  const weekTimestamp = moment().subtract(daysCount - 1, 'days').unix()
 
   const tokens = await getTokensList()
   const daysAmountMap: Record<string, number> = {}
 
-  for(let i = 0; i < 100; i++) {
+  for (let i = 0; i < 100; i++) {
     const items = await getOperations(i)
 
     items.filter((item) => {
-        const { type, timestamp, amount, status } = item
-        return status === 'success'
-          && timestamp >= weekTimestamp
-          && amount > 0
-      })
+      const { timestamp, amount, status } = item
+      return status === 'success' &&
+          timestamp >= weekTimestamp &&
+          amount > 0
+    })
       .forEach((item) => {
         const { type, timestamp, amount, erc20Address, hrc20Address } = item
 
         const isIncome = type.includes('to_one')
         const token = tokens.find(item =>
-          erc20Address.toLowerCase() === erc20Address.toLowerCase()
-          || hrc20Address.toLowerCase() === hrc20Address.toLowerCase()
+          item.erc20Address.toLowerCase() === erc20Address.toLowerCase() ||
+          item.hrc20Address.toLowerCase() === hrc20Address.toLowerCase()
         )
 
-        if(!token) {
+        if (!token) {
           console.error(`Cannot find bridged token: erc20Address: ${erc20Address}, hrc20Address: ${hrc20Address}, timestamp: ${timestamp}`)
           return
         }
@@ -114,7 +111,7 @@ export const getBridgeStats = async () => {
         const amountUsd = (isIncome ? 1 : -1) * Math.round(amount * usdPrice)
 
         const date = moment(timestamp * 1000).format('YYYYMMDD')
-        if(daysAmountMap[date]) {
+        if (daysAmountMap[date]) {
           daysAmountMap[date] += amountUsd
         } else {
           daysAmountMap[date] = amountUsd
@@ -122,8 +119,8 @@ export const getBridgeStats = async () => {
       })
 
     const lastElement = items[items.length - 1]
-    if(lastElement && lastElement.timestamp < weekTimestamp) {
-      break;
+    if (lastElement && lastElement.timestamp < weekTimestamp) {
+      break
     }
   }
 
@@ -132,11 +129,11 @@ export const getBridgeStats = async () => {
     .map(([_, value]) => value)
 
   const value = daysAmountList[0] // Latest day
-  const valueTotal = daysAmountList.reduce((sum, item) => sum += item, 0)
+  const valueTotal = daysAmountList.reduce((sum, item) => { sum += item; return sum }, 0)
 
   const average = valueTotal / daysCount
   let change = getPercentDiff(average, value).toFixed(1)
-  if(+change > 0) {
+  if (+change > 0) {
     change = `+${change}`
   }
 
@@ -146,28 +143,28 @@ export const getBridgeStats = async () => {
   }
 }
 
-export const getTVL = async () => {
+export const getTVL = async (): Promise<number> => {
   const tokens = await getTokensList()
   return tokens.reduce((acc, item) => acc + +item.totalLockedUSD, 0)
 }
 
-export const getTotalStakes = async () => {
-  const { "total-staking": totalStaking } = await getStakingStats()
-  return Math.round(+totalStaking / 10**18)
+export const getTotalStakes = async (): Promise<number> => {
+  const { 'total-staking': totalStaking } = await getStakingStats()
+  return Math.round(+totalStaking / 10 ** 18)
 }
 
-export const getAvgStakes = async () => {
+export const getAvgStakes = async (): Promise<number> => {
   const { history } = await getStakingStats()
-  const sortedHistory = Object.values(history).sort((a, b) => b.current_epoch - a.current_epoch);
+  const sortedHistory = Object.values(history).sort((a, b) => b.current_epoch - a.current_epoch)
 
-  const epochCount = 30;
+  const epochCount = 30
   const values = []
   for (let i = 0; i < sortedHistory.length || i < epochCount; i++) {
-    values.push(sortedHistory[i]["total-staking"])
+    values.push(sortedHistory[i]['total-staking'])
   }
 
   // calc avg total / values.length
   return values.reduce((acc, item) => {
-    return acc.plus(item);
-  }, BigNumber(0)).div(values.length).div(10**18).toNumber();
+    return acc.plus(item)
+  }, BigNumber(0)).div(values.length).div(10 ** 18).toNumber()
 }

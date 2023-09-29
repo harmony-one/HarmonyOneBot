@@ -1,42 +1,64 @@
-import { Client } from './sd-node-client'
-import { MODELS_CONFIGS, getModelByParam, IModel, modelsAliases } from './models-config';
-import { getLoraByParam, ILora } from './loras-config';
-import { getParamsFromPrompt, NEGATIVE_PROMPT } from './helpers';
+import { Client, type ISDServerConfig } from './sd-node-client'
+import { type IModel } from './models-config'
+import { getLoraByParam, type ILora } from './loras-config'
+import { getParamsFromPrompt, NEGATIVE_PROMPT } from './helpers'
+import { type OnMessageContext, type OnCallBackQueryData } from '../../types'
 
-export * from './models-config';
+export * from './models-config'
 
 interface IGenImageOptions {
-  prompt: string;
-  model: IModel;
-  lora?: ILora;
-  seed?: number;
-  width?: number;
-  height?: number;
+  prompt: string
+  model: IModel
+  lora?: ILora
+  seed?: number
+  width?: number
+  height?: number
+}
+
+interface ITrainImageOptions {
+  filesBuffer: Buffer[]
+  prompt: string
+  server: ISDServerConfig
+  ctx: OnMessageContext | OnCallBackQueryData
 }
 
 export class SDNodeApi {
-  client: Client;
+  client: Client
 
-  constructor() {
+  constructor () {
     this.client = new Client()
   }
 
-  generateImage = async (options: IGenImageOptions) => {
-    const params = getParamsFromPrompt(options.prompt, options.model);
+  generateImage = async (
+    options: IGenImageOptions,
+    server: ISDServerConfig
+  ): Promise<Buffer> => {
+    const params = getParamsFromPrompt(options.prompt, options.model)
 
-    let selectedLora;
-    let loraStrength;
+    let selectedLora
+    let loraStrength
 
     if (options.lora) {
-      selectedLora = options.lora;
-      loraStrength = 1;
+      selectedLora = options.lora
+      loraStrength = 1
     } else if (params.loraName) {
-      selectedLora = getLoraByParam(params.loraName, options.model.baseModel);
-      loraStrength = params.loraStrength;
+      selectedLora = getLoraByParam(params.loraName, options.model.baseModel)
+      loraStrength = params.loraStrength
+
+      // For trained Loras
+      if (!selectedLora) {
+        // eslint-disable-next-line
+        selectedLora = {
+          path: `${params.loraName}.safetensors`,
+          name: params.loraName
+        } as ILora
+
+        params.promptWithoutParams = `${params.loraName}, ${params.promptWithoutParams}`
+      }
     }
 
     if (selectedLora?.shortName === 'logo') {
-      params.promptWithoutParams = `logo, ${params.promptWithoutParams}, LogoRedAF`;
+      params.promptWithoutParams = `logo, ${params.promptWithoutParams}, LogoRedAF`
     }
 
     const { images } = await this.client.txt2img({
@@ -49,32 +71,44 @@ export class SDNodeApi {
       loraPath: selectedLora?.path,
       loraName: params.loraName,
       loraStrength,
-      seed: options.seed || params.seed,
+      seed: options.seed ?? params.seed,
       model: options.model.path,
-      batchSize: 1,
-    })
+      batchSize: 1
+    }, server)
 
-    return images[0];
+    return images[0]
   }
 
   generateImageByImage = async (
-    options: IGenImageOptions & { fileName: string; fileBuffer: Buffer }
-  ) => {
-    const params = getParamsFromPrompt(options.prompt, options.model);
+    options: IGenImageOptions & { fileName: string, fileBuffer: Buffer },
+    server: ISDServerConfig
+  ): Promise<Buffer> => {
+    const params = getParamsFromPrompt(options.prompt, options.model)
 
-    let selectedLora;
-    let loraStrength;
+    let selectedLora: ILora | undefined
+    let loraStrength
 
     if (options.lora) {
-      selectedLora = options.lora;
-      loraStrength = 1;
+      selectedLora = options.lora
+      loraStrength = 1
     } else if (params.loraName) {
-      selectedLora = getLoraByParam(params.loraName, options.model.baseModel);
-      loraStrength = params.loraStrength;
+      selectedLora = getLoraByParam(params.loraName, options.model.baseModel)
+      loraStrength = params.loraStrength
+
+      // For trained Loras
+      if (!selectedLora) {
+        // eslint-disable-next-line
+        selectedLora = {
+          path: `${params.loraName}.safetensors`,
+          name: params.loraName
+        } as ILora
+
+        params.promptWithoutParams = `${params.loraName}, ${params.promptWithoutParams}`
+      }
     }
 
     if (selectedLora?.shortName === 'logo') {
-      params.promptWithoutParams = `logo, ${params.promptWithoutParams}, LogoRedAF`;
+      params.promptWithoutParams = `logo, ${params.promptWithoutParams}, LogoRedAF`
     }
 
     const { images } = await this.client.img2img(
@@ -82,25 +116,28 @@ export class SDNodeApi {
       {
         prompt: params.promptWithoutParams,
         negativePrompt: params.negativePrompt,
-        width: options.width || params.width,
-        height: options.height || params.height,
+        width: options.width ?? params.width,
+        height: options.height ?? params.height,
         steps: params.steps,
         cfgScale: params.cfgScale,
         loraPath: selectedLora?.path,
         loraName: params.loraName,
         loraStrength,
-        seed: options.seed || params.seed,
+        seed: options.seed ?? params.seed,
         denoise: params.denoise,
         model: options.model.path,
         batchSize: 1,
         fileName: options.fileName,
         controlnetVersion: params.controlnetVersion
-      })
+      }, server)
 
-    return images[0];
+    return images[0]
   }
 
-  generateImagesPreviews = async (options: IGenImageOptions) => {
+  generateImagesPreviews = async (
+    options: IGenImageOptions,
+    server: ISDServerConfig
+  ): Promise<{ images: Buffer[], all_seeds: string[], parameters: unknown, info: string }> => {
     const params = {
       prompt: options.prompt,
       negativePrompt: NEGATIVE_PROMPT,
@@ -110,20 +147,34 @@ export class SDNodeApi {
       batchSize: 1,
       cfgScale: 7,
       model: options.model.path
-    };
+    }
 
     const res = await Promise.all([
-      this.client.txt2img(params),
-      this.client.txt2img(params),
-      this.client.txt2img(params),
-      this.client.txt2img(params)
-    ]);
+      this.client.txt2img(params, server),
+      this.client.txt2img(params, server),
+      this.client.txt2img(params, server),
+      this.client.txt2img(params, server)
+    ])
 
     return {
       images: res.map(r => r.images[0]),
       parameters: {},
       all_seeds: res.map(r => r.all_seeds[0]),
       info: ''
-    };
+    }
+  }
+
+  train = async (options: ITrainImageOptions): Promise<void> => {
+    const params = getParamsFromPrompt(options.prompt)
+
+    const [loraName] = options.prompt.split(' ')
+
+    await this.client.train(
+      options.filesBuffer,
+      loraName,
+      params.modelAlias,
+      options.ctx,
+      options.server
+    )
   }
 }

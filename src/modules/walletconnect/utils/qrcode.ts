@@ -1,5 +1,5 @@
 import QRCodeUtil from 'qrcode'
-import sharp from "sharp";
+import sharp from 'sharp'
 
 type CoordinateMapping = [number, number[]]
 
@@ -7,7 +7,7 @@ const CONNECTING_ERROR_MARGIN = 0.1
 const CIRCLE_SIZE_MODIFIER = 2.5
 const QRCODE_MATRIX_MARGIN = 7
 
-function isAdjecentDots(cy: number, otherCy: number, cellSize: number) {
+function isAdjecentDots (cy: number, otherCy: number, cellSize: number): boolean {
   if (cy === otherCy) {
     return false
   }
@@ -16,7 +16,7 @@ function isAdjecentDots(cy: number, otherCy: number, cellSize: number) {
   return diff <= cellSize + CONNECTING_ERROR_MARGIN
 }
 
-function getMatrix(value: string, errorCorrectionLevel: QRCodeUtil.QRCodeErrorCorrectionLevel) {
+function getMatrix (value: string, errorCorrectionLevel: QRCodeUtil.QRCodeErrorCorrectionLevel): QRCodeUtil.QRCode[][] {
   const arr = Array.prototype.slice.call(
     QRCodeUtil.create(value, { errorCorrectionLevel }).modules.data,
     0
@@ -31,7 +31,7 @@ function getMatrix(value: string, errorCorrectionLevel: QRCodeUtil.QRCodeErrorCo
 }
 
 export const QrCodeUtil = {
-  generate(uri: string, size: number, logoSize: number) {
+  generate (uri: string, size: number, logoSize: number) {
     const dotColor = '#141414'
     const edgeColor = '#ffffff'
     const dots: string[] = []
@@ -68,7 +68,7 @@ export const QrCodeUtil = {
     const clearArenaSize = Math.floor((logoSize + 25) / cellSize)
     const matrixMiddleStart = matrix.length / 2 - clearArenaSize / 2
     const matrixMiddleEnd = matrix.length / 2 + clearArenaSize / 2 - 1
-    const circles: [number, number][] = []
+    const circles: Array<[number, number]> = []
 
     // Getting coordinates for each of the QR code dots
     matrix.forEach((row: QRCodeUtil.QRCode[], i: number) => {
@@ -179,9 +179,9 @@ export const QrCodeUtil = {
   }
 }
 
-export async function generateWcQr(uri: string, size = 480) {
-  const logoSize = size / 4;
-  const qrCodeStrings = QrCodeUtil.generate(uri || '', size, logoSize);
+export async function generateWcQr (uri: string, size = 480): Promise<Buffer> {
+  const logoSize = size / 4
+  const qrCodeStrings = QrCodeUtil.generate(uri || '', size, logoSize)
 
   const logoString = `
     <svg width="${logoSize}" height="${logoSize}" viewBox="0 -4 28 28">
@@ -196,9 +196,9 @@ export async function generateWcQr(uri: string, size = 480) {
       </defs>
     </svg>`
 
-  const svgString = `<svg height="${size}" width="${size}" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 ${size} ${size}}">${qrCodeStrings.join(' ')}</svg>`;
+  const svgString = `<svg height="${size}" width="${size}" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 ${size} ${size}}">${qrCodeStrings.join(' ')}</svg>`
 
-  return sharp({
+  return await sharp({
     create: {
       width: size + 50,
       height: size + 50,
@@ -206,15 +206,15 @@ export async function generateWcQr(uri: string, size = 480) {
       background: { r: 255, g: 255, b: 255, alpha: 0 }
     }
   })
-    .toFormat("png")
+    .toFormat('png')
     .composite([
       {
         input: Buffer.from(svgString),
-        gravity: 'center',
+        gravity: 'center'
       },
       {
         input: Buffer.from(logoString),
-        gravity: 'centre',
+        gravity: 'centre'
       }
 
     ])

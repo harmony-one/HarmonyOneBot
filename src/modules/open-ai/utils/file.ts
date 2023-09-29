@@ -1,62 +1,57 @@
-import axios from "axios";
-import sharp from "sharp";
-import fs from "fs";
+import axios from 'axios'
+import sharp from 'sharp'
+import fs from 'fs'
 
-export const getImage = async (filePath: string) => {
-  const imageFilename = `image_${Date.now()}.jpg`;
+export const getImage = async (filePath: string): Promise<{ fileName: string, file: any, error: string } | { fileName: string, file: any, error: null }> => {
+  const imageFilename = `image_${Date.now()}.jpg`
   await axios({
     url: filePath,
-    responseType: "stream",
+    responseType: 'stream'
   }).then(
-    (response) =>
-      new Promise<void>((resolve, reject) => {
+    async (response) => {
+      await new Promise<void>((resolve, reject) => {
         response.data
           .pipe(fs.createWriteStream(imageFilename))
-          .on("finish", () => resolve())
-          .on("error", (error: any) => reject(error));
+          .on('finish', () => { resolve() })
+          .on('error', (error: any) => { reject(error) })
       })
-  );
-  const convertedFilename = `image_${Date.now()}.png`;
+    }
+  )
+  const convertedFilename = `image_${Date.now()}.png`
   const imageInfo = await sharp(imageFilename)
-    .toFormat("png")
+    .toFormat('png')
     .ensureAlpha()
     .resize({
       width: 1024,
-      height: 1024,
+      height: 1024
     })
-    .toFile(convertedFilename);
-  deleteFile(imageFilename);
-  if (imageInfo.format !== "png") {
-    deleteFile(convertedFilename);
-    return {
-      error: "Please send a valid PNG image.",
-    };
+    .toFile(convertedFilename)
+  deleteFile(imageFilename)
+  if (imageInfo.format !== 'png') {
+    deleteFile(convertedFilename)
+    return { error: 'Please send a valid PNG image.', fileName: '', file: null }
   }
 
-  const imageSize = fs.statSync(convertedFilename).size;
-  const maxSize = 4 * 1024 * 1024; // 4MB
+  const imageSize = fs.statSync(convertedFilename).size
+  const maxSize = 4 * 1024 * 1024 // 4MB
   if (imageSize > maxSize) {
-    deleteFile(convertedFilename);
-    return {
-      error: "The image size exceeds the limit of 4MB.",
-    };
+    deleteFile(convertedFilename)
+    return { error: 'The image size exceeds the limit of 4MB.', fileName: '', file: null }
   }
 
-  const imageDimensions = await sharp(convertedFilename).metadata();
+  const imageDimensions = await sharp(convertedFilename).metadata()
   if (imageDimensions.width !== imageDimensions.height) {
-    deleteFile(convertedFilename);
-    return {
-      error: "Please send a square image.",
-    };
+    deleteFile(convertedFilename)
+    return { error: 'Please send a square image.', fileName: '', file: null }
   }
 
   return {
     file: fs.createReadStream(convertedFilename),
     fileName: convertedFilename,
-    error: null,
-  };
-};
+    error: null
+  }
+}
 
-export const deleteFile = (fileName: string) => {
-  fs.unlinkSync(fileName);
-};
+export const deleteFile = (fileName: string): void => {
+  fs.unlinkSync(fileName)
+}

@@ -1,142 +1,139 @@
-import { Img2ImgOptions } from './img2img_config';
+/* eslint-disable @typescript-eslint/prefer-nullish-coalescing */
+import { type Img2ImgOptions } from './img2img_config'
 
-export function buildImg2ImgLoraPrompt(options: Img2ImgOptions & {
-  clientId: string;
-  fileName: string;
-}) {
+export function buildImg2ImgLoraPrompt (options: Img2ImgOptions & {
+  clientId: string
+  fileName: string
+}): unknown {
   return {
     client_id: options.clientId,
-    "prompt": {
-      "3": {
-        "inputs": {
-          "seed": options.seed,
-          "steps": options.steps,
-          "cfg": options.cfgScale,
-          "sampler_name": "dpmpp_2m",
-          "scheduler": "karras",
-          "denoise": options.denoise || 1,
-          "model": [
-            "12",
+    prompt: {
+      3: {
+        inputs: {
+          seed: options.seed,
+          steps: options.steps,
+          cfg: options.cfgScale,
+          sampler_name: 'dpmpp_2m',
+          scheduler: 'karras',
+          denoise: options.denoise || 1,
+          model: [
+            '12',
             0
           ],
-          "positive": [
-            "15",
+          positive: [
+            '15',
             0
           ],
-          "negative": [
-            "7",
+          negative: [
+            '7',
             0
           ],
-          "latent_image": [
-            "18",
+          latent_image: [
+            '18',
             0
           ]
         },
-        "class_type": "KSampler"
+        class_type: 'KSampler'
       },
-      "4": {
-        "inputs": {
-          "ckpt_name": options.model
-        },
-        "class_type": "CheckpointLoaderSimple"
+      4: {
+        inputs: { ckpt_name: options.model },
+        class_type: 'CheckpointLoaderSimple'
       },
-      "6": {
-        "inputs": {
-          "text": options.prompt,
-          "clip": [
-            "12",
+      6: {
+        inputs: {
+          text: options.prompt,
+          clip: [
+            '12',
             1
           ]
         },
-        "class_type": "CLIPTextEncode"
+        class_type: 'CLIPTextEncode'
       },
-      "7": {
-        "inputs": {
-          "text": options.negativePrompt,
-          "clip": [
-            "12",
+      7: {
+        inputs: {
+          text: options.negativePrompt,
+          clip: [
+            '12',
             1
           ]
         },
-        "class_type": "CLIPTextEncode"
+        class_type: 'CLIPTextEncode'
       },
-      "8": {
-        "inputs": {
-          "samples": [
-            "3",
+      8: {
+        inputs: {
+          samples: [
+            '3',
             0
           ],
-          "vae": [
-            "4",
+          vae: [
+            '4',
             2
           ]
         },
-        "class_type": "VAEDecode"
+        class_type: 'VAEDecode'
       },
-      "9": {
-        "inputs": {
-          "filename_prefix": "ComfyUI",
-          "images": [
-            "8",
+      9: {
+        inputs: {
+          filename_prefix: 'ComfyUI',
+          images: [
+            '8',
             0
           ]
         },
-        "class_type": "SaveImage"
+        class_type: 'SaveImage'
       },
-      "10": {
-        "inputs": {
-          "image": options.fileName,
-          "choose file to upload": "image"
+      10: {
+        inputs: {
+          image: options.fileName,
+          'choose file to upload': 'image'
         },
-        "class_type": "LoadImage"
+        class_type: 'LoadImage'
       },
-      "12": {
-        "inputs": {
-          "lora_name": options.loraPath,
-          "strength_model": 1,
-          "strength_clip": 2,
-          "model": [
-            "4",
+      12: {
+        inputs: {
+          lora_name: options.loraPath,
+          strength_model: 1,
+          strength_clip: 2,
+          model: [
+            '4',
             0
           ],
-          "clip": [
-            "4",
+          clip: [
+            '4',
             1
           ]
         },
-        "class_type": "LoraLoader"
+        class_type: 'LoraLoader'
       },
-      "13": {
-        "inputs": {
-          "control_net_name": "qrCodeMonster_v20.safetensors"
-        },
-        "class_type": "ControlNetLoader"
+      13: {
+        inputs: { control_net_name: 'qrCodeMonster_v20.safetensors' },
+        class_type: 'ControlNetLoader'
       },
-      "15": {
-        "inputs": {
-          "strength": 1,
-          "conditioning": [
-            "6",
+      15: {
+        inputs: {
+          strength: 1,
+          conditioning: [
+            '6',
             0
           ],
-          "control_net": [
-            "13",
+          control_net: [
+            '13',
             0
           ],
-          "image": [
-            "10",
+          image: [
+            '10',
             0
           ]
         },
-        "class_type": "ControlNetApply"
+        class_type: 'ControlNetApply'
       },
-      "18": {
-        "inputs": {
-          "width": 512,
-          "height": 512,
-          "batch_size": 1
+      18: {
+        inputs: {
+          width: 512,
+          height: 512,
+          batch_size: 1
         },
-        "class_type": "EmptyLatentImage"
+        class_type: 'EmptyLatentImage'
       }
     }
   }

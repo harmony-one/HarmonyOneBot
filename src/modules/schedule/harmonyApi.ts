@@ -1,10 +1,10 @@
 import axios from 'axios'
-import moment from "moment/moment";
-import {abbreviateNumber, getPercentDiff} from "./utils";
+import moment from 'moment/moment'
+import { abbreviateNumber, getPercentDiff } from './utils'
 
 const rpcUrl = 'https://rpc.s0.t.hmny.io'
 
-const rpcRequest = async (method: string, params: Array<any> = []) => {
+const rpcRequest = async (method: string, params: any[] = []): Promise<any> => {
   const { data } = await axios.post(rpcUrl, {
     jsonrpc: '2.0',
     id: 1,
@@ -26,42 +26,42 @@ export const getAddressHistory = async (address: string): Promise<RpcTransaction
     pageSize: 1000,
     fullTx: true,
     txType: 'RECEIVED',
-    order: "DESC"
+    order: 'DESC'
   }])
   return data ? data.transactions : []
 }
 
 export const getAddressBalance = async (address: string): Promise<number> => {
-  return rpcRequest('hmyv2_getBalance', [address]);
+  return await rpcRequest('hmyv2_getBalance', [address])
 }
 
 export const getBotFee = async (address: string, daysCount: number): Promise<number> => {
-  let history = await getAddressHistory(address);
+  const history = await getAddressHistory(address)
 
-  const startTimestamp = moment().subtract(daysCount,'days').unix()
+  const startTimestamp = moment().subtract(daysCount, 'days').unix()
 
   const total = history.reduce((acc, item) => {
-    if(item.timestamp < startTimestamp) {
-      return acc;
+    if (item.timestamp < startTimestamp) {
+      return acc
     }
 
-    return acc + item.value;
+    return acc + item.value
   }, 0)
 
-  return total / Math.pow(10, 18);
+  return total / Math.pow(10, 18)
 }
 
-export const getBotFeeStats = async (address: string, daysCount = 7) => {
-  let history = await getAddressHistory(address)
+export const getBotFeeStats = async (address: string, daysCount = 7): Promise<{ change: string, value: string }> => {
+  const history = await getAddressHistory(address)
 
-  const startTimestamp = moment().subtract(daysCount,'days').unix()
+  const startTimestamp = moment().subtract(daysCount, 'days').unix()
   const daysAmountMap: Record<string, number> = {}
 
   history.forEach((item) => {
     const { timestamp, value } = item
-    if(timestamp >= startTimestamp) {
+    if (timestamp >= startTimestamp) {
       const date = moment(timestamp * 1000).format('YYYYMMDD')
-      if(daysAmountMap[date]) {
+      if (daysAmountMap[date]) {
         daysAmountMap[date] += value
       } else {
         daysAmountMap[date] = value
@@ -74,10 +74,10 @@ export const getBotFeeStats = async (address: string, daysCount = 7) => {
     .map(([_, value]) => value)
 
   const value = daysAmountList[0]
-  const valueTotal = daysAmountList.reduce((sum, item) => sum += item, 0)
+  const valueTotal = daysAmountList.reduce((sum, item) => { sum += item; return sum }, 0)
   const average = valueTotal / daysCount
   let change = getPercentDiff(average, value).toFixed(1)
-  if(+change > 0) {
+  if (+change > 0) {
     change = `+${change}`
   }
   const valueFormatted = Math.round(value / Math.pow(10, 18))
@@ -87,4 +87,3 @@ export const getBotFeeStats = async (address: string, daysCount = 7) => {
     change
   }
 }
-

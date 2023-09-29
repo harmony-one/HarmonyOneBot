@@ -1,125 +1,108 @@
-import OpenAI from "openai";
-import { encode } from "gpt-tokenizer";
-import { GrammyError } from "grammy";
+import OpenAI from 'openai'
+import { encode } from 'gpt-tokenizer'
+import { GrammyError } from 'grammy'
 
-import config from "../../../config";
-import { deleteFile, getImage } from "../utils/file";
+import config from '../../../config'
+import { deleteFile, getImage } from '../utils/file'
 import {
-  ChatCompletion,
-  ChatConversation,
-  OnCallBackQueryData,
-  OnMessageContext,
-} from "../../types";
-import { pino } from "pino";
+  type ChatCompletion,
+  type ChatConversation,
+  type OnCallBackQueryData,
+  type OnMessageContext
+} from '../../types'
+import { pino } from 'pino'
 import {
-  ChatModel,
+  type ChatModel,
   ChatGPTModels,
-  DalleGPTModel,
-  DalleGPTModels,
-} from "../types";
-import { getMessageExtras } from "../helpers";
+  type DalleGPTModel,
+  DalleGPTModels
+} from '../types'
+import type fs from 'fs'
 
-const openai = new OpenAI({
-  apiKey: config.openAiKey,
-});
+const openai = new OpenAI({ apiKey: config.openAiKey })
 
 const logger = pino({
-  name: "openAIBot",
+  name: 'openAIBot',
   transport: {
-    target: "pino-pretty",
-    options: {
-      colorize: true,
-    },
-  },
-});
+    target: 'pino-pretty',
+    options: { colorize: true }
+  }
+})
 
-export async function postGenerateImg(
+export async function postGenerateImg (
   prompt: string,
   numImgs?: number,
   imgSize?: string
-) {
-  try {
-    const payload = {
-      prompt: prompt,
-      n: numImgs ? numImgs : config.openAi.dalle.sessionDefault.numImages,
-      size: imgSize ? imgSize : config.openAi.dalle.sessionDefault.imgSize,
-    };
-    const response = await openai.images.generate(
-      payload as OpenAI.Images.ImageGenerateParams
-    );
-    return response.data;
-  } catch (error) {
-    throw error;
+): Promise<OpenAI.Images.Image[]> {
+  const payload = {
+    prompt,
+    n: numImgs ?? config.openAi.dalle.sessionDefault.numImages,
+    size: imgSize ?? config.openAi.dalle.sessionDefault.imgSize
   }
+  const response = await openai.images.generate(
+    payload as OpenAI.Images.ImageGenerateParams
+  )
+  return response.data
 }
 
-export async function alterGeneratedImg(
+export async function alterGeneratedImg (
   prompt: string,
   filePath: string,
   ctx: OnMessageContext | OnCallBackQueryData,
   imgSize?: string
-) {
-  try {
-    const imageData = await getImage(filePath);
-    if (!imageData.error) {
-      let response;
-      const size = imgSize
-        ? imgSize
-        : config.openAi.dalle.sessionDefault.imgSize;
-      if (!isNaN(+prompt)) {
-        const size = imgSize
-          ? imgSize
-          : config.openAi.dalle.sessionDefault.imgSize;
-        const n = parseInt(prompt);
-        const payLoad: OpenAI.Images.ImageCreateVariationParams = {
-          image: imageData.file as any,
-          n: n > 10 ? 1 : n,
-          // size
-        };
-        response = await openai.images.createVariation(payLoad);
+): Promise<OpenAI.Images.Image[] | null | undefined> {
+  const imageData = await getImage(filePath)
+  if (!imageData.error) {
+    let response
+    // const size = imgSize ?? config.openAi.dalle.sessionDefault.imgSize
+    if (!isNaN(+prompt)) {
+      // const size2 = imgSize ?? config.openAi.dalle.sessionDefault.imgSize
+      const n = parseInt(prompt)
+      const payLoad: OpenAI.Images.ImageCreateVariationParams = {
+        image: imageData.file,
+        n: n > 10 ? 1 : n
+        // size
       }
-      deleteFile(imageData.fileName!);
-      return response?.data;
-    } else {
-      await ctx.reply(imageData.error).catch((e) => {
-        throw e;
-      });
-      return null;
+      response = await openai.images.createVariation(payLoad)
     }
-  } catch (error: any) {
-    throw error;
+    deleteFile(imageData.fileName)
+    return response?.data
+  } else {
+    await ctx.reply(imageData.error).catch((e) => {
+      throw e
+    })
+    return null
   }
 }
 
-export async function chatCompletion(
+export async function chatCompletion (
   conversation: ChatConversation[],
   model = config.openAi.chatGpt.model,
   limitTokens = true
 ): Promise<ChatCompletion> {
-  try {
-    const payload = {
-      model: model,
-      max_tokens: limitTokens ? config.openAi.chatGpt.maxTokens : undefined,
-      temperature: config.openAi.dalle.completions.temperature,
-      messages: conversation,
-    };
-    const response = await openai.chat.completions.create(
-      payload as OpenAI.Chat.CompletionCreateParamsNonStreaming
-    );
-    const chatModel = getChatModel(model);
-    const price = getChatModelPrice(
-      chatModel,
-      true,
-      response.usage?.prompt_tokens!,
-      response.usage?.completion_tokens
-    );
-    return {
-      completion: response.choices[0].message?.content!,
-      usage: response.usage?.total_tokens!,
-      price: price * config.openAi.chatGpt.priceAdjustment,
-    };
-  } catch (e: any) {
-    throw e;
+  const payload = {
+    model,
+    max_tokens: limitTokens ? config.openAi.chatGpt.maxTokens : undefined,
+    temperature: config.openAi.dalle.completions.temperature,
+    messages: conversation
+  }
+  const response = await openai.chat.completions.create(
+    payload as OpenAI.Chat.CompletionCreateParamsNonStreaming
+  )
+  const chatModel = getChatModel(model)
+  if (response.usage?.prompt_tokens === undefined) {
+    throw new Error('Unknown number of prompt tokens used')
+  }
+  const price = getChatModelPrice(
+    chatModel,
+    true,
+    response.usage?.prompt_tokens,
+    response.usage?.completion_tokens
+  )
+  return {
+    completion: response.choices[0].message?.content ?? 'Error - no completion available',
+    usage: response.usage?.total_tokens,
+    price: price * config.openAi.chatGpt.priceAdjustment
   }
 }
 
@@ -130,110 +113,111 @@ export const streamChatCompletion = async (
   msgId: number,
   limitTokens = true
 ): Promise<string> => {
-  try {
-    let completion = "";
-    const wordCountMinimum = config.openAi.chatGpt.wordCountBetween;
-    return new Promise<string>(async (resolve, reject) => {
-      try {
-        const stream = await openai.chat.completions.create({
-          model: model,
-          messages:
-            conversation as OpenAI.Chat.Completions.CreateChatCompletionRequestMessage[],
-          stream: true,
-          max_tokens: limitTokens ? config.openAi.chatGpt.maxTokens : undefined,
-          temperature: config.openAi.dalle.completions.temperature,
-        });
-        let wordCount = 0;
-
-        for await (const part of stream) {
-          wordCount++;
-          const chunck = part.choices[0]?.delta?.content
-            ? part.choices[0]?.delta?.content
-            : "";
-          completion += chunck;
-          // if (wordCount > 20) {
-          //   throw getGrammy429Error()
-          // }
-          if (chunck === "." && wordCount > wordCountMinimum) {
-            completion = completion.replaceAll("..", "");
-            completion += "..";
-            wordCount = 0;
-            await ctx.api
-              .editMessageText(ctx.chat?.id!, msgId, completion)
-              .catch(async (e: any) => {
-                if (e instanceof GrammyError) {
-                  if (e.error_code !== 400) {
-                    reject(e);
-                  } else {
-                    logger.error(e);
-                  }
-                } else {
-                  reject(e);
-                }
-              });
-          }
-        }
-        completion = completion.replaceAll("..", "");
-        await ctx.api
-          .editMessageText(ctx.chat?.id!, msgId, completion)
-          .catch((e: any) => {
-            if (e instanceof GrammyError) {
-              if (e.error_code !== 400) {
-                reject(e);
-              } else {
-                logger.error(e);
-              }
-            } else {
-              reject(e);
-            }
-          });
-        resolve(completion);
-      } catch (e) {
-        reject(e);
+  let completion = ''
+  let wordCountMinimum = 2
+  const stream = await openai.chat.completions.create({
+    model,
+    messages: conversation as OpenAI.Chat.Completions.CreateChatCompletionRequestMessage[],
+    stream: true,
+    max_tokens: limitTokens ? config.openAi.chatGpt.maxTokens : undefined,
+    temperature: config.openAi.dalle.completions.temperature || 0.8
+  })
+  let wordCount = 0
+  if (!ctx.chat?.id) {
+    throw new Error('Context chat id should not be empty after openAI streaming')
+  }
+  // let wordCountMinimumCounter = 1;
+  for await (const part of stream) {
+    wordCount++
+    const chunck = part.choices[0]?.delta?.content
+      ? part.choices[0]?.delta?.content
+      : ''
+    completion += chunck
+    // if (wordCount > 20) {
+    //   throw getGrammy429Error()
+    // }
+    if (wordCount > wordCountMinimum) { // if (chunck === '.' && wordCount > wordCountMinimum) {
+      if (wordCountMinimum < 64) {
+        wordCountMinimum *= 2
       }
-    });
-  } catch (error: any) {
-    return Promise.reject(error);
+      completion = completion.replaceAll('...', '')
+      completion += '...'
+      // console.log(wordCount);
+      wordCount = 0
+      await ctx.api
+        .editMessageText(ctx.chat?.id, msgId, completion)
+        .catch(async (e: any) => {
+          if (e instanceof GrammyError) {
+            if (e.error_code !== 400) {
+              throw e
+            } else {
+              logger.error(e)
+            }
+          } else {
+            throw e
+          }
+        })
+    }
   }
-};
+  completion = completion.replaceAll('...', '')
 
-export async function improvePrompt(promptText: string, model: string) {
-  const prompt = `Improve this picture description using max 100 words and don't add additional text to the image: ${promptText} `;
-  try {
-    const conversation = [{ role: "user", content: prompt }];
-    const response = await chatCompletion(conversation, model);
-    return response.completion;
-  } catch (e: any) {
-    throw e;
-  }
+  await ctx.api
+    .editMessageText(ctx.chat?.id, msgId, completion)
+    .catch((e: any) => {
+      if (e instanceof GrammyError) {
+        if (e.error_code !== 400) {
+          throw e
+        } else {
+          logger.error(e)
+        }
+      } else {
+        throw e
+      }
+    })
+  return completion
+  // } catch (e) {
+  //   reject(e)
+  // }
+  //   })
+  // } catch (error: any) {
+  //   return await Promise.reject(error)
+  // }
 }
 
-export const getTokenNumber = (prompt: string) => {
-  return encode(prompt).length;
-};
+export async function improvePrompt (promptText: string, model: string): Promise<string> {
+  const prompt = `Improve this picture description using max 100 words and don't add additional text to the image: ${promptText} `
 
-export const getChatModel = (modelName: string) => {
-  return ChatGPTModels[modelName];
-};
+  const conversation = [{ role: 'user', content: prompt }]
+  const response = await chatCompletion(conversation, model)
+  return response.completion
+}
+
+export const getTokenNumber = (prompt: string): number => {
+  return encode(prompt).length
+}
+
+export const getChatModel = (modelName: string): ChatModel => {
+  return ChatGPTModels[modelName]
+}
 
 export const getChatModelPrice = (
   model: ChatModel,
   inCents = true,
   inputTokens: number,
   outPutTokens?: number
-) => {
-  let price = model.inputPrice * inputTokens;
+): number => {
+  let price = model.inputPrice * inputTokens
   price += outPutTokens
     ? outPutTokens * model.outputPrice
-    : model.maxContextTokens * model.outputPrice;
-  price = inCents ? price * 100 : price;
-  return price / 1000;
-};
+    : model.maxContextTokens * model.outputPrice
+  price = inCents ? price * 100 : price
+  return price / 1000
+}
 
-export const getDalleModel = (modelName: string) => {
-  logger.info(modelName);
-  return DalleGPTModels[modelName];
-};
+export const getDalleModel = (modelName: string): DalleGPTModel => {
+  logger.info(modelName)
+  return DalleGPTModels[modelName]
+}
 
 export const getDalleModelPrice = (
   model: DalleGPTModel,
@@ -241,26 +225,33 @@ export const getDalleModelPrice = (
   numImages = 1,
   hasEnhacedPrompt = false,
   chatModel?: ChatModel
-) => {
-  let price = model.price * numImages || 0;
+): number => {
+  let price = model.price * numImages || 0
   if (hasEnhacedPrompt && chatModel) {
-    const averageToken = 250; // for 100 words
-    price += getChatModelPrice(chatModel, inCents, averageToken, averageToken);
+    const averageToken = 250 // for 100 words
+    price += getChatModelPrice(chatModel, inCents, averageToken, averageToken)
   }
-  return price;
-};
+  return price
+}
 
-function getGrammy429Error() {
+export function getGrammy429Error (): GrammyError {
   return new GrammyError(
     "GrammyError: Call to 'sendMessage' failed! (429: Too Many Requests: retry after 33)",
     {
       ok: false,
       error_code: 429,
-      description: "Too Many Requests: retry after 33",
+      description: 'Too Many Requests: retry after 33'
     } as any,
-    "editMessageText",
-    {
-      parameters: { retry_after: 33 },
-    }
-  );
+    'editMessageText',
+    { parameters: { retry_after: 33 } }
+  )
+}
+
+export async function speechToText (readStream: fs.ReadStream): Promise<string> {
+  const result = await openai.audio.transcriptions.create({
+    file: readStream,
+    model: 'whisper-1'
+  })
+
+  return result.text
 }

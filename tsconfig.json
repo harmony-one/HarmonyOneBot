@@ -5,11 +5,19 @@
     "outDir": "dist",
     "types": ["node"],
     "lib": ["es2022"],
+    "target": "es2020",
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "strictPropertyInitialization": false,
-    "isolatedModules": true
+    "isolatedModules": true,
+    "sourceMap": true,
+    "inlineSources": true,
+
+    // Set `sourceRoot` to  "/" to strip the build path prefix
+    // from generated source code references.
+    // This improves issue grouping in Sentry.
+    "sourceRoot": "/"
   },
-  "include": ["src/bot.ts", "environment.d.ts"],
+  "include": ["**/*.ts", "environment.d.ts"],
   "exclude": ["node_modules"]
 }

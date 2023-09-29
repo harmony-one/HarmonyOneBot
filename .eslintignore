@@ -1,0 +1,9 @@
+dist
+logs
+*.log
+node_modules/
+.eslintcache
+.env*
+.yarn/
+yarn.lock
+.eslintrc.js

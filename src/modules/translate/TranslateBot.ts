@@ -1,138 +1,239 @@
-import {OnMessageContext, RefundCallback} from "../types";
-import pino, {Logger} from "pino";
-import {chatCompletion, getChatModel, getChatModelPrice, getTokenNumber} from "../open-ai/api/openAi";
-import config from "../../config";
+import { type OnMessageContext, type PayableBot, type RefundCallback, SessionState } from '../types'
+import pino, { type Logger } from 'pino'
+import { mapToTargetLang, translator } from './deeplClient'
+import { now } from '../../utils/perf'
 
 enum SupportedCommands {
   Translate = 'translate',
   TranslateStop = 'translatestop'
 }
 
-export class TranslateBot {
+const SupportedLangCommands = ['bg', 'cs', 'da', 'de', 'el', 'es', 'et', 'fi', 'fr', 'hu', 'id', 'it', 'ja', 'ko', 'lt', 'lv', 'nb', 'nl', 'pl', 'ro', 'ru', 'sk', 'sl', 'sv', 'tr', 'uk', 'zh', 'en', 'pt']
 
-  private logger: Logger
-  constructor() {
-
+export class TranslateBot implements PayableBot {
+  public readonly module = 'TranslateBot'
+  private readonly logger: Logger
+  constructor () {
     this.logger = pino({
       name: 'TranslateBot',
       transport: {
         target: 'pino-pretty',
-        options: {
-          colorize: true
-        }
+        options: { colorize: true }
       }
     })
   }
 
-  public getEstimatedPrice(ctx: OnMessageContext) {
+  public getEstimatedPrice (ctx: OnMessageContext): number {
+    const text = ctx.message.reply_to_message?.text ?? ctx.message.text ?? ''
+    const len = text.length
+    return len * 0.00005
+  }
+
+  public isCtxHasAnyCommand (ctx: OnMessageContext): boolean {
+    const command = ctx.entities().find((ent) => ent.type === 'bot_command')
+    return !!command
+  }
+
+  public isSupportedEvent (ctx: OnMessageContext): boolean {
+    // /translate
     if (ctx.hasCommand(Object.values(SupportedCommands))) {
-      return 0;
+      return true
     }
 
-    const hasCommand = this.isCtxHasCommand(ctx);
+    const hasShortcut = this.isCtxHasLangShortcut(ctx)
+    const hasLangCommand = this.isCtxHasLangCommand(ctx)
 
-    if (!hasCommand && ctx.session.translate.enable) {
-      const message = ctx.message.text || '';
-      const promptTokens = getTokenNumber(message);
-      const modelPrice = getChatModel(config.openAi.chatGpt.model);
-
-      const languageCount = ctx.session.translate.languages.length;
-
-      return getChatModelPrice(modelPrice, true, promptTokens, promptTokens * languageCount) *
-        config.openAi.chatGpt.priceAdjustment;
+    // en. de. ru. ||  /en /de /ru
+    if (hasShortcut || hasLangCommand) {
+      return true
     }
 
-    return 0;
+    // Plain text and enabled translation
+    const isPlainText = !this.isCtxHasAnyCommand(ctx)
+    return !!(isPlainText && ctx.session.translate.enable)
   }
 
-  public isCtxHasCommand(ctx: OnMessageContext) {
-    return ctx.entities().find((ent) => ent.type === 'bot_command');
+  public isCtxHasLangCommand (ctx: OnMessageContext): boolean {
+    return ctx.hasCommand(SupportedLangCommands)
   }
 
-  public isSupportedEvent(ctx: OnMessageContext): boolean {
-    const hasCommand = this.isCtxHasCommand(ctx);
-    return ctx.hasCommand(Object.values(SupportedCommands)) || (!hasCommand && ctx.session.translate.enable);
+  public isCtxHasLangShortcut (ctx: OnMessageContext): boolean {
+    const message = ctx.message.text
+
+    if (!message) {
+      return false
+    }
+
+    for (const supportedShortCut of SupportedLangCommands) {
+      if (message.toLowerCase().startsWith(supportedShortCut + '.')) {
+        return true
+      }
+    }
+
+    return false
   }
 
-  public async onEvent(ctx: OnMessageContext, refundCallback: RefundCallback) {
+  public async onEvent (ctx: OnMessageContext, refundCallback: RefundCallback): Promise<void> {
+    ctx.session.analytics.module = this.module
     if (!this.isSupportedEvent(ctx)) {
-      await ctx.reply(`Unsupported command: ${ctx.message?.text}`, {
-        message_thread_id: ctx.message?.message_thread_id,
-      })
-      await refundCallback('Unsupported command')
-      return {next: true};
+      await ctx.reply(`Unsupported command: ${ctx.message?.text}`, { message_thread_id: ctx.message?.message_thread_id })
+      ctx.session.analytics.actualResponseTime = now()
+      ctx.session.analytics.sessionState = SessionState.Error
+      refundCallback('Unsupported command')
+      return
+    }
+
+    if (!ctx.message.text) {
+      return
     }
 
     if (ctx.hasCommand(SupportedCommands.Translate)) {
-      await this.runTranslate(ctx);
-      return {next: false};
+      await this.runTranslate(ctx)
+      return
     }
 
     if (ctx.hasCommand(SupportedCommands.TranslateStop)) {
-      await this.stopTranslate(ctx);
-      return {next: false};
+      await this.stopTranslate(ctx)
+      return
     }
 
-    const hasCommand = ctx.entities().find((ent) => ent.type === 'bot_command');
+    if (this.isCtxHasLangCommand(ctx)) {
+      const command = ctx.entities().find(item => item.type === 'bot_command' && item.offset === 0)
+      if (!command) {
+        await ctx.reply('Unexpected error')
+        return
+      }
 
-    if (!hasCommand && ctx.session.translate.enable) {
-      await this.onTranslate(ctx);
-      return {next: false}
+      const langCode = command.text.replace('/', '') ?? null
+
+      // Reply message text takes priority
+      const message = ctx.message.reply_to_message?.text ?? ctx.message.text.slice(command.text.length, ctx.message.text.length).trim()
+      await this.translateMessage(ctx, message, langCode)
+      return
     }
 
-    await refundCallback('Unsupported command');
-    return {next: true};
+    if (this.isCtxHasLangShortcut(ctx)) {
+      const langCode = ctx.message.text.split('.')[0] || null
+
+      if (!langCode) {
+        await ctx.reply('Unexpected error')
+        return
+      }
+
+      const message = ctx.message.reply_to_message?.text ?? ctx.message.text.slice(langCode.length + 1, ctx.message.text.length).trim()
+      await this.translateMessage(ctx, message, langCode)
+      return
+    }
+
+    const isPlainText = !this.isCtxHasAnyCommand(ctx)
+
+    if (isPlainText && ctx.session.translate.enable) {
+      await this.onTranslatePlainText(ctx)
+      return
+    }
+
+    refundCallback('Unsupported command')
   }
 
-  public parseCommand(message:string) {
-    const [command, ...lang] = message.split(' ');
-    return lang;
+  public parseCommand (message: string): string[] {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const [_, ...lang] = message.split(' ')
+    return lang
   }
 
-  public async runTranslate(ctx: OnMessageContext) {
-    ctx.chatAction = 'typing';
-    const langList = this.parseCommand(ctx.message?.text || '');
+  public async runTranslate (ctx: OnMessageContext): Promise<void> {
+    ctx.chatAction = 'typing'
+    const langList = this.parseCommand(ctx.message?.text ?? '')
 
     ctx.session.translate = {
       languages: langList,
       enable: true
     }
 
-    return ctx.reply(`Got it. I will translate the following messages into these languages:
-${langList.join(', '), {
-  message_thread_id: ctx.message?.message_thread_id,
-}}
+    await ctx.reply(`Got it. I will translate the following messages into these languages:
+${langList.join(', ')}
 
 To disable translation, use the command /translatestop.`)
+    ctx.session.analytics.actualResponseTime = now()
+    ctx.session.analytics.sessionState = SessionState.Success
   }
 
-  public async stopTranslate(ctx: OnMessageContext) {
-    ctx.chatAction = 'typing';
-    ctx.session.translate.enable = false;
-    return ctx.reply('Translation is disabled', {
-      message_thread_id: ctx.message?.message_thread_id,
-    });
+  public async stopTranslate (ctx: OnMessageContext): Promise<void> {
+    ctx.chatAction = 'typing'
+    ctx.session.translate.enable = false
+    await ctx.reply('Translation is disabled', { message_thread_id: ctx.message?.message_thread_id })
+    ctx.session.analytics.actualResponseTime = now()
+    ctx.session.analytics.sessionState = SessionState.Success
   }
 
-  public async onTranslate(ctx: OnMessageContext) {
-    const message = ctx.message.text;
+  public async translateMessage (ctx: OnMessageContext, message: string, targetLangCode: string): Promise<void> {
+    const targetLanguage = mapToTargetLang(targetLangCode)
 
-    const progressMessage = await ctx.reply('...', {
-      message_thread_id: ctx.message?.message_thread_id,
-    });
-    ctx.chatAction = 'typing';
-
-    if (!message) {
-      return;
+    if (targetLanguage === null) {
+      await ctx.reply(`Unsupported language: ${targetLangCode}`)
+      return
     }
 
-    const prompt = `Translate the message below into: ${ctx.session.translate.languages.join(', ')}\n Message: ${message}`
-    const conversation = [{ role: "user", content: prompt }];
+    const result = await translator.translateText(message, null, targetLanguage)
 
-    const response = await chatCompletion(conversation);
+    if (!result.text) {
+      await ctx.reply('Unexpected error')
+      return
+    }
 
-    return ctx.api.editMessageText(ctx.chat?.id!, progressMessage.message_id, response.completion, {
-      parse_mode: "Markdown",
-    });
+    await ctx.reply(result.text)
+  }
+
+  public async onTranslatePlainText (ctx: OnMessageContext): Promise<void> {
+    const message = ctx.message.text
+
+    const progressMessage = await ctx.reply('...', { message_thread_id: ctx.message?.message_thread_id })
+    ctx.session.analytics.firstResponseTime = now()
+    ctx.chatAction = 'typing'
+
+    if (!message) {
+      ctx.session.analytics.actualResponseTime = now()
+      ctx.session.analytics.sessionState = SessionState.Success
+      return
+    }
+
+    const targetLanguages = ctx.session.translate.languages
+
+    const translateResults: string[] = []
+    for (const targetLangCode of targetLanguages) {
+      const targetLanguage = mapToTargetLang(targetLangCode)
+
+      if (targetLanguage === null) {
+        translateResults.push(`Unsupported language: ${targetLangCode}`)
+        continue
+      }
+
+      const result = await translator.translateText(message, null, targetLanguage)
+      if (result.detectedSourceLang !== targetLangCode) {
+        translateResults.push(result.text)
+      }
+      // =======
+      //     // can't detect original language
+      //     if (completion01.completion === 'unknown') {
+      //       await ctx.api.deleteMessage(ctx.chat.id, progressMessage.message_id)
+      //       ctx.session.analytics.actualResponseTime = now()
+      //       ctx.session.analytics.sessionState = SessionState.Success
+      //       return
+      // >>>>>>> master
+    }
+
+    if (translateResults.length === 0) {
+      await ctx.api.deleteMessage(ctx.chat.id, progressMessage.message_id)
+      ctx.session.analytics.actualResponseTime = now()
+      ctx.session.analytics.sessionState = SessionState.Success
+      return
+    }
+
+    const responseMessage = translateResults.join('\n\n')
+
+    await ctx.api.editMessageText(ctx.chat.id, progressMessage.message_id, responseMessage, { parse_mode: 'Markdown' })
+
+    ctx.session.analytics.actualResponseTime = now()
+    ctx.session.analytics.sessionState = SessionState.Success
   }
 }

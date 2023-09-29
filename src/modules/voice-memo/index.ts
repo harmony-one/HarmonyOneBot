@@ -1,81 +1,88 @@
-import {OnMessageContext} from "../types";
-import pino, {Logger} from 'pino'
-import {initTelegramClient} from "./MTProtoAPI";
-import {NewMessage, NewMessageEvent} from "telegram/events";
+import { type OnMessageContext, type PayableBot, SessionState } from '../types'
+import pino, { type Logger } from 'pino'
+import { initTelegramClient } from './MTProtoAPI'
+import { NewMessage, type NewMessageEvent } from 'telegram/events'
 import { LRUCache } from 'lru-cache'
-import {Api, TelegramClient} from "telegram";
-import {Speechmatics, SpeechmaticsResult} from "./speechmatics";
-import config from "../../config";
-import {Buffer} from "buffer";
-import fs from "fs";
-import moment from 'moment'
-import {Kagi} from "./kagi";
-import MessageMediaDocument = Api.MessageMediaDocument;
-import {InputFile} from "grammy";
-import {bot} from "../../bot";
+import { Api, type TelegramClient } from 'telegram'
+import { Speechmatics } from './speechmatics'
+import config from '../../config'
+import { type Buffer } from 'buffer'
+import fs from 'fs'
+import { Kagi } from './kagi'
+import MessageMediaDocument = Api.MessageMediaDocument
+import { InputFile } from 'grammy'
+import { bot } from '../../bot'
+import * as Sentry from '@sentry/node'
+import { now } from '../../utils/perf'
 
 interface TranslationJob {
   filePath: string
   publicFileUrl: string
 }
 
-export class VoiceMemo {
-  private logger: Logger
-  private tempDirectory = 'public'
+export class VoiceMemo implements PayableBot {
+  public readonly module = 'VoiceMemo'
+  private readonly logger: Logger
+  private readonly tempDirectory = 'public'
   private telegramClient?: TelegramClient
-  private speechmatics = new Speechmatics(config.voiceMemo.speechmaticsApiKey)
-  private kagi = new Kagi(config.voiceMemo.kagiApiKey)
-  private requestsQueue = new LRUCache({ max: 100, ttl: 1000 * 60 * 5 })
-  private jobsQueue = new LRUCache<string, TranslationJob>({ max: 100, ttl: 1000 * 60 * 5 })
+  private readonly speechmatics = new Speechmatics(config.voiceMemo.speechmaticsApiKey)
+  private readonly kagi = new Kagi(config.voiceMemo.kagiApiKey)
+  private readonly requestsQueue = new LRUCache({ max: 100, ttl: 1000 * 60 * 5 })
+  private readonly jobsQueue = new LRUCache<string, TranslationJob>({ max: 100, ttl: 1000 * 60 * 5 })
 
-  constructor() {
+  constructor () {
     this.logger = pino({
       name: 'VoiceMemo',
       transport: {
         target: 'pino-pretty',
-        options: {
-          colorize: true
-        }
+        options: { colorize: true }
       }
     })
-    if(config.voiceMemo.isEnabled) {
-      this.initTgClient()
+    if (config.voiceMemo.isEnabled) {
+      this.initTgClient().catch((ex) => {
+        Sentry.captureException(ex)
+        this.logger.error(`Error initTgClient ${ex}`)
+      })
     } else {
       this.logger.warn('Voice-memo disabled in config')
     }
   }
 
-  private getTempFilePath (filename: string) {
+  private getTempFilePath (filename: string): string {
     return `./${this.tempDirectory}/${filename}`
   }
 
-  private writeTempFile (buffer: string | Buffer, filename: string) {
+  private writeTempFile (buffer: string | Buffer, filename: string): string {
     const filePath = this.getTempFilePath(filename)
     const dirPath = `./${this.tempDirectory}`
-    if(!fs.existsSync(dirPath)) {
+    if (!fs.existsSync(dirPath)) {
       fs.mkdirSync(dirPath)
     }
     fs.writeFileSync(filePath, buffer)
     return filePath
   }
 
-  private deleteTempFile (filePath: string) {
-    if(fs.existsSync(filePath)) {
+  private deleteTempFile (filePath: string): void {
+    if (fs.existsSync(filePath)) {
       fs.unlinkSync(filePath)
     }
   }
 
-  private sleep = (timeout: number) => new Promise(resolve => setTimeout(resolve, timeout))
+  private readonly sleep = async (timeout: number): Promise<void> => { await new Promise(resolve => setTimeout(resolve, timeout)) }
 
-  private async initTgClient () {
+  private async initTgClient (): Promise<void> {
     this.telegramClient = await initTelegramClient()
-    this.telegramClient.addEventHandler(this.onTelegramClientEvent.bind(this), new NewMessage({}));
+    this.telegramClient.addEventHandler((event) => {
+      this.onTelegramClientEvent(event).catch((e) => {
+        this.logger.error(`Telegram event error: ${(e as Error).message}}`)
+      })
+    }, new NewMessage({}))
     this.logger.info('VoiceMemo bot started')
   }
 
-  private async downloadAudioFile(media: MessageMediaDocument) {
-    const buffer = await this.telegramClient?.downloadMedia(media);
-    if(buffer && media.document) {
+  private async downloadAudioFile (media: MessageMediaDocument): Promise< { filePath: string, publicFileUrl: string } | undefined> {
+    const buffer = await this.telegramClient?.downloadMedia(media)
+    if (buffer && media.document) {
       const fileName = `${media.document.id.toString()}.ogg`
       const filePath = this.writeTempFile(buffer, fileName)
       const publicFileUrl = `${config.voiceMemo.servicePublicUrl}/${fileName}`
@@ -86,19 +93,19 @@ export class VoiceMemo {
     }
   }
 
-  private async onTelegramClientEvent(event: NewMessageEvent) {
-    const { media, chatId, senderId } = event.message;
-    if(chatId && media instanceof Api.MessageMediaDocument && media && media.document) {
-      // @ts-ignore
+  private async onTelegramClientEvent (event: NewMessageEvent): Promise<void> {
+    const { media, chatId, senderId } = event.message
+    if (chatId && media instanceof Api.MessageMediaDocument && media?.document) {
+      // @ts-expect-error TS2339: Property 'size' does not exist on type 'TypeDocument'.
       const { size } = media.document
       const requestKey = `${senderId}_${size.toString()}`
       this.logger.info(`Request from ${senderId}: request key: ${requestKey}`)
 
-      for(let i= 0; i < 500; i++) {
-        if(this.requestsQueue.get(requestKey)) {
+      for (let i = 0; i < 500; i++) {
+        if (this.requestsQueue.get(requestKey)) {
           this.logger.info(`Request ${requestKey} found in queue, start downloading audio file...`)
           const result = await this.downloadAudioFile(media)
-          if(result) {
+          if (result) {
             this.logger.info(`Request ${requestKey} file downloaded`)
             this.jobsQueue.set(requestKey, result)
           }
@@ -110,45 +117,46 @@ export class VoiceMemo {
     }
   }
 
-  private enrichSummarization(text: string) {
+  private enrichSummarization (text: string): string {
     text = text.replace('The speakers', 'We')
     const splitText = text.split('.').map(part => part.trim())
     let resultText = ''
-    for(let i = 0; i < splitText.length; i++) {
-      if(i % 2 !== 0) {
+    for (let i = 0; i < splitText.length; i++) {
+      if (i % 2 !== 0) {
         continue
       }
       const sentence1 = splitText[i]
       const sentence2 = splitText[i + 1] || ''
       const twoSentences = sentence1 + (sentence2 ? '. ' + sentence2 + '.' : '')
-      resultText +=  twoSentences
-      if(i < splitText.length - 3) {
+      resultText += twoSentences
+      if (i < splitText.length - 3) {
         resultText += '\n\n'
       }
     }
-    if(!resultText.endsWith('.')) {
+    if (!resultText.endsWith('.')) {
       resultText += '.'
     }
     return resultText
   }
 
-  public isSupportedEvent(ctx: OnMessageContext) {
+  public isSupportedEvent (ctx: OnMessageContext): boolean {
     const { voice, audio } = ctx.update.message
 
-    return config.voiceMemo.isEnabled && (voice || audio)
+    return config.voiceMemo.isEnabled && (!!voice || !!audio)
   }
 
-  public getEstimatedPrice(ctx: OnMessageContext) {
+  public getEstimatedPrice (ctx: OnMessageContext): number {
     const { update: { message: { voice } } } = ctx
-    if(voice) {
+    if (voice) {
       return this.speechmatics.estimatePrice(voice.duration)
     }
     return 0
   }
 
-  public async onEvent(ctx: OnMessageContext) {
-    const { message_id, voice, audio, from } = ctx.update.message
-    const fileSize = (voice || audio)?.file_size
+  public async onEvent (ctx: OnMessageContext): Promise<void> {
+    ctx.session.analytics.module = this.module
+    const { voice, audio, from } = ctx.update.message
+    const fileSize = (voice ?? audio)?.file_size
     const requestKey = `${from.id}_${fileSize}`
 
     this.requestsQueue.set(requestKey, Date.now())
@@ -157,15 +165,15 @@ export class VoiceMemo {
 
     let translationJob
 
-    for(let i= 0; i < 30 * 60; i++) {
+    for (let i = 0; i < 30 * 60; i++) {
       translationJob = this.jobsQueue.get(requestKey)
-      if(translationJob) {
-        break;
+      if (translationJob) {
+        break
       }
       await this.sleep(1000)
     }
 
-    if(translationJob) {
+    if (translationJob) {
       const { filePath, publicFileUrl } = translationJob
       this.logger.info(`Public file url: ${publicFileUrl}`)
       try {
@@ -177,36 +185,40 @@ export class VoiceMemo {
         // this.logger.info(`Kagi summarization: ${JSON.stringify(kagiResult)}`)
         this.logger.info(`Translation ready: ${JSON.stringify(translation)}`)
 
-        if(translation && translation.status === 'fulfilled' && translation.value) {
+        if (translation && translation.status === 'fulfilled' && translation.value) {
           let summary = kagiResult.status === 'fulfilled'
             ? kagiResult.value
             : translation.value.summarization
-          if(summary) {
+          if (summary) {
             summary = this.enrichSummarization(summary)
           }
-          if(kagiResult.status !== 'fulfilled' && summary) {
+          if (kagiResult.status !== 'fulfilled' && summary) {
             summary = `${summary}\n\n[Speechmatics]`
           }
           const text = translation.value.translation
-          if(text.length > 512) {
+          if (text.length > 512) {
             const translationFile = new InputFile(new TextEncoder().encode(text), `From @${from.username}.txt`)
             await bot.api.sendDocument(ctx.chat.id, translationFile, {
               reply_to_message_id: ctx.message.message_id,
               caption: summary.slice(0, 1024)
             })
           } else {
-            await ctx.reply(text, {
-              message_thread_id: ctx.message?.message_thread_id,
-            })
+            await ctx.reply(text, { message_thread_id: ctx.message?.message_thread_id })
           }
+          ctx.session.analytics.sessionState = SessionState.Success
         }
       } catch (e) {
+        Sentry.captureException(e)
         this.logger.error(`Translation error: ${(e as Error).message}`)
+        ctx.session.analytics.sessionState = SessionState.Error
       } finally {
+        ctx.session.analytics.actualResponseTime = now()
         this.deleteTempFile(filePath)
       }
     } else {
       this.logger.error(`Cannot find translation job ${requestKey}, skip`)
+      ctx.session.analytics.actualResponseTime = now()
+      ctx.session.analytics.sessionState = SessionState.Success
     }
   }
 }

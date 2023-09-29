@@ -1,14 +1,14 @@
-import axios from "axios";
+import axios from 'axios'
 
 interface CoinGeckoResponse {
   harmony: {
-    usd: string;
-  };
+    usd: string
+  }
 }
 
-export const getOneRate = async () => {
+export const getOneRate = async (): Promise<number> => {
   const { data } = await axios.get<CoinGeckoResponse>(
-    `https://api.coingecko.com/api/v3/simple/price?ids=harmony&vs_currencies=usd`
-  );
-  return +data.harmony.usd;
+    'https://api.coingecko.com/api/v3/simple/price?ids=harmony&vs_currencies=usd'
+  )
+  return +data.harmony.usd
 }

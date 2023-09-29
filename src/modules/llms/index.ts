@@ -1,137 +1,181 @@
-import { GrammyError } from "grammy";
-import { Logger, pino } from "pino";
+import { GrammyError } from 'grammy'
+import { type Logger, pino } from 'pino'
 
-import { getCommandNamePrompt } from "../1country/utils";
-import { BotPayments } from "../payment";
+import { getCommandNamePrompt } from '../1country/utils'
+import { type BotPayments } from '../payment'
 import {
-  OnMessageContext,
-  OnCallBackQueryData,
-  ChatConversation,
-  ChatPayload,
-} from "../types";
-import { appText } from "../open-ai/utils/text";
-import { chatService } from "../../database/services";
-import config from "../../config";
-import { sleep } from "../sd-images/utils";
+  type OnMessageContext,
+  type OnCallBackQueryData,
+  type ChatConversation,
+  type ChatPayload, type PayableBot, SessionState
+} from '../types'
+import { appText } from '../open-ai/utils/text'
+import { chatService } from '../../database/services'
+import config from '../../config'
+import { sleep } from '../sd-images/utils'
 import {
-  getPromptPrice,
+  hasBardPrefix,
   hasPrefix,
   isMentioned,
   limitPrompt,
   MAX_TRIES,
   prepareConversation,
-  preparePrompt,
-  sendMessage,
-  SupportedCommands,
-} from "./helpers";
-import { vertexCompletion } from "./api/vertex";
-import { LlmCompletion, llmCompletion } from "./api/liteLlm";
-import { LlmsModelsEnum } from "./types";
-export class LlmsBot {
-  private logger: Logger;
-  private payments: BotPayments;
-  private botSuspended: boolean;
+  SupportedCommands
+} from './helpers'
+import { preparePrompt, sendMessage } from '../open-ai/helpers'
+import { vertexCompletion } from './api/vertex'
+import { type LlmCompletion, llmCompletion } from './api/liteLlm'
+import { LlmsModelsEnum } from './types'
+import * as Sentry from '@sentry/node'
+import { handlePdf } from './api/pdfHandler'
+import { now } from '../../utils/perf'
+export class LlmsBot implements PayableBot {
+  public readonly module = 'LlmsBot'
+  private readonly logger: Logger
+  private readonly payments: BotPayments
+  private botSuspended: boolean
 
-  constructor(payments: BotPayments) {
+  constructor (payments: BotPayments) {
     this.logger = pino({
-      name: "LlmsBot",
+      name: 'LlmsBot',
       transport: {
-        target: "pino-pretty",
-        options: {
-          colorize: true,
-        },
-      },
-    });
-    this.botSuspended = false;
-    this.payments = payments;
+        target: 'pino-pretty',
+        options: { colorize: true }
+      }
+    })
+    this.botSuspended = false
+    this.payments = payments
   }
 
-  public async isSupportedEvent(
+  public isSupportedEvent (
     ctx: OnMessageContext | OnCallBackQueryData
-  ): Promise<boolean> {
+  ): boolean {
     const hasCommand = ctx.hasCommand(
       Object.values(SupportedCommands).map((command) => command.name)
-    );
+    )
     if (isMentioned(ctx)) {
-      return true;
+      return true
     }
-    const chatPrefix = hasPrefix(ctx.message?.text || "");
-    if (chatPrefix !== "") {
-      return true;
+    const chatPrefix = hasPrefix(ctx.message?.text ?? '')
+    if (chatPrefix !== '') {
+      return true
     }
-    return hasCommand;
+    return hasCommand
   }
 
-  public getEstimatedPrice(ctx: any): number {
-    return 0;
+  public getEstimatedPrice (ctx: any): number {
+    return 0
   }
 
-  public async onEvent(ctx: OnMessageContext | OnCallBackQueryData) {
-    if (!this.isSupportedEvent(ctx) && ctx.chat?.type !== "private") {
-      this.logger.warn(`### unsupported command ${ctx.message?.text}`);
-      return false;
+  public async onEvent (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
+    ctx.session.analytics.module = this.module
+    const isSupportedEvent = this.isSupportedEvent(ctx)
+    if (!isSupportedEvent && ctx.chat?.type !== 'private') {
+      this.logger.warn(`### unsupported command ${ctx.message?.text}`)
+      return
     }
 
-    if (ctx.hasCommand(SupportedCommands.palm.name)) {
-      this.onChat(ctx, LlmsModelsEnum.BISON);
-      return;
+    if (hasBardPrefix(ctx.message?.text ?? '') !== '') {
+      await this.onPrefix(ctx, LlmsModelsEnum.BISON)
+      return
+    }
+    if (ctx.hasCommand(SupportedCommands.bard.name) || ctx.hasCommand(SupportedCommands.bardF.name)) {
+      await this.onChat(ctx, LlmsModelsEnum.BISON)
+      return
     }
 
-    if (ctx.hasCommand(SupportedCommands.bard.name)) {
-      this.onChat(ctx, LlmsModelsEnum.BISON);
-      return;
+    if (ctx.hasCommand(SupportedCommands.pdf.name)) {
+      await this.onPdfHandler(ctx)
+      return
     }
 
-    if (ctx.hasCommand(SupportedCommands.jurasik.name)) {
-      this.onChat(ctx, LlmsModelsEnum.J2_ULTRA) // .J2_ULTRA);
-      return;
+    if (ctx.hasCommand(SupportedCommands.j2Ultra.name)) {
+      await this.onChat(ctx, LlmsModelsEnum.J2_ULTRA) // .J2_ULTRA);
+      return
     }
 
-    this.logger.warn(`### unsupported command`);
-    sendMessage(ctx, "### unsupported command").catch((e) =>
-      this.onError(ctx, e, MAX_TRIES, "### unsupported command")
-    );
+    this.logger.warn('### unsupported command')
+    ctx.session.analytics.sessionState = SessionState.Error
+    await sendMessage(ctx, '### unsupported command').catch(async (e) => {
+      await this.onError(ctx, e, MAX_TRIES, '### unsupported command')
+    })
+    ctx.session.analytics.actualResponseTime = now()
   }
 
-  private async hasBalance(ctx: OnMessageContext | OnCallBackQueryData) {
-    const accountId = this.payments.getAccountId(ctx as OnMessageContext);
-    const addressBalance = await this.payments.getUserBalance(accountId);
-    const creditsBalance = await chatService.getBalance(accountId);
-    const balance = addressBalance.plus(creditsBalance);
-    const balanceOne = (await this.payments.toONE(balance, false)).toFixed(2);
+  private async hasBalance (ctx: OnMessageContext | OnCallBackQueryData): Promise<boolean> {
+    const accountId = this.payments.getAccountId(ctx)
+    const addressBalance = await this.payments.getUserBalance(accountId)
+    const { totalCreditsAmount } = await chatService.getUserCredits(accountId)
+    const balance = addressBalance.plus(totalCreditsAmount)
+    const balanceOne = this.payments.toONE(balance, false).toFixed(2)
     return (
       +balanceOne > +config.llms.minimumBalance ||
-      (await this.payments.isUserInWhitelist(ctx.from.id, ctx.from.username))
-    );
+      (this.payments.isUserInWhitelist(ctx.from.id, ctx.from.username))
+    )
   }
 
-  private async promptGen(data: ChatPayload) {
-    const { conversation, ctx, model } = data;
+  private async onPdfHandler (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
+    if (!ctx.chat?.id) {
+      throw new Error('internal error')
+    }
     try {
-      let msgId = (
-        await ctx.reply("...", {
-          message_thread_id: ctx.message?.message_thread_id,
+      const { chatConversation } = ctx.session.llms
+      const msgId = (
+        await ctx.reply('...', { message_thread_id: ctx.message?.message_thread_id })
+      ).message_id
+      const prompt = ctx.match as string
+      const response = await handlePdf(prompt)
+      if (response.completion) {
+        await ctx.api.editMessageText(
+          ctx.chat.id,
+          msgId,
+          response.completion.content
+        ).catch(async (e: any) => { await this.onError(ctx, e) })
+        if (
+          !(await this.payments.pay(ctx as OnMessageContext, response.price))
+        ) {
+          await this.onNotBalanceMessage(ctx)
+          return
+        }
+        chatConversation.push({
+          content: prompt,
+          role: 'user'
         })
-      ).message_id;
-      ctx.chatAction = "typing";
+        chatConversation.push(response.completion)
+      }
+    } catch (e) {
+      await this.onError(ctx, e)
+    }
+  }
+
+  private async promptGen (data: ChatPayload): Promise<{ price: number, chat: ChatConversation[] }> {
+    const { conversation, ctx, model } = data
+    if (!ctx.chat?.id) {
+      throw new Error('internal error')
+    }
+    try {
+      const msgId = (
+        await ctx.reply('...', { message_thread_id: ctx.message?.message_thread_id })
+      ).message_id
+      ctx.chatAction = 'typing'
       let response: LlmCompletion = {
         completion: undefined,
         usage: 0,
-        price: 0,
-      };
-      const chat = prepareConversation(conversation, model);
+        price: 0
+      }
+      const chat = prepareConversation(conversation, model)
       if (model === LlmsModelsEnum.BISON) {
-        response = await vertexCompletion(chat, model); // "chat-bison@001");
+        response = await vertexCompletion(chat, model) // "chat-bison@001");
       } else {
-        response = await llmCompletion(chat, model);
+        response = await llmCompletion(chat, model)
       }
       if (response.completion) {
-        ctx.api.editMessageText(
-          ctx.chat?.id!,
+        await ctx.api.editMessageText(
+          ctx.chat.id,
           msgId,
           response.completion.content
-        );
-        conversation.push(response.completion);
+        )
+        conversation.push(response.completion)
         // const price = getPromptPrice(completion, data);
         // this.logger.info(
         //   `streamChatCompletion result = tokens: ${
@@ -140,194 +184,202 @@ export class LlmsBot {
         // );
         return {
           price: 0,
-          chat: conversation,
-        };
+          chat: conversation
+        }
       }
-      ctx.chatAction = null;
+      ctx.chatAction = null
 
       return {
         price: 0,
-        chat: conversation,
-      };
+        chat: conversation
+      }
     } catch (e: any) {
-      ctx.chatAction = null;
-      throw e;
+      Sentry.captureException(e)
+      ctx.chatAction = null
+      throw e
     }
   }
 
-  async onPrefix(ctx: OnMessageContext | OnCallBackQueryData, model: string) {
+  async onPrefix (ctx: OnMessageContext | OnCallBackQueryData, model: string): Promise<void> {
     try {
       if (this.botSuspended) {
-        sendMessage(ctx, "The bot is suspended").catch((e) =>
-          this.onError(ctx, e)
-        );
-        return;
+        ctx.session.analytics.sessionState = SessionState.Error
+        sendMessage(ctx, 'The bot is suspended').catch(async (e) => { await this.onError(ctx, e) })
+        ctx.session.analytics.actualResponseTime = now()
+        return
       }
-      const { prompt, commandName } = getCommandNamePrompt(
+      const { prompt } = getCommandNamePrompt(
         ctx,
         SupportedCommands
-      );
-      const prefix = hasPrefix(prompt);
+      )
+      const prefix = hasPrefix(prompt)
       ctx.session.llms.requestQueue.push({
         content: await preparePrompt(ctx, prompt.slice(prefix.length)),
-        model: model,
-      });
+        model
+      })
       if (!ctx.session.llms.isProcessingQueue) {
-        ctx.session.llms.isProcessingQueue = true;
-        this.onChatRequestHandler(ctx).then(() => {
-          ctx.session.llms.isProcessingQueue = false;
-        });
+        ctx.session.llms.isProcessingQueue = true
+        await this.onChatRequestHandler(ctx).then(() => {
+          ctx.session.llms.isProcessingQueue = false
+        })
       }
     } catch (e) {
-      this.onError(ctx, e);
+      await this.onError(ctx, e)
     }
   }
 
-  async onChat(ctx: OnMessageContext | OnCallBackQueryData, model: string) {
+  async onChat (ctx: OnMessageContext | OnCallBackQueryData, model: string): Promise<void> {
     try {
       if (this.botSuspended) {
-        sendMessage(ctx, "The bot is suspended").catch((e) =>
-          this.onError(ctx, e)
-        );
-        return;
+        ctx.session.analytics.sessionState = SessionState.Error
+        sendMessage(ctx, 'The bot is suspended').catch(async (e) => { await this.onError(ctx, e) })
+        ctx.session.analytics.actualResponseTime = now()
+        return
       }
-      const prompt = ctx.match ? ctx.match : ctx.message?.text;
+      const prompt = ctx.match ? ctx.match : ctx.message?.text
       ctx.session.llms.requestQueue.push({
-        model: model,
-        content: await preparePrompt(ctx, prompt as string),
-      });
+        model,
+        content: await preparePrompt(ctx, prompt as string)
+      })
       if (!ctx.session.llms.isProcessingQueue) {
-        ctx.session.llms.isProcessingQueue = true;
-        this.onChatRequestHandler(ctx).then(() => {
-          ctx.session.llms.isProcessingQueue = false;
-        });
+        ctx.session.llms.isProcessingQueue = true
+        await this.onChatRequestHandler(ctx).then(() => {
+          ctx.session.llms.isProcessingQueue = false
+        })
       }
     } catch (e: any) {
-      this.onError(ctx, e);
+      await this.onError(ctx, e)
     }
   }
 
-  async onChatRequestHandler(ctx: OnMessageContext | OnCallBackQueryData) {
+  async onChatRequestHandler (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
     while (ctx.session.llms.requestQueue.length > 0) {
       try {
-        const msg = ctx.session.llms.requestQueue.shift();
-        const prompt = msg?.content;
-        const model = msg?.model;
-        const { chatConversation } = ctx.session.llms;
+        const msg = ctx.session.llms.requestQueue.shift()
+        const prompt = msg?.content
+        const model = msg?.model
+        const { chatConversation } = ctx.session.llms
         if (await this.hasBalance(ctx)) {
-          if (prompt === "") {
+          if (!prompt) {
             const msg =
               chatConversation.length > 0
                 ? `${appText.gptLast}\n_${
                     chatConversation[chatConversation.length - 1].content
                   }_`
-                : appText.introText;
-            await sendMessage(ctx, msg, {
-              parseMode: "Markdown",
-            }).catch((e) => this.onError(ctx, e));
-            return;
+                : appText.introText
+            ctx.session.analytics.sessionState = SessionState.Success
+            await sendMessage(ctx, msg, { parseMode: 'Markdown' }).catch(async (e) => {
+              await this.onError(ctx, e)
+            })
+            ctx.session.analytics.actualResponseTime = now()
+            return
           }
           const chat: ChatConversation = {
-            content: limitPrompt(prompt!),
-            model: model,
-          };
-          if (model === LlmsModelsEnum.BISON) {
-            chat["author"] = "user";
-          } else {
-            chat["role"] = "user";
+            content: limitPrompt(prompt),
+            model
           }
-          chatConversation.push(chat);
+          if (model === LlmsModelsEnum.BISON) {
+            chat.author = 'user'
+          } else {
+            chat.role = 'user'
+          }
+          chatConversation.push(chat)
           const payload = {
-            conversation: chatConversation!,
-            model: model || config.llms.model,
-            ctx,
-          };
-          const result = await this.promptGen(payload);
-          ctx.session.llms.chatConversation = [...result.chat];
+            conversation: chatConversation,
+            model: model ?? config.llms.model,
+            ctx
+          }
+          const result = await this.promptGen(payload)
+          ctx.session.llms.chatConversation = [...result.chat]
           if (
             !(await this.payments.pay(ctx as OnMessageContext, result.price))
           ) {
-            this.onNotBalanceMessage(ctx);
+            await this.onNotBalanceMessage(ctx)
           }
-          ctx.chatAction = null;
+          ctx.chatAction = null
         } else {
-          this.onNotBalanceMessage(ctx);
+          await this.onNotBalanceMessage(ctx)
         }
       } catch (e: any) {
-        this.onError(ctx, e);
+        await this.onError(ctx, e)
       }
     }
   }
 
-  async onEnd(ctx: OnMessageContext | OnCallBackQueryData) {
-    ctx.session.llms.chatConversation = [];
-    ctx.session.llms.usage = 0;
-    ctx.session.llms.price = 0;
+  async onEnd (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
+    ctx.session.llms.chatConversation = []
+    ctx.session.llms.usage = 0
+    ctx.session.llms.price = 0
   }
 
-  async onNotBalanceMessage(ctx: OnMessageContext | OnCallBackQueryData) {
-    const accountId = this.payments.getAccountId(ctx as OnMessageContext);
-    const account = await this.payments.getUserAccount(accountId);
-    const addressBalance = await this.payments.getUserBalance(accountId);
-    const creditsBalance = await chatService.getBalance(accountId);
-    const balance = addressBalance.plus(creditsBalance);
-    const balanceOne = (await this.payments.toONE(balance, false)).toFixed(2);
+  async onNotBalanceMessage (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
+    const accountId = this.payments.getAccountId(ctx)
+    const account = this.payments.getUserAccount(accountId)
+    const addressBalance = await this.payments.getUserBalance(accountId)
+    const { totalCreditsAmount } = await chatService.getUserCredits(accountId)
+    const balance = addressBalance.plus(totalCreditsAmount)
+    const balanceOne = this.payments.toONE(balance, false).toFixed(2)
     const balanceMessage = appText.notEnoughBalance
-      .replaceAll("$CREDITS", balanceOne)
-      .replaceAll("$WALLET_ADDRESS", account?.address || "");
-    await sendMessage(ctx, balanceMessage, {
-      parseMode: "Markdown",
-    }).catch((e) => this.onError(ctx, e));
+      .replaceAll('$CREDITS', balanceOne)
+      .replaceAll('$WALLET_ADDRESS', account?.address ?? '')
+    ctx.session.analytics.sessionState = SessionState.Success
+    await sendMessage(ctx, balanceMessage, { parseMode: 'Markdown' }).catch(async (e) => { await this.onError(ctx, e) })
+    ctx.session.analytics.actualResponseTime = now()
   }
 
-  async onError(
+  async onError (
     ctx: OnMessageContext | OnCallBackQueryData,
     e: any,
     retryCount: number = MAX_TRIES,
     msg?: string
-  ) {
+  ): Promise<void> {
+    ctx.session.analytics.sessionState = SessionState.Error
+    Sentry.setContext('llms', { retryCount, msg })
+    Sentry.captureException(e)
     if (retryCount === 0) {
       // Retry limit reached, log an error or take alternative action
-      this.logger.error(`Retry limit reached for error: ${e}`);
-      return;
+      this.logger.error(`Retry limit reached for error: ${e}`)
+      return
     }
     if (e instanceof GrammyError) {
-      if (e.error_code === 400 && e.description.includes("not enough rights")) {
+      if (e.error_code === 400 && e.description.includes('not enough rights')) {
         await sendMessage(
           ctx,
-          "Error: The bot does not have permission to send photos in chat"
-        );
+          'Error: The bot does not have permission to send photos in chat'
+        )
+        ctx.session.analytics.actualResponseTime = now()
       } else if (e.error_code === 429) {
-        this.botSuspended = true;
+        this.botSuspended = true
         const retryAfter = e.parameters.retry_after
           ? e.parameters.retry_after < 60
             ? 60
             : e.parameters.retry_after * 2
-          : 60;
-        const method = e.method;
-        const errorMessage = `On method "${method}" | ${e.error_code} - ${e.description}`;
-        this.logger.error(errorMessage);
+          : 60
+        const method = e.method
+        const errorMessage = `On method "${method}" | ${e.error_code} - ${e.description}`
+        this.logger.error(errorMessage)
         await sendMessage(
           ctx,
           `${
-            ctx.from.username ? ctx.from.username : ""
+            ctx.from.username ? ctx.from.username : ''
           } Bot has reached limit, wait ${retryAfter} seconds`
-        ).catch((e) => this.onError(ctx, e, retryCount - 1));
-        if (method === "editMessageText") {
-          ctx.session.llms.chatConversation.pop(); //deletes last prompt
+        ).catch(async (e) => { await this.onError(ctx, e, retryCount - 1) })
+        ctx.session.analytics.actualResponseTime = now()
+        if (method === 'editMessageText') {
+          ctx.session.llms.chatConversation.pop() // deletes last prompt
         }
-        await sleep(retryAfter * 1000); // wait retryAfter seconds to enable bot
-        this.botSuspended = false;
+        await sleep(retryAfter * 1000) // wait retryAfter seconds to enable bot
+        this.botSuspended = false
       } else {
         this.logger.error(
           `On method "${e.method}" | ${e.error_code} - ${e.description}`
-        );
+        )
+        ctx.session.analytics.actualResponseTime = now()
       }
     } else {
-      this.logger.error(`${e.toString()}`);
-      await sendMessage(ctx, "Error handling your request").catch((e) =>
-        this.onError(ctx, e, retryCount - 1)
-      );
+      this.logger.error(`${e.toString()}`)
+      await sendMessage(ctx, 'Error handling your request').catch(async (e) => { await this.onError(ctx, e, retryCount - 1) })
+      ctx.session.analytics.actualResponseTime = now()
     }
   }
 }

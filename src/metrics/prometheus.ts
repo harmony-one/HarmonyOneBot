@@ -1,14 +1,11 @@
 import client from 'prom-client'
-import {statsService} from "../database/services";
-
+import { statsService } from '../database/services'
 
 const register = new client.Registry()
 
-register.setDefaultLabels({
-  app: 'harmony-one-bot',
-})
+register.setDefaultLabels({ app: 'harmony-one-bot' })
 
-client.collectDefaultMetrics({register})
+client.collectDefaultMetrics({ register })
 
 export const oneTokenFeeCounter = new client.Counter({
   name: 'fee_one',
@@ -36,11 +33,12 @@ register.registerMetric(uniqueUsersCounter)
 register.registerMetric(dauCounter)
 
 export class PrometheusMetrics {
-  constructor() {
-    setInterval(() => this.updateDau(), 30 * 60 * 1000)
+  constructor () {
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
+    setInterval(async () => { await this.updateDau() }, 30 * 60 * 1000)
   }
 
-  public async bootstrap() {
+  public async bootstrap (): Promise<void> {
     try {
       const totalOne = await statsService.getTotalONE()
       const freeCredits = await statsService.getTotalFreeCredits()
@@ -56,7 +54,7 @@ export class PrometheusMetrics {
     }
   }
 
-  async updateDau() {
+  async updateDau (): Promise<void> {
     try {
       const dauValue = await statsService.getActiveUsers()
       dauCounter.inc(dauValue)
