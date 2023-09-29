@@ -27,7 +27,7 @@ interface ITrainImageOptions {
 export class SDNodeApi {
   client: Client
 
-  constructor() {
+  constructor () {
     this.client = new Client()
   }
 
@@ -63,8 +63,8 @@ export class SDNodeApi {
       params.promptWithoutParams = `logo, ${params.promptWithoutParams}, LogoRedAF`
     }
 
-    if(options.format === MEDIA_FORMAT.GIF) {
-      const { images, imagesUrls } = await this.client.txt2img({
+    if (options.format === MEDIA_FORMAT.GIF) {
+      const { images } = await this.client.txt2img({
         prompt: params.promptWithoutParams,
         negativePrompt: params.negativePrompt,
         width: 512,
@@ -75,14 +75,14 @@ export class SDNodeApi {
         loraName: params.loraName,
         loraStrength,
         seed: options.seed ?? params.seed,
-        model: (params.modelAlias && getModelByParam(params.modelAlias)?.path) || options.model.path,
+        model: (params.modelAlias && getModelByParam(params.modelAlias)?.path) ?? options.model.path,
         batchSize: 16,
         format: options.format
       }, server)
-  
+
       return images[0]
     } else {
-      const { images, imagesUrls } = await this.client.txt2img({
+      const { images } = await this.client.txt2img({
         prompt: params.promptWithoutParams,
         negativePrompt: params.negativePrompt,
         width: params.width,
@@ -97,7 +97,7 @@ export class SDNodeApi {
         batchSize: 1,
         format: options.format
       }, server)
-  
+
       return images[0]
     }
   }

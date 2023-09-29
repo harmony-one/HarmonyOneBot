@@ -122,7 +122,7 @@ export const parseCtx = (ctx: Context): IOperation | false => {
       command = COMMAND.TEXT_TO_IMAGE
       format = MEDIA_FORMAT.GIF
       model = getModelByParam('22')
-      prompt = prompt || '1girl, solo, cherry blossom, hanami, pink flower, white flower, spring season, wisteria, petals, flower, plum blossoms, outdoors, falling petals, black eyes, upper body, from side';
+      prompt = prompt || '1girl, solo, cherry blossom, hanami, pink flower, white flower, spring season, wisteria, petals, flower, plum blossoms, outdoors, falling petals, black eyes, upper body, from side'
     }
 
     if (

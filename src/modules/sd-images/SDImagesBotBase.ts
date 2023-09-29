@@ -1,7 +1,7 @@
 import { getModelByParam, type IModel, SDNodeApi } from './api'
 import { type OnCallBackQueryData, type OnMessageContext, SessionState } from '../types'
 import { getTelegramFileUrl, loadFile, sleep, uuidv4 } from './utils'
-import { GrammyError, InputFile, InputMediaBuilder } from 'grammy'
+import { GrammyError, InputFile } from 'grammy'
 import { COMMAND } from './helpers'
 import { type Logger, pino } from 'pino'
 import { type ILora } from './api/loras-config'
@@ -41,7 +41,7 @@ export class SDImagesBotBase {
   private readonly mediaGroupCache: IMediaGroup[] = []
 
   private readonly sessions: ISession[] = []
-  constructor() {
+  constructor () {
     this.sdNodeApi = new SDNodeApi()
     this.logger = pino({
       name: 'SDImagesBotBase',
@@ -116,7 +116,7 @@ export class SDImagesBotBase {
     let lora = params.loraName ? `${params.loraName}.safetensors` : session.lora?.path
 
     if (!lora && session.format === MEDIA_FORMAT.GIF) {
-      lora = "ym201.safetensors"
+      lora = 'ym201.safetensors'
     }
 
     let balancerOperaton = await createOperation({

@@ -25,7 +25,7 @@ export interface ISDServerConfig {
 
 export interface Txt2ImgResponse {
   images: Buffer[]
-  imagesUrls: string[];
+  imagesUrls: string[]
   parameters: object
   all_seeds: string[]
   info: string
@@ -50,7 +50,7 @@ export class Client {
 
       const seed = options.seed ?? getRandomSeed()
 
-      let buildImgPromptMethod;
+      let buildImgPromptMethod
 
       if (options.format === MEDIA_FORMAT.GIF) {
         buildImgPromptMethod = options.loraPath ? buildText2GifLoraPrompt : buildText2GifPrompt
@@ -70,15 +70,15 @@ export class Client {
 
       const history = await comfyClient.history(r.prompt_id)
 
-      let images: Buffer[] = [];
-      let imagesUrls: string[] = [];
+      let images: Buffer[] = []
+      let imagesUrls: string[] = []
 
-      if (options.format === MEDIA_FORMAT.GIF) {        
+      if (options.format === MEDIA_FORMAT.GIF) {
         images = await Promise.all(
           history.outputs['26'].gifs.map(async img => await comfyClient.downloadResult(img.filename))
         )
 
-        imagesUrls = history.outputs['26'].gifs.map(img => comfyClient.getFileUrl(img.filename));
+        imagesUrls = history.outputs['26'].gifs.map(img => comfyClient.getFileUrl(img.filename))
       } else {
         images = await Promise.all(
           history.outputs['9'].images.map(async img => await comfyClient.downloadResult(img.filename))
