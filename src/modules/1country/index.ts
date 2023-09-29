@@ -7,7 +7,7 @@ import { chatService } from '../../database/services'
 import { relayApi } from './api/relayApi'
 import { isDomainAvailable, validateDomainName } from './utils/domain'
 import { appText } from './utils/text'
-import { type OnMessageContext, type OnCallBackQueryData, type PayableBot, SessionState } from '../types'
+import { type OnMessageContext, type OnCallBackQueryData, type PayableBot, RequestState } from '../types'
 import { type BotPayments } from '../payment'
 import { getCommandNamePrompt, getUrl } from './utils/'
 import { isAdmin } from '../open-ai/utils/context'
@@ -82,7 +82,7 @@ export class OneCountryBot implements PayableBot {
   }
 
   public async onEvent (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
-    ctx.session.analytics.module = this.module
+    ctx.transient.analytics.module = this.module
     if (!this.isSupportedEvent(ctx)) {
       this.logger.warn(`### unsupported command ${ctx.message?.text}`)
       return
@@ -140,23 +140,23 @@ export class OneCountryBot implements PayableBot {
 
     this.logger.warn('### unsupported command')
     await ctx.reply('### unsupported command', { message_thread_id: ctx.message?.message_thread_id })
-    ctx.session.analytics.actualResponseTime = now()
-    ctx.session.analytics.sessionState = SessionState.Error
+    ctx.transient.analytics.actualResponseTime = now()
+    ctx.transient.analytics.sessionState = RequestState.Error
   }
 
   onVistitCmd = async (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> => {
     if (this.botSuspended) {
-      ctx.session.analytics.sessionState = SessionState.Error
+      ctx.transient.analytics.sessionState = RequestState.Error
       await sendMessage(ctx, 'The bot is suspended').catch(async (e) => {
         await this.onError(ctx, e)
       })
-      ctx.session.analytics.actualResponseTime = now()
+      ctx.transient.analytics.actualResponseTime = now()
       return
     }
     if (!ctx.match) {
       await ctx.reply('Error: Missing 1.country domain', { message_thread_id: ctx.message?.message_thread_id })
-      ctx.session.analytics.actualResponseTime = now()
-      ctx.session.analytics.sessionState = SessionState.Error
+      ctx.transient.analytics.actualResponseTime = now()
+      ctx.transient.analytics.sessionState = RequestState.Error
       return
     }
 
@@ -167,18 +167,18 @@ export class OneCountryBot implements PayableBot {
       reply_markup: keyboard,
       message_thread_id: ctx.message?.message_thread_id
     })
-    ctx.session.analytics.actualResponseTime = now()
-    ctx.session.analytics.sessionState = SessionState.Success
+    ctx.transient.analytics.actualResponseTime = now()
+    ctx.transient.analytics.sessionState = RequestState.Success
   }
 
   onSet = async (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> => {
     try {
       if (this.botSuspended) {
-        ctx.session.analytics.sessionState = SessionState.Error
+        ctx.transient.analytics.sessionState = RequestState.Error
         await sendMessage(ctx, 'The bot is suspended').catch(async (e) => {
           await this.onError(ctx, e)
         })
-        ctx.session.analytics.actualResponseTime = now()
+        ctx.transient.analytics.actualResponseTime = now()
         return
       }
       if (!ctx.match) {
@@ -201,8 +201,8 @@ export class OneCountryBot implements PayableBot {
           }).catch(async (e) => {
             await this.onError(ctx, e)
           })
-          ctx.session.analytics.actualResponseTime = now()
-          ctx.session.analytics.sessionState = SessionState.Error
+          ctx.transient.analytics.actualResponseTime = now()
+          ctx.transient.analytics.sessionState = RequestState.Error
           return
         }
         if (!isValidUrl(url)) {
@@ -212,15 +212,15 @@ export class OneCountryBot implements PayableBot {
           }).catch(async (e) => {
             await this.onError(ctx, e)
           })
-          ctx.session.analytics.actualResponseTime = now()
-          ctx.session.analytics.sessionState = SessionState.Error
+          ctx.transient.analytics.actualResponseTime = now()
+          ctx.transient.analytics.sessionState = RequestState.Error
           return
         }
         // ************** dc set process ********************
         await ctx.reply('Subdomain created')
         console.log(subdomain)
-        ctx.session.analytics.actualResponseTime = now()
-        ctx.session.analytics.sessionState = SessionState.Success
+        ctx.transient.analytics.actualResponseTime = now()
+        ctx.transient.analytics.sessionState = RequestState.Success
         // ****** ////
       } else {
         await ctx.reply(appText.setParameterError, {
@@ -231,8 +231,8 @@ export class OneCountryBot implements PayableBot {
         })
       }
     } catch (e) {
-      ctx.session.analytics.sessionState = SessionState.Error
-      ctx.session.analytics.actualResponseTime = now()
+      ctx.transient.analytics.sessionState = RequestState.Error
+      ctx.transient.analytics.actualResponseTime = now()
       await this.onError(ctx, e)
     }
   }
@@ -240,11 +240,11 @@ export class OneCountryBot implements PayableBot {
   async onRegister (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
     try {
       if (this.botSuspended) {
-        ctx.session.analytics.sessionState = SessionState.Error
+        ctx.transient.analytics.sessionState = RequestState.Error
         await sendMessage(ctx, 'The bot is suspended').catch(async (e) => {
           await this.onError(ctx, e)
         })
-        ctx.session.analytics.actualResponseTime = now()
+        ctx.transient.analytics.actualResponseTime = now()
         return
       }
       const { prompt } = getCommandNamePrompt(ctx, SupportedCommands)
@@ -252,8 +252,8 @@ export class OneCountryBot implements PayableBot {
       let msgId = 0
       if (!prompt && !lastDomain) {
         await ctx.reply('Write a domain name', { message_thread_id: ctx.message?.message_thread_id })
-        ctx.session.analytics.actualResponseTime = now()
-        ctx.session.analytics.sessionState = SessionState.Error
+        ctx.transient.analytics.actualResponseTime = now()
+        ctx.transient.analytics.sessionState = RequestState.Error
         return
       }
       if (!prompt && lastDomain) {
@@ -262,8 +262,8 @@ export class OneCountryBot implements PayableBot {
           !(await this.payments.rent(ctx as OnMessageContext, lastDomain)) // to be implemented
         ) {
           await this.onNotBalanceMessage(ctx)
-          ctx.session.analytics.sessionState = SessionState.Error
-          ctx.session.analytics.actualResponseTime = now()
+          ctx.transient.analytics.sessionState = RequestState.Error
+          ctx.transient.analytics.actualResponseTime = now()
         } else {
           const fullUrl = getUrl(lastDomain, true)
           await ctx.reply(`The Domain ${fullUrl} was registered`, {
@@ -275,8 +275,8 @@ export class OneCountryBot implements PayableBot {
           //   message_thread_id: ctx.message?.message_thread_id,
           //   disable_web_page_preview: false
           // })
-          ctx.session.analytics.sessionState = SessionState.Success
-          ctx.session.analytics.actualResponseTime = now()
+          ctx.transient.analytics.sessionState = RequestState.Success
+          ctx.transient.analytics.actualResponseTime = now()
           return
         }
       }
@@ -289,13 +289,13 @@ export class OneCountryBot implements PayableBot {
           parse_mode: 'Markdown',
           message_thread_id: ctx.message?.message_thread_id
         })
-        ctx.session.analytics.actualResponseTime = now()
-        ctx.session.analytics.sessionState = SessionState.Error
+        ctx.transient.analytics.actualResponseTime = now()
+        ctx.transient.analytics.sessionState = RequestState.Error
         return
       }
       ctx.session.oneCountry.lastDomain = domain
       msgId = (await ctx.reply('Checking name...')).message_id
-      ctx.session.analytics.firstResponseTime = now()
+      ctx.transient.analytics.firstResponseTime = now()
       const response = await isDomainAvailable(domain)
       const domainAvailable = response.isAvailable
       let msg = `The name *${domain}* `
@@ -311,17 +311,17 @@ export class OneCountryBot implements PayableBot {
           msg += `${response.priceOne} for 30 days\n`
         }
         msg += `${appText.registerConfirmation}, or ${appText.registerKeepWriting}`
-        ctx.session.analytics.sessionState = SessionState.Success
-        ctx.session.analytics.actualResponseTime = now()
+        ctx.transient.analytics.sessionState = RequestState.Success
+        ctx.transient.analytics.actualResponseTime = now()
       }
       if (ctx.chat?.id) {
         await ctx.api.editMessageText(ctx.chat.id, msgId, msg, { parse_mode: 'Markdown' })
       }
-      ctx.session.analytics.sessionState = SessionState.Success
-      ctx.session.analytics.actualResponseTime = now()
+      ctx.transient.analytics.sessionState = RequestState.Success
+      ctx.transient.analytics.actualResponseTime = now()
     } catch (e) {
-      ctx.session.analytics.sessionState = SessionState.Error
-      ctx.session.analytics.actualResponseTime = now()
+      ctx.transient.analytics.sessionState = RequestState.Error
+      ctx.transient.analytics.actualResponseTime = now()
       await this.onError(ctx, e)
     }
   }
@@ -336,9 +336,9 @@ export class OneCountryBot implements PayableBot {
     const balanceMessage = appText.notEnoughBalance
       .replaceAll('$CREDITS', balanceOne)
       .replaceAll('$WALLET_ADDRESS', account?.address ?? '')
-    ctx.session.analytics.sessionState = SessionState.Error
+    ctx.transient.analytics.sessionState = RequestState.Error
     await sendMessage(ctx, balanceMessage, { parseMode: 'Markdown' }).catch(async (e) => { await this.onError(ctx, e) })
-    ctx.session.analytics.actualResponseTime = now()
+    ctx.transient.analytics.actualResponseTime = now()
   }
 
   onRenewCmd = async (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> => {
@@ -399,8 +399,8 @@ export class OneCountryBot implements PayableBot {
     if (await isAdmin(ctx, false, true)) {
       if (!ctx.match) {
         await ctx.reply('Error: Missing 1.country domain', { message_thread_id: ctx.message?.message_thread_id })
-        ctx.session.analytics.sessionState = SessionState.Error
-        ctx.session.analytics.actualResponseTime = now()
+        ctx.transient.analytics.sessionState = RequestState.Error
+        ctx.transient.analytics.actualResponseTime = now()
         return
       }
       const url = getUrl(ctx.match as string)
@@ -408,10 +408,10 @@ export class OneCountryBot implements PayableBot {
         const response = await relayApi().createCert({ domain: url })
         if (!response.error) {
           await ctx.reply(`The SSL certificate of ${url} was renewed`, { message_thread_id: ctx.message?.message_thread_id })
-          ctx.session.analytics.sessionState = SessionState.Success
+          ctx.transient.analytics.sessionState = RequestState.Success
         } else {
           await ctx.reply(`${response.error}`, { message_thread_id: ctx.message?.message_thread_id })
-          ctx.session.analytics.sessionState = SessionState.Error
+          ctx.transient.analytics.sessionState = RequestState.Error
         }
       } catch (e) {
         Sentry.captureException(e)
@@ -421,14 +421,14 @@ export class OneCountryBot implements PayableBot {
         await ctx.reply(
           e instanceof AxiosError ? e.response?.data.error : appText.axiosError, { message_thread_id: ctx.message?.message_thread_id }
         )
-        ctx.session.analytics.sessionState = SessionState.Error
+        ctx.transient.analytics.sessionState = RequestState.Error
       } finally {
-        ctx.session.analytics.actualResponseTime = now()
+        ctx.transient.analytics.actualResponseTime = now()
       }
     } else {
       await ctx.reply('This command is reserved', { message_thread_id: ctx.message?.message_thread_id })
-      ctx.session.analytics.sessionState = SessionState.Error
-      ctx.session.analytics.actualResponseTime = now()
+      ctx.transient.analytics.sessionState = RequestState.Error
+      ctx.transient.analytics.actualResponseTime = now()
     }
   }
 
@@ -438,7 +438,7 @@ export class OneCountryBot implements PayableBot {
       try {
         await relayApi().genNFT({ domain: url })
         await ctx.reply('NFT metadata generated', { message_thread_id: ctx.message?.message_thread_id })
-        ctx.session.analytics.sessionState = SessionState.Success
+        ctx.transient.analytics.sessionState = RequestState.Success
       } catch (e) {
         Sentry.captureException(e)
         this.logger.error(
@@ -451,14 +451,14 @@ export class OneCountryBot implements PayableBot {
             ? e.response?.data.error
             : 'There was an error processing your request',
           { message_thread_id: ctx.message?.message_thread_id })
-        ctx.session.analytics.sessionState = SessionState.Error
+        ctx.transient.analytics.sessionState = RequestState.Error
       } finally {
-        ctx.session.analytics.actualResponseTime = now()
+        ctx.transient.analytics.actualResponseTime = now()
       }
     } else {
       await ctx.reply('This command is reserved', { message_thread_id: ctx.message?.message_thread_id })
-      ctx.session.analytics.sessionState = SessionState.Error
-      ctx.session.analytics.actualResponseTime = now()
+      ctx.transient.analytics.sessionState = RequestState.Error
+      ctx.transient.analytics.actualResponseTime = now()
     }
   }
 
@@ -484,12 +484,12 @@ export class OneCountryBot implements PayableBot {
         parse_mode: 'Markdown',
         message_thread_id: ctx.message?.message_thread_id
       })
-      ctx.session.analytics.sessionState = SessionState.Success
+      ctx.transient.analytics.sessionState = RequestState.Success
     } else {
       await ctx.reply('This command is reserved', { message_thread_id: ctx.message?.message_thread_id })
-      ctx.session.analytics.sessionState = SessionState.Error
+      ctx.transient.analytics.sessionState = RequestState.Error
     }
-    ctx.session.analytics.actualResponseTime = now()
+    ctx.transient.analytics.actualResponseTime = now()
   }
 
   onEnableSubomain = async (ctx: OnMessageContext): Promise<void> => {
@@ -531,7 +531,7 @@ export class OneCountryBot implements PayableBot {
     retryCount: number = MAX_TRIES,
     msg?: string
   ): Promise<void> {
-    ctx.session.analytics.sessionState = SessionState.Error
+    ctx.transient.analytics.sessionState = RequestState.Error
     Sentry.setContext('open-ai', { retryCount, msg })
     Sentry.captureException(ex)
     if (retryCount === 0) {
@@ -545,7 +545,7 @@ export class OneCountryBot implements PayableBot {
           ctx,
           'Error: The bot does not have permission to send photos in chat'
         )
-        ctx.session.analytics.actualResponseTime = now()
+        ctx.transient.analytics.actualResponseTime = now()
       } else if (ex.error_code === 429) {
         this.botSuspended = true
         const retryAfter = ex.parameters.retry_after
@@ -562,7 +562,7 @@ export class OneCountryBot implements PayableBot {
             ctx.from.username ? ctx.from.username : ''
           } Bot has reached limit, wait ${retryAfter} seconds`
         ).catch(async (e) => { await this.onError(ctx, e, retryCount - 1) })
-        ctx.session.analytics.actualResponseTime = now()
+        ctx.transient.analytics.actualResponseTime = now()
         if (method === 'editMessageText') {
           ctx.session.openAi.chatGpt.chatConversation.pop() // deletes last prompt
         }
@@ -578,7 +578,7 @@ export class OneCountryBot implements PayableBot {
       await sendMessage(ctx, 'Error handling your request')
         .catch(async (e) => { await this.onError(ctx, e, retryCount - 1) }
         )
-      ctx.session.analytics.actualResponseTime = now()
+      ctx.transient.analytics.actualResponseTime = now()
     }
   }
 }

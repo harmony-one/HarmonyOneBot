@@ -1,4 +1,4 @@
-import { type OnMessageContext, type PayableBot, type RefundCallback, SessionState } from '../types'
+import { type OnMessageContext, type PayableBot, type RefundCallback, RequestState } from '../types'
 import * as Sentry from '@sentry/node'
 import { now } from '../../utils/perf'
 
@@ -11,18 +11,18 @@ export class DocumentHandler implements PayableBot {
   }
 
   public async onEvent (ctx: OnMessageContext, refundCallback: RefundCallback): Promise<void> {
-    ctx.session.analytics.module = this.module
+    ctx.transient.analytics.module = this.module
     try {
       const file = await ctx.getFile()
       console.log(file)
       await ctx.reply('you did it kid')
-      ctx.session.analytics.sessionState = SessionState.Success
+      ctx.transient.analytics.sessionState = RequestState.Success
     } catch (ex) {
       Sentry.captureException(ex)
       await ctx.reply('you failed kid')
-      ctx.session.analytics.sessionState = SessionState.Error
+      ctx.transient.analytics.sessionState = RequestState.Error
     } finally {
-      ctx.session.analytics.actualResponseTime = now()
+      ctx.transient.analytics.actualResponseTime = now()
     }
   }
 

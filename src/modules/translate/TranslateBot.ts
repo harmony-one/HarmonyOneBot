@@ -1,4 +1,4 @@
-import { type OnMessageContext, type PayableBot, type RefundCallback, SessionState } from '../types'
+import { type OnMessageContext, type PayableBot, type RefundCallback, RequestState } from '../types'
 import pino, { type Logger } from 'pino'
 import { mapToTargetLang, translator } from './deeplClient'
 import { now } from '../../utils/perf'
@@ -74,11 +74,11 @@ export class TranslateBot implements PayableBot {
   }
 
   public async onEvent (ctx: OnMessageContext, refundCallback: RefundCallback): Promise<void> {
-    ctx.session.analytics.module = this.module
+    ctx.transient.analytics.module = this.module
     if (!this.isSupportedEvent(ctx)) {
       await ctx.reply(`Unsupported command: ${ctx.message?.text}`, { message_thread_id: ctx.message?.message_thread_id })
-      ctx.session.analytics.actualResponseTime = now()
-      ctx.session.analytics.sessionState = SessionState.Error
+      ctx.transient.analytics.actualResponseTime = now()
+      ctx.transient.analytics.sessionState = RequestState.Error
       refundCallback('Unsupported command')
       return
     }
@@ -154,16 +154,16 @@ export class TranslateBot implements PayableBot {
 ${langList.join(', ')}
 
 To disable translation, use the command /translatestop.`)
-    ctx.session.analytics.actualResponseTime = now()
-    ctx.session.analytics.sessionState = SessionState.Success
+    ctx.transient.analytics.actualResponseTime = now()
+    ctx.transient.analytics.sessionState = RequestState.Success
   }
 
   public async stopTranslate (ctx: OnMessageContext): Promise<void> {
     ctx.chatAction = 'typing'
     ctx.session.translate.enable = false
     await ctx.reply('Translation is disabled', { message_thread_id: ctx.message?.message_thread_id })
-    ctx.session.analytics.actualResponseTime = now()
-    ctx.session.analytics.sessionState = SessionState.Success
+    ctx.transient.analytics.actualResponseTime = now()
+    ctx.transient.analytics.sessionState = RequestState.Success
   }
 
   public async translateMessage (ctx: OnMessageContext, message: string, targetLangCode: string): Promise<void> {
@@ -188,12 +188,12 @@ To disable translation, use the command /translatestop.`)
     const message = ctx.message.text
 
     const progressMessage = await ctx.reply('...', { message_thread_id: ctx.message?.message_thread_id })
-    ctx.session.analytics.firstResponseTime = now()
+    ctx.transient.analytics.firstResponseTime = now()
     ctx.chatAction = 'typing'
 
     if (!message) {
-      ctx.session.analytics.actualResponseTime = now()
-      ctx.session.analytics.sessionState = SessionState.Success
+      ctx.transient.analytics.actualResponseTime = now()
+      ctx.transient.analytics.sessionState = RequestState.Success
       return
     }
 
@@ -216,16 +216,16 @@ To disable translation, use the command /translatestop.`)
       //     // can't detect original language
       //     if (completion01.completion === 'unknown') {
       //       await ctx.api.deleteMessage(ctx.chat.id, progressMessage.message_id)
-      //       ctx.session.analytics.actualResponseTime = now()
-      //       ctx.session.analytics.sessionState = SessionState.Success
+      //       ctx.transient.analytics.actualResponseTime = now()
+      //       ctx.transient.analytics.sessionState = SessionState.Success
       //       return
       // >>>>>>> master
     }
 
     if (translateResults.length === 0) {
       await ctx.api.deleteMessage(ctx.chat.id, progressMessage.message_id)
-      ctx.session.analytics.actualResponseTime = now()
-      ctx.session.analytics.sessionState = SessionState.Success
+      ctx.transient.analytics.actualResponseTime = now()
+      ctx.transient.analytics.sessionState = RequestState.Success
       return
     }
 
@@ -233,7 +233,7 @@ To disable translation, use the command /translatestop.`)
 
     await ctx.api.editMessageText(ctx.chat.id, progressMessage.message_id, responseMessage, { parse_mode: 'Markdown' })
 
-    ctx.session.analytics.actualResponseTime = now()
-    ctx.session.analytics.sessionState = SessionState.Success
+    ctx.transient.analytics.actualResponseTime = now()
+    ctx.transient.analytics.sessionState = RequestState.Success
   }
 }
