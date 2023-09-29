@@ -1,5 +1,6 @@
 import { type OnCallBackQueryData, type OnMessageContext } from '../types'
 import { getModelByParam, type IModel, MODELS_CONFIGS } from './api'
+import { MEDIA_FORMAT } from './api/configs'
 import { getLoraByParam, type ILora } from './api/loras-config'
 import { childrenWords, sexWords } from './words-blacklist'
 
@@ -17,6 +18,7 @@ export interface IOperation {
   prompt: string
   model: IModel
   lora?: ILora
+  format?: MEDIA_FORMAT
 }
 
 export interface IMediaGroup {
@@ -88,10 +90,10 @@ type Context = OnMessageContext | OnCallBackQueryData
 
 const hasCommand = (ctx: Context, cmd: string): boolean => {
   return ctx.hasCommand(cmd) ||
-      (
-        (ctx.message?.text?.startsWith(`${cmd} `) ?? false) &&
-          ctx.chat?.type === 'private'
-      )
+    (
+      (ctx.message?.text?.startsWith(`${cmd} `) ?? false) &&
+      ctx.chat?.type === 'private'
+    )
 }
 
 export const parseCtx = (ctx: Context): IOperation | false => {
@@ -114,6 +116,14 @@ export const parseCtx = (ctx: Context): IOperation | false => {
     let model = getModelByParam(modelId)
     let command
     let lora
+    let format: MEDIA_FORMAT = MEDIA_FORMAT.JPEG
+
+    if (hasCommand(ctx, 'gif')) {
+      command = COMMAND.TEXT_TO_IMAGE
+      format = MEDIA_FORMAT.GIF
+      model = getModelByParam('22')
+      prompt = prompt || '1girl, solo, cherry blossom, hanami, pink flower, white flower, spring season, wisteria, petals, flower, plum blossoms, outdoors, falling petals, black eyes, upper body, from side'
+    }
 
     if (
       (hasCommand(ctx, 'image') ?? hasCommand(ctx, 'imagine')) ?? hasCommand(ctx, 'img')
@@ -206,7 +216,8 @@ export const parseCtx = (ctx: Context): IOperation | false => {
         command,
         model,
         lora,
-        prompt
+        prompt,
+        format
       }
     }
   } catch (e) {

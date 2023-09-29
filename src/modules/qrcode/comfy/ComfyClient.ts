@@ -11,6 +11,11 @@ interface HistoryResponseItem {
       'subfolder': string
       'type': 'output'
     }>
+    gifs: Array<{
+      'filename': string
+      'subfolder': string
+      'type': 'output'
+    }>
   }>
 }
 
@@ -146,5 +151,10 @@ export class ComfyClient {
   async downloadResult (filename: string): Promise<Buffer> {
     const response = await this.httpClient.get<Buffer>(`/view?filename=${filename}&subfolder=&type=output`, { responseType: 'arraybuffer' })
     return response.data
+  }
+
+  getFileUrl (filename: string): string {
+    // return `${this.host}/view?filename=${filename}&subfolder=&type=output`
+    return `${this.host}/view?filename=${filename}&subfolder=&type=output&format=image%2Fgif`
   }
 }

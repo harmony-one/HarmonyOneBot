@@ -1,5 +1,5 @@
 import { getModelByParam, type IModel, SDNodeApi } from './api'
-import { type OnCallBackQueryData, type OnMessageContext, SessionState } from '../types'
+import { type OnCallBackQueryData, type OnMessageContext, RequestState } from '../types'
 import { getTelegramFileUrl, loadFile, sleep, uuidv4 } from './utils'
 import { GrammyError, InputFile } from 'grammy'
 import { COMMAND } from './helpers'
@@ -8,6 +8,7 @@ import { type ILora } from './api/loras-config'
 import { getParamsFromPrompt } from './api/helpers'
 import { type IBalancerOperation, OPERATION_STATUS, completeOperation, createOperation, getOperationById } from './balancer'
 import { now } from '../../utils/perf'
+import { MEDIA_FORMAT } from './api/configs'
 
 export interface MessageExtras {
   caption?: string
@@ -21,6 +22,7 @@ export interface ISession {
   prompt: string
   model: IModel
   lora?: ILora
+  format?: MEDIA_FORMAT
   all_seeds?: string[]
   seed?: number
   command: COMMAND
@@ -71,13 +73,14 @@ export class SDImagesBotBase {
       prompt: string
       model: IModel
       lora?: ILora
+      format?: MEDIA_FORMAT
       command: COMMAND
       all_seeds?: string[]
       seed?: string
     }
   ): Promise<ISession> => {
     // eslint-disable-next-line @typescript-eslint/naming-convention
-    const { prompt, model, command, all_seeds, lora } = params
+    const { prompt, model, command, all_seeds, lora, format } = params
 
     const authorObj = await ctx.getAuthor()
     const author = `@${authorObj.user.username}`
@@ -93,7 +96,8 @@ export class SDImagesBotBase {
       lora,
       command,
       all_seeds,
-      message
+      message,
+      format
     }
 
     this.sessions.push(newSession)
@@ -109,7 +113,11 @@ export class SDImagesBotBase {
   ): Promise<{ queueMessageId: number, balancerOperaton: IBalancerOperation }> => {
     const params = getParamsFromPrompt(session.prompt)
 
-    const lora = params.loraName ? `${params.loraName}.safetensors` : session.lora?.path
+    let lora = params.loraName ? `${params.loraName}.safetensors` : session.lora?.path
+
+    if (!lora && session.format === MEDIA_FORMAT.GIF) {
+      lora = 'ym201.safetensors'
+    }
 
     let balancerOperaton = await createOperation({
       model: session.model.path,
@@ -121,7 +129,7 @@ export class SDImagesBotBase {
     const { message_id } = await ctx.reply(
       `You are #${balancerOperaton.queueTotalNumber + 1} in line for making images. The wait time is about ${(balancerOperaton.queueNumber + 1) * 15} seconds.`, { message_thread_id: ctx.message?.message_thread_id }
     )
-    ctx.session.analytics.firstResponseTime = now()
+    ctx.transient.analytics.firstResponseTime = now()
     // waiting queue
     while (balancerOperaton.status === OPERATION_STATUS.WAITING) {
       await sleep(5000 * balancerOperaton.queueNumber || 500)
@@ -140,7 +148,7 @@ export class SDImagesBotBase {
     session: ISession,
     specialMessage?: string
   ): Promise<void> => {
-    const { model, prompt, seed, lora } = session
+    const { model, prompt, seed, lora, format } = session
 
     let balancerOperatonId
 
@@ -154,7 +162,8 @@ export class SDImagesBotBase {
         prompt,
         model,
         seed,
-        lora
+        lora,
+        format
       }, balancerOperaton.server)
 
       if (balancerOperatonId) {
@@ -166,14 +175,23 @@ export class SDImagesBotBase {
           ? session.message
           : `${session.message} ${prompt}`
         : `/${model.aliases[0]} ${prompt}`
-      await ctx.replyWithPhoto(new InputFile(imageBuffer), {
-        caption: specialMessage ?? reqMessage,
-        message_thread_id: ctx.message?.message_thread_id
-      })
+
+      if (format === MEDIA_FORMAT.GIF) {
+        await ctx.replyWithAnimation(new InputFile(imageBuffer, 'file.gif'), {
+          caption: specialMessage ?? reqMessage,
+          message_thread_id: ctx.message?.message_thread_id
+        })
+      } else {
+        await ctx.replyWithPhoto(new InputFile(imageBuffer), {
+          caption: specialMessage ?? reqMessage,
+          message_thread_id: ctx.message?.message_thread_id
+        })
+      }
+
       if (ctx.chat?.id && queueMessageId) {
         await ctx.api.deleteMessage(ctx.chat?.id, queueMessageId)
       }
-      ctx.session.analytics.sessionState = SessionState.Success
+      ctx.transient.analytics.sessionState = RequestState.Success
     } catch (e: any) {
       if (balancerOperatonId) {
         await completeOperation(balancerOperatonId, OPERATION_STATUS.ERROR)
@@ -191,7 +209,7 @@ export class SDImagesBotBase {
         this.logger.error(e.toString())
         await ctx.reply('Error: something went wrong... Refunding payments', msgExtras)
       }
-      ctx.session.analytics.sessionState = SessionState.Error
+      ctx.transient.analytics.sessionState = RequestState.Error
       refundCallback()
     }
   }
@@ -264,7 +282,7 @@ export class SDImagesBotBase {
       if (ctx.chat?.id && queueMessageId) {
         await ctx.api.deleteMessage(ctx.chat?.id, queueMessageId)
       }
-      ctx.session.analytics.sessionState = SessionState.Success
+      ctx.transient.analytics.sessionState = RequestState.Success
     } catch (e: any) {
       const msgExtras: MessageExtras = { message_thread_id: ctx.message?.message_thread_id }
       if (e instanceof GrammyError) {
@@ -277,10 +295,10 @@ export class SDImagesBotBase {
         this.logger.error(e.toString())
         await ctx.reply('Error: something went wrong... Refunding payments', msgExtras)
       }
-      ctx.session.analytics.sessionState = SessionState.Error
+      ctx.transient.analytics.sessionState = RequestState.Error
       refundCallback()
     } finally {
-      ctx.session.analytics.actualResponseTime = now()
+      ctx.transient.analytics.actualResponseTime = now()
     }
 
     if (balancerOperatonId) {
@@ -357,7 +375,7 @@ export class SDImagesBotBase {
         }),
         `/${modelAlias} <lora:${loraName}:1>`
       )
-      ctx.session.analytics.sessionState = SessionState.Success
+      ctx.transient.analytics.sessionState = RequestState.Success
     } catch (e: any) {
       const topicId = ctx.message?.message_thread_id
       const msgExtras: MessageExtras = {}
@@ -374,14 +392,14 @@ export class SDImagesBotBase {
         this.logger.error(e.toString())
         await ctx.reply('Error: something went wrong... Refunding payments', msgExtras)
       }
-      ctx.session.analytics.sessionState = SessionState.Error
+      ctx.transient.analytics.sessionState = RequestState.Error
       refundCallback()
 
       if (balancerOperatonId) {
         await completeOperation(balancerOperatonId, OPERATION_STATUS.ERROR)
       }
     } finally {
-      ctx.session.analytics.actualResponseTime = now()
+      ctx.transient.analytics.actualResponseTime = now()
     }
   }
 }
