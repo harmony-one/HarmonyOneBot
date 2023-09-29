@@ -64,6 +64,9 @@ export class SDNodeApi {
     }
 
     if (options.format === MEDIA_FORMAT.GIF) {
+      const modelFromParams = params.modelAlias ? getModelByParam(params.modelAlias): null;
+      const modelPath = (modelFromParams ?? options.model).path;
+
       const { images } = await this.client.txt2img({
         prompt: params.promptWithoutParams,
         negativePrompt: params.negativePrompt,
@@ -75,7 +78,7 @@ export class SDNodeApi {
         loraName: params.loraName,
         loraStrength,
         seed: options.seed ?? params.seed,
-        model: (params.modelAlias && getModelByParam(params.modelAlias)?.path) ?? options.model.path,
+        model: modelPath,
         batchSize: 16,
         format: options.format
       }, server)
