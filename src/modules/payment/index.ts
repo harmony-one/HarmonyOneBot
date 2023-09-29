@@ -11,8 +11,8 @@ import { freeCreditsFeeCounter } from '../../metrics/prometheus'
 import { type BotPaymentLog } from '../../database/stats.service'
 import { sendMessage } from '../open-ai/helpers'
 import * as Sentry from '@sentry/node'
-import { InlineKeyboard } from 'grammy';
-import { Callbacks } from '../types';
+import { InlineKeyboard } from 'grammy'
+import { Callbacks } from '../types'
 
 interface CoinGeckoResponse {
   harmony: {
