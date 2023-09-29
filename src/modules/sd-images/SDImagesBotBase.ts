@@ -177,7 +177,7 @@ export class SDImagesBotBase {
         : `/${model.aliases[0]} ${prompt}`
 
       if (format === MEDIA_FORMAT.GIF) {
-        await ctx.replyWithAnimation(new InputFile(imageBuffer), {
+        await ctx.replyWithAnimation(new InputFile(imageBuffer, 'file.gif'), {
           caption: specialMessage ?? reqMessage,
           message_thread_id: ctx.message?.message_thread_id
         })
