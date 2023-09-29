@@ -53,6 +53,7 @@ import { hydrateFiles } from '@grammyjs/files'
 import { VoiceTranslateBot } from './modules/voice-translate'
 import { TextToSpeechBot } from './modules/text-to-speech'
 import { VoiceToTextBot } from './modules/voice-to-text'
+import { now } from './utils/perf'
 
 Events.EventEmitter.defaultMaxListeners = 30
 
@@ -105,7 +106,7 @@ ES.init()
 bot.use(async (ctx: BotContext, next: NextFunction): Promise<void> => {
   const transaction = Sentry.startTransaction({ name: 'bot-command' })
   const entities = ctx.entities()
-  const startTime = process.hrtime.bigint()
+  const startTime = now()
   let command = ''
   for (const ent of entities) {
     if (ent.type === 'bot_command') {
@@ -128,14 +129,14 @@ bot.use(async (ctx: BotContext, next: NextFunction): Promise<void> => {
     const userId = Number(ctx.message?.from?.id ?? '0')
     const username = ctx.message?.from?.username ?? ''
     if (!ctx.session.analytics.actualResponseTime) {
-      ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
+      ctx.session.analytics.actualResponseTime = now()
     }
     if (!ctx.session.analytics.firstResponseTime) {
       ctx.session.analytics.firstResponseTime = ctx.session.analytics.actualResponseTime
     }
-    const firstResponseTime = ((ctx.session.analytics.firstResponseTime - startTime) / 1000n).toString()
-    const actualResponseTime = ((ctx.session.analytics.actualResponseTime - startTime) / 1000n).toString()
-    const totalProcessingTime = (process.hrtime.bigint() - startTime).toString()
+    const totalProcessingTime = (now() - startTime).toString()
+    const firstResponseTime = (ctx.session.analytics.firstResponseTime - startTime).toString()
+    const actualResponseTime = (ctx.session.analytics.actualResponseTime - startTime).toString()
     ES.add({
       command,
       text: ctx.message?.text ?? '',
@@ -226,7 +227,7 @@ const voiceToTextBot = new VoiceToTextBot(payments)
 
 bot.on('message:new_chat_members:me', async (ctx) => {
   try {
-    const accountId = payments.getAccountId(ctx as OnMessageContext)
+    const accountId = payments.getAccountId(ctx)
 
     const chat = await chatService.getAccountById(accountId)
 

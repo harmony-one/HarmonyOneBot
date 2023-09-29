@@ -1,5 +1,6 @@
 import { type OnMessageContext, type PayableBot, type RefundCallback, SessionState } from '../types'
 import * as Sentry from '@sentry/node'
+import { now } from '../../utils/perf'
 
 const SupportedDocuments = { PDF: 'application/pdf' }
 
@@ -21,7 +22,7 @@ export class DocumentHandler implements PayableBot {
       await ctx.reply('you failed kid')
       ctx.session.analytics.sessionState = SessionState.Error
     } finally {
-      ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
+      ctx.session.analytics.actualResponseTime = now()
     }
   }
 

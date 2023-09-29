@@ -1,6 +1,7 @@
 import { type OnMessageContext, type PayableBot, type RefundCallback, SessionState } from '../types'
 import pino, { type Logger } from 'pino'
 import { mapToTargetLang, translator } from './deeplClient'
+import { now } from '../../utils/perf'
 
 enum SupportedCommands {
   Translate = 'translate',
@@ -76,7 +77,7 @@ export class TranslateBot implements PayableBot {
     ctx.session.analytics.module = this.module
     if (!this.isSupportedEvent(ctx)) {
       await ctx.reply(`Unsupported command: ${ctx.message?.text}`, { message_thread_id: ctx.message?.message_thread_id })
-      ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
+      ctx.session.analytics.actualResponseTime = now()
       ctx.session.analytics.sessionState = SessionState.Error
       refundCallback('Unsupported command')
       return
@@ -153,7 +154,7 @@ export class TranslateBot implements PayableBot {
 ${langList.join(', ')}
 
 To disable translation, use the command /translatestop.`)
-    ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
+    ctx.session.analytics.actualResponseTime = now()
     ctx.session.analytics.sessionState = SessionState.Success
   }
 
@@ -161,7 +162,7 @@ To disable translation, use the command /translatestop.`)
     ctx.chatAction = 'typing'
     ctx.session.translate.enable = false
     await ctx.reply('Translation is disabled', { message_thread_id: ctx.message?.message_thread_id })
-    ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
+    ctx.session.analytics.actualResponseTime = now()
     ctx.session.analytics.sessionState = SessionState.Success
   }
 
@@ -187,11 +188,11 @@ To disable translation, use the command /translatestop.`)
     const message = ctx.message.text
 
     const progressMessage = await ctx.reply('...', { message_thread_id: ctx.message?.message_thread_id })
-    ctx.session.analytics.firstResponseTime = process.hrtime.bigint()
+    ctx.session.analytics.firstResponseTime = now()
     ctx.chatAction = 'typing'
 
     if (!message) {
-      ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
+      ctx.session.analytics.actualResponseTime = now()
       ctx.session.analytics.sessionState = SessionState.Success
       return
     }
@@ -215,7 +216,7 @@ To disable translation, use the command /translatestop.`)
       //     // can't detect original language
       //     if (completion01.completion === 'unknown') {
       //       await ctx.api.deleteMessage(ctx.chat.id, progressMessage.message_id)
-      //       ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
+      //       ctx.session.analytics.actualResponseTime = now()
       //       ctx.session.analytics.sessionState = SessionState.Success
       //       return
       // >>>>>>> master
@@ -223,7 +224,7 @@ To disable translation, use the command /translatestop.`)
 
     if (translateResults.length === 0) {
       await ctx.api.deleteMessage(ctx.chat.id, progressMessage.message_id)
-      ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
+      ctx.session.analytics.actualResponseTime = now()
       ctx.session.analytics.sessionState = SessionState.Success
       return
     }
@@ -232,7 +233,7 @@ To disable translation, use the command /translatestop.`)
 
     await ctx.api.editMessageText(ctx.chat.id, progressMessage.message_id, responseMessage, { parse_mode: 'Markdown' })
 
-    ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
+    ctx.session.analytics.actualResponseTime = now()
     ctx.session.analytics.sessionState = SessionState.Success
   }
 }

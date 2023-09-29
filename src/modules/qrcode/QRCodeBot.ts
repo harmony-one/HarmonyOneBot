@@ -17,6 +17,7 @@ import crypto from 'crypto'
 import buildQRWorkflow from './comfy/buildQRWorkflow'
 import pino, { type Logger } from 'pino'
 import * as Sentry from '@sentry/node'
+import { now } from '../../utils/perf'
 
 enum SupportedCommands {
   QR = 'qr',
@@ -62,7 +63,7 @@ export class QRCodeBot implements PayableBot {
     if (!this.isSupportedEvent(ctx)) {
       await ctx.reply(`Unsupported command: ${ctx.message?.text}`, { message_thread_id: ctx.message?.message_thread_id })
       ctx.session.analytics.sessionState = SessionState.Error
-      ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
+      ctx.session.analytics.actualResponseTime = now()
       refundCallback('Unsupported command')
       return
     }
@@ -84,7 +85,7 @@ export class QRCodeBot implements PayableBot {
         if (!msg) {
           await ctx.reply('Error: message is too old')
           ctx.session.analytics.sessionState = SessionState.Error
-          ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
+          ctx.session.analytics.actualResponseTime = now()
           refundCallback('Error: message is too old')
           return
         }
@@ -94,7 +95,7 @@ export class QRCodeBot implements PayableBot {
         if (cmd.error ?? !cmd.command ?? !cmd.url ?? !cmd.prompt) {
           await ctx.reply("Message haven't contain command: " + msg, { message_thread_id: ctx.message?.message_thread_id })
           ctx.session.analytics.sessionState = SessionState.Error
-          ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
+          ctx.session.analytics.actualResponseTime = now()
           refundCallback("Message haven't contain command: ")
           return
         }
@@ -112,7 +113,7 @@ export class QRCodeBot implements PayableBot {
     } catch (ex) {
       Sentry.captureException(ex)
       ctx.session.analytics.sessionState = SessionState.Error
-      ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
+      ctx.session.analytics.actualResponseTime = now()
       if (ex instanceof Error) {
         this.logger.info('Error ' + ex.message)
         refundCallback(ex.message)
@@ -127,7 +128,7 @@ export class QRCodeBot implements PayableBot {
     await ctx.reply('Unsupported command', { message_thread_id: ctx.message?.message_thread_id })
     this.logger.info('Unsupported command')
     ctx.session.analytics.sessionState = SessionState.Error
-    ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
+    ctx.session.analytics.actualResponseTime = now()
     refundCallback('Unsupported command')
   }
 
@@ -206,7 +207,7 @@ export class QRCodeBot implements PayableBot {
       Sentry.captureException(ex)
       ctx.chatAction = null
       ctx.session.analytics.sessionState = SessionState.Error
-      ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
+      ctx.session.analytics.actualResponseTime = now()
       this.logger.error(`ex ${ex}`)
       await ctx.reply('Internal error', { message_thread_id: ctx.message?.message_thread_id })
       throw new Error('Internal error')
@@ -261,7 +262,7 @@ export class QRCodeBot implements PayableBot {
       ctx.session.analytics.sessionState = SessionState.Error
       return false
     } finally {
-      ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
+      ctx.session.analytics.actualResponseTime = now()
     }
   }
 

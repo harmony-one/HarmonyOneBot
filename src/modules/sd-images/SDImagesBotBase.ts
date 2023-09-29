@@ -7,6 +7,7 @@ import { type Logger, pino } from 'pino'
 import { type ILora } from './api/loras-config'
 import { getParamsFromPrompt } from './api/helpers'
 import { type IBalancerOperation, OPERATION_STATUS, completeOperation, createOperation, getOperationById } from './balancer'
+import { now } from '../../utils/perf'
 
 export interface MessageExtras {
   caption?: string
@@ -120,7 +121,7 @@ export class SDImagesBotBase {
     const { message_id } = await ctx.reply(
       `You are #${balancerOperaton.queueTotalNumber + 1} in line for making images. The wait time is about ${(balancerOperaton.queueNumber + 1) * 15} seconds.`, { message_thread_id: ctx.message?.message_thread_id }
     )
-    ctx.session.analytics.firstResponseTime = process.hrtime.bigint()
+    ctx.session.analytics.firstResponseTime = now()
     // waiting queue
     while (balancerOperaton.status === OPERATION_STATUS.WAITING) {
       await sleep(5000 * balancerOperaton.queueNumber || 500)
@@ -279,7 +280,7 @@ export class SDImagesBotBase {
       ctx.session.analytics.sessionState = SessionState.Error
       refundCallback()
     } finally {
-      ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
+      ctx.session.analytics.actualResponseTime = now()
     }
 
     if (balancerOperatonId) {
@@ -380,7 +381,7 @@ export class SDImagesBotBase {
         await completeOperation(balancerOperatonId, OPERATION_STATUS.ERROR)
       }
     } finally {
-      ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
+      ctx.session.analytics.actualResponseTime = now()
     }
   }
 }
