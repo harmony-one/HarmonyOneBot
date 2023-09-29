@@ -1,12 +1,34 @@
 import axios, { AxiosError } from "axios";
 import config from "../../../config";
-import { ChatConversation } from "../../types";
+import { ChatConversation, OnCallBackQueryData, OnMessageContext } from "../../types";
 
 const API_ENDPOINT = 'http://127.0.0.1:5000' //config.llms.apiEndpoint;
 export interface LlmCompletion {
   completion: ChatConversation | undefined;
   usage: number;
   price: number;
+}
+
+export const llmAddUrlDocument = async (ctx: OnMessageContext | OnCallBackQueryData, chatId: number, url: string) => {
+  try {
+    const data = {
+      chatId: `${chatId}`,
+      url: url
+    };
+    const endpointUrl = `${API_ENDPOINT}/collections/document`;
+    console.log(endpointUrl, data)
+    const response = await axios.post(endpointUrl, data);
+    if (response) {
+      console.log(response.data)
+    }
+  } catch (error: any) {
+    if (error instanceof AxiosError) {
+      console.log(error.code);
+      console.log(error.message);
+      console.log(error.stack);
+    }
+    throw error;
+  }
 }
 
 export const llmCompletion = async (
