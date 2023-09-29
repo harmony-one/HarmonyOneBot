@@ -1,5 +1,5 @@
 import { Client, type ISDServerConfig } from './sd-node-client'
-import { type IModel } from './models-config'
+import { getModelByParam, type IModel } from './models-config'
 import { getLoraByParam, type ILora } from './loras-config'
 import { getParamsFromPrompt, NEGATIVE_PROMPT } from './helpers'
 import { type OnMessageContext, type OnCallBackQueryData } from '../../types'
@@ -75,7 +75,7 @@ export class SDNodeApi {
         loraName: params.loraName,
         loraStrength,
         seed: options.seed ?? params.seed,
-        model: options.model.path,
+        model: (params.modelAlias && getModelByParam(params.modelAlias)?.path) || options.model.path,
         batchSize: 16,
         format: options.format
       }, server)
