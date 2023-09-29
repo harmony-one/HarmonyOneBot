@@ -3,6 +3,7 @@ import { type IModel } from './models-config'
 import { getLoraByParam, type ILora } from './loras-config'
 import { getParamsFromPrompt, NEGATIVE_PROMPT } from './helpers'
 import { type OnMessageContext, type OnCallBackQueryData } from '../../types'
+import { MEDIA_FORMAT } from './configs'
 
 export * from './models-config'
 
@@ -13,6 +14,7 @@ interface IGenImageOptions {
   seed?: number
   width?: number
   height?: number
+  format?: MEDIA_FORMAT
 }
 
 interface ITrainImageOptions {
@@ -25,7 +27,7 @@ interface ITrainImageOptions {
 export class SDNodeApi {
   client: Client
 
-  constructor () {
+  constructor() {
     this.client = new Client()
   }
 
@@ -61,22 +63,43 @@ export class SDNodeApi {
       params.promptWithoutParams = `logo, ${params.promptWithoutParams}, LogoRedAF`
     }
 
-    const { images } = await this.client.txt2img({
-      prompt: params.promptWithoutParams,
-      negativePrompt: params.negativePrompt,
-      width: params.width,
-      height: params.height,
-      steps: params.steps,
-      cfgScale: params.cfgScale,
-      loraPath: selectedLora?.path,
-      loraName: params.loraName,
-      loraStrength,
-      seed: options.seed ?? params.seed,
-      model: options.model.path,
-      batchSize: 1
-    }, server)
-
-    return images[0]
+    if(options.format === MEDIA_FORMAT.GIF) {
+      const { images, imagesUrls } = await this.client.txt2img({
+        prompt: params.promptWithoutParams,
+        negativePrompt: params.negativePrompt,
+        width: 512,
+        height: 512,
+        steps: 20,
+        cfgScale: params.cfgScale,
+        loraPath: selectedLora?.path,
+        loraName: params.loraName,
+        loraStrength,
+        seed: options.seed ?? params.seed,
+        model: options.model.path,
+        batchSize: 16,
+        format: options.format
+      }, server)
+  
+      return images[0]
+    } else {
+      const { images, imagesUrls } = await this.client.txt2img({
+        prompt: params.promptWithoutParams,
+        negativePrompt: params.negativePrompt,
+        width: params.width,
+        height: params.height,
+        steps: params.steps,
+        cfgScale: params.cfgScale,
+        loraPath: selectedLora?.path,
+        loraName: params.loraName,
+        loraStrength,
+        seed: options.seed ?? params.seed,
+        model: options.model.path,
+        batchSize: 1,
+        format: options.format
+      }, server)
+  
+      return images[0]
+    }
   }
 
   generateImageByImage = async (
