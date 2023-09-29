@@ -6,7 +6,7 @@ import type { BotPayments } from '../payment'
 import { speechToText } from '../open-ai/api/openAi'
 import type { OnMessageContext, PayableBot } from '../types'
 import { bot } from '../../bot'
-import { SessionState } from '../types'
+import { RequestState } from '../types'
 import { download } from '../../utils/files'
 
 export class VoiceToTextBot implements PayableBot {
@@ -37,7 +37,7 @@ export class VoiceToTextBot implements PayableBot {
   }
 
   public async onEvent (ctx: OnMessageContext): Promise<void> {
-    ctx.session.analytics.module = this.module
+    ctx.transient.analytics.module = this.module
     const { voice, audio } = ctx.message.reply_to_message ?? { voice: undefined, audio: undefined }
 
     if (!voice && !audio) {
@@ -85,6 +85,6 @@ export class VoiceToTextBot implements PayableBot {
       await ctx.reply(resultText, { message_thread_id: ctx.message?.message_thread_id })
     }
 
-    ctx.session.analytics.sessionState = SessionState.Success
+    ctx.transient.analytics.sessionState = RequestState.Success
   }
 }

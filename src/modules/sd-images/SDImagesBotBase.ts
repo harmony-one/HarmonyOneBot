@@ -1,5 +1,5 @@
 import { getModelByParam, type IModel, SDNodeApi } from './api'
-import { type OnCallBackQueryData, type OnMessageContext, SessionState } from '../types'
+import { type OnCallBackQueryData, type OnMessageContext, RequestState } from '../types'
 import { getTelegramFileUrl, loadFile, sleep, uuidv4 } from './utils'
 import { GrammyError, InputFile } from 'grammy'
 import { COMMAND } from './helpers'
@@ -121,7 +121,7 @@ export class SDImagesBotBase {
     const { message_id } = await ctx.reply(
       `You are #${balancerOperaton.queueTotalNumber + 1} in line for making images. The wait time is about ${(balancerOperaton.queueNumber + 1) * 15} seconds.`, { message_thread_id: ctx.message?.message_thread_id }
     )
-    ctx.session.analytics.firstResponseTime = now()
+    ctx.transient.analytics.firstResponseTime = now()
     // waiting queue
     while (balancerOperaton.status === OPERATION_STATUS.WAITING) {
       await sleep(5000 * balancerOperaton.queueNumber || 500)
@@ -173,7 +173,7 @@ export class SDImagesBotBase {
       if (ctx.chat?.id && queueMessageId) {
         await ctx.api.deleteMessage(ctx.chat?.id, queueMessageId)
       }
-      ctx.session.analytics.sessionState = SessionState.Success
+      ctx.transient.analytics.sessionState = RequestState.Success
     } catch (e: any) {
       if (balancerOperatonId) {
         await completeOperation(balancerOperatonId, OPERATION_STATUS.ERROR)
@@ -191,7 +191,7 @@ export class SDImagesBotBase {
         this.logger.error(e.toString())
         await ctx.reply('Error: something went wrong... Refunding payments', msgExtras)
       }
-      ctx.session.analytics.sessionState = SessionState.Error
+      ctx.transient.analytics.sessionState = RequestState.Error
       refundCallback()
     }
   }
@@ -264,7 +264,7 @@ export class SDImagesBotBase {
       if (ctx.chat?.id && queueMessageId) {
         await ctx.api.deleteMessage(ctx.chat?.id, queueMessageId)
       }
-      ctx.session.analytics.sessionState = SessionState.Success
+      ctx.transient.analytics.sessionState = RequestState.Success
     } catch (e: any) {
       const msgExtras: MessageExtras = { message_thread_id: ctx.message?.message_thread_id }
       if (e instanceof GrammyError) {
@@ -277,10 +277,10 @@ export class SDImagesBotBase {
         this.logger.error(e.toString())
         await ctx.reply('Error: something went wrong... Refunding payments', msgExtras)
       }
-      ctx.session.analytics.sessionState = SessionState.Error
+      ctx.transient.analytics.sessionState = RequestState.Error
       refundCallback()
     } finally {
-      ctx.session.analytics.actualResponseTime = now()
+      ctx.transient.analytics.actualResponseTime = now()
     }
 
     if (balancerOperatonId) {
@@ -357,7 +357,7 @@ export class SDImagesBotBase {
         }),
         `/${modelAlias} <lora:${loraName}:1>`
       )
-      ctx.session.analytics.sessionState = SessionState.Success
+      ctx.transient.analytics.sessionState = RequestState.Success
     } catch (e: any) {
       const topicId = ctx.message?.message_thread_id
       const msgExtras: MessageExtras = {}
@@ -374,14 +374,14 @@ export class SDImagesBotBase {
         this.logger.error(e.toString())
         await ctx.reply('Error: something went wrong... Refunding payments', msgExtras)
       }
-      ctx.session.analytics.sessionState = SessionState.Error
+      ctx.transient.analytics.sessionState = RequestState.Error
       refundCallback()
 
       if (balancerOperatonId) {
         await completeOperation(balancerOperatonId, OPERATION_STATUS.ERROR)
       }
     } finally {
-      ctx.session.analytics.actualResponseTime = now()
+      ctx.transient.analytics.actualResponseTime = now()
     }
   }
 }

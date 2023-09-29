@@ -19,7 +19,7 @@ import {
   type BotSessionData,
   type OnCallBackQueryData,
   type OnMessageContext, type PayableBot, type PayableBotConfig,
-  SessionState, type UtilityBot
+  RequestState, type UtilityBot
 } from './modules/types'
 import { mainMenu } from './pages'
 import { TranslateBot } from './modules/translate/TranslateBot'
@@ -104,6 +104,15 @@ Sentry.setTags({ botName: config.botName })
 ES.init()
 
 bot.use(async (ctx: BotContext, next: NextFunction): Promise<void> => {
+  ctx.transient = {
+    refunded: false,
+    analytics: {
+      module: '',
+      firstResponseTime: 0n,
+      actualResponseTime: 0n,
+      sessionState: RequestState.Initial
+    }
+  }
   const transaction = Sentry.startTransaction({ name: 'bot-command' })
   const entities = ctx.entities()
   const startTime = now()
@@ -125,28 +134,28 @@ bot.use(async (ctx: BotContext, next: NextFunction): Promise<void> => {
   }
   await next()
   transaction.finish()
-  if (ctx.session.analytics.module) {
+  if (ctx.transient.analytics.module) {
     const userId = Number(ctx.message?.from?.id ?? '0')
     const username = ctx.message?.from?.username ?? ''
-    if (!ctx.session.analytics.actualResponseTime) {
-      ctx.session.analytics.actualResponseTime = now()
+    if (!ctx.transient.analytics.actualResponseTime) {
+      ctx.transient.analytics.actualResponseTime = now()
     }
-    if (!ctx.session.analytics.firstResponseTime) {
-      ctx.session.analytics.firstResponseTime = ctx.session.analytics.actualResponseTime
+    if (!ctx.transient.analytics.firstResponseTime) {
+      ctx.transient.analytics.firstResponseTime = ctx.transient.analytics.actualResponseTime
     }
     const totalProcessingTime = (now() - startTime).toString()
-    const firstResponseTime = (ctx.session.analytics.firstResponseTime - startTime).toString()
-    const actualResponseTime = (ctx.session.analytics.actualResponseTime - startTime).toString()
+    const firstResponseTime = (ctx.transient.analytics.firstResponseTime - startTime).toString()
+    const actualResponseTime = (ctx.transient.analytics.actualResponseTime - startTime).toString()
     ES.add({
       command,
       text: ctx.message?.text ?? '',
-      module: ctx.session.analytics.module,
+      module: ctx.transient.analytics.module,
       userId,
       username,
       firstResponseTime,
       actualResponseTime,
-      refunded: ctx.session.refunded,
-      sessionState: ctx.session.analytics.sessionState,
+      refunded: ctx.transient.refunded,
+      sessionState: ctx.transient.analytics.sessionState,
       totalProcessingTime
     }).catch((ex: any) => {
       logger.error({ errorMsg: ex.message }, 'Failed to add data to ES')
@@ -186,13 +195,6 @@ function createInitialSessionData (): BotSessionData {
       usage: 0,
       isProcessingQueue: false,
       requestQueue: []
-    },
-    refunded: false,
-    analytics: {
-      module: '',
-      firstResponseTime: 0n,
-      actualResponseTime: 0n,
-      sessionState: SessionState.Initial
     }
   }
 }
