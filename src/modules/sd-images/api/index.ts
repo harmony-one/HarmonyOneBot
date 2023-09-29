@@ -64,8 +64,8 @@ export class SDNodeApi {
     }
 
     if (options.format === MEDIA_FORMAT.GIF) {
-      const modelFromParams = params.modelAlias ? getModelByParam(params.modelAlias): null;
-      const modelPath = (modelFromParams ?? options.model).path;
+      const modelFromParams = params.modelAlias ? getModelByParam(params.modelAlias) : null
+      const modelPath = (modelFromParams ?? options.model).path
 
       const { images } = await this.client.txt2img({
         prompt: params.promptWithoutParams,
