@@ -13,6 +13,7 @@ import MessageMediaDocument = Api.MessageMediaDocument
 import { InputFile } from 'grammy'
 import { bot } from '../../bot'
 import * as Sentry from '@sentry/node'
+import { now } from '../../utils/perf'
 
 interface TranslationJob {
   filePath: string
@@ -211,12 +212,12 @@ export class VoiceMemo implements PayableBot {
         this.logger.error(`Translation error: ${(e as Error).message}`)
         ctx.session.analytics.sessionState = SessionState.Error
       } finally {
-        ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
+        ctx.session.analytics.actualResponseTime = now()
         this.deleteTempFile(filePath)
       }
     } else {
       this.logger.error(`Cannot find translation job ${requestKey}, skip`)
-      ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
+      ctx.session.analytics.actualResponseTime = now()
       ctx.session.analytics.sessionState = SessionState.Success
     }
   }
