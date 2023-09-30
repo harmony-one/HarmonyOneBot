@@ -142,7 +142,6 @@ export const streamChatCompletion = async (
       }
       completion = completion.replaceAll('...', '')
       completion += '...'
-      // console.log(wordCount);
       wordCount = 0
       await ctx.api
         .editMessageText(ctx.chat?.id, msgId, completion)

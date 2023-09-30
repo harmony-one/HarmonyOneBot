@@ -409,11 +409,18 @@ export class BotPayments {
       const { totalCreditsAmount } = await chatService.getUserCredits(accountId)
       const totalBalance = oneBalance.plus(totalCreditsAmount)
       const creditsFormatted = this.toONE(totalBalance, false).toFixed(2)
+
+      const buyCreditsButton = new InlineKeyboard().text(
+        'Buy now',
+        Callbacks.CreditsFiatBuy
+      )
+
       await sendMessage(ctx,
         `Your credits: ${creditsFormatted} ONE tokens. To recharge, send to \`${userAccount.address}\`.`,
         {
           parseMode: 'Markdown',
-          replyId: message_id
+          replyId: message_id,
+          reply_markup: buyCreditsButton
         }
       )
       return false
