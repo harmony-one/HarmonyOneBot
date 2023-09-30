@@ -38,13 +38,14 @@ import {
   MAX_TRIES,
   preparePrompt,
   sendMessage,
-  SupportedCommands
+  SupportedCommands,
+  addUrlToCollection
 } from './helpers'
 // import { getCrawlerPrice, getWebContent } from './utils/web-crawler'
 import * as Sentry from '@sentry/node'
 import { now } from '../../utils/perf'
 import { AxiosError } from 'axios'
-import { llmAddUrlDocument, llmCheckCollectionStatus } from '../llms/api/llmApi'
+import { llmCheckCollectionStatus, queryUrlDocument } from '../llms/api/llmApi'
 
 export class OpenAIBot implements PayableBot {
   public readonly module = 'OpenAIBot'
@@ -174,8 +175,6 @@ export class OpenAIBot implements PayableBot {
       ctx.hasCommand(SupportedCommands.ask.name) ||
       (ctx.message?.text?.startsWith('ask ') && ctx.chat?.type === 'private')
     ) {
-      console.log('ACTIVE', ctx.session.collections.activeCollections)
-      console.log('REQUEST', ctx.session.collections.collectionRequestQueue)
       ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_4
       await this.onChat(ctx)
       return
@@ -406,24 +405,39 @@ export class OpenAIBot implements PayableBot {
     }
   }
 
-  private async addUrlToCollection (ctx: OnMessageContext | OnCallBackQueryData, chatId: number, url: string, prompt: string): Promise<void> {
-    const collectionName = await llmAddUrlDocument({
-      chatId,
-      url
-    })
-    const msgId = (await ctx.reply('...', {
-      message_thread_id:
-      ctx.message?.message_thread_id ??
-      ctx.message?.reply_to_message?.message_thread_id
-    })).message_id
-
-    ctx.session.collections.collectionRequestQueue.push({
-      collectionName,
-      collectionType: 'URL',
-      url,
-      prompt,
-      msgId
-    })
+  private async queryUrlCollection (ctx: OnMessageContext | OnCallBackQueryData,
+    url: string,
+    prompt: string,
+    conversation?: ChatConversation): Promise<void> {
+    try {
+      const collection = ctx.session.collections.activeCollections.find(c => c.url === url)
+      if (collection) {
+        const msgId = (
+          await ctx.reply('...', {
+            message_thread_id:
+              ctx.message?.message_thread_id ??
+              ctx.message?.reply_to_message?.message_thread_id
+          })
+        ).message_id
+        const response = await queryUrlDocument({
+          collectioName: collection.collectionName,
+          prompt,
+          conversation
+        })
+        if (
+          !(await this.payments.pay(ctx as OnMessageContext, response.price))
+        ) {
+          await this.onNotBalanceMessage(ctx)
+        } else {
+          await ctx.api.editMessageText(ctx.chat?.id ?? '',
+            msgId, response.completion,
+            { parse_mode: 'Markdown' })
+            .catch(async (e) => { await this.onError(ctx, e) })
+        }
+      }
+    } catch (e: any) {
+      await this.onError(ctx, e)
+    }
   }
 
   async onCheckCollectionStatus (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
@@ -432,32 +446,37 @@ export class OpenAIBot implements PayableBot {
         const collection = ctx.session.collections.collectionRequestQueue.shift()
         if (collection) {
           const price = await llmCheckCollectionStatus(collection?.collectionName ?? '')
-          console.log(price)
           if (price > 0) {
-            ctx.session.collections.activeCollections.push(collection)
-            if (collection.msgId) {
-              const oneFee = await this.payments.getPriceInONE(price)
-              let statusMsg
-              if (collection.collectionType === 'URL') {
-                statusMsg = `${collection.url} processed ${this.payments.toONE(oneFee, false).toFixed(2)} ONE fee)`
-              } else {
-                statusMsg = `${collection.fileName} processed ${this.payments.toONE(oneFee, false).toFixed(2)} ONE fee)`
+            if (
+              !(await this.payments.pay(ctx as OnMessageContext, price))
+            ) {
+              await this.onNotBalanceMessage(ctx)
+            } else {
+              ctx.session.collections.activeCollections.push(collection)
+              if (collection.msgId) {
+                const oneFee = await this.payments.getPriceInONE(price)
+                let statusMsg
+                if (collection.collectionType === 'URL') {
+                  statusMsg = `${collection.url} processed ${this.payments.toONE(oneFee, false).toFixed(2)} ONE fee)`
+                } else {
+                  statusMsg = `${collection.fileName} processed ${this.payments.toONE(oneFee, false).toFixed(2)} ONE fee)`
+                }
+                await ctx.api.editMessageText(ctx.chat?.id ?? '',
+                  collection.msgId, statusMsg,
+                  { parse_mode: 'Markdown' })
+                  .catch(async (e) => { await this.onError(ctx, e) })
               }
-              await ctx.api.editMessageText(ctx.chat?.id ?? '',
-                collection.msgId, statusMsg,
-                { parse_mode: 'Markdown' })
-                .catch(async (e) => { await this.onError(ctx, e) })
+              await this.queryUrlCollection(ctx, collection.url ?? '', collection.prompt ?? 'summary')
             }
           } else {
             ctx.session.collections.collectionRequestQueue.push(collection)
             if (ctx.session.collections.collectionRequestQueue.length === 1) {
               await sleep(5000)
             } else {
-              await sleep(1000)
+              await sleep(2500)
             }
           }
         }
-        console.log(ctx.session.collections.collectionRequestQueue.length, ctx.session.collections.activeCollections.length)
       } catch (e: any) {
         await this.onError(ctx, e)
       }
@@ -477,12 +496,17 @@ export class OpenAIBot implements PayableBot {
       const { prompt } = getCommandNamePrompt(ctx, SupportedCommands)
       const { url, newPrompt } = hasUrl(ctx, prompt)
       if (url && ctx.chat?.id) {
-        await this.addUrlToCollection(ctx, ctx.chat?.id, url, newPrompt)
-        if (!ctx.session.collections.isProcessingQueue) {
-          ctx.session.collections.isProcessingQueue = true
-          await this.onCheckCollectionStatus(ctx).then(() => {
-            ctx.session.collections.isProcessingQueue = false
-          })
+        const collection = ctx.session.collections.activeCollections.find(c => c.url === url)
+        if (!collection) {
+          await addUrlToCollection(ctx, ctx.chat?.id, url, newPrompt)
+          if (!ctx.session.collections.isProcessingQueue) {
+            ctx.session.collections.isProcessingQueue = true
+            await this.onCheckCollectionStatus(ctx).then(() => {
+              ctx.session.collections.isProcessingQueue = false
+            })
+          }
+        } else {
+          await this.queryUrlCollection(ctx, collection.collectionName, newPrompt)
         }
       } else {
         ctx.transient.analytics.sessionState = RequestState.Error
@@ -639,7 +663,7 @@ export class OpenAIBot implements PayableBot {
             })
           }
           if (url && ctx.chat?.id) {
-            await this.addUrlToCollection(ctx, ctx.chat?.id, url, prompt)
+            await addUrlToCollection(ctx, ctx.chat?.id, url, prompt)
             if (!ctx.session.collections.isProcessingQueue) {
               ctx.session.collections.isProcessingQueue = true
               await this.onCheckCollectionStatus(ctx).then(() => {

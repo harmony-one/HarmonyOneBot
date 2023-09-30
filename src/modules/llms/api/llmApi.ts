@@ -17,6 +17,12 @@ interface LlmAddUrlDocument {
   fileName?: string
 }
 
+interface QueryUrlDocument {
+  collectioName: string
+  prompt: string
+  conversation?: ChatConversation
+}
+
 export const llmAddUrlDocument = async (args: LlmAddUrlDocument): Promise<string> => {
   try {
     const data = { ...args }
@@ -45,6 +51,33 @@ export const llmCheckCollectionStatus = async (collectionName: string): Promise<
       return response.data.price
     }
     return -1
+  } catch (error: any) {
+    if (error instanceof AxiosError) {
+      console.log(error.code)
+      console.log(error.message)
+      console.log(error.stack)
+    }
+    throw error
+  }
+}
+
+interface QueryUrlDocumentOutput {
+  completion: string
+  price: number
+}
+
+export const queryUrlDocument = async (args: QueryUrlDocument): Promise<QueryUrlDocumentOutput> => {
+  try {
+    const data = { collectionName: args.collectioName, promtp: args.prompt }
+    const endpointUrl = `${API_ENDPOINT}/collections/query`
+    const response = await axios.post(endpointUrl, data)
+    if (response) {
+      return response.data
+    }
+    return {
+      completion: '',
+      price: 0
+    }
   } catch (error: any) {
     if (error instanceof AxiosError) {
       console.log(error.code)
@@ -101,41 +134,35 @@ export const llmWebCrawler = async (
   msgId: number,
   url: string
 ): Promise<LlmCompletion> => {
-  try {
-    if (!url.startsWith('https://')) {
-      url = `https://${url}`
-    }
-    const data = {
-      prompt,
-      chatId: '' + chadId,
-      msgId: '' + msgId,
-      token: '' + config.telegramBotAuthToken,
-      url
-    }
-    console.log(url)
-    const urlApi = `${API_ENDPOINT}/llama-index/text`
-    const response = await axios.post(urlApi, data)
-    if (response.data) {
-      const totalInputTokens = 0 // response.data.usage.prompt_tokens
-      const totalOutputTokens = 0 // response.data.usage.completion_tokens
-      const completion = response.data
-      return {
-        completion: {
-          content: completion ?? '',
-          role: 'system',
-          model
-        },
-        usage: totalOutputTokens + totalInputTokens,
-        price: 0
-      }
-    }
+  if (!url.startsWith('https://')) {
+    url = `https://${url}`
+  }
+  const data = {
+    prompt,
+    chatId: '' + chadId,
+    msgId: '' + msgId,
+    token: '' + config.telegramBotAuthToken,
+    url
+  }
+  const urlApi = `${API_ENDPOINT}/llama-index/text`
+  const response = await axios.post(urlApi, data)
+  if (response.data) {
+    const totalInputTokens = 0 // response.data.usage.prompt_tokens
+    const totalOutputTokens = 0 // response.data.usage.completion_tokens
+    const completion = response.data
     return {
-      completion: undefined,
-      usage: 0,
+      completion: {
+        content: completion ?? '',
+        role: 'system',
+        model
+      },
+      usage: totalOutputTokens + totalInputTokens,
       price: 0
     }
-  } catch (error: any) {
-    console.log('ERROR FLAG')
-    throw error
+  }
+  return {
+    completion: undefined,
+    usage: 0,
+    price: 0
   }
 }
