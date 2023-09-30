@@ -193,7 +193,7 @@ export const getParamsFromPrompt = (originalPrompt: string, model?: IModel): IPa
     prompt = prompt.replace(/--model (.*)/, '')
   }
 
-  if(!modelAlias) {
+  if (!modelAlias) {
     const modelMatch = prompt.match(/--model (.*) /)
 
     if (modelMatch) {
