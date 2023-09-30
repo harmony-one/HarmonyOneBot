@@ -22,16 +22,13 @@ export class DocumentHandler implements PayableBot {
         await this.addDocToCollection(ctx, ctx.chat.id, fileName, pdfUrl)
       }
       console.log(file)
-      // await ctx.reply('you did it kid')
       ctx.session.analytics.sessionState = SessionState.Success
     } catch (ex) {
       Sentry.captureException(ex)
-      // await ctx.reply('you failed kid')
       ctx.session.analytics.sessionState = SessionState.Error
     } finally {
       ctx.session.analytics.actualResponseTime = now()
     }
-    console.log(ctx.session.collections.docsJob)
   }
 
   public isSupportedEvent (ctx: OnMessageContext): boolean {
@@ -44,13 +41,17 @@ export class DocumentHandler implements PayableBot {
   }
 
   private async addDocToCollection (ctx: OnMessageContext, chatId: number, fileName: string, pdfUrl: string): Promise<void> {
-    const collectionName = await llmAddUrlDocument(chatId, pdfUrl, fileName)
-    ctx.session.collections.collectionList.push({
+    const collectionName = await llmAddUrlDocument({
+      chatId,
+      pdfUrl,
+      fileName
+    })
+    ctx.session.collections.collectionRequestQueue.push({
       collectionName,
       collectionType: 'PDF',
-      collectionStatus: 'PROCESSING',
       fileName,
       url: pdfUrl
     })
+    ctx.session.collections.isProcessingQueue = true
   }
 }

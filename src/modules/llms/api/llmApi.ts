@@ -10,19 +10,41 @@ export interface LlmCompletion {
   price: number
 }
 
-export const llmAddUrlDocument = async (chatId: number, pdfUrl: string, fileName: string): Promise<string> => {
+interface LlmAddUrlDocument {
+  chatId: number
+  url?: string
+  pdfUrl?: string
+  fileName?: string
+}
+
+export const llmAddUrlDocument = async (args: LlmAddUrlDocument): Promise<string> => {
   try {
-    const data = {
-      chatId: `${chatId}`,
-      pdfUrl,
-      fileName
-    }
+    const data = { ...args }
     const endpointUrl = `${API_ENDPOINT}/collections/document`
     const response = await axios.post(endpointUrl, data)
     if (response) {
       return response.data
     }
     return ''
+  } catch (error: any) {
+    if (error instanceof AxiosError) {
+      console.log(error.code)
+      console.log(error.message)
+      console.log(error.stack)
+    }
+    throw error
+  }
+}
+
+export const llmCheckCollectionStatus = async (collectionName: string): Promise<number> => {
+  try {
+    const data = { collectionName }
+    const endpointUrl = `${API_ENDPOINT}/collections/document`
+    const response = await axios.get(endpointUrl, { params: data })
+    if (response) {
+      return response.data.price
+    }
+    return -1
   } catch (error: any) {
     if (error instanceof AxiosError) {
       console.log(error.code)

@@ -86,10 +86,10 @@ export enum SessionState {
 export interface Collection {
   collectionName: string
   collectionType: 'URL' | 'PDF'
-  collectionStatus: 'PROCESSING' | 'READY'
   fileName?: string
   url?: string
   prompt?: string
+  msgId?: number
 }
 
 export interface FileDoc {
@@ -98,8 +98,10 @@ export interface FileDoc {
   fileSize: number
 }
 export interface CollectionSessionData {
-  collectionList: Collection[]
-  docsJob: FileDoc[]
+  activeCollections: Collection[]
+  collectionRequestQueue: Collection[]
+  isProcessingQueue: boolean
+  // docsJob: FileDoc[]
 }
 export interface Analytics {
   firstResponseTime: bigint
