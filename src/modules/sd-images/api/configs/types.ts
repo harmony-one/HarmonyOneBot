@@ -1,3 +1,8 @@
+export enum MEDIA_FORMAT {
+  JPEG = 'JPEG',
+  GIF = 'GIF'
+}
+
 export interface Txt2ImgOptions {
   hires?: {
     steps: number
@@ -32,4 +37,5 @@ export interface Txt2ImgOptions {
   loraPath?: string
   sampler_name?: string
   scheduler?: string
+  format?: MEDIA_FORMAT
 }

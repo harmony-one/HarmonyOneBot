@@ -77,7 +77,7 @@ export interface TranslateBotData {
   enable: boolean
 }
 
-export enum SessionState {
+export enum RequestState {
   Initial = 'initial',
   Error = 'error',
   Success = 'success'
@@ -106,7 +106,7 @@ export interface CollectionSessionData {
 export interface Analytics {
   firstResponseTime: bigint
   actualResponseTime: bigint
-  sessionState: SessionState
+  sessionState: RequestState
   module: string
 
 }
@@ -117,14 +117,20 @@ export interface BotSessionData {
   openAi: OpenAiSessionData
   translate: TranslateBotData
   llms: LmmsSessionData
-  refunded: boolean
-  analytics: Analytics
+}
+
+export interface TransientStateContext {
+  transient: {
+    analytics: Analytics
+    refunded: boolean
+  }
 }
 
 export type BotContext = FileFlavor<Context &
 SessionFlavor<BotSessionData> &
 ConversationFlavor &
-AutoChatActionFlavor>
+AutoChatActionFlavor &
+TransientStateContext>
 
 export type CustomContext<Q extends FilterQuery> = Filter<BotContext, Q>
 export type OnMessageContext = CustomContext<'message'>

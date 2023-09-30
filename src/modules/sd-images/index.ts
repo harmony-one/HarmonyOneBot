@@ -1,5 +1,5 @@
 import { InlineKeyboard, InputFile } from 'grammy'
-import { type OnMessageContext, type OnCallBackQueryData, type PayableBot, SessionState } from '../types'
+import { type OnMessageContext, type OnCallBackQueryData, type PayableBot, RequestState } from '../types'
 import { SDImagesBotBase } from './SDImagesBotBase'
 import { COMMAND, type IOperation, parseCtx, promptHasBadWords } from './helpers'
 import { getModelByParam, MODELS_CONFIGS } from './api'
@@ -50,7 +50,7 @@ export class SDImagesBot extends SDImagesBotBase implements PayableBot {
     ctx: OnMessageContext | OnCallBackQueryData,
     refundCallback: (reason?: string) => void
   ): Promise<void> {
-    ctx.session.analytics.module = this.module
+    ctx.transient.analytics.module = this.module
     if (this.isSupportedCallbackQuery(ctx)) {
       await this.onImgSelected(ctx, refundCallback)
       return
@@ -61,8 +61,8 @@ export class SDImagesBot extends SDImagesBotBase implements PayableBot {
     if (!operation) {
       console.log(`### unsupported command ${ctx.message?.text}`)
       await sendMessage(ctx, '### unsupported command')
-      ctx.session.analytics.sessionState = SessionState.Error
-      ctx.session.analytics.actualResponseTime = now()
+      ctx.transient.analytics.sessionState = RequestState.Error
+      ctx.transient.analytics.actualResponseTime = now()
       refundCallback('Unsupported command'); return
     }
 
@@ -77,15 +77,15 @@ export class SDImagesBot extends SDImagesBotBase implements PayableBot {
         ctx,
         'Your prompt has been flagged for potentially generating illegal or malicious content. If you believe there has been a mistake, please reach out to support.'
       )
-      ctx.session.analytics.sessionState = SessionState.Error
-      ctx.session.analytics.actualResponseTime = now()
+      ctx.transient.analytics.sessionState = RequestState.Error
+      ctx.transient.analytics.actualResponseTime = now()
       refundCallback('Prompt has bad words'); return
     }
 
     if (prompt.length > 1000) {
       await ctx.reply('Your prompt is too long. Please shorten your prompt and try again.')
-      ctx.session.analytics.sessionState = SessionState.Error
-      ctx.session.analytics.actualResponseTime = now()
+      ctx.transient.analytics.sessionState = RequestState.Error
+      ctx.transient.analytics.actualResponseTime = now()
       refundCallback('Prompt is too long')
       return
     }
@@ -134,15 +134,15 @@ export class SDImagesBot extends SDImagesBotBase implements PayableBot {
             `${model.name}: ${model.link} \n \nUsing: /${model.aliases[0]} /${model.aliases[1]} /${model.aliases[2]} \n`
           )
         }
-        ctx.session.analytics.actualResponseTime = now()
-        ctx.session.analytics.sessionState = SessionState.Success
+        ctx.transient.analytics.actualResponseTime = now()
+        ctx.transient.analytics.sessionState = RequestState.Success
         return
     }
 
     console.log('### unsupported command')
     await sendMessage(ctx, '### unsupported command')
-    ctx.session.analytics.actualResponseTime = now()
-    ctx.session.analytics.sessionState = SessionState.Error
+    ctx.transient.analytics.actualResponseTime = now()
+    ctx.transient.analytics.sessionState = RequestState.Error
   }
 
   onImagesCmd = async (
@@ -193,14 +193,14 @@ export class SDImagesBot extends SDImagesBotBase implements PayableBot {
           message_thread_id: ctx.message?.message_thread_id
         }
       )
-      ctx.session.analytics.sessionState = SessionState.Success
+      ctx.transient.analytics.sessionState = RequestState.Success
     } catch (e: any) {
       Sentry.captureException(e)
       refundCallback(e.message)
       await sendMessage(ctx, 'Error: something went wrong...')
-      ctx.session.analytics.sessionState = SessionState.Error
+      ctx.transient.analytics.sessionState = RequestState.Error
     } finally {
-      ctx.session.analytics.actualResponseTime = now()
+      ctx.transient.analytics.actualResponseTime = now()
     }
 
     if (balancerOperatonId) {
@@ -260,14 +260,14 @@ export class SDImagesBot extends SDImagesBotBase implements PayableBot {
           seed: session?.all_seeds && Number(session.all_seeds[+params - 1])
         })
       }
-      ctx.session.analytics.sessionState = SessionState.Success
+      ctx.transient.analytics.sessionState = RequestState.Success
     } catch (e: any) {
       Sentry.captureException(e)
       refundCallback(e.message)
       await sendMessage(ctx, 'Error: something went wrong...')
-      ctx.session.analytics.sessionState = SessionState.Error
+      ctx.transient.analytics.sessionState = RequestState.Error
     } finally {
-      ctx.session.analytics.actualResponseTime = now()
+      ctx.transient.analytics.actualResponseTime = now()
     }
   }
 
@@ -304,14 +304,14 @@ export class SDImagesBot extends SDImagesBotBase implements PayableBot {
         reply_markup: keyboard,
         message_thread_id: ctx.message?.message_thread_id
       })
-      ctx.session.analytics.sessionState = SessionState.Success
+      ctx.transient.analytics.sessionState = RequestState.Success
     } catch (e: any) {
       Sentry.captureException(e)
       refundCallback(e)
       await sendMessage(ctx, 'Error: something went wrong...')
-      ctx.session.analytics.sessionState = SessionState.Error
+      ctx.transient.analytics.sessionState = RequestState.Error
     } finally {
-      ctx.session.analytics.actualResponseTime = now()
+      ctx.transient.analytics.actualResponseTime = now()
     }
   }
 }

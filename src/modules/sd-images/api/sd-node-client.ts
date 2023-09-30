@@ -8,8 +8,11 @@ import {
   buildImg2ImgPrompt,
   buildImg2ImgControlnetPrompt,
   buildImg2ImgControlnetV2Prompt,
+  buildText2GifPrompt,
+  buildText2GifLoraPrompt,
   type Txt2ImgOptions,
-  type Img2ImgOptions
+  type Img2ImgOptions,
+  MEDIA_FORMAT
 } from './configs'
 import { waitingExecute } from './helpers'
 import axios from 'axios'
@@ -22,6 +25,7 @@ export interface ISDServerConfig {
 
 export interface Txt2ImgResponse {
   images: Buffer[]
+  imagesUrls: string[]
   parameters: object
   all_seeds: string[]
   info: string
@@ -46,7 +50,13 @@ export class Client {
 
       const seed = options.seed ?? getRandomSeed()
 
-      const buildImgPromptMethod = options.loraPath ? buildImgPromptLora : buildImgPrompt
+      let buildImgPromptMethod
+
+      if (options.format === MEDIA_FORMAT.GIF) {
+        buildImgPromptMethod = options.loraPath ? buildText2GifLoraPrompt : buildText2GifPrompt
+      } else {
+        buildImgPromptMethod = options.loraPath ? buildImgPromptLora : buildImgPrompt
+      }
 
       const prompt = buildImgPromptMethod({
         ...options,
@@ -60,14 +70,26 @@ export class Client {
 
       const history = await comfyClient.history(r.prompt_id)
 
-      const images = await Promise.all(
-        history.outputs['9'].images.map(async img => await comfyClient.downloadResult(img.filename))
-      )
+      let images: Buffer[] = []
+      let imagesUrls: string[] = []
+
+      if (options.format === MEDIA_FORMAT.GIF) {
+        images = await Promise.all(
+          history.outputs['26'].gifs.map(async img => await comfyClient.downloadResult(img.filename))
+        )
+
+        imagesUrls = history.outputs['26'].gifs.map(img => comfyClient.getFileUrl(img.filename))
+      } else {
+        images = await Promise.all(
+          history.outputs['9'].images.map(async img => await comfyClient.downloadResult(img.filename))
+        )
+      }
 
       comfyClient.abortWebsocket()
 
       const result: Txt2ImgResponse = {
         images,
+        imagesUrls,
         parameters: {},
         all_seeds: [String(seed)],
         info: ''
@@ -162,6 +184,7 @@ export class Client {
       const result: Txt2ImgResponse =
       {
         images,
+        imagesUrls: [],
         parameters: {},
         all_seeds: [String(seed)],
         info: ''
