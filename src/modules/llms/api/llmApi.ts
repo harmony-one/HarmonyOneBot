@@ -68,7 +68,7 @@ interface QueryUrlDocumentOutput {
 
 export const queryUrlDocument = async (args: QueryUrlDocument): Promise<QueryUrlDocumentOutput> => {
   try {
-    const data = { collectionName: args.collectioName, promtp: args.prompt }
+    const data = { collectionName: args.collectioName, prompt: args.prompt }
     const endpointUrl = `${API_ENDPOINT}/collections/query`
     const response = await axios.post(endpointUrl, data)
     if (response) {

@@ -429,6 +429,7 @@ export class OpenAIBot implements PayableBot {
         ) {
           await this.onNotBalanceMessage(ctx)
         } else {
+          console.log(ctx.chat?.id, msgId)
           await ctx.api.editMessageText(ctx.chat?.id ?? '',
             msgId, response.completion,
             { parse_mode: 'Markdown' })
@@ -463,7 +464,10 @@ export class OpenAIBot implements PayableBot {
                 }
                 await ctx.api.editMessageText(ctx.chat?.id ?? '',
                   collection.msgId, statusMsg,
-                  { parse_mode: 'Markdown' })
+                  {
+                    parse_mode: 'Markdown',
+                    disable_web_page_preview: true
+                  })
                   .catch(async (e) => { await this.onError(ctx, e) })
               }
               await this.queryUrlCollection(ctx, collection.url ?? '', collection.prompt ?? 'summary')
