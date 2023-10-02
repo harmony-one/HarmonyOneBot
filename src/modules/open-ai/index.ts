@@ -1,4 +1,4 @@
-import { GrammyError } from 'grammy'
+import { GrammyError, InlineKeyboard } from 'grammy'
 import OpenAI from 'openai'
 import { type Logger, pino } from 'pino'
 
@@ -46,6 +46,7 @@ import * as Sentry from '@sentry/node'
 import { now } from '../../utils/perf'
 import { AxiosError } from 'axios'
 import { llmCheckCollectionStatus, queryUrlDocument } from '../llms/api/llmApi'
+import { Callbacks } from '../types'
 
 export class OpenAIBot implements PayableBot {
   public readonly module = 'OpenAIBot'
@@ -733,11 +734,20 @@ export class OpenAIBot implements PayableBot {
     const { totalCreditsAmount } = await chatService.getUserCredits(accountId)
     const balance = addressBalance.plus(totalCreditsAmount)
     const balanceOne = this.payments.toONE(balance, false).toFixed(2)
+
+    const buyCreditsButton = new InlineKeyboard().text(
+      'Buy now',
+      Callbacks.CreditsFiatBuy
+    )
+
     const balanceMessage = appText.notEnoughBalance
       .replaceAll('$CREDITS', balanceOne)
       .replaceAll('$WALLET_ADDRESS', account?.address ?? '')
     ctx.transient.analytics.sessionState = RequestState.Error
-    await sendMessage(ctx, balanceMessage, { parseMode: 'Markdown' }).catch(async (e) => { await this.onError(ctx, e) })
+    await sendMessage(ctx, balanceMessage, {
+      parseMode: 'Markdown',
+      reply_markup: buyCreditsButton
+    }).catch(async (e) => { await this.onError(ctx, e) })
     ctx.transient.analytics.actualResponseTime = now()
   }
 
