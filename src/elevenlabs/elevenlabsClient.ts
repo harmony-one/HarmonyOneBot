@@ -16,14 +16,16 @@ export class ElevenlabsClient {
     })
   }
 
-  public async textToSpeech ({ text, voiceId }: { text: string, voiceId: string }): Promise<string | Uint8Array | null | undefined> {
-    return await this._httpClient.post(`/v1/text-to-speech/${voiceId}`, {
-      text: 'string',
+  public async textToSpeech ({ text, voiceId }: { text: string, voiceId: string }): Promise<Buffer> {
+    const response = await this._httpClient.post(`/v1/text-to-speech/${voiceId}`, {
+      text,
       model_id: 'eleven_monolingual_v1',
       voice_settings: {
         stability: 0.5,
         similarity_boost: 0.5
       }
-    })
+    }, { responseType: 'arraybuffer' })
+
+    return Buffer.from(response.data, 'binary')
   }
 }

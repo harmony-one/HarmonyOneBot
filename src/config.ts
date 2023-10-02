@@ -162,5 +162,6 @@ export default {
     index: process.env.ES_INDEX
   },
   deepL: { apikey: process.env.DEEPL_API_KEY ?? '' },
-  gc: { credentials: process.env.GC_CREDENTIALS ?? '' }
+  gc: { credentials: process.env.GC_CREDENTIALS ?? '' },
+  elevenlabs: { apiKey: process.env.ELEVENLABS_API_KEY ?? '' }
 }

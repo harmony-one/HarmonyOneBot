@@ -4,6 +4,8 @@ import type { Logger } from 'pino'
 import type { BotPayments } from '../payment'
 import type { OnMessageContext, PayableBot } from '../types'
 import { gcTextToSpeedClient, type TextToSpeechParams } from '../../google-cloud/gcTextToSpeechClient'
+import { ElevenlabsClient } from '../../elevenlabs/elevenlabsClient'
+import config from '../../config'
 
 enum SupportedCommands {
   VOICE = 'voice',
@@ -84,7 +86,13 @@ export class TextToSpeechBot implements PayableBot {
 
     const progressMessage = await ctx.reply('Generating...')
 
-    const voiceResult = await gcTextToSpeedClient.textToSpeech({ text, gender, languageCode })
+    let voiceResult
+    if (config.elevenlabs.apiKey && ctx.hasCommand(SupportedCommands.VOICE)) {
+      const cl = new ElevenlabsClient(config.elevenlabs.apiKey)
+      voiceResult = await cl.textToSpeech({ text, voiceId: '21m00Tcm4TlvDq8ikWAM' })
+    } else {
+      voiceResult = await gcTextToSpeedClient.textToSpeech({ text, gender, languageCode })
+    }
 
     if (!voiceResult) {
       await ctx.api.editMessageText(ctx.chat.id, progressMessage.message_id, 'An error occurred during the process of generating the message.')
