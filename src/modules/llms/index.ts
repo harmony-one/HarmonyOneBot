@@ -24,7 +24,7 @@ import {
 } from './helpers'
 import { preparePrompt, sendMessage } from '../open-ai/helpers'
 import { vertexCompletion } from './api/vertex'
-import { type LlmCompletion, llmCompletion } from './api/liteLlm'
+import { type LlmCompletion, llmCompletion } from './api/llmApi'
 import { LlmsModelsEnum } from './types'
 import * as Sentry from '@sentry/node'
 import { handlePdf } from './api/pdfHandler'
@@ -88,6 +88,12 @@ export class LlmsBot implements PayableBot {
       await this.onPdfHandler(ctx)
       return
     }
+
+    if (ctx.hasCommand(SupportedCommands.j2Ultra.name)) {
+      await this.onChat(ctx, LlmsModelsEnum.J2_ULTRA) // .J2_ULTRA);
+      return
+    }
+
     this.logger.warn('### unsupported command')
     ctx.transient.analytics.sessionState = RequestState.Error
     await sendMessage(ctx, '### unsupported command').catch(async (e) => {

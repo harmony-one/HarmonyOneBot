@@ -14,7 +14,7 @@ import {
 } from '../types'
 import {
   alterGeneratedImg,
-  chatCompletion,
+  // chatCompletion,
   getChatModel,
   getDalleModel,
   getDalleModelPrice,
@@ -33,16 +33,19 @@ import {
   hasNewPrefix,
   hasPrefix,
   hasUrl,
-  hasUsernamePassword,
+  // hasUsernamePassword,
   isMentioned,
   MAX_TRIES,
   preparePrompt,
   sendMessage,
-  SupportedCommands
+  SupportedCommands,
+  addUrlToCollection
 } from './helpers'
-import { getCrawlerPrice, getWebContent } from './utils/web-crawler'
+// import { getCrawlerPrice, getWebContent } from './utils/web-crawler'
 import * as Sentry from '@sentry/node'
 import { now } from '../../utils/perf'
+import { AxiosError } from 'axios'
+import { llmCheckCollectionStatus, queryUrlDocument } from '../llms/api/llmApi'
 import { Callbacks } from '../types'
 
 export class OpenAIBot implements PayableBot {
@@ -210,11 +213,6 @@ export class OpenAIBot implements PayableBot {
       await this.onGenImgCmd(ctx)
       return
     }
-
-    // if (ctx.hasCommand(SupportedCommands.genImgEn.name)) {
-    //   this.onGenImgEnCmd(ctx);
-    //   return;
-    // }
 
     if (this.isSupportedImageReply(ctx)) {
       await this.onAlterImage(ctx)
@@ -408,6 +406,88 @@ export class OpenAIBot implements PayableBot {
     }
   }
 
+  private async queryUrlCollection (ctx: OnMessageContext | OnCallBackQueryData,
+    url: string,
+    prompt: string,
+    conversation?: ChatConversation): Promise<void> {
+    try {
+      const collection = ctx.session.collections.activeCollections.find(c => c.url === url)
+      if (collection) {
+        const msgId = (
+          await ctx.reply('...', {
+            message_thread_id:
+              ctx.message?.message_thread_id ??
+              ctx.message?.reply_to_message?.message_thread_id
+          })
+        ).message_id
+        const response = await queryUrlDocument({
+          collectioName: collection.collectionName,
+          prompt,
+          conversation
+        })
+        if (
+          !(await this.payments.pay(ctx as OnMessageContext, response.price))
+        ) {
+          await this.onNotBalanceMessage(ctx)
+        } else {
+          console.log(ctx.chat?.id, msgId)
+          await ctx.api.editMessageText(ctx.chat?.id ?? '',
+            msgId, response.completion,
+            { parse_mode: 'Markdown' })
+            .catch(async (e) => { await this.onError(ctx, e) })
+        }
+      }
+    } catch (e: any) {
+      await this.onError(ctx, e)
+    }
+  }
+
+  async onCheckCollectionStatus (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
+    while (ctx.session.collections.collectionRequestQueue.length > 0) {
+      try {
+        const collection = ctx.session.collections.collectionRequestQueue.shift()
+        if (collection) {
+          const price = await llmCheckCollectionStatus(collection?.collectionName ?? '')
+          if (price > 0) {
+            if (
+              !(await this.payments.pay(ctx as OnMessageContext, price))
+            ) {
+              await this.onNotBalanceMessage(ctx)
+            } else {
+              ctx.session.collections.activeCollections.push(collection)
+              if (collection.msgId) {
+                const oneFee = await this.payments.getPriceInONE(price)
+                let statusMsg
+                if (collection.collectionType === 'URL') {
+                  statusMsg = `${collection.url} processed ${this.payments.toONE(oneFee, false).toFixed(2)} ONE fee)`
+                } else {
+                  statusMsg = `${collection.fileName} processed ${this.payments.toONE(oneFee, false).toFixed(2)} ONE fee)`
+                }
+                await ctx.api.editMessageText(ctx.chat?.id ?? '',
+                  collection.msgId, statusMsg,
+                  {
+                    parse_mode: 'Markdown',
+                    disable_web_page_preview: true
+                  })
+                  .catch(async (e) => { await this.onError(ctx, e) })
+              }
+              await this.queryUrlCollection(ctx, collection.url ?? '', collection.prompt ?? 'summary')
+            }
+          } else {
+            ctx.session.collections.collectionRequestQueue.push(collection)
+            if (ctx.session.collections.collectionRequestQueue.length === 1) {
+              await sleep(5000)
+            } else {
+              await sleep(2500)
+            }
+          }
+        }
+      } catch (e: any) {
+        await this.onError(ctx, e)
+      }
+    }
+  }
+
   async onSum (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
     if (this.botSuspended) {
       ctx.transient.analytics.sessionState = RequestState.Error
@@ -420,160 +500,25 @@ export class OpenAIBot implements PayableBot {
     try {
       const { prompt } = getCommandNamePrompt(ctx, SupportedCommands)
       const { url, newPrompt } = hasUrl(ctx, prompt)
-      if (url) {
-        const chat: ChatConversation[] = []
-        await this.onWebCrawler(
-          ctx,
-          await preparePrompt(ctx, newPrompt),
-          chat,
-          url,
-          'sum'
-        )
+      if (url && ctx.chat?.id) {
+        const collection = ctx.session.collections.activeCollections.find(c => c.url === url)
+        if (!collection) {
+          await addUrlToCollection(ctx, ctx.chat?.id, url, newPrompt)
+          if (!ctx.session.collections.isProcessingQueue) {
+            ctx.session.collections.isProcessingQueue = true
+            await this.onCheckCollectionStatus(ctx).then(() => {
+              ctx.session.collections.isProcessingQueue = false
+            })
+          }
+        } else {
+          await this.queryUrlCollection(ctx, collection.collectionName, newPrompt)
+        }
       } else {
         ctx.transient.analytics.sessionState = RequestState.Error
         await sendMessage(ctx, 'Error: Missing url').catch(async (e) => {
           await this.onError(ctx, e)
         })
         ctx.transient.analytics.actualResponseTime = now()
-      }
-    } catch (e) {
-      await this.onError(ctx, e)
-    }
-  }
-
-  private async onWebCrawler (
-    ctx: OnMessageContext | OnCallBackQueryData,
-    prompt: string,
-    chat: ChatConversation[],
-    url: string,
-    command = 'ask',
-    retryCount = MAX_TRIES
-  ): Promise<undefined | {
-      text: string
-      bytes: number
-      time: number
-      fees: number
-      oneFees: number
-    }> {
-    try {
-      if (retryCount === 0) {
-        ctx.transient.analytics.sessionState = RequestState.Error
-        await sendMessage(
-          ctx,
-          'Url not supported, incorrect web site address or missing user credentials',
-          { parseMode: 'Markdown' }
-        ).catch(async (e) => {
-          await this.onError(ctx, e)
-        })
-        ctx.transient.analytics.actualResponseTime = now()
-        return
-      }
-      let price = 0
-      ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_35_TURBO_16K
-      const model = ChatGPTModelsEnum.GPT_35_TURBO_16K
-      const chatModel = getChatModel(model)
-      const webCrawlerMaxTokens =
-        chatModel.maxContextTokens - config.openAi.chatGpt.maxTokens * 2
-      const { user, password } = hasUsernamePassword(prompt)
-      if (user && password) {
-        const maskedPrompt = ctx.message
-          ?.text?.replaceAll(user, '****')?.replaceAll(password, '*****') ?? ''
-        if (ctx.chat?.id && ctx.message?.message_id) {
-          await ctx.api.deleteMessage(ctx.chat?.id, ctx.message?.message_id)
-        }
-        ctx.transient.analytics.sessionState = RequestState.Success
-        await sendMessage(ctx, maskedPrompt)
-        ctx.transient.analytics.actualResponseTime = now()
-      }
-      const webCrawlerStatusMsgId = (
-        await ctx.reply('...', {
-          message_thread_id:
-            ctx.message?.message_thread_id ??
-            ctx.message?.reply_to_message?.message_thread_id
-        })
-      ).message_id
-      ctx.transient.analytics.firstResponseTime = now()
-      const webContent = await getWebContent(
-        url,
-        webCrawlerMaxTokens,
-        user,
-        password
-      )
-      if (webContent.urlText !== '') {
-        const oneFee = await this.payments.getPriceInONE(webContent.fees)
-        // console.log(+oneFee.toFixed() + 3500000000000000);
-        const statusMsg = `${url} downloaded: ${(webContent.networkTraffic / 1048576).toFixed(2
-          )}m size ${(webContent.elapsedTime / 1000).toFixed(2)}s time (${this.payments.toONE(oneFee, false).toFixed(2)} ONE fee)`
-        await ctx.api.editMessageText(ctx.chat?.id ?? '', webCrawlerStatusMsgId, statusMsg, { parse_mode: 'Markdown' }).catch(async (e) => {
-          await this.onError(ctx, e)
-        })
-        price = webContent.fees
-        if (
-          !(await this.payments.pay(ctx as OnMessageContext, webContent.fees))
-        ) {
-          await this.onNotBalanceMessage(ctx)
-        } else {
-          const msgId = (
-            await ctx.reply('...', {
-              message_thread_id:
-                ctx.message?.message_thread_id ??
-                ctx.message?.reply_to_message?.message_thread_id
-            })
-          ).message_id
-          let newPrompt: string
-          const webCrawlConversation: ChatConversation[] = []
-          if (command !== 'sum') {
-            webCrawlConversation.push({
-              content: config.openAi.chatGpt.webCrawlerContext,
-              role: 'system'
-            })
-          }
-          webCrawlConversation.push({
-            content: `Here is the text: ${webContent.urlText}`,
-            role: 'user'
-          })
-          const webCrawlerResult = await chatCompletion(
-            webCrawlConversation,
-            model,
-            true
-          )
-          price += webCrawlerResult.price
-
-          if (prompt !== '') {
-            newPrompt = `${
-              command === 'sum' ? 'Summarize' : ''
-            } ${prompt}. This is the web crawl text: ${
-              webCrawlerResult.completion
-            }`
-          } else {
-            newPrompt = `Summarize this text ${webCrawlerResult.completion}`
-          }
-          chat.push({
-            content: newPrompt,
-            role: 'user'
-          })
-          const payload = {
-            conversation: chat,
-            model: model || config.openAi.chatGpt.model,
-            ctx
-          }
-          const result = await this.promptGen(payload, msgId)
-          // chat = [...result.chat]
-          price += result.price
-          if (!(await this.payments.pay(ctx as OnMessageContext, price))) {
-            await this.onNotBalanceMessage(ctx)
-          }
-        }
-      } else {
-        await this.onWebCrawler(ctx, prompt, chat, url, command, retryCount - 1)
-        return
-      }
-      return {
-        text: webContent.urlText,
-        bytes: webContent.networkTraffic,
-        time: webContent.elapsedTime,
-        fees: await getCrawlerPrice(webContent.networkTraffic),
-        oneFees: 0.5
       }
     } catch (e) {
       await this.onError(ctx, e)
@@ -722,8 +667,14 @@ export class OpenAIBot implements PayableBot {
               content: config.openAi.chatGpt.chatCompletionContext
             })
           }
-          if (url) {
-            await this.onWebCrawler(ctx, prompt, chatConversation, url, 'ask')
+          if (url && ctx.chat?.id) {
+            await addUrlToCollection(ctx, ctx.chat?.id, url, prompt)
+            if (!ctx.session.collections.isProcessingQueue) {
+              ctx.session.collections.isProcessingQueue = true
+              await this.onCheckCollectionStatus(ctx).then(() => {
+                ctx.session.collections.isProcessingQueue = false
+              })
+            }
           } else {
             chatConversation.push({
               role: 'user',
@@ -863,6 +814,10 @@ export class OpenAIBot implements PayableBot {
         ).catch(async (e) => { await this.onError(ctx, e, retryCount - 1) })
         ctx.transient.analytics.actualResponseTime = now()
       }
+    } else if (ex instanceof AxiosError) {
+      await sendMessage(ctx, 'Error handling your request').catch(async (e) => {
+        await this.onError(ctx, e, retryCount - 1)
+      })
     } else {
       this.logger.error(`${ex.toString()}`)
       await sendMessage(ctx, 'Error handling your request')
