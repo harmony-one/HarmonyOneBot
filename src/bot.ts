@@ -54,6 +54,7 @@ import { VoiceTranslateBot } from './modules/voice-translate'
 import { TextToSpeechBot } from './modules/text-to-speech'
 import { VoiceToTextBot } from './modules/voice-to-text'
 import { now } from './utils/perf'
+import { hasPrefix } from './modules/open-ai/helpers'
 
 Events.EventEmitter.defaultMaxListeners = 30
 
@@ -131,6 +132,10 @@ bot.use(async (ctx: BotContext, next: NextFunction): Promise<void> => {
       // there should be only one bot command
       break
     }
+  }
+  const prefix = hasPrefix(ctx.message?.text ?? '')
+  if (!command && prefix) {
+    command = prefix
   }
   await next()
   transaction.finish()
