@@ -6,7 +6,7 @@ const invoiceRepository = AppDataSource.getRepository(Invoice)
 export interface InvoiceParams {
   tgUserId: number
   accountId: number
-  amount: number
+  amount: string
   itemId: string
   currency?: string
 }

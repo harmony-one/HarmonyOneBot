@@ -4,7 +4,7 @@ import { type Account, type TransactionReceipt } from 'web3-core'
 import axios from 'axios'
 import bn, { BigNumber } from 'bignumber.js'
 import config from '../../config'
-import { chatService, statsService } from '../../database/services'
+import { chatService, invoiceService, statsService } from '../../database/services'
 import { type OnCallBackQueryData, type OnMessageContext } from '../types'
 import { LRUCache } from 'lru-cache'
 import { freeCreditsFeeCounter } from '../../metrics/prometheus'
@@ -13,6 +13,7 @@ import { sendMessage } from '../open-ai/helpers'
 import * as Sentry from '@sentry/node'
 import { InlineKeyboard } from 'grammy'
 import { Callbacks } from '../types'
+import { type InvoiceParams } from '../../database/invoice.service'
 
 interface CoinGeckoResponse {
   harmony: {
@@ -66,17 +67,17 @@ export class BotPayments {
     userAccount: Account,
     amount: BigNumber
   ): Promise<void> {
-    // const invoiceData: InvoiceParams = {
-    //   tgUserId: accountId,
-    //   accountId,
-    //   amount: this.convertBigNumber(amount),
-    //   itemId: 'deposit_one',
-    //   currency: 'ONE'
-    // }
-    // const invoice = await invoiceService.create(invoiceData)
+    const invoiceData: InvoiceParams = {
+      tgUserId: accountId,
+      accountId,
+      amount: amount.toFixed(),
+      itemId: 'deposit_one',
+      currency: 'ONE'
+    }
+    const invoice = await invoiceService.create(invoiceData)
     await this.transferFunds(userAccount, this.holderAddress, amount)
     await chatService.depositOneCredits(accountId, amount.toFixed())
-    // await invoiceService.setSuccessStatus({ uuid: invoice.uuid, providerPaymentChargeId: '', telegramPaymentChargeId: '' })
+    await invoiceService.setSuccessStatus({ uuid: invoice.uuid, providerPaymentChargeId: '', telegramPaymentChargeId: '' })
   }
 
   private async runHotWalletsTask (): Promise<void> {
