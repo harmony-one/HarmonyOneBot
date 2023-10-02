@@ -400,7 +400,7 @@ export class BotPayments {
       const balanceAfter = await chatService.withdrawCredits(accountId, totalPayAmount)
       this.logger.info(`[${from.id} @${
         from.username
-      }] successfully paid from credits, credits balance after: ${balanceAfter.totalCreditsAmount}`)
+      }] successfully paid from credits, credits balance after: ${balanceAfter.totalCreditsAmount.toFixed()}`)
 
       freeCreditsFeeCounter.inc(this.convertBigNumber(totalPayAmount))
       await this.writePaymentLog(ctx, totalPayAmount)
