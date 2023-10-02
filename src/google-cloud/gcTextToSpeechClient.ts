@@ -4,7 +4,7 @@ import type { CredentialBody } from 'google-auth-library/build/src/auth/credenti
 
 export interface TextToSpeechParams {
   text: string
-  languageCode: 'en-US' | 'yue-Hant-HK' | 'ru-RU'
+  languageCode: 'en-US' | 'yue-Hant-HK' | 'ru-RU' | 'cmn-CN' | 'es-ES'
   gender: 'MALE' | 'FEMALE'
 }
 

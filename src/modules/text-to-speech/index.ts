@@ -10,6 +10,9 @@ enum SupportedCommands {
   VOICEHK = 'voicehk',
   VOICEHKF = 'voicehkf',
   VOICERU = 'voiceru',
+  VOICECN = 'voicecn',
+  VOICEES = 'voicees'
+
 }
 
 export class TextToSpeechBot implements PayableBot {
@@ -67,6 +70,21 @@ export class TextToSpeechBot implements PayableBot {
     if (ctx.hasCommand(SupportedCommands.VOICERU)) {
       const text = this.getTextFromMessage(ctx)
       await this.onTextToSpeech(ctx, { text, gender: 'FEMALE', languageCode: 'ru-RU' })
+    }
+
+    if (ctx.hasCommand(SupportedCommands.VOICERU)) {
+      const text = this.getTextFromMessage(ctx)
+      await this.onTextToSpeech(ctx, { text, gender: 'FEMALE', languageCode: 'ru-RU' })
+    }
+
+    if (ctx.hasCommand(SupportedCommands.VOICECN)) {
+      const text = this.getTextFromMessage(ctx)
+      await this.onTextToSpeech(ctx, { text, gender: 'MALE', languageCode: 'cmn-CN' })
+    }
+
+    if (ctx.hasCommand(SupportedCommands.VOICEES)) {
+      const text = this.getTextFromMessage(ctx)
+      await this.onTextToSpeech(ctx, { text, gender: 'MALE', languageCode: 'es-ES' })
     }
   }
 
