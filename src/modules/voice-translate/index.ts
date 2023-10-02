@@ -71,7 +71,7 @@ export class VoiceTranslateBot implements PayableBot {
 
     const translateResult = await translator.translateText(resultText, null, 'en-US')
 
-    const voiceResult = await gcTextToSpeedClient.textToSpeech(translateResult.text)
+    const voiceResult = await gcTextToSpeedClient.textToSpeech({ text: translateResult.text, gender: 'MALE', languageCode: 'en-US' })
 
     if (!voiceResult) {
       await ctx.reply('voice generation error')
