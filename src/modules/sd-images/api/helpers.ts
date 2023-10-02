@@ -193,6 +193,16 @@ export const getParamsFromPrompt = (originalPrompt: string, model?: IModel): IPa
     prompt = prompt.replace(/--model (.*)/, '')
   }
 
+  if (!modelAlias) {
+    const modelMatch = prompt.match(/--model (.*) /)
+
+    if (modelMatch) {
+      modelAlias = modelMatch[1]
+
+      prompt = prompt.replace(/--model (.*) /, '')
+    }
+  }
+
   // Add 'leogirl' to trigger /leo model
   if (model && model.name === 'leosams_helloworld' && !prompt.includes('leogirl')) {
     prompt = 'leogirl ' + prompt

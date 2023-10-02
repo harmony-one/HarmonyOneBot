@@ -1,4 +1,4 @@
-import { GrammyError } from 'grammy'
+import { GrammyError, InlineKeyboard } from 'grammy'
 import OpenAI from 'openai'
 import { type Logger, pino } from 'pino'
 
@@ -10,11 +10,11 @@ import {
   type OnCallBackQueryData,
   type OnMessageContext,
   type PayableBot,
-  SessionState
+  RequestState
 } from '../types'
 import {
   alterGeneratedImg,
-  chatCompletion,
+  // chatCompletion,
   getChatModel,
   getDalleModel,
   getDalleModelPrice,
@@ -33,15 +33,20 @@ import {
   hasNewPrefix,
   hasPrefix,
   hasUrl,
-  hasUsernamePassword,
+  // hasUsernamePassword,
   isMentioned,
   MAX_TRIES,
   preparePrompt,
   sendMessage,
-  SupportedCommands
+  SupportedCommands,
+  addUrlToCollection
 } from './helpers'
-import { getCrawlerPrice, getWebContent } from './utils/web-crawler'
+// import { getCrawlerPrice, getWebContent } from './utils/web-crawler'
 import * as Sentry from '@sentry/node'
+import { now } from '../../utils/perf'
+import { AxiosError } from 'axios'
+import { llmCheckCollectionStatus, queryUrlDocument } from '../llms/api/llmApi'
+import { Callbacks } from '../types'
 
 export class OpenAIBot implements PayableBot {
   public readonly module = 'OpenAIBot'
@@ -140,14 +145,14 @@ export class OpenAIBot implements PayableBot {
   }
 
   public async onEvent (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
-    ctx.session.analytics.module = this.module
+    ctx.transient.analytics.module = this.module
     if (!(this.isSupportedEvent(ctx)) && (ctx.chat?.type !== 'private') && !ctx.session.openAi.chatGpt.isFreePromptChatGroups) {
-      ctx.session.analytics.sessionState = SessionState.Error
+      ctx.transient.analytics.sessionState = RequestState.Error
       this.logger.warn(`### unsupported command ${ctx.message?.text}`)
       return
     }
 
-    ctx.session.analytics.sessionState = SessionState.Success
+    ctx.transient.analytics.sessionState = RequestState.Success
     if (
       ctx.hasCommand(SupportedCommands.chat.name) ||
       (ctx.message?.text?.startsWith('chat ') && ctx.chat?.type === 'private')
@@ -209,11 +214,6 @@ export class OpenAIBot implements PayableBot {
       return
     }
 
-    // if (ctx.hasCommand(SupportedCommands.genImgEn.name)) {
-    //   this.onGenImgEnCmd(ctx);
-    //   return;
-    // }
-
     if (this.isSupportedImageReply(ctx)) {
       await this.onAlterImage(ctx)
       return
@@ -253,16 +253,16 @@ export class OpenAIBot implements PayableBot {
     }
 
     this.logger.warn('### unsupported command')
-    ctx.session.analytics.sessionState = SessionState.Error
+    ctx.transient.analytics.sessionState = RequestState.Error
     await sendMessage(ctx, '### unsupported command')
       .catch(async (e) => {
         await this.onError(ctx, e, MAX_TRIES, '### unsupported command')
       })
-    ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
+    ctx.transient.analytics.actualResponseTime = now()
   }
 
   private async hasBalance (ctx: OnMessageContext | OnCallBackQueryData): Promise<boolean> {
-    const accountId = this.payments.getAccountId(ctx as OnMessageContext)
+    const accountId = this.payments.getAccountId(ctx)
     const addressBalance = await this.payments.getUserBalance(accountId)
     const { totalCreditsAmount } = await chatService.getUserCredits(accountId)
     const balance = addressBalance.plus(totalCreditsAmount)
@@ -290,14 +290,14 @@ export class OpenAIBot implements PayableBot {
             await this.onError(ctx, e, MAX_TRIES)
           })
         }))
-        ctx.session.analytics.sessionState = SessionState.Success
-        ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
+        ctx.transient.analytics.sessionState = RequestState.Success
+        ctx.transient.analytics.actualResponseTime = now()
       } else {
-        ctx.session.analytics.sessionState = SessionState.Error
+        ctx.transient.analytics.sessionState = RequestState.Error
         await sendMessage(ctx, 'Bot disabled').catch(async (e) => {
           await this.onError(ctx, e, MAX_TRIES, 'Bot disabled')
         })
-        ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
+        ctx.transient.analytics.actualResponseTime = now()
       }
     } catch (e) {
       await this.onError(
@@ -318,7 +318,7 @@ export class OpenAIBot implements PayableBot {
         const fileId = photo?.pop()?.file_id // with pop() get full image quality
         if (!fileId) {
           await ctx.reply('Cannot retrieve the image file. Please try again.')
-          ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
+          ctx.transient.analytics.actualResponseTime = now()
           return
         }
         const file = await ctx.api.getFile(fileId)
@@ -358,7 +358,7 @@ export class OpenAIBot implements PayableBot {
     const { conversation, ctx, model } = data
     try {
       if (!msgId) {
-        ctx.session.analytics.firstResponseTime = process.hrtime.bigint()
+        ctx.transient.analytics.firstResponseTime = now()
         msgId = (
           await ctx.reply('...', {
             message_thread_id:
@@ -382,8 +382,8 @@ export class OpenAIBot implements PayableBot {
         ctx.chatAction = null
       }
       if (completion) {
-        ctx.session.analytics.sessionState = SessionState.Success
-        ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
+        ctx.transient.analytics.sessionState = RequestState.Success
+        ctx.transient.analytics.actualResponseTime = now()
         const price = getPromptPrice(completion, data)
         this.logger.info(
           `streamChatCompletion result = tokens: ${
@@ -406,172 +406,119 @@ export class OpenAIBot implements PayableBot {
     }
   }
 
+  private async queryUrlCollection (ctx: OnMessageContext | OnCallBackQueryData,
+    url: string,
+    prompt: string,
+    conversation?: ChatConversation): Promise<void> {
+    try {
+      const collection = ctx.session.collections.activeCollections.find(c => c.url === url)
+      if (collection) {
+        const msgId = (
+          await ctx.reply('...', {
+            message_thread_id:
+              ctx.message?.message_thread_id ??
+              ctx.message?.reply_to_message?.message_thread_id
+          })
+        ).message_id
+        const response = await queryUrlDocument({
+          collectioName: collection.collectionName,
+          prompt,
+          conversation
+        })
+        if (
+          !(await this.payments.pay(ctx as OnMessageContext, response.price))
+        ) {
+          await this.onNotBalanceMessage(ctx)
+        } else {
+          console.log(ctx.chat?.id, msgId)
+          await ctx.api.editMessageText(ctx.chat?.id ?? '',
+            msgId, response.completion,
+            { parse_mode: 'Markdown' })
+            .catch(async (e) => { await this.onError(ctx, e) })
+        }
+      }
+    } catch (e: any) {
+      await this.onError(ctx, e)
+    }
+  }
+
+  async onCheckCollectionStatus (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
+    while (ctx.session.collections.collectionRequestQueue.length > 0) {
+      try {
+        const collection = ctx.session.collections.collectionRequestQueue.shift()
+        if (collection) {
+          const price = await llmCheckCollectionStatus(collection?.collectionName ?? '')
+          if (price > 0) {
+            if (
+              !(await this.payments.pay(ctx as OnMessageContext, price))
+            ) {
+              await this.onNotBalanceMessage(ctx)
+            } else {
+              ctx.session.collections.activeCollections.push(collection)
+              if (collection.msgId) {
+                const oneFee = await this.payments.getPriceInONE(price)
+                let statusMsg
+                if (collection.collectionType === 'URL') {
+                  statusMsg = `${collection.url} processed ${this.payments.toONE(oneFee, false).toFixed(2)} ONE fee)`
+                } else {
+                  statusMsg = `${collection.fileName} processed ${this.payments.toONE(oneFee, false).toFixed(2)} ONE fee)`
+                }
+                await ctx.api.editMessageText(ctx.chat?.id ?? '',
+                  collection.msgId, statusMsg,
+                  {
+                    parse_mode: 'Markdown',
+                    disable_web_page_preview: true
+                  })
+                  .catch(async (e) => { await this.onError(ctx, e) })
+              }
+              await this.queryUrlCollection(ctx, collection.url ?? '', collection.prompt ?? 'summary')
+            }
+          } else {
+            ctx.session.collections.collectionRequestQueue.push(collection)
+            if (ctx.session.collections.collectionRequestQueue.length === 1) {
+              await sleep(5000)
+            } else {
+              await sleep(2500)
+            }
+          }
+        }
+      } catch (e: any) {
+        await this.onError(ctx, e)
+      }
+    }
+  }
+
   async onSum (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
     if (this.botSuspended) {
-      ctx.session.analytics.sessionState = SessionState.Error
+      ctx.transient.analytics.sessionState = RequestState.Error
       await sendMessage(ctx, 'The bot is suspended').catch(async (e) => {
         await this.onError(ctx, e)
       })
-      ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
+      ctx.transient.analytics.actualResponseTime = now()
       return
     }
     try {
       const { prompt } = getCommandNamePrompt(ctx, SupportedCommands)
       const { url, newPrompt } = hasUrl(ctx, prompt)
-      if (url) {
-        const chat: ChatConversation[] = []
-        await this.onWebCrawler(
-          ctx,
-          await preparePrompt(ctx, newPrompt),
-          chat,
-          url,
-          'sum'
-        )
+      if (url && ctx.chat?.id) {
+        const collection = ctx.session.collections.activeCollections.find(c => c.url === url)
+        if (!collection) {
+          await addUrlToCollection(ctx, ctx.chat?.id, url, newPrompt)
+          if (!ctx.session.collections.isProcessingQueue) {
+            ctx.session.collections.isProcessingQueue = true
+            await this.onCheckCollectionStatus(ctx).then(() => {
+              ctx.session.collections.isProcessingQueue = false
+            })
+          }
+        } else {
+          await this.queryUrlCollection(ctx, collection.collectionName, newPrompt)
+        }
       } else {
-        ctx.session.analytics.sessionState = SessionState.Error
+        ctx.transient.analytics.sessionState = RequestState.Error
         await sendMessage(ctx, 'Error: Missing url').catch(async (e) => {
           await this.onError(ctx, e)
         })
-        ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
-      }
-    } catch (e) {
-      await this.onError(ctx, e)
-    }
-  }
-
-  private async onWebCrawler (
-    ctx: OnMessageContext | OnCallBackQueryData,
-    prompt: string,
-    chat: ChatConversation[],
-    url: string,
-    command = 'ask',
-    retryCount = MAX_TRIES
-  ): Promise<undefined | {
-      text: string
-      bytes: number
-      time: number
-      fees: number
-      oneFees: number
-    }> {
-    try {
-      if (retryCount === 0) {
-        ctx.session.analytics.sessionState = SessionState.Error
-        await sendMessage(
-          ctx,
-          'Url not supported, incorrect web site address or missing user credentials',
-          { parseMode: 'Markdown' }
-        ).catch(async (e) => {
-          await this.onError(ctx, e)
-        })
-        ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
-        return
-      }
-      let price = 0
-      ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_35_TURBO_16K
-      const model = ChatGPTModelsEnum.GPT_35_TURBO_16K
-      const chatModel = getChatModel(model)
-      const webCrawlerMaxTokens =
-        chatModel.maxContextTokens - config.openAi.chatGpt.maxTokens * 2
-      const { user, password } = hasUsernamePassword(prompt)
-      if (user && password) {
-        const maskedPrompt = ctx.message
-          ?.text?.replaceAll(user, '****')?.replaceAll(password, '*****') ?? ''
-        if (ctx.chat?.id && ctx.message?.message_id) {
-          await ctx.api.deleteMessage(ctx.chat?.id, ctx.message?.message_id)
-        }
-        ctx.session.analytics.sessionState = SessionState.Success
-        await sendMessage(ctx, maskedPrompt)
-        ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
-      }
-      const webCrawlerStatusMsgId = (
-        await ctx.reply('...', {
-          message_thread_id:
-            ctx.message?.message_thread_id ??
-            ctx.message?.reply_to_message?.message_thread_id
-        })
-      ).message_id
-      ctx.session.analytics.firstResponseTime = process.hrtime.bigint()
-      const webContent = await getWebContent(
-        url,
-        webCrawlerMaxTokens,
-        user,
-        password
-      )
-      if (webContent.urlText !== '') {
-        const oneFee = await this.payments.getPriceInONE(webContent.fees)
-        // console.log(+oneFee.toFixed() + 3500000000000000);
-        const statusMsg = `${url} downloaded: ${(webContent.networkTraffic / 1048576).toFixed(2
-          )}m size ${(webContent.elapsedTime / 1000).toFixed(2)}s time (${this.payments.toONE(oneFee, false).toFixed(2)} ONE fee)`
-        await ctx.api.editMessageText(ctx.chat?.id ?? '', webCrawlerStatusMsgId, statusMsg, { parse_mode: 'Markdown' }).catch(async (e) => {
-          await this.onError(ctx, e)
-        })
-        price = webContent.fees
-        if (
-          !(await this.payments.pay(ctx as OnMessageContext, webContent.fees))
-        ) {
-          await this.onNotBalanceMessage(ctx)
-        } else {
-          const msgId = (
-            await ctx.reply('...', {
-              message_thread_id:
-                ctx.message?.message_thread_id ??
-                ctx.message?.reply_to_message?.message_thread_id
-            })
-          ).message_id
-          let newPrompt: string
-          const webCrawlConversation: ChatConversation[] = []
-          if (command !== 'sum') {
-            webCrawlConversation.push({
-              content: config.openAi.chatGpt.webCrawlerContext,
-              role: 'system'
-            })
-          }
-          webCrawlConversation.push({
-            content: `Here is the text: ${webContent.urlText}`,
-            role: 'user'
-          })
-          const webCrawlerResult = await chatCompletion(
-            webCrawlConversation,
-            model,
-            true
-          )
-          price += webCrawlerResult.price
-
-          if (prompt !== '') {
-            newPrompt = `${
-              command === 'sum' ? 'Summarize' : ''
-            } ${prompt}. This is the web crawl text: ${
-              webCrawlerResult.completion
-            }`
-          } else {
-            newPrompt = `Summarize this text ${webCrawlerResult.completion}`
-          }
-          chat.push({
-            content: newPrompt,
-            role: 'user'
-          })
-          const payload = {
-            conversation: chat,
-            model: model || config.openAi.chatGpt.model,
-            ctx
-          }
-          const result = await this.promptGen(payload, msgId)
-          // chat = [...result.chat]
-          price += result.price
-          if (!(await this.payments.pay(ctx as OnMessageContext, price))) {
-            await this.onNotBalanceMessage(ctx)
-          }
-        }
-      } else {
-        await this.onWebCrawler(ctx, prompt, chat, url, command, retryCount - 1)
-        return
-      }
-      return {
-        text: webContent.urlText,
-        bytes: webContent.networkTraffic,
-        time: webContent.elapsedTime,
-        fees: await getCrawlerPrice(webContent.networkTraffic),
-        oneFees: 0.5
+        ctx.transient.analytics.actualResponseTime = now()
       }
     } catch (e) {
       await this.onError(ctx, e)
@@ -581,11 +528,11 @@ export class OpenAIBot implements PayableBot {
   async onMention (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
     try {
       if (this.botSuspended) {
-        ctx.session.analytics.sessionState = SessionState.Error
+        ctx.transient.analytics.sessionState = RequestState.Error
         await sendMessage(ctx, 'The bot is suspended').catch(async (e) => {
           await this.onError(ctx, e)
         })
-        ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
+        ctx.transient.analytics.actualResponseTime = now()
         return
       }
       const { username } = ctx.me
@@ -607,11 +554,11 @@ export class OpenAIBot implements PayableBot {
   async onPrefix (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
     try {
       if (this.botSuspended) {
-        ctx.session.analytics.sessionState = SessionState.Error
+        ctx.transient.analytics.sessionState = RequestState.Error
         sendMessage(ctx, 'The bot is suspended').catch(async (e) => {
           await this.onError(ctx, e)
         })
-        ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
+        ctx.transient.analytics.actualResponseTime = now()
         return
       }
       const { prompt } = getCommandNamePrompt(
@@ -636,9 +583,9 @@ export class OpenAIBot implements PayableBot {
   async onPrivateChat (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
     try {
       if (this.botSuspended) {
-        ctx.session.analytics.sessionState = SessionState.Error
+        ctx.transient.analytics.sessionState = RequestState.Error
         sendMessage(ctx, 'The bot is suspended').catch(async (e) => { await this.onError(ctx, e) })
-        ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
+        ctx.transient.analytics.actualResponseTime = now()
         return
       }
       ctx.session.openAi.chatGpt.requestQueue.push(
@@ -672,9 +619,9 @@ export class OpenAIBot implements PayableBot {
   async onChat (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
     try {
       if (this.botSuspended) {
-        ctx.session.analytics.sessionState = SessionState.Error
+        ctx.transient.analytics.sessionState = RequestState.Error
         await sendMessage(ctx, 'The bot is suspended').catch(async (e) => { await this.onError(ctx, e) })
-        ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
+        ctx.transient.analytics.actualResponseTime = now()
         return
       }
       const prompt = ctx.match ? ctx.match : ctx.message?.text
@@ -708,9 +655,9 @@ export class OpenAIBot implements PayableBot {
                     chatConversation[chatConversation.length - 1].content
                   }_`
                 : appText.introText
-            ctx.session.analytics.sessionState = SessionState.Success
+            ctx.transient.analytics.sessionState = RequestState.Success
             await sendMessage(ctx, msg, { parseMode: 'Markdown' }).catch(async (e) => { await this.onError(ctx, e) })
-            ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
+            ctx.transient.analytics.actualResponseTime = now()
             return
           }
           const { url } = hasUrl(ctx, prompt)
@@ -720,8 +667,14 @@ export class OpenAIBot implements PayableBot {
               content: config.openAi.chatGpt.chatCompletionContext
             })
           }
-          if (url) {
-            await this.onWebCrawler(ctx, prompt, chatConversation, url, 'ask')
+          if (url && ctx.chat?.id) {
+            await addUrlToCollection(ctx, ctx.chat?.id, url, prompt)
+            if (!ctx.session.collections.isProcessingQueue) {
+              ctx.session.collections.isProcessingQueue = true
+              await this.onCheckCollectionStatus(ctx).then(() => {
+                ctx.session.collections.isProcessingQueue = false
+              })
+            }
           } else {
             chatConversation.push({
               role: 'user',
@@ -753,18 +706,18 @@ export class OpenAIBot implements PayableBot {
   async onLast (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
     if (ctx.session.openAi.chatGpt.chatConversation.length > 0) {
       const chat = ctx.session.openAi.chatGpt.chatConversation
-      ctx.session.analytics.sessionState = SessionState.Success
+      ctx.transient.analytics.sessionState = RequestState.Success
       await sendMessage(
         ctx,
         `${appText.gptLast}\n_${chat[chat.length - 1].content}_`,
         { parseMode: 'Markdown' }
       ).catch(async (e) => { await this.onError(ctx, e) })
-      ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
+      ctx.transient.analytics.actualResponseTime = now()
     } else {
-      ctx.session.analytics.sessionState = SessionState.Error
+      ctx.transient.analytics.sessionState = RequestState.Error
       await sendMessage(ctx, 'To start a conversation please write */ask*', { parseMode: 'Markdown' })
         .catch(async (e) => { await this.onError(ctx, e) })
-      ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
+      ctx.transient.analytics.actualResponseTime = now()
     }
   }
 
@@ -775,18 +728,27 @@ export class OpenAIBot implements PayableBot {
   }
 
   async onNotBalanceMessage (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
-    const accountId = this.payments.getAccountId(ctx as OnMessageContext)
+    const accountId = this.payments.getAccountId(ctx)
     const account = this.payments.getUserAccount(accountId)
     const addressBalance = await this.payments.getUserBalance(accountId)
     const { totalCreditsAmount } = await chatService.getUserCredits(accountId)
     const balance = addressBalance.plus(totalCreditsAmount)
     const balanceOne = this.payments.toONE(balance, false).toFixed(2)
+
+    const buyCreditsButton = new InlineKeyboard().text(
+      'Buy now',
+      Callbacks.CreditsFiatBuy
+    )
+
     const balanceMessage = appText.notEnoughBalance
       .replaceAll('$CREDITS', balanceOne)
       .replaceAll('$WALLET_ADDRESS', account?.address ?? '')
-    ctx.session.analytics.sessionState = SessionState.Error
-    await sendMessage(ctx, balanceMessage, { parseMode: 'Markdown' }).catch(async (e) => { await this.onError(ctx, e) })
-    ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
+    ctx.transient.analytics.sessionState = RequestState.Error
+    await sendMessage(ctx, balanceMessage, {
+      parseMode: 'Markdown',
+      reply_markup: buyCreditsButton
+    }).catch(async (e) => { await this.onError(ctx, e) })
+    ctx.transient.analytics.actualResponseTime = now()
   }
 
   async onError (
@@ -795,7 +757,7 @@ export class OpenAIBot implements PayableBot {
     retryCount: number = MAX_TRIES,
     msg?: string
   ): Promise<void> {
-    ctx.session.analytics.sessionState = SessionState.Error
+    ctx.transient.analytics.sessionState = RequestState.Error
     Sentry.setContext('open-ai', { retryCount, msg })
     Sentry.captureException(ex)
     if (retryCount === 0) {
@@ -809,7 +771,7 @@ export class OpenAIBot implements PayableBot {
           ctx,
           'Error: The bot does not have permission to send photos in chat'
         )
-        ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
+        ctx.transient.analytics.actualResponseTime = now()
       } else if (ex.error_code === 429) {
         this.botSuspended = true
         const retryAfter = ex.parameters.retry_after
@@ -826,7 +788,7 @@ export class OpenAIBot implements PayableBot {
             ctx.from.username ? ctx.from.username : ''
           } Bot has reached limit, wait ${retryAfter} seconds`
         ).catch(async (e) => { await this.onError(ctx, e, retryCount - 1) })
-        ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
+        ctx.transient.analytics.actualResponseTime = now()
         if (method === 'editMessageText') {
           ctx.session.openAi.chatGpt.chatConversation.pop() // deletes last prompt
         }
@@ -843,21 +805,25 @@ export class OpenAIBot implements PayableBot {
       this.logger.error(`OPENAI Error ${ex.status}(${ex.code}) - ${ex.message}`)
       if (ex.code === 'context_length_exceeded') {
         await sendMessage(ctx, ex.message).catch(async (e) => { await this.onError(ctx, e, retryCount - 1) })
-        ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
+        ctx.transient.analytics.actualResponseTime = now()
         await this.onEnd(ctx)
       } else {
         await sendMessage(
           ctx,
           'Error accessing OpenAI (ChatGPT). Please try later'
         ).catch(async (e) => { await this.onError(ctx, e, retryCount - 1) })
-        ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
+        ctx.transient.analytics.actualResponseTime = now()
       }
+    } else if (ex instanceof AxiosError) {
+      await sendMessage(ctx, 'Error handling your request').catch(async (e) => {
+        await this.onError(ctx, e, retryCount - 1)
+      })
     } else {
       this.logger.error(`${ex.toString()}`)
       await sendMessage(ctx, 'Error handling your request')
         .catch(async (e) => { await this.onError(ctx, e, retryCount - 1) }
         )
-      ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
+      ctx.transient.analytics.actualResponseTime = now()
     }
   }
 }

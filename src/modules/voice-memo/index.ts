@@ -1,4 +1,4 @@
-import { type OnMessageContext, type PayableBot, SessionState } from '../types'
+import { type OnMessageContext, type PayableBot, RequestState } from '../types'
 import pino, { type Logger } from 'pino'
 import { initTelegramClient } from './MTProtoAPI'
 import { NewMessage, type NewMessageEvent } from 'telegram/events'
@@ -13,6 +13,7 @@ import MessageMediaDocument = Api.MessageMediaDocument
 import { InputFile } from 'grammy'
 import { bot } from '../../bot'
 import * as Sentry from '@sentry/node'
+import { now } from '../../utils/perf'
 
 interface TranslationJob {
   filePath: string
@@ -153,7 +154,7 @@ export class VoiceMemo implements PayableBot {
   }
 
   public async onEvent (ctx: OnMessageContext): Promise<void> {
-    ctx.session.analytics.module = this.module
+    ctx.transient.analytics.module = this.module
     const { voice, audio, from } = ctx.update.message
     const fileSize = (voice ?? audio)?.file_size
     const requestKey = `${from.id}_${fileSize}`
@@ -204,20 +205,20 @@ export class VoiceMemo implements PayableBot {
           } else {
             await ctx.reply(text, { message_thread_id: ctx.message?.message_thread_id })
           }
-          ctx.session.analytics.sessionState = SessionState.Success
+          ctx.transient.analytics.sessionState = RequestState.Success
         }
       } catch (e) {
         Sentry.captureException(e)
         this.logger.error(`Translation error: ${(e as Error).message}`)
-        ctx.session.analytics.sessionState = SessionState.Error
+        ctx.transient.analytics.sessionState = RequestState.Error
       } finally {
-        ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
+        ctx.transient.analytics.actualResponseTime = now()
         this.deleteTempFile(filePath)
       }
     } else {
       this.logger.error(`Cannot find translation job ${requestKey}, skip`)
-      ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
-      ctx.session.analytics.sessionState = SessionState.Success
+      ctx.transient.analytics.actualResponseTime = now()
+      ctx.transient.analytics.sessionState = RequestState.Success
     }
   }
 }

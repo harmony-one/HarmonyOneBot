@@ -19,6 +19,11 @@ interface WebContent {
   fees: number
 }
 
+interface TelegramUserProfile {
+  username: string
+  displayName: string
+  bio: string
+}
 interface CrawlerElement {
   text: string
   tagName: string

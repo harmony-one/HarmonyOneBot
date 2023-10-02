@@ -3,6 +3,7 @@ import { type OnMessageContext, type OnCallBackQueryData, type MessageExtras, ty
 import { type ParseMode } from 'grammy/types'
 import { getChatModel, getChatModelPrice, getTokenNumber } from './api/openAi'
 import { type Message, type InlineKeyboardMarkup } from 'grammy/out/types'
+import { llmAddUrlDocument } from '../llms/api/llmApi'
 
 export const SupportedCommands = {
   chat: { name: 'chat' },
@@ -241,4 +242,24 @@ export const limitPrompt = (prompt: string): string => {
   }
 
   return `${prompt} in around ${config.openAi.chatGpt.wordLimit} words`
+}
+
+export async function addUrlToCollection (ctx: OnMessageContext | OnCallBackQueryData, chatId: number, url: string, prompt: string): Promise<void> {
+  const collectionName = await llmAddUrlDocument({
+    chatId,
+    url
+  })
+  const msgId = (await ctx.reply('...', {
+    message_thread_id:
+    ctx.message?.message_thread_id ??
+    ctx.message?.reply_to_message?.message_thread_id
+  })).message_id
+
+  ctx.session.collections.collectionRequestQueue.push({
+    collectionName,
+    collectionType: 'URL',
+    url,
+    prompt,
+    msgId
+  })
 }

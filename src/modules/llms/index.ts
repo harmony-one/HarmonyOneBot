@@ -7,7 +7,7 @@ import {
   type OnMessageContext,
   type OnCallBackQueryData,
   type ChatConversation,
-  type ChatPayload, type PayableBot, SessionState
+  type ChatPayload, type PayableBot, RequestState
 } from '../types'
 import { appText } from '../open-ai/utils/text'
 import { chatService } from '../../database/services'
@@ -24,9 +24,11 @@ import {
 } from './helpers'
 import { preparePrompt, sendMessage } from '../open-ai/helpers'
 import { vertexCompletion } from './api/vertex'
-import { type LlmCompletion, llmCompletion } from './api/liteLlm'
+import { type LlmCompletion, llmCompletion } from './api/llmApi'
 import { LlmsModelsEnum } from './types'
 import * as Sentry from '@sentry/node'
+import { handlePdf } from './api/pdfHandler'
+import { now } from '../../utils/perf'
 export class LlmsBot implements PayableBot {
   public readonly module = 'LlmsBot'
   private readonly logger: Logger
@@ -66,7 +68,7 @@ export class LlmsBot implements PayableBot {
   }
 
   public async onEvent (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
-    ctx.session.analytics.module = this.module
+    ctx.transient.analytics.module = this.module
     const isSupportedEvent = this.isSupportedEvent(ctx)
     if (!isSupportedEvent && ctx.chat?.type !== 'private') {
       this.logger.warn(`### unsupported command ${ctx.message?.text}`)
@@ -82,16 +84,26 @@ export class LlmsBot implements PayableBot {
       return
     }
 
+    if (ctx.hasCommand(SupportedCommands.pdf.name)) {
+      await this.onPdfHandler(ctx)
+      return
+    }
+
+    if (ctx.hasCommand(SupportedCommands.j2Ultra.name)) {
+      await this.onChat(ctx, LlmsModelsEnum.J2_ULTRA) // .J2_ULTRA);
+      return
+    }
+
     this.logger.warn('### unsupported command')
-    ctx.session.analytics.sessionState = SessionState.Error
+    ctx.transient.analytics.sessionState = RequestState.Error
     await sendMessage(ctx, '### unsupported command').catch(async (e) => {
       await this.onError(ctx, e, MAX_TRIES, '### unsupported command')
     })
-    ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
+    ctx.transient.analytics.actualResponseTime = now()
   }
 
   private async hasBalance (ctx: OnMessageContext | OnCallBackQueryData): Promise<boolean> {
-    const accountId = this.payments.getAccountId(ctx as OnMessageContext)
+    const accountId = this.payments.getAccountId(ctx)
     const addressBalance = await this.payments.getUserBalance(accountId)
     const { totalCreditsAmount } = await chatService.getUserCredits(accountId)
     const balance = addressBalance.plus(totalCreditsAmount)
@@ -100,6 +112,40 @@ export class LlmsBot implements PayableBot {
       +balanceOne > +config.llms.minimumBalance ||
       (this.payments.isUserInWhitelist(ctx.from.id, ctx.from.username))
     )
+  }
+
+  private async onPdfHandler (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
+    if (!ctx.chat?.id) {
+      throw new Error('internal error')
+    }
+    try {
+      const { chatConversation } = ctx.session.llms
+      const msgId = (
+        await ctx.reply('...', { message_thread_id: ctx.message?.message_thread_id })
+      ).message_id
+      const prompt = ctx.match as string
+      const response = await handlePdf(prompt)
+      if (response.completion) {
+        await ctx.api.editMessageText(
+          ctx.chat.id,
+          msgId,
+          response.completion.content
+        ).catch(async (e: any) => { await this.onError(ctx, e) })
+        if (
+          !(await this.payments.pay(ctx as OnMessageContext, response.price))
+        ) {
+          await this.onNotBalanceMessage(ctx)
+          return
+        }
+        chatConversation.push({
+          content: prompt,
+          role: 'user'
+        })
+        chatConversation.push(response.completion)
+      }
+    } catch (e) {
+      await this.onError(ctx, e)
+    }
   }
 
   private async promptGen (data: ChatPayload): Promise<{ price: number, chat: ChatConversation[] }> {
@@ -157,9 +203,9 @@ export class LlmsBot implements PayableBot {
   async onPrefix (ctx: OnMessageContext | OnCallBackQueryData, model: string): Promise<void> {
     try {
       if (this.botSuspended) {
-        ctx.session.analytics.sessionState = SessionState.Error
+        ctx.transient.analytics.sessionState = RequestState.Error
         sendMessage(ctx, 'The bot is suspended').catch(async (e) => { await this.onError(ctx, e) })
-        ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
+        ctx.transient.analytics.actualResponseTime = now()
         return
       }
       const { prompt } = getCommandNamePrompt(
@@ -185,9 +231,9 @@ export class LlmsBot implements PayableBot {
   async onChat (ctx: OnMessageContext | OnCallBackQueryData, model: string): Promise<void> {
     try {
       if (this.botSuspended) {
-        ctx.session.analytics.sessionState = SessionState.Error
+        ctx.transient.analytics.sessionState = RequestState.Error
         sendMessage(ctx, 'The bot is suspended').catch(async (e) => { await this.onError(ctx, e) })
-        ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
+        ctx.transient.analytics.actualResponseTime = now()
         return
       }
       const prompt = ctx.match ? ctx.match : ctx.message?.text
@@ -221,11 +267,11 @@ export class LlmsBot implements PayableBot {
                     chatConversation[chatConversation.length - 1].content
                   }_`
                 : appText.introText
-            ctx.session.analytics.sessionState = SessionState.Success
+            ctx.transient.analytics.sessionState = RequestState.Success
             await sendMessage(ctx, msg, { parseMode: 'Markdown' }).catch(async (e) => {
               await this.onError(ctx, e)
             })
-            ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
+            ctx.transient.analytics.actualResponseTime = now()
             return
           }
           const chat: ChatConversation = {
@@ -267,7 +313,7 @@ export class LlmsBot implements PayableBot {
   }
 
   async onNotBalanceMessage (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
-    const accountId = this.payments.getAccountId(ctx as OnMessageContext)
+    const accountId = this.payments.getAccountId(ctx)
     const account = this.payments.getUserAccount(accountId)
     const addressBalance = await this.payments.getUserBalance(accountId)
     const { totalCreditsAmount } = await chatService.getUserCredits(accountId)
@@ -276,9 +322,9 @@ export class LlmsBot implements PayableBot {
     const balanceMessage = appText.notEnoughBalance
       .replaceAll('$CREDITS', balanceOne)
       .replaceAll('$WALLET_ADDRESS', account?.address ?? '')
-    ctx.session.analytics.sessionState = SessionState.Success
+    ctx.transient.analytics.sessionState = RequestState.Success
     await sendMessage(ctx, balanceMessage, { parseMode: 'Markdown' }).catch(async (e) => { await this.onError(ctx, e) })
-    ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
+    ctx.transient.analytics.actualResponseTime = now()
   }
 
   async onError (
@@ -287,7 +333,7 @@ export class LlmsBot implements PayableBot {
     retryCount: number = MAX_TRIES,
     msg?: string
   ): Promise<void> {
-    ctx.session.analytics.sessionState = SessionState.Error
+    ctx.transient.analytics.sessionState = RequestState.Error
     Sentry.setContext('llms', { retryCount, msg })
     Sentry.captureException(e)
     if (retryCount === 0) {
@@ -301,7 +347,7 @@ export class LlmsBot implements PayableBot {
           ctx,
           'Error: The bot does not have permission to send photos in chat'
         )
-        ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
+        ctx.transient.analytics.actualResponseTime = now()
       } else if (e.error_code === 429) {
         this.botSuspended = true
         const retryAfter = e.parameters.retry_after
@@ -318,7 +364,7 @@ export class LlmsBot implements PayableBot {
             ctx.from.username ? ctx.from.username : ''
           } Bot has reached limit, wait ${retryAfter} seconds`
         ).catch(async (e) => { await this.onError(ctx, e, retryCount - 1) })
-        ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
+        ctx.transient.analytics.actualResponseTime = now()
         if (method === 'editMessageText') {
           ctx.session.llms.chatConversation.pop() // deletes last prompt
         }
@@ -328,12 +374,12 @@ export class LlmsBot implements PayableBot {
         this.logger.error(
           `On method "${e.method}" | ${e.error_code} - ${e.description}`
         )
-        ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
+        ctx.transient.analytics.actualResponseTime = now()
       }
     } else {
       this.logger.error(`${e.toString()}`)
       await sendMessage(ctx, 'Error handling your request').catch(async (e) => { await this.onError(ctx, e, retryCount - 1) })
-      ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
+      ctx.transient.analytics.actualResponseTime = now()
     }
   }
 }

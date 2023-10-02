@@ -11,6 +11,8 @@ import { freeCreditsFeeCounter } from '../../metrics/prometheus'
 import { type BotPaymentLog } from '../../database/stats.service'
 import { sendMessage } from '../open-ai/helpers'
 import * as Sentry from '@sentry/node'
+import { InlineKeyboard } from 'grammy'
+import { Callbacks } from '../types'
 import { type InvoiceParams } from '../../database/invoice.service'
 
 interface CoinGeckoResponse {
@@ -408,11 +410,18 @@ export class BotPayments {
       const { totalCreditsAmount } = await chatService.getUserCredits(accountId)
       const totalBalance = oneBalance.plus(totalCreditsAmount)
       const creditsFormatted = this.toONE(totalBalance, false).toFixed(2)
+
+      const buyCreditsButton = new InlineKeyboard().text(
+        'Buy now',
+        Callbacks.CreditsFiatBuy
+      )
+
       await sendMessage(ctx,
         `Your credits: ${creditsFormatted} ONE tokens. To recharge, send to \`${userAccount.address}\`.`,
         {
           parseMode: 'Markdown',
-          replyId: message_id
+          replyId: message_id,
+          reply_markup: buyCreditsButton
         }
       )
       return false
@@ -498,6 +507,12 @@ export class BotPayments {
         const addressBalance = await this.getAddressBalance(account.address)
         const balanceTotal = totalCreditsAmount.plus(addressBalance)
         const balanceFormatted = this.toONE(balanceTotal, false)
+
+        const buyCreditsButton = new InlineKeyboard().text(
+          'Buy now',
+          Callbacks.CreditsFiatBuy
+        )
+
         await sendMessage(
           ctx,
           `Your 1Bot credits in ONE tokens: ${balanceFormatted.toFixed(2)}
@@ -505,7 +520,8 @@ export class BotPayments {
 To recharge, send to: \`${account.address}\`. Buy tokens on harmony.one/buy.`,
           {
             parseMode: 'Markdown',
-            disable_web_page_preview: true
+            disable_web_page_preview: true,
+            reply_markup: buyCreditsButton
           }
         )
       } catch (e) {

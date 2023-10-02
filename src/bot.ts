@@ -19,7 +19,7 @@ import {
   type BotSessionData,
   type OnCallBackQueryData,
   type OnMessageContext, type PayableBot, type PayableBotConfig,
-  SessionState, type UtilityBot
+  RequestState, type UtilityBot
 } from './modules/types'
 import { mainMenu } from './pages'
 import { TranslateBot } from './modules/translate/TranslateBot'
@@ -52,6 +52,8 @@ import { ES } from './es'
 import { hydrateFiles } from '@grammyjs/files'
 import { VoiceTranslateBot } from './modules/voice-translate'
 import { TextToSpeechBot } from './modules/text-to-speech'
+import { VoiceToTextBot } from './modules/voice-to-text'
+import { now } from './utils/perf'
 
 Events.EventEmitter.defaultMaxListeners = 30
 
@@ -102,9 +104,18 @@ Sentry.setTags({ botName: config.botName })
 ES.init()
 
 bot.use(async (ctx: BotContext, next: NextFunction): Promise<void> => {
+  ctx.transient = {
+    refunded: false,
+    analytics: {
+      module: '',
+      firstResponseTime: 0n,
+      actualResponseTime: 0n,
+      sessionState: RequestState.Initial
+    }
+  }
   const transaction = Sentry.startTransaction({ name: 'bot-command' })
   const entities = ctx.entities()
-  const startTime = process.hrtime.bigint()
+  const startTime = now()
   let command = ''
   for (const ent of entities) {
     if (ent.type === 'bot_command') {
@@ -123,28 +134,28 @@ bot.use(async (ctx: BotContext, next: NextFunction): Promise<void> => {
   }
   await next()
   transaction.finish()
-  if (ctx.session.analytics.module) {
+  if (ctx.transient.analytics.module) {
     const userId = Number(ctx.message?.from?.id ?? '0')
     const username = ctx.message?.from?.username ?? ''
-    if (!ctx.session.analytics.actualResponseTime) {
-      ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
+    if (!ctx.transient.analytics.actualResponseTime) {
+      ctx.transient.analytics.actualResponseTime = now()
     }
-    if (!ctx.session.analytics.firstResponseTime) {
-      ctx.session.analytics.firstResponseTime = ctx.session.analytics.actualResponseTime
+    if (!ctx.transient.analytics.firstResponseTime) {
+      ctx.transient.analytics.firstResponseTime = ctx.transient.analytics.actualResponseTime
     }
-    const firstResponseTime = ((ctx.session.analytics.firstResponseTime - startTime) / 1000n).toString()
-    const actualResponseTime = ((ctx.session.analytics.actualResponseTime - startTime) / 1000n).toString()
-    const totalProcessingTime = (process.hrtime.bigint() - startTime).toString()
+    const totalProcessingTime = (now() - startTime).toString()
+    const firstResponseTime = (ctx.transient.analytics.firstResponseTime - startTime).toString()
+    const actualResponseTime = (ctx.transient.analytics.actualResponseTime - startTime).toString()
     ES.add({
       command,
       text: ctx.message?.text ?? '',
-      module: ctx.session.analytics.module,
+      module: ctx.transient.analytics.module,
       userId,
       username,
       firstResponseTime,
       actualResponseTime,
-      refunded: ctx.session.refunded,
-      sessionState: ctx.session.analytics.sessionState,
+      refunded: ctx.transient.refunded,
+      sessionState: ctx.transient.analytics.sessionState,
       totalProcessingTime
     }).catch((ex: any) => {
       logger.error({ errorMsg: ex.message }, 'Failed to add data to ES')
@@ -176,6 +187,11 @@ function createInitialSessionData (): BotSessionData {
       languages: [],
       enable: false
     },
+    collections: {
+      activeCollections: [],
+      collectionRequestQueue: [],
+      isProcessingQueue: false
+    },
     llms: {
       model: config.llms.model,
       isEnabled: config.llms.isEnabled,
@@ -184,13 +200,6 @@ function createInitialSessionData (): BotSessionData {
       usage: 0,
       isProcessingQueue: false,
       requestQueue: []
-    },
-    refunded: false,
-    analytics: {
-      module: '',
-      firstResponseTime: 0n,
-      actualResponseTime: 0n,
-      sessionState: SessionState.Initial
     }
   }
 }
@@ -221,10 +230,11 @@ const documentBot = new DocumentHandler()
 const telegramPayments = new TelegramPayments(payments)
 const voiceTranslateBot = new VoiceTranslateBot(payments)
 const textToSpeechBot = new TextToSpeechBot(payments)
+const voiceToTextBot = new VoiceToTextBot(payments)
 
 bot.on('message:new_chat_members:me', async (ctx) => {
   try {
-    const accountId = payments.getAccountId(ctx as OnMessageContext)
+    const accountId = payments.getAccountId(ctx)
 
     const chat = await chatService.getAccountById(accountId)
 
@@ -335,6 +345,7 @@ const PayableBots: Record<string, PayableBotConfig> = {
   documentBot: { bot: documentBot },
   translateBot: { bot: translateBot },
   textToSpeech: { bot: textToSpeechBot },
+  voiceToText: { bot: voiceToTextBot },
   openAiBot: {
     enabled: (ctx: OnMessageContext) => ctx.session.openAi.imageGen.isEnabled,
     bot: openAiBot

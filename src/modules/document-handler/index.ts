@@ -1,5 +1,7 @@
-import { type OnMessageContext, type PayableBot, type RefundCallback, SessionState } from '../types'
+import { type OnMessageContext, type PayableBot, type RefundCallback, RequestState } from '../types'
 import * as Sentry from '@sentry/node'
+import { now } from '../../utils/perf'
+import { llmAddUrlDocument } from '../llms/api/llmApi'
 
 const SupportedDocuments = { PDF: 'application/pdf' }
 
@@ -10,18 +12,22 @@ export class DocumentHandler implements PayableBot {
   }
 
   public async onEvent (ctx: OnMessageContext, refundCallback: RefundCallback): Promise<void> {
-    ctx.session.analytics.module = this.module
+    ctx.transient.analytics.module = this.module
     try {
       const file = await ctx.getFile()
+      const documentType = ctx.message.document?.mime_type
+      if (documentType === 'application/pdf' && ctx.chat.id) {
+        const pdfUrl = file.getUrl()
+        const fileName = ctx.message.document?.file_name ?? file.file_id
+        await this.addDocToCollection(ctx, ctx.chat.id, fileName, pdfUrl)
+      }
       console.log(file)
-      await ctx.reply('you did it kid')
-      ctx.session.analytics.sessionState = SessionState.Success
+      ctx.transient.analytics.sessionState = RequestState.Success
     } catch (ex) {
       Sentry.captureException(ex)
-      await ctx.reply('you failed kid')
-      ctx.session.analytics.sessionState = SessionState.Error
+      ctx.transient.analytics.sessionState = RequestState.Error
     } finally {
-      ctx.session.analytics.actualResponseTime = process.hrtime.bigint()
+      ctx.transient.analytics.actualResponseTime = now()
     }
   }
 
@@ -31,7 +37,21 @@ export class DocumentHandler implements PayableBot {
     if (documentType !== undefined) {
       return Object.values(SupportedDocuments).includes(documentType)
     }
-
     return false
+  }
+
+  private async addDocToCollection (ctx: OnMessageContext, chatId: number, fileName: string, pdfUrl: string): Promise<void> {
+    const collectionName = await llmAddUrlDocument({
+      chatId,
+      pdfUrl,
+      fileName
+    })
+    ctx.session.collections.collectionRequestQueue.push({
+      collectionName,
+      collectionType: 'PDF',
+      fileName,
+      url: pdfUrl
+    })
+    ctx.session.collections.isProcessingQueue = true
   }
 }
