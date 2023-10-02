@@ -133,6 +133,15 @@ export class OpenAIBot implements PayableBot {
     }
   }
 
+  isSupportedReply (ctx: OnMessageContext | OnCallBackQueryData): boolean {
+    // const photo = ctx.message?.photo ?? ctx.message?.reply_to_message?.photo
+    const documentType = ctx.message?.reply_to_message?.document?.mime_type
+    const url = ctx.message?.reply_to_message?.entities
+    console.log(documentType)
+    console.log('HSHSHSHSHSHSHSHSHSHSSH', url)
+    return false
+  }
+
   isSupportedImageReply (ctx: OnMessageContext | OnCallBackQueryData): boolean {
     const photo = ctx.message?.photo ?? ctx.message?.reply_to_message?.photo
     if (photo && ctx.session.openAi.imageGen.isEnabled) {
@@ -151,7 +160,7 @@ export class OpenAIBot implements PayableBot {
       this.logger.warn(`### unsupported command ${ctx.message?.text}`)
       return
     }
-
+    this.isSupportedReply(ctx)
     ctx.transient.analytics.sessionState = RequestState.Success
     if (
       ctx.hasCommand(SupportedCommands.chat.name) ||
@@ -409,7 +418,7 @@ export class OpenAIBot implements PayableBot {
   private async queryUrlCollection (ctx: OnMessageContext | OnCallBackQueryData,
     url: string,
     prompt: string,
-    conversation?: ChatConversation): Promise<void> {
+    conversation?: ChatConversation[]): Promise<void> {
     try {
       const collection = ctx.session.collections.activeCollections.find(c => c.url === url)
       if (collection) {
@@ -668,12 +677,17 @@ export class OpenAIBot implements PayableBot {
             })
           }
           if (url && ctx.chat?.id) {
-            await addUrlToCollection(ctx, ctx.chat?.id, url, prompt)
-            if (!ctx.session.collections.isProcessingQueue) {
-              ctx.session.collections.isProcessingQueue = true
-              await this.onCheckCollectionStatus(ctx).then(() => {
-                ctx.session.collections.isProcessingQueue = false
-              })
+            const collection = ctx.session.collections.activeCollections.find(c => c.url === url)
+            if (!collection) {
+              await addUrlToCollection(ctx, ctx.chat?.id, url, prompt)
+              if (!ctx.session.collections.isProcessingQueue) {
+                ctx.session.collections.isProcessingQueue = true
+                await this.onCheckCollectionStatus(ctx).then(() => {
+                  ctx.session.collections.isProcessingQueue = false
+                })
+              }
+            } else {
+              await this.queryUrlCollection(ctx, url, prompt, chatConversation)
             }
           } else {
             chatConversation.push({

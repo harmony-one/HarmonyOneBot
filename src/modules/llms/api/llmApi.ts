@@ -20,7 +20,7 @@ interface LlmAddUrlDocument {
 interface QueryUrlDocument {
   collectioName: string
   prompt: string
-  conversation?: ChatConversation
+  conversation?: ChatConversation[]
 }
 
 export const llmAddUrlDocument = async (args: LlmAddUrlDocument): Promise<string> => {
