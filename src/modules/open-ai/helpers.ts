@@ -263,3 +263,15 @@ export async function addUrlToCollection (ctx: OnMessageContext | OnCallBackQuer
     msgId
   })
 }
+
+export const getUrlFromText = (ctx: OnMessageContext | OnCallBackQueryData): string | undefined => {
+  const entities = ctx.message?.reply_to_message?.entities
+  if (entities) {
+    const urlEntity = entities.find(e => e.type === 'url')
+    if (urlEntity) {
+      const url = ctx.message?.reply_to_message?.text?.slice(urlEntity.offset, urlEntity.offset + urlEntity.length)
+      return url
+    }
+  }
+  return undefined
+}

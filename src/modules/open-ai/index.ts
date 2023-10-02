@@ -39,7 +39,8 @@ import {
   preparePrompt,
   sendMessage,
   SupportedCommands,
-  addUrlToCollection
+  addUrlToCollection,
+  getUrlFromText
 } from './helpers'
 // import { getCrawlerPrice, getWebContent } from './utils/web-crawler'
 import * as Sentry from '@sentry/node'
@@ -79,11 +80,12 @@ export class OpenAIBot implements PayableBot {
       return true
     }
     const hasReply = this.isSupportedImageReply(ctx)
+    const hasUrl = this.isSupportedUrlReply(ctx)
     const chatPrefix = hasPrefix(ctx.message?.text ?? '')
     if (chatPrefix !== '') {
       return true
     }
-    return hasCommand || hasReply
+    return hasCommand || !!hasReply || !!hasUrl
   }
 
   public getEstimatedPrice (ctx: any): number {
@@ -133,13 +135,16 @@ export class OpenAIBot implements PayableBot {
     }
   }
 
-  isSupportedReply (ctx: OnMessageContext | OnCallBackQueryData): boolean {
-    // const photo = ctx.message?.photo ?? ctx.message?.reply_to_message?.photo
+  isSupportedDocumentReply (ctx: OnMessageContext | OnCallBackQueryData): string | undefined {
     const documentType = ctx.message?.reply_to_message?.document?.mime_type
-    const url = ctx.message?.reply_to_message?.entities
-    console.log(documentType)
-    console.log('HSHSHSHSHSHSHSHSHSHSSH', url)
-    return false
+    if (documentType === 'application/pdf') {
+      return ctx.message?.reply_to_message?.document?.file_name
+    }
+    return undefined
+  }
+
+  private isSupportedUrlReply (ctx: OnMessageContext | OnCallBackQueryData): string | undefined {
+    return getUrlFromText(ctx)
   }
 
   isSupportedImageReply (ctx: OnMessageContext | OnCallBackQueryData): boolean {
@@ -160,7 +165,7 @@ export class OpenAIBot implements PayableBot {
       this.logger.warn(`### unsupported command ${ctx.message?.text}`)
       return
     }
-    this.isSupportedReply(ctx)
+
     ctx.transient.analytics.sessionState = RequestState.Success
     if (
       ctx.hasCommand(SupportedCommands.chat.name) ||
@@ -228,6 +233,11 @@ export class OpenAIBot implements PayableBot {
       return
     }
 
+    if (this.isSupportedUrlReply(ctx)) {
+      await this.onUrlReplyHandler(ctx)
+      return
+    }
+
     if (
       ctx.hasCommand(SupportedCommands.sum.name) ||
       (ctx.message?.text?.startsWith('sum ') && ctx.chat?.type === 'private')
@@ -235,6 +245,7 @@ export class OpenAIBot implements PayableBot {
       await this.onSum(ctx)
       return
     }
+
     if (ctx.hasCommand(SupportedCommands.last.name)) {
       await this.onLast(ctx)
       return
@@ -363,6 +374,31 @@ export class OpenAIBot implements PayableBot {
     }
   }
 
+  async onUrlReplyHandler (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
+    try {
+      const url = getUrlFromText(ctx) ?? ''
+      const prompt = ctx.message?.text ?? 'summarize'
+      const collection = ctx.session.collections.activeCollections.find(c => c.url === url)
+      const newPrompt = `${prompt} ${url}`
+      if (!collection) {
+        if (ctx.chat?.id) {
+          await addUrlToCollection(ctx, ctx.chat?.id, url, newPrompt)
+          if (!ctx.session.collections.isProcessingQueue) {
+            ctx.session.collections.isProcessingQueue = true
+            await this.onCheckCollectionStatus(ctx).then(() => {
+              ctx.session.collections.isProcessingQueue = false
+            })
+          }
+        }
+      } else {
+        const chat = ctx.session.openAi.chatGpt.chatConversation
+        await this.queryUrlCollection(ctx, url, newPrompt, chat)
+      }
+    } catch (e: any) {
+      await this.onError(ctx, e)
+    }
+  }
+
   private async promptGen (data: ChatPayload, msgId?: number): Promise< { price: number, chat: ChatConversation[] }> {
     const { conversation, ctx, model } = data
     try {
@@ -439,7 +475,6 @@ export class OpenAIBot implements PayableBot {
         ) {
           await this.onNotBalanceMessage(ctx)
         } else {
-          console.log(ctx.chat?.id, msgId)
           await ctx.api.editMessageText(ctx.chat?.id ?? '',
             msgId, response.completion,
             { parse_mode: 'Markdown' })
@@ -520,7 +555,7 @@ export class OpenAIBot implements PayableBot {
             })
           }
         } else {
-          await this.queryUrlCollection(ctx, collection.collectionName, newPrompt)
+          await this.queryUrlCollection(ctx, url, newPrompt)
         }
       } else {
         ctx.transient.analytics.sessionState = RequestState.Error
