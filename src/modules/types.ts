@@ -111,9 +111,10 @@ export interface Analytics {
 }
 
 export interface PaymentAnalytics {
-  freeCreditsAmount: bigint
-  oneCreditsAmount: bigint
-  fiatCreditsAmount: bigint
+  totalCredits: bigint
+  freeCredits: bigint
+  oneCredits: bigint
+  fiatCredits: bigint
 }
 
 export interface BotSessionData {

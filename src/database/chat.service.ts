@@ -22,6 +22,7 @@ interface UserCredits {
 }
 
 interface CreditsPayment {
+  totalCredits: string
   freeCredits: string
   oneCredits: string
   fiatCredits: string
@@ -156,6 +157,7 @@ export class ChatService {
 
     return {
       userPayment: {
+        totalCredits: totalCreditsAmount.toFixed(),
         freeCredits: creditsPayAmount.toFixed(),
         oneCredits: oneCreditsPay.toFixed(),
         fiatCredits: fiatCreditPay.toFixed()

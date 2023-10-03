@@ -23,9 +23,10 @@ export interface BotLogData {
   actualResponseTime: string // converted from bigint
   refunded: boolean
   sessionState: string
-  freeCreditsAmount: string // converted from bigint
-  oneCreditsAmount: string // converted from bigint
-  fiatCreditsAmount: string // converted from bigint
+  totalCredits: string // converted from bigint
+  freeCredits: string // converted from bigint
+  oneCredits: string // converted from bigint
+  fiatCredits: string // converted from bigint
 }
 
 const Index = config.es.index ?? 'bot-logs'

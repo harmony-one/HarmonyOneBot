@@ -404,9 +404,10 @@ export class BotPayments {
 
       await this.writePaymentLog(ctx, totalPayAmount)
 
-      ctx.transient.payments.freeCreditsAmount = BigInt(userPayment.freeCredits)
-      ctx.transient.payments.fiatCreditsAmount = BigInt(userPayment.fiatCredits)
-      ctx.transient.payments.oneCreditsAmount = BigInt(userPayment.oneCredits)
+      ctx.transient.payments.totalCredits = BigInt(userPayment.totalCredits)
+      ctx.transient.payments.freeCredits = BigInt(userPayment.freeCredits)
+      ctx.transient.payments.oneCredits = BigInt(userPayment.oneCredits)
+      ctx.transient.payments.fiatCredits = BigInt(userPayment.fiatCredits)
 
       freeCreditsFeeCounter.inc(this.convertBigNumber(totalPayAmount))
       return true
