@@ -128,34 +128,72 @@ export const MODELS = {
 
 export const LANG = {
   text: `
-  bg - Bulgarian
-cs - Czech
-da - Danish
-de - German
-el - Greek
-en - English (American)
-es - Spanish
-et - Estonian
-fi - Finnish
-fr - French
-hu - Hungarian
-id - Indonesian
-it - Italian
-ja - Japanese
-ko - Korean
-lt - Lithuanian
-lv - Latvian
-nb - Norwegian (Bokmål)
-nl - Dutch
-pl - Polish
-ro - Romanian
-ru - Russian
-sk - Slovak
-sl - Slovenian
-sv - Swedish
-tr - Turkish
-uk - Ukrainian
-zh - Chinese (simplified)
+
+*Speech to Text (all languages):*
+
+Simply reply to any audio with /text
+
+----------------------------
+
+*Text to Speech Commands:*
+
+/v{langcode}{m|f}
+
+Langcodes - en, cn, hk, de, etc
+m|f - male or female voice
+
+Examples:
+
+  /venm - English male voice
+  /venf - English female voice
+
+  /vcnm - Chinese male voice
+  /vcnf - Chinese female voice
+
+Supported Languages (more coming soon): 
+  
+  cn - Mandarin
+  hk - Cantonese
+  de - German
+  es - Spanish
+  ru - Russian
+  id - Indonesian
+  ko - Korean
+  ja - Japanese
+  pt - Portuguese
+
+----------------------------
+
+*Translations:*
+
+  /bg - Bulgarian
+  /cs - Czech
+  /da - Danish
+  /de - German
+  /el - Greek
+  /en - English (American)
+  /es - Spanish
+  /et - Estonian
+  /fi - Finnish
+  /fr - French
+  /hu - Hungarian
+  /id - Indonesian
+  /it - Italian
+  /ja - Japanese
+  /ko - Korean
+  /lt - Lithuanian
+  /lv - Latvian
+  /nb - Norwegian (Bokmål)
+  /nl - Dutch
+  /pl - Polish
+  /ro - Romanian
+  /ru - Russian
+  /sk - Slovak
+  /sl - Slovenian
+  /sv - Swedish
+  /tr - Turkish
+  /uk - Ukrainian
+  /zh - Chinese (simplified)
   `
 }
 
