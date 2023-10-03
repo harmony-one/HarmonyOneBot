@@ -119,9 +119,9 @@ export class ChatService {
     accountId: number,
     payAmount: bn
   ): Promise<{
-    userPayment: CreditsPayment
-    userCredits: UserCredits
-  }> {
+      userPayment: CreditsPayment
+      userCredits: UserCredits
+    }> {
     const {
       totalCreditsAmount,
       creditAmount,

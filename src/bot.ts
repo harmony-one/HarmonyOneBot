@@ -116,7 +116,7 @@ bot.use(async (ctx: BotContext, next: NextFunction): Promise<void> => {
     payments: {
       freeCreditsAmount: 0n,
       oneCreditsAmount: 0n,
-      fiatCreditsAmount: 0n,
+      fiatCreditsAmount: 0n
     }
   }
   const transaction = Sentry.startTransaction({ name: 'bot-command' })
@@ -171,7 +171,7 @@ bot.use(async (ctx: BotContext, next: NextFunction): Promise<void> => {
       totalProcessingTime,
       freeCreditsAmount: freeCreditsAmount.toString(),
       oneCreditsAmount: oneCreditsAmount.toString(),
-      fiatCreditsAmount: fiatCreditsAmount.toString(),
+      fiatCreditsAmount: fiatCreditsAmount.toString()
     }).catch((ex: any) => {
       logger.error({ errorMsg: ex.message }, 'Failed to add data to ES')
     })
