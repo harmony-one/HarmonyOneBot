@@ -397,13 +397,18 @@ export class BotPayments {
     )
 
     if (totalBalanceDelta.gte(0)) {
-      const balanceAfter = await chatService.withdrawCredits(accountId, totalPayAmount)
+      const { userPayment, userCredits: userCreditsAfter} = await chatService.withdrawCredits(accountId, totalPayAmount)
       this.logger.info(`[${from.id} @${
         from.username
-      }] successfully paid from credits, credits balance after: ${balanceAfter.totalCreditsAmount}`)
+      }] successfully paid from credits, credits balance after: ${userCreditsAfter.totalCreditsAmount}`)
+
+      await this.writePaymentLog(ctx, totalPayAmount)
+
+      ctx.transient.payments.freeCreditsAmount = BigInt(userPayment.freeCredits)
+      ctx.transient.payments.fiatCreditsAmount = BigInt(userPayment.fiatCredits)
+      ctx.transient.payments.oneCreditsAmount = BigInt(userPayment.oneCredits)
 
       freeCreditsFeeCounter.inc(this.convertBigNumber(totalPayAmount))
-      await this.writePaymentLog(ctx, totalPayAmount)
       return true
     } else {
       const oneBalance = await this.getAddressBalance(userAccount.address)

@@ -21,6 +21,12 @@ interface UserCredits {
   totalCreditsAmount: bn
 }
 
+interface CreditsPayment {
+  freeCredits: string
+  oneCredits: string
+  fiatCredits: string
+}
+
 export class ChatService {
   creditsAssignedCache = new LRUCache<number, boolean>({ max: 1000, ttl: 24 * 60 * 60 * 1000 })
 
@@ -109,7 +115,13 @@ export class ChatService {
     }
   }
 
-  public async withdrawCredits (accountId: number, payAmount: bn): Promise<UserCredits> {
+  public async withdrawCredits (
+    accountId: number,
+    payAmount: bn
+  ): Promise<{
+    userPayment: CreditsPayment
+    userCredits: UserCredits
+  }> {
     const {
       totalCreditsAmount,
       creditAmount,
@@ -139,7 +151,17 @@ export class ChatService {
       oneCreditAmount: oneCreditsNext.toFixed(),
       fiatCreditAmount: fiatCreditNext.toFixed()
     })
-    return await this.getUserCredits(accountId)
+
+    const userCredits = await this.getUserCredits(accountId)
+
+    return {
+      userPayment: {
+        freeCredits: creditsPayAmount.toFixed(),
+        oneCredits: oneCreditsPay.toFixed(),
+        fiatCredits: fiatCreditPay.toFixed()
+      },
+      userCredits
+    }
   }
 
   public async initChat ({ tgUserId, accountId, tgUsername = '' }: { tgUserId: number, accountId: number, tgUsername?: string }): Promise<Chat> {
