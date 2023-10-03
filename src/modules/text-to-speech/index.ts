@@ -56,38 +56,38 @@ export class TextToSpeechBot implements PayableBot {
       return
     }
 
-    if (ctx.hasCommand(SupportedCommands.VOICEHK)) {
-      const text = this.getTextFromMessage(ctx)
-      await this.onTextToSpeech(ctx, { text, ssmlGender: 'MALE', languageCode: 'yue-Hant-HK' })
-      return
-    }
+    // if (ctx.hasCommand(SupportedCommands.VOICEHK)) {
+    //   const text = this.getTextFromMessage(ctx)
+    //   await this.onTextToSpeech(ctx, { text, ssmlGender: 'MALE', languageCode: 'yue-Hant-HK' })
+    //   return
+    // }
 
-    if (ctx.hasCommand(SupportedCommands.VOICEHKF)) {
-      const text = this.getTextFromMessage(ctx)
-      await this.onTextToSpeech(ctx, { text, ssmlGender: 'FEMALE', languageCode: 'yue-Hant-HK' })
-      return
-    }
+    // if (ctx.hasCommand(SupportedCommands.VOICEHKF)) {
+    //   const text = this.getTextFromMessage(ctx)
+    //   await this.onTextToSpeech(ctx, { text, ssmlGender: 'FEMALE', languageCode: 'yue-Hant-HK' })
+    //   return
+    // }
 
-    if (ctx.hasCommand(SupportedCommands.VOICERU)) {
-      const text = this.getTextFromMessage(ctx)
-      await this.onTextToSpeech(ctx, { text, ssmlGender: 'FEMALE', languageCode: 'ru-RU' })
-      return
-    }
+    // if (ctx.hasCommand(SupportedCommands.VOICERU)) {
+    //   const text = this.getTextFromMessage(ctx)
+    //   await this.onTextToSpeech(ctx, { text, ssmlGender: 'FEMALE', languageCode: 'ru-RU' })
+    //   return
+    // }
 
-    if (ctx.hasCommand(SupportedCommands.VOICERU)) {
-      const text = this.getTextFromMessage(ctx)
-      await this.onTextToSpeech(ctx, { text, ssmlGender: 'FEMALE', languageCode: 'ru-RU' })
-    }
+    // if (ctx.hasCommand(SupportedCommands.VOICERU)) {
+    //   const text = this.getTextFromMessage(ctx)
+    //   await this.onTextToSpeech(ctx, { text, ssmlGender: 'FEMALE', languageCode: 'ru-RU' })
+    // }
 
-    if (ctx.hasCommand(SupportedCommands.VOICECN)) {
-      const text = this.getTextFromMessage(ctx)
-      await this.onTextToSpeech(ctx, { text, ssmlGender: 'MALE', languageCode: 'cmn-CN' })
-    }
+    // if (ctx.hasCommand(SupportedCommands.VOICECN)) {
+    //   const text = this.getTextFromMessage(ctx)
+    //   await this.onTextToSpeech(ctx, { text, ssmlGender: 'MALE', languageCode: 'cmn-CN' })
+    // }
 
-    if (ctx.hasCommand(SupportedCommands.VOICEES)) {
-      const text = this.getTextFromMessage(ctx)
-      await this.onTextToSpeech(ctx, { text, ssmlGender: 'MALE', languageCode: 'es-ES' })
-    }
+    // if (ctx.hasCommand(SupportedCommands.VOICEES)) {
+    //   const text = this.getTextFromMessage(ctx)
+    //   await this.onTextToSpeech(ctx, { text, ssmlGender: 'MALE', languageCode: 'es-ES' })
+    // }
 
     if (ctx.hasCommand(getCommandList())) {
       const rawCommand = ctx.entities().find(item => item.type === 'bot_command' && item.offset === 0)
