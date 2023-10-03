@@ -2,7 +2,7 @@ import axios, { AxiosError } from 'axios'
 import config from '../../../config'
 import { type ChatConversation } from '../../types'
 
-const API_ENDPOINT = config.llms.apiEndpoint // config.llms.apiEndpoint // 'http://127.0.0.1:5000'
+const API_ENDPOINT = config.llms.apiEndpoint // 'http://localhost:8080' // http://127.0.0.1:5000' // config.llms.apiEndpoint // config.llms.apiEndpoint // 'http://127.0.0.1:5000'
 
 export interface LlmCompletion {
   completion: ChatConversation | undefined
@@ -67,25 +67,16 @@ interface QueryUrlDocumentOutput {
 }
 
 export const queryUrlDocument = async (args: QueryUrlDocument): Promise<QueryUrlDocumentOutput> => {
-  try {
-    const data = { collectionName: args.collectioName, prompt: args.prompt, conversation: args.conversation }
-    console.log(data.conversation)
-    const endpointUrl = `${API_ENDPOINT}/collections/query`
-    const response = await axios.post(endpointUrl, data)
-    if (response) {
-      return response.data
-    }
-    return {
-      completion: '',
-      price: 0
-    }
-  } catch (error: any) {
-    if (error instanceof AxiosError) {
-      console.log(error.code)
-      console.log(error.message)
-      console.log(error.stack)
-    }
-    throw error
+  const data = { collectionName: args.collectioName, prompt: args.prompt, conversation: args.conversation }
+  console.log(data.conversation)
+  const endpointUrl = `${API_ENDPOINT}/collections/query`
+  const response = await axios.post(endpointUrl, data)
+  if (response) {
+    return response.data
+  }
+  return {
+    completion: '',
+    price: 0
   }
 }
 

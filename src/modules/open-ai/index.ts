@@ -488,7 +488,18 @@ export class OpenAIBot implements PayableBot {
         }
       }
     } catch (e: any) {
-      await this.onError(ctx, e)
+      if (e instanceof AxiosError) {
+        if (e.message.includes('404')) {
+          ctx.session.collections.activeCollections =
+            [...ctx.session.collections.activeCollections.filter(c => c.url !== url)]
+          console.log(ctx.session.collections.activeCollections)
+          await sendMessage(ctx, 'Collection not found, please try again')
+        } else {
+          await this.onError(ctx, e)
+        }
+      } else {
+        await this.onError(ctx, e)
+      }
     }
   }
 
