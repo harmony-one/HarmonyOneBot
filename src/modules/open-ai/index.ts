@@ -379,7 +379,7 @@ export class OpenAIBot implements PayableBot {
       const url = getUrlFromText(ctx) ?? ''
       const prompt = ctx.message?.text ?? 'summarize'
       const collection = ctx.session.collections.activeCollections.find(c => c.url === url)
-      const newPrompt = `${prompt} ${url}`
+      const newPrompt = `${prompt}` // ${url}
       if (!collection) {
         if (ctx.chat?.id) {
           await addUrlToCollection(ctx, ctx.chat?.id, url, newPrompt)
@@ -391,8 +391,7 @@ export class OpenAIBot implements PayableBot {
           }
         }
       } else {
-        const chat = ctx.session.openAi.chatGpt.chatConversation
-        await this.queryUrlCollection(ctx, url, newPrompt, chat)
+        await this.queryUrlCollection(ctx, url, newPrompt)
       }
     } catch (e: any) {
       await this.onError(ctx, e)
@@ -453,11 +452,11 @@ export class OpenAIBot implements PayableBot {
 
   private async queryUrlCollection (ctx: OnMessageContext | OnCallBackQueryData,
     url: string,
-    prompt: string,
-    conversation?: ChatConversation[]): Promise<void> {
+    prompt: string): Promise<void> {
     try {
       const collection = ctx.session.collections.activeCollections.find(c => c.url === url)
       if (collection) {
+        const conversation = ctx.session.openAi.chatGpt.chatConversation
         const msgId = (
           await ctx.reply('...', {
             message_thread_id:
@@ -475,6 +474,13 @@ export class OpenAIBot implements PayableBot {
         ) {
           await this.onNotBalanceMessage(ctx)
         } else {
+          conversation.push({
+            content: `${prompt} ${url}`,
+            role: 'user'
+          }, {
+            content: response.completion,
+            role: 'system'
+          })
           await ctx.api.editMessageText(ctx.chat?.id ?? '',
             msgId, response.completion,
             { parse_mode: 'Markdown' })
@@ -503,9 +509,9 @@ export class OpenAIBot implements PayableBot {
                 const oneFee = await this.payments.getPriceInONE(price)
                 let statusMsg
                 if (collection.collectionType === 'URL') {
-                  statusMsg = `${collection.url} processed ${this.payments.toONE(oneFee, false).toFixed(2)} ONE fee)`
+                  statusMsg = `${collection.url} processed (${this.payments.toONE(oneFee, false).toFixed(2)} ONE fee)`
                 } else {
-                  statusMsg = `${collection.fileName} processed ${this.payments.toONE(oneFee, false).toFixed(2)} ONE fee)`
+                  statusMsg = `${collection.fileName} processed (${this.payments.toONE(oneFee, false).toFixed(2)} ONE fee)`
                 }
                 await ctx.api.editMessageText(ctx.chat?.id ?? '',
                   collection.msgId, statusMsg,
@@ -515,7 +521,8 @@ export class OpenAIBot implements PayableBot {
                   })
                   .catch(async (e) => { await this.onError(ctx, e) })
               }
-              await this.queryUrlCollection(ctx, collection.url ?? '', collection.prompt ?? 'summary')
+              await this.queryUrlCollection(ctx, collection.url ?? '',
+                collection.prompt ?? 'summary')
             }
           } else {
             ctx.session.collections.collectionRequestQueue.push(collection)
@@ -722,7 +729,7 @@ export class OpenAIBot implements PayableBot {
                 })
               }
             } else {
-              await this.queryUrlCollection(ctx, url, prompt, chatConversation)
+              await this.queryUrlCollection(ctx, url, prompt)
             }
           } else {
             chatConversation.push({
@@ -847,6 +854,9 @@ export class OpenAIBot implements PayableBot {
         this.logger.error(
           `On method "${ex.method}" | ${ex.error_code} - ${ex.description}`
         )
+        await sendMessage(ctx, 'Error handling your request').catch(async (e) => {
+          await this.onError(ctx, e, retryCount - 1)
+        })
       }
     } else if (ex instanceof OpenAI.APIError) {
       // 429 RateLimitError
