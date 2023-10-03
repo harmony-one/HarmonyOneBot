@@ -1,12 +1,13 @@
 import GcTextToSpeech, { type TextToSpeechClient } from '@google-cloud/text-to-speech'
 import config from '../config'
 import type { CredentialBody } from 'google-auth-library/build/src/auth/credentials'
+import type { google } from '@google-cloud/text-to-speech/build/protos/protos'
 
 export interface TextToSpeechParams {
   text: string
   languageCode: string
-  ssmlGender?: 'MALE' | 'FEMALE'
-  voiceName?: string
+  ssmlGender?: google.cloud.texttospeech.v1.SsmlVoiceGender | keyof typeof google.cloud.texttospeech.v1.SsmlVoiceGender | null
+  voiceName?: string | null
 }
 
 class GcTextToSpeechClient {
@@ -34,6 +35,11 @@ class GcTextToSpeechClient {
     })
 
     return response.audioContent
+  }
+
+  async listVoices (): Promise<google.cloud.texttospeech.v1.IVoice[] | null | undefined> {
+    const response = await this._client.listVoices()
+    return response[0].voices
   }
 }
 

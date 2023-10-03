@@ -1,6 +1,6 @@
 import type { TextToSpeechParams } from '../../google-cloud/gcTextToSpeechClient'
 
-interface CommandConfigItem {
+export interface CommandConfigItem {
   command: string
   gcParams: Omit<TextToSpeechParams, 'text'>
 }
