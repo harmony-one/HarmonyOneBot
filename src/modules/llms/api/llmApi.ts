@@ -2,7 +2,7 @@ import axios, { AxiosError } from 'axios'
 import config from '../../../config'
 import { type ChatConversation } from '../../types'
 
-const API_ENDPOINT = config.llms.apiEndpoint // 'http://localhost:8080' // http://127.0.0.1:5000' // config.llms.apiEndpoint // config.llms.apiEndpoint // 'http://127.0.0.1:5000'
+const API_ENDPOINT = 'http://127.0.0.1:5000' // config.llms.apiEndpoint // 'http://localhost:8080' // http://127.0.0.1:5000' // config.llms.apiEndpoint // config.llms.apiEndpoint // 'http://127.0.0.1:5000'
 
 export interface LlmCompletion {
   completion: ChatConversation | undefined
@@ -28,8 +28,9 @@ export const llmAddUrlDocument = async (args: LlmAddUrlDocument): Promise<string
     const data = { ...args }
     const endpointUrl = `${API_ENDPOINT}/collections/document`
     const response = await axios.post(endpointUrl, data)
+    console.log('KDHSKFHJDKSFHKJHKJFJF', response.data)
     if (response) {
-      return response.data
+      return response.data.collectionName
     }
     return ''
   } catch (error: any) {
@@ -42,11 +43,12 @@ export const llmAddUrlDocument = async (args: LlmAddUrlDocument): Promise<string
   }
 }
 
-export const llmCheckCollectionStatus = async (collectionName: string): Promise<number> => {
+export const llmCheckCollectionStatus = async (name: string): Promise<number> => {
   try {
-    const data = { collectionName }
-    const endpointUrl = `${API_ENDPOINT}/collections/document`
-    const response = await axios.get(endpointUrl, { params: data })
+    // const data = { collectionName: name }
+    const endpointUrl = `${API_ENDPOINT}/collections/document/${name}` // ?collectionName=${collectionName}`
+    console.log(endpointUrl)
+    const response = await axios.get(endpointUrl) // , { params: data }
     if (response) {
       return response.data.price
     }
