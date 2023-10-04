@@ -605,12 +605,12 @@ export class OpenAIBot implements PayableBot {
   private async freePromptChatGroup (ctx: OnMessageContext | OnCallBackQueryData, prompt: string): Promise<boolean> {
     if (prompt === 'on' || prompt === 'On') {
       ctx.session.openAi.chatGpt.isFreePromptChatGroups = true
-      await ctx.reply('/ask with prefixes or commands is enabled.').catch(async (e) => { await this.onError(ctx, e) })
+      await ctx.reply('Prefixes and commands are now disabled for /ask.').catch(async (e) => { await this.onError(ctx, e) })
       return true
     }
     if (prompt === 'off' || prompt === 'Off') {
       ctx.session.openAi.chatGpt.isFreePromptChatGroups = false
-      await ctx.reply('/ask with prefixes or commands is disabled.').catch(async (e) => { await this.onError(ctx, e) })
+      await ctx.reply('Prefixes and commands are now disabled for /ask.', {}).catch(async (e) => { await this.onError(ctx, e) })
       return true
     }
     return false
