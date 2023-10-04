@@ -8,7 +8,7 @@ import { sendMessage } from '../open-ai/helpers'
 import { sleep } from '../sd-images/utils'
 import { AxiosError } from 'axios'
 
-const SupportedDocuments = { PDF: 'application/pdf' }
+// const SupportedDocuments = { PDF: 'application/pdf' }
 
 const MAX_TRIES = 3
 export class DocumentHandler implements PayableBot {
@@ -50,11 +50,11 @@ export class DocumentHandler implements PayableBot {
   }
 
   public isSupportedEvent (ctx: OnMessageContext): boolean {
-    const documentType = ctx.message.document?.mime_type
+    // const documentType = ctx.message.document?.mime_type
 
-    if (documentType !== undefined) {
-      return Object.values(SupportedDocuments).includes(documentType)
-    }
+    // if (documentType !== undefined) {
+    //   return Object.values(SupportedDocuments).includes(documentType)
+    // }
     return false
   }
 

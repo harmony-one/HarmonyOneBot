@@ -46,7 +46,7 @@ import {
 import * as Sentry from '@sentry/node'
 import { now } from '../../utils/perf'
 import { AxiosError } from 'axios'
-import { llmCheckCollectionStatus, queryUrlDocument } from '../llms/api/llmApi'
+import { llmAddUrlDocument, llmCheckCollectionStatus, queryUrlDocument } from '../llms/api/llmApi'
 import { Callbacks } from '../types'
 
 export class OpenAIBot implements PayableBot {
@@ -159,6 +159,16 @@ export class OpenAIBot implements PayableBot {
     return false
   }
 
+  isSupportedPdfFile (ctx: OnMessageContext | OnCallBackQueryData): boolean {
+    const documentType = ctx.message?.document?.mime_type
+    const SupportedDocuments = { PDF: 'application/pdf' }
+
+    if (documentType !== undefined) {
+      return Object.values(SupportedDocuments).includes(documentType)
+    }
+    return false
+  }
+
   public async onEvent (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
     ctx.transient.analytics.module = this.module
     if (!(this.isSupportedEvent(ctx)) && (ctx.chat?.type !== 'private') && !ctx.session.openAi.chatGpt.isFreePromptChatGroups) {
@@ -244,6 +254,11 @@ export class OpenAIBot implements PayableBot {
       return
     }
 
+    if (this.isSupportedPdfFile(ctx)) {
+      await this.onPdfFileReceived(ctx)
+      return
+    }
+
     if (ctx.hasCommand(SupportedCommands.sum.name) ||
       (ctx.message?.text?.startsWith('sum ') && ctx.chat?.type === 'private')
     ) {
@@ -298,14 +313,58 @@ export class OpenAIBot implements PayableBot {
     )
   }
 
+  private async addDocToCollection (ctx: OnMessageContext | OnCallBackQueryData, chatId: number, fileName: string, url: string, prompt: string): Promise<void> {
+    try {
+      const collectionName = await llmAddUrlDocument({
+        chatId,
+        url,
+        fileName
+      })
+      ctx.session.collections.collectionRequestQueue.push({
+        collectionName,
+        collectionType: 'PDF',
+        fileName,
+        url,
+        prompt
+      })
+    } catch (e: any) {
+      await this.onError(ctx, e)
+    }
+  }
+
+  private async onPdfFileReceived (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
+    try {
+      const file = await ctx.getFile()
+      const documentType = ctx.message?.document?.mime_type
+      if (documentType === 'application/pdf' && ctx.chat?.id) {
+        const url = file.getUrl()
+        const fileName = ctx.message?.document?.file_name ?? file.file_id
+        const prompt = ctx.message?.caption ?? 'Summarize this context'
+        await this.addDocToCollection(ctx, ctx.chat.id, fileName, url, prompt)
+        if (!ctx.session.collections.isProcessingQueue) {
+          ctx.session.collections.isProcessingQueue = true
+          await this.onCheckCollectionStatus(ctx).then(() => {
+            ctx.session.collections.isProcessingQueue = false
+          })
+        }
+      }
+      ctx.transient.analytics.sessionState = RequestState.Success
+    } catch (ex) {
+      Sentry.captureException(ex)
+      ctx.transient.analytics.sessionState = RequestState.Error
+    } finally {
+      ctx.transient.analytics.actualResponseTime = now()
+    }
+  }
+
   async onPdfReplyHandler (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
     try {
       const fileName = this.isSupportedPdfReply(ctx)
+      const prompt = ctx.message?.text ?? 'summary'
       if (fileName !== '') {
         const collection = ctx.session.collections.activeCollections.find(c => c.fileName === fileName)
         if (collection) {
-          const prompt = ctx.message?.text ?? 'summary'
-          await this.queryUrlCollection(ctx, collection.url ?? '', collection.prompt ?? prompt)
+          await this.queryUrlCollection(ctx, collection.url ?? '', prompt)
         } else {
           if (!ctx.session.collections.isProcessingQueue) {
             ctx.session.collections.isProcessingQueue = true
