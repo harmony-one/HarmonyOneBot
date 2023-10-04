@@ -108,7 +108,19 @@ async function main (): Promise<void> {
     console.log('### Please choose manually: ', key, Object.keys(langMap))
   }
 
-  const simpleLangs = JSON.stringify(result.filter(Boolean), null, 4)
+  const simpleLangs = JSON.stringify(result.filter(Boolean).sort((a, b) => {
+    if (!a || !b) {
+      return 0
+    }
+
+    if (a.command < b.command) {
+      return -1
+    }
+    if (a.command > b.command) {
+      return 1
+    }
+    return 0
+  }), null, 4)
 
   const filepath2 = path.join(__dirname, 'voices-simple.json')
 

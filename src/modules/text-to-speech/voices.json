@@ -4827,102 +4827,22 @@
             }
         ]
     },
-    "eu": {
-        "eu-ES": [
+    "bg": {
+        "bg-BG": [
             {
-                "command": "veuf",
+                "command": "vbgf",
                 "gcParams": {
-                    "languageCode": "eu-ES",
+                    "languageCode": "bg-BG",
                     "ssmlGender": "FEMALE",
-                    "voiceName": "eu-ES-Standard-A"
+                    "voiceName": "bg-BG-Standard-A"
                 }
             },
             {
-                "command": "veuf",
+                "command": "vbgf",
                 "gcParams": {
-                    "languageCode": "eu-ES",
+                    "languageCode": "bg-BG",
                     "ssmlGender": "FEMALE",
-                    "voiceName": "eu-ES-Standard-A"
-                }
-            }
-        ]
-    },
-    "sr": {
-        "sr-RS": [
-            {
-                "command": "vsrf",
-                "gcParams": {
-                    "languageCode": "sr-RS",
-                    "ssmlGender": "FEMALE",
-                    "voiceName": "sr-RS-Standard-A"
-                }
-            },
-            {
-                "command": "vsrf",
-                "gcParams": {
-                    "languageCode": "sr-RS",
-                    "ssmlGender": "FEMALE",
-                    "voiceName": "sr-RS-Standard-A"
-                }
-            }
-        ]
-    },
-    "lv": {
-        "lv-LV": [
-            {
-                "command": "vlvm",
-                "gcParams": {
-                    "languageCode": "lv-LV",
-                    "ssmlGender": "MALE",
-                    "voiceName": "lv-LV-Standard-A"
-                }
-            },
-            {
-                "command": "vlvm",
-                "gcParams": {
-                    "languageCode": "lv-LV",
-                    "ssmlGender": "MALE",
-                    "voiceName": "lv-LV-Standard-A"
-                }
-            }
-        ]
-    },
-    "is": {
-        "is-IS": [
-            {
-                "command": "visf",
-                "gcParams": {
-                    "languageCode": "is-IS",
-                    "ssmlGender": "FEMALE",
-                    "voiceName": "is-IS-Standard-A"
-                }
-            },
-            {
-                "command": "visf",
-                "gcParams": {
-                    "languageCode": "is-IS",
-                    "ssmlGender": "FEMALE",
-                    "voiceName": "is-IS-Standard-A"
-                }
-            }
-        ]
-    },
-    "ca": {
-        "ca-ES": [
-            {
-                "command": "vcaf",
-                "gcParams": {
-                    "languageCode": "ca-ES",
-                    "ssmlGender": "FEMALE",
-                    "voiceName": "ca-ES-Standard-A"
-                }
-            },
-            {
-                "command": "vcaf",
-                "gcParams": {
-                    "languageCode": "ca-ES",
-                    "ssmlGender": "FEMALE",
-                    "voiceName": "ca-ES-Standard-A"
+                    "voiceName": "bg-BG-Standard-A"
                 }
             }
         ]
@@ -4943,26 +4863,6 @@
                     "languageCode": "gl-ES",
                     "ssmlGender": "SSML_VOICE_GENDER_UNSPECIFIED",
                     "voiceName": "gl-ES-Standard-A"
-                }
-            }
-        ]
-    },
-    "bg": {
-        "bg-BG": [
-            {
-                "command": "vbgf",
-                "gcParams": {
-                    "languageCode": "bg-BG",
-                    "ssmlGender": "FEMALE",
-                    "voiceName": "bg-BG-Standard-A"
-                }
-            },
-            {
-                "command": "vbgf",
-                "gcParams": {
-                    "languageCode": "bg-BG",
-                    "ssmlGender": "FEMALE",
-                    "voiceName": "bg-BG-Standard-A"
                 }
             }
         ]
@@ -5007,6 +4907,46 @@
             }
         ]
     },
+    "eu": {
+        "eu-ES": [
+            {
+                "command": "veuf",
+                "gcParams": {
+                    "languageCode": "eu-ES",
+                    "ssmlGender": "FEMALE",
+                    "voiceName": "eu-ES-Standard-A"
+                }
+            },
+            {
+                "command": "veuf",
+                "gcParams": {
+                    "languageCode": "eu-ES",
+                    "ssmlGender": "FEMALE",
+                    "voiceName": "eu-ES-Standard-A"
+                }
+            }
+        ]
+    },
+    "is": {
+        "is-IS": [
+            {
+                "command": "visf",
+                "gcParams": {
+                    "languageCode": "is-IS",
+                    "ssmlGender": "FEMALE",
+                    "voiceName": "is-IS-Standard-A"
+                }
+            },
+            {
+                "command": "visf",
+                "gcParams": {
+                    "languageCode": "is-IS",
+                    "ssmlGender": "FEMALE",
+                    "voiceName": "is-IS-Standard-A"
+                }
+            }
+        ]
+    },
     "th": {
         "th-TH": [
             {
@@ -5031,6 +4971,66 @@
                     "languageCode": "th-TH",
                     "ssmlGender": "FEMALE",
                     "voiceName": "th-TH-Standard-A"
+                }
+            }
+        ]
+    },
+    "lv": {
+        "lv-LV": [
+            {
+                "command": "vlvm",
+                "gcParams": {
+                    "languageCode": "lv-LV",
+                    "ssmlGender": "MALE",
+                    "voiceName": "lv-LV-Standard-A"
+                }
+            },
+            {
+                "command": "vlvm",
+                "gcParams": {
+                    "languageCode": "lv-LV",
+                    "ssmlGender": "MALE",
+                    "voiceName": "lv-LV-Standard-A"
+                }
+            }
+        ]
+    },
+    "ca": {
+        "ca-ES": [
+            {
+                "command": "vcaf",
+                "gcParams": {
+                    "languageCode": "ca-ES",
+                    "ssmlGender": "FEMALE",
+                    "voiceName": "ca-ES-Standard-A"
+                }
+            },
+            {
+                "command": "vcaf",
+                "gcParams": {
+                    "languageCode": "ca-ES",
+                    "ssmlGender": "FEMALE",
+                    "voiceName": "ca-ES-Standard-A"
+                }
+            }
+        ]
+    },
+    "sr": {
+        "sr-RS": [
+            {
+                "command": "vsrf",
+                "gcParams": {
+                    "languageCode": "sr-RS",
+                    "ssmlGender": "FEMALE",
+                    "voiceName": "sr-RS-Standard-A"
+                }
+            },
+            {
+                "command": "vsrf",
+                "gcParams": {
+                    "languageCode": "sr-RS",
+                    "ssmlGender": "FEMALE",
+                    "voiceName": "sr-RS-Standard-A"
                 }
             }
         ]
