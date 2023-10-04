@@ -2,7 +2,6 @@ import { type OnMessageContext, type PayableBot, type RefundCallback, RequestSta
 import * as Sentry from '@sentry/node'
 import { now } from '../../utils/perf'
 import { llmAddUrlDocument } from '../llms/api/llmApi'
-
 const SupportedDocuments = { PDF: 'application/pdf' }
 
 export class DocumentHandler implements PayableBot {
@@ -17,9 +16,9 @@ export class DocumentHandler implements PayableBot {
       const file = await ctx.getFile()
       const documentType = ctx.message.document?.mime_type
       if (documentType === 'application/pdf' && ctx.chat.id) {
-        const pdfUrl = file.getUrl()
+        const url = file.getUrl()
         const fileName = ctx.message.document?.file_name ?? file.file_id
-        await this.addDocToCollection(ctx, ctx.chat.id, fileName, pdfUrl)
+        await this.addDocToCollection(ctx, ctx.chat.id, fileName, url)
       }
       console.log(file)
       ctx.transient.analytics.sessionState = RequestState.Success
@@ -40,17 +39,17 @@ export class DocumentHandler implements PayableBot {
     return false
   }
 
-  private async addDocToCollection (ctx: OnMessageContext, chatId: number, fileName: string, pdfUrl: string): Promise<void> {
+  private async addDocToCollection (ctx: OnMessageContext, chatId: number, fileName: string, url: string): Promise<void> {
     const collectionName = await llmAddUrlDocument({
       chatId,
-      pdfUrl,
+      url,
       fileName
     })
     ctx.session.collections.collectionRequestQueue.push({
       collectionName,
       collectionType: 'PDF',
       fileName,
-      url: pdfUrl
+      url
     })
     ctx.session.collections.isProcessingQueue = true
   }

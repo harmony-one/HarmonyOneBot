@@ -28,7 +28,6 @@ export const llmAddUrlDocument = async (args: LlmAddUrlDocument): Promise<string
     const data = { ...args }
     const endpointUrl = `${API_ENDPOINT}/collections/document`
     const response = await axios.post(endpointUrl, data)
-    console.log('KDHSKFHJDKSFHKJHKJFJF', response.data)
     if (response) {
       return response.data.collectionName
     }
