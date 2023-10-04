@@ -111,10 +111,10 @@ export interface Analytics {
 }
 
 export interface PaymentAnalytics {
-  totalCredits: bigint
-  freeCredits: bigint
-  oneCredits: bigint
-  fiatCredits: bigint
+  paymentTotal: number
+  paymentFreeCredits: number
+  paymentOneCredits: number
+  paymentFiatCredits: number
 }
 
 export interface BotSessionData {
@@ -129,7 +129,7 @@ export interface TransientStateContext {
   transient: {
     analytics: Analytics
     refunded: boolean
-    payments: PaymentAnalytics
+    payment: PaymentAnalytics
   }
 }
 

@@ -157,7 +157,7 @@ export class ChatService {
 
     return {
       userPayment: {
-        totalCredits: totalCreditsAmount.toFixed(),
+        totalCredits: payAmount.toFixed(),
         freeCredits: creditsPayAmount.toFixed(),
         oneCredits: oneCreditsPay.toFixed(),
         fiatCredits: fiatCreditPay.toFixed()

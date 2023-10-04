@@ -183,6 +183,12 @@ export class BotPayments {
     return +value
   }
 
+  public async fromONEToUSD (amountWei: string, fractionalDigits = 4): Promise<number> {
+    const currentRate = await this.getOneRate()
+    const amountONE = this.web3.utils.fromWei(amountWei, 'ether')
+    return +(currentRate * +amountONE).toFixed(fractionalDigits)
+  }
+
   public async getAddressBalance (address: string): Promise<bn> {
     const balance = await this.web3.eth.getBalance(address)
     return bn(balance.toString())
@@ -404,10 +410,10 @@ export class BotPayments {
 
       await this.writePaymentLog(ctx, totalPayAmount)
 
-      ctx.transient.payments.totalCredits = BigInt(userPayment.totalCredits)
-      ctx.transient.payments.freeCredits = BigInt(userPayment.freeCredits)
-      ctx.transient.payments.oneCredits = BigInt(userPayment.oneCredits)
-      ctx.transient.payments.fiatCredits = BigInt(userPayment.fiatCredits)
+      ctx.transient.payment.paymentTotal = await this.fromONEToUSD(userPayment.totalCredits)
+      ctx.transient.payment.paymentFreeCredits = await this.fromONEToUSD(userPayment.freeCredits)
+      ctx.transient.payment.paymentOneCredits = await this.fromONEToUSD(userPayment.oneCredits)
+      ctx.transient.payment.paymentFiatCredits = await this.fromONEToUSD(userPayment.fiatCredits)
 
       freeCreditsFeeCounter.inc(this.convertBigNumber(totalPayAmount))
       return true

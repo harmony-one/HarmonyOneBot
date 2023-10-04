@@ -113,11 +113,11 @@ bot.use(async (ctx: BotContext, next: NextFunction): Promise<void> => {
       actualResponseTime: 0n,
       sessionState: RequestState.Initial
     },
-    payments: {
-      totalCredits: 0n,
-      freeCredits: 0n,
-      oneCredits: 0n,
-      fiatCredits: 0n
+    payment: {
+      paymentTotal: 0,
+      paymentFreeCredits: 0,
+      paymentOneCredits: 0,
+      paymentFiatCredits: 0
     }
   }
   const transaction = Sentry.startTransaction({ name: 'bot-command' })
@@ -158,7 +158,9 @@ bot.use(async (ctx: BotContext, next: NextFunction): Promise<void> => {
     const totalProcessingTime = (now() - startTime).toString()
     const firstResponseTime = (ctx.transient.analytics.firstResponseTime - startTime).toString()
     const actualResponseTime = (ctx.transient.analytics.actualResponseTime - startTime).toString()
-    const { totalCredits, freeCredits, oneCredits, fiatCredits } = ctx.transient.payments
+
+    const { paymentTotal, paymentFreeCredits, paymentOneCredits, paymentFiatCredits } = ctx.transient.payment
+
     ES.add({
       command,
       text: ctx.message?.text ?? '',
@@ -170,10 +172,10 @@ bot.use(async (ctx: BotContext, next: NextFunction): Promise<void> => {
       refunded: ctx.transient.refunded,
       sessionState: ctx.transient.analytics.sessionState,
       totalProcessingTime,
-      totalCredits: totalCredits.toString(),
-      freeCredits: freeCredits.toString(),
-      oneCredits: oneCredits.toString(),
-      fiatCredits: fiatCredits.toString()
+      paymentTotal,
+      paymentFreeCredits,
+      paymentOneCredits,
+      paymentFiatCredits
     }).catch((ex: any) => {
       logger.error({ errorMsg: ex.message }, 'Failed to add data to ES')
     })
