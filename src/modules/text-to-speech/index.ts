@@ -9,8 +9,8 @@ import { ElevenlabsClient } from '../../elevenlabs/elevenlabsClient'
 import config from '../../config'
 
 enum SupportedCommands {
-  VOICE = 'voice',
-  V11M = 'v11m',
+  V11M = 'voice',
+  // V11M = 'v11m',
   V11F = 'v11f',
 }
 
@@ -48,11 +48,11 @@ export class TextToSpeechBot implements PayableBot {
   }
 
   public async onEvent (ctx: OnMessageContext): Promise<void> {
-    if (ctx.hasCommand(SupportedCommands.VOICE)) {
-      const text = this.getTextFromMessage(ctx)
-      await this.onTextToSpeech(ctx, { text, ssmlGender: 'MALE', languageCode: 'en-US' })
-      return
-    }
+    // if (ctx.hasCommand(SupportedCommands.VOICE)) {
+    //   const text = this.getTextFromMessage(ctx)
+    //   await this.onTextToSpeech(ctx, { text, ssmlGender: 'MALE', languageCode: 'en-US' })
+    //   return
+    // }
 
     if (ctx.hasCommand(SupportedCommands.V11M)) {
       const text = this.getTextFromMessage(ctx)
