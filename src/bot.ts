@@ -187,7 +187,9 @@ function createInitialSessionData (): BotSessionData {
     collections: {
       activeCollections: [],
       collectionRequestQueue: [],
-      isProcessingQueue: false
+      isProcessingQueue: false,
+      currentCollection: '',
+      collectionConversation: []
     },
     llms: {
       model: config.llms.model,

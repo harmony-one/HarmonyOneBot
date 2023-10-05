@@ -7,7 +7,10 @@ import {
   type OnMessageContext,
   type OnCallBackQueryData,
   type ChatConversation,
-  type ChatPayload, type PayableBot, RequestState
+  type ChatPayload,
+  type PayableBot,
+  type Collection,
+  RequestState
 } from '../types'
 import { appText } from '../open-ai/utils/text'
 import { chatService } from '../../database/services'
@@ -224,13 +227,21 @@ export class LlmsBot implements PayableBot {
     }
   }
 
+  private getCollectionConversation (ctx: OnMessageContext | OnCallBackQueryData, collection: Collection): ChatConversation[] {
+    if (ctx.session.collections.currentCollection === collection.collectionName) {
+      return ctx.session.collections.collectionConversation
+    }
+    ctx.session.collections.currentCollection = collection.collectionName
+    return []
+  }
+
   private async queryUrlCollection (ctx: OnMessageContext | OnCallBackQueryData,
     url: string,
     prompt: string): Promise<void> {
     try {
       const collection = ctx.session.collections.activeCollections.find(c => c.url === url)
       if (collection) {
-        const conversation = ctx.session.openAi.chatGpt.chatConversation
+        const conversation = this.getCollectionConversation(ctx, collection)
         const msgId = (
           await ctx.reply('...', {
             message_thread_id:
@@ -259,6 +270,7 @@ export class LlmsBot implements PayableBot {
             msgId, response.completion,
             { parse_mode: 'Markdown', disable_web_page_preview: true })
             .catch(async (e) => { await this.onError(ctx, e) })
+          ctx.session.collections.collectionConversation = [...conversation]
         }
       }
       ctx.transient.analytics.actualResponseTime = now()
@@ -594,6 +606,7 @@ export class LlmsBot implements PayableBot {
           `On method "${e.method}" | ${e.error_code} - ${e.description}`
         )
         ctx.transient.analytics.actualResponseTime = now()
+        await sendMessage(ctx, 'Error handling your request').catch(async (e) => { await this.onError(ctx, e, retryCount - 1) })
       }
     } else {
       this.logger.error(`${e.toString()}`)

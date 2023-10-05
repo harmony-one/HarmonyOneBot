@@ -101,6 +101,8 @@ export interface CollectionSessionData {
   activeCollections: Collection[]
   collectionRequestQueue: Collection[]
   isProcessingQueue: boolean
+  currentCollection: string
+  collectionConversation: ChatConversation[]
 }
 export interface Analytics {
   firstResponseTime: bigint
