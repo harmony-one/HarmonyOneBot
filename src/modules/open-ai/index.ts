@@ -14,7 +14,6 @@ import {
 } from '../types'
 import {
   alterGeneratedImg,
-  // chatCompletion,
   getChatModel,
   getDalleModel,
   getDalleModelPrice,
@@ -33,26 +32,23 @@ import {
   hasNewPrefix,
   hasPrefix,
   hasUrl,
-  // hasUsernamePassword,
   isMentioned,
   MAX_TRIES,
   preparePrompt,
   sendMessage,
-  SupportedCommands,
-  addUrlToCollection,
-  getUrlFromText
+  SupportedCommands
 } from './helpers'
-// import { getCrawlerPrice, getWebContent } from './utils/web-crawler'
 import * as Sentry from '@sentry/node'
 import { now } from '../../utils/perf'
 import { AxiosError } from 'axios'
-import { llmAddUrlDocument, llmCheckCollectionStatus, queryUrlDocument } from '../llms/api/llmApi'
 import { Callbacks } from '../types'
+import { LlmsBot } from '../llms'
 
 export class OpenAIBot implements PayableBot {
   public readonly module = 'OpenAIBot'
   private readonly logger: Logger
   private readonly payments: BotPayments
+  private readonly llmsBot: LlmsBot
   private botSuspended: boolean
 
   constructor (payments: BotPayments) {
@@ -68,6 +64,7 @@ export class OpenAIBot implements PayableBot {
     if (!config.openAi.dalle.isEnabled) {
       this.logger.warn('DALL·E 2 Image Bot is disabled in config')
     }
+    this.llmsBot = new LlmsBot(payments)
   }
 
   public isSupportedEvent (
@@ -80,13 +77,11 @@ export class OpenAIBot implements PayableBot {
       return true
     }
     const hasReply = this.isSupportedImageReply(ctx)
-    const hasUrl = this.isSupportedUrlReply(ctx)
-    const hasPdf = this.isSupportedPdfReply(ctx)
     const chatPrefix = hasPrefix(ctx.message?.text ?? '')
     if (chatPrefix !== '') {
       return true
     }
-    return hasCommand || !!hasReply || !!hasUrl || !!hasPdf
+    return hasCommand || !!hasReply || this.llmsBot.isSupportedEvent(ctx)
   }
 
   public getEstimatedPrice (ctx: any): number {
@@ -128,24 +123,15 @@ export class OpenAIBot implements PayableBot {
         ) // cents
         return price * priceAdjustment
       }
+      if (this.llmsBot.isSupportedEvent(ctx)) {
+        return 0
+      }
       return 0
     } catch (e) {
       Sentry.captureException(e)
       this.logger.error(`getEstimatedPrice error ${e}`)
       throw e
     }
-  }
-
-  isSupportedPdfReply (ctx: OnMessageContext | OnCallBackQueryData): string | undefined {
-    const documentType = ctx.message?.reply_to_message?.document?.mime_type
-    if (documentType === 'application/pdf') {
-      return ctx.message?.reply_to_message?.document?.file_name
-    }
-    return undefined
-  }
-
-  private isSupportedUrlReply (ctx: OnMessageContext | OnCallBackQueryData): string | undefined {
-    return getUrlFromText(ctx)
   }
 
   isSupportedImageReply (ctx: OnMessageContext | OnCallBackQueryData): boolean {
@@ -159,16 +145,6 @@ export class OpenAIBot implements PayableBot {
     return false
   }
 
-  isSupportedPdfFile (ctx: OnMessageContext | OnCallBackQueryData): boolean {
-    const documentType = ctx.message?.document?.mime_type
-    const SupportedDocuments = { PDF: 'application/pdf' }
-
-    if (documentType !== undefined) {
-      return Object.values(SupportedDocuments).includes(documentType)
-    }
-    return false
-  }
-
   public async onEvent (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
     ctx.transient.analytics.module = this.module
     if (!(this.isSupportedEvent(ctx)) && (ctx.chat?.type !== 'private') && !ctx.session.openAi.chatGpt.isFreePromptChatGroups) {
@@ -178,6 +154,12 @@ export class OpenAIBot implements PayableBot {
     }
 
     ctx.transient.analytics.sessionState = RequestState.Success
+
+    if (this.isSupportedImageReply(ctx)) {
+      await this.onAlterImage(ctx)
+      return
+    }
+
     if (
       ctx.hasCommand(SupportedCommands.chat.name) ||
       (ctx.message?.text?.startsWith('chat ') && ctx.chat?.type === 'private')
@@ -239,30 +221,8 @@ export class OpenAIBot implements PayableBot {
       return
     }
 
-    if (this.isSupportedImageReply(ctx)) {
-      await this.onAlterImage(ctx)
-      return
-    }
-
-    if (this.isSupportedUrlReply(ctx)) {
-      await this.onUrlReplyHandler(ctx)
-      return
-    }
-
-    if (this.isSupportedPdfReply(ctx)) {
-      await this.onPdfReplyHandler(ctx)
-      return
-    }
-
-    if (this.isSupportedPdfFile(ctx)) {
-      await this.onPdfFileReceived(ctx)
-      return
-    }
-
-    if (ctx.hasCommand(SupportedCommands.sum.name) ||
-      (ctx.message?.text?.startsWith('sum ') && ctx.chat?.type === 'private')
-    ) {
-      await this.onSum(ctx)
+    if (this.llmsBot.isSupportedEvent(ctx)) {
+      await this.llmsBot.onEvent(ctx)
       return
     }
 
@@ -311,195 +271,6 @@ export class OpenAIBot implements PayableBot {
       (+balanceOne > +config.openAi.chatGpt.minimumBalance) ||
       (this.payments.isUserInWhitelist(ctx.from.id, ctx.from.username))
     )
-  }
-
-  private async addDocToCollection (ctx: OnMessageContext | OnCallBackQueryData, chatId: number, fileName: string, url: string, prompt: string): Promise<void> {
-    try {
-      const collectionName = await llmAddUrlDocument({
-        chatId,
-        url,
-        fileName
-      })
-      ctx.session.collections.collectionRequestQueue.push({
-        collectionName,
-        collectionType: 'PDF',
-        fileName,
-        url,
-        prompt
-      })
-    } catch (e: any) {
-      await this.onError(ctx, e)
-    }
-  }
-
-  private async onPdfFileReceived (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
-    try {
-      const file = await ctx.getFile()
-      const documentType = ctx.message?.document?.mime_type
-      if (documentType === 'application/pdf' && ctx.chat?.id) {
-        const url = file.getUrl()
-        const fileName = ctx.message?.document?.file_name ?? file.file_id
-        const prompt = ctx.message?.caption ?? 'Summarize this context'
-        await this.addDocToCollection(ctx, ctx.chat.id, fileName, url, prompt)
-        if (!ctx.session.collections.isProcessingQueue) {
-          ctx.session.collections.isProcessingQueue = true
-          await this.onCheckCollectionStatus(ctx).then(() => {
-            ctx.session.collections.isProcessingQueue = false
-          })
-        }
-      }
-      ctx.transient.analytics.sessionState = RequestState.Success
-    } catch (ex) {
-      Sentry.captureException(ex)
-      ctx.transient.analytics.sessionState = RequestState.Error
-    } finally {
-      ctx.transient.analytics.actualResponseTime = now()
-    }
-  }
-
-  async onPdfReplyHandler (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
-    try {
-      const fileName = this.isSupportedPdfReply(ctx)
-      const prompt = ctx.message?.text ?? 'summary'
-      if (fileName !== '') {
-        const collection = ctx.session.collections.activeCollections.find(c => c.fileName === fileName)
-        if (collection) {
-          await this.queryUrlCollection(ctx, collection.url ?? '', prompt)
-        } else {
-          if (!ctx.session.collections.isProcessingQueue) {
-            ctx.session.collections.isProcessingQueue = true
-            await this.onCheckCollectionStatus(ctx).then(() => {
-              ctx.session.collections.isProcessingQueue = false
-            })
-          }
-        }
-      }
-    } catch (e: any) {
-      await this.onError(ctx, e)
-    }
-  }
-
-  async onUrlReplyHandler (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
-    try {
-      const url = getUrlFromText(ctx) ?? ''
-      const prompt = ctx.message?.text ?? 'summarize'
-      const collection = ctx.session.collections.activeCollections.find(c => c.url === url)
-      const newPrompt = `${prompt}` // ${url}
-      if (!collection) {
-        if (ctx.chat?.id) {
-          await addUrlToCollection(ctx, ctx.chat?.id, url, newPrompt)
-          if (!ctx.session.collections.isProcessingQueue) {
-            ctx.session.collections.isProcessingQueue = true
-            await this.onCheckCollectionStatus(ctx).then(() => {
-              ctx.session.collections.isProcessingQueue = false
-            })
-          }
-        }
-      } else {
-        await this.queryUrlCollection(ctx, url, newPrompt)
-      }
-    } catch (e: any) {
-      await this.onError(ctx, e)
-    }
-  }
-
-  private async queryUrlCollection (ctx: OnMessageContext | OnCallBackQueryData,
-    url: string,
-    prompt: string): Promise<void> {
-    try {
-      const collection = ctx.session.collections.activeCollections.find(c => c.url === url)
-      if (collection) {
-        const conversation = ctx.session.openAi.chatGpt.chatConversation
-        const msgId = (
-          await ctx.reply('...', {
-            message_thread_id:
-              ctx.message?.message_thread_id ??
-              ctx.message?.reply_to_message?.message_thread_id
-          })
-        ).message_id
-        const response = await queryUrlDocument({
-          collectioName: collection.collectionName,
-          prompt,
-          conversation
-        })
-        if (
-          !(await this.payments.pay(ctx as OnMessageContext, response.price))
-        ) {
-          await this.onNotBalanceMessage(ctx)
-        } else {
-          conversation.push({
-            content: `${prompt} ${url}`,
-            role: 'user'
-          }, {
-            content: response.completion,
-            role: 'system'
-          })
-          await ctx.api.editMessageText(ctx.chat?.id ?? '',
-            msgId, response.completion,
-            { parse_mode: 'Markdown' })
-            .catch(async (e) => { await this.onError(ctx, e) })
-        }
-      }
-    } catch (e: any) {
-      if (e instanceof AxiosError) {
-        if (e.message.includes('404')) {
-          ctx.session.collections.activeCollections =
-            [...ctx.session.collections.activeCollections.filter(c => c.url !== url)]
-          await sendMessage(ctx, 'Collection not found, please try again')
-        } else {
-          await this.onError(ctx, e)
-        }
-      } else {
-        await this.onError(ctx, e)
-      }
-    }
-  }
-
-  async onCheckCollectionStatus (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
-    while (ctx.session.collections.collectionRequestQueue.length > 0) {
-      try {
-        const collection = ctx.session.collections.collectionRequestQueue.shift()
-        if (collection) {
-          const price = await llmCheckCollectionStatus(collection?.collectionName ?? '')
-          if (price > 0) {
-            if (
-              !(await this.payments.pay(ctx as OnMessageContext, price))
-            ) {
-              await this.onNotBalanceMessage(ctx)
-            } else {
-              ctx.session.collections.activeCollections.push(collection)
-              if (collection.msgId) {
-                const oneFee = await this.payments.getPriceInONE(price)
-                let statusMsg
-                if (collection.collectionType === 'URL') {
-                  statusMsg = `${collection.url} processed (${this.payments.toONE(oneFee, false).toFixed(2)} ONE fee)`
-                } else {
-                  statusMsg = `${collection.fileName} processed (${this.payments.toONE(oneFee, false).toFixed(2)} ONE fee)`
-                }
-                await ctx.api.editMessageText(ctx.chat?.id ?? '',
-                  collection.msgId, statusMsg,
-                  {
-                    parse_mode: 'Markdown',
-                    disable_web_page_preview: true
-                  })
-                  .catch(async (e) => { await this.onError(ctx, e) })
-              }
-              await this.queryUrlCollection(ctx, collection.url ?? '',
-                collection.prompt ?? 'summary')
-            }
-          } else {
-            ctx.session.collections.collectionRequestQueue.push(collection)
-            if (ctx.session.collections.collectionRequestQueue.length === 1) {
-              await sleep(5000)
-            } else {
-              await sleep(2500)
-            }
-          }
-        }
-      } catch (e: any) {
-        await this.onError(ctx, e)
-      }
-    }
   }
 
   private async promptGen (data: ChatPayload, msgId?: number): Promise< { price: number, chat: ChatConversation[] }> {
@@ -551,43 +322,6 @@ export class OpenAIBot implements PayableBot {
       Sentry.captureException(e)
       ctx.chatAction = null
       throw e
-    }
-  }
-
-  async onSum (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
-    if (this.botSuspended) {
-      ctx.transient.analytics.sessionState = RequestState.Error
-      await sendMessage(ctx, 'The bot is suspended').catch(async (e) => {
-        await this.onError(ctx, e)
-      })
-      ctx.transient.analytics.actualResponseTime = now()
-      return
-    }
-    try {
-      const { prompt } = getCommandNamePrompt(ctx, SupportedCommands)
-      const { url, newPrompt } = hasUrl(ctx, prompt)
-      if (url && ctx.chat?.id) {
-        const collection = ctx.session.collections.activeCollections.find(c => c.url === url)
-        if (!collection) {
-          await addUrlToCollection(ctx, ctx.chat?.id, url, newPrompt)
-          if (!ctx.session.collections.isProcessingQueue) {
-            ctx.session.collections.isProcessingQueue = true
-            await this.onCheckCollectionStatus(ctx).then(() => {
-              ctx.session.collections.isProcessingQueue = false
-            })
-          }
-        } else {
-          await this.queryUrlCollection(ctx, url, newPrompt)
-        }
-      } else {
-        ctx.transient.analytics.sessionState = RequestState.Error
-        await sendMessage(ctx, 'Error: Missing url').catch(async (e) => {
-          await this.onError(ctx, e)
-        })
-        ctx.transient.analytics.actualResponseTime = now()
-      }
-    } catch (e) {
-      await this.onError(ctx, e)
     }
   }
 
@@ -734,18 +468,7 @@ export class OpenAIBot implements PayableBot {
             })
           }
           if (url && ctx.chat?.id) {
-            const collection = ctx.session.collections.activeCollections.find(c => c.url === url)
-            if (!collection) {
-              await addUrlToCollection(ctx, ctx.chat?.id, url, prompt)
-              if (!ctx.session.collections.isProcessingQueue) {
-                ctx.session.collections.isProcessingQueue = true
-                await this.onCheckCollectionStatus(ctx).then(() => {
-                  ctx.session.collections.isProcessingQueue = false
-                })
-              }
-            } else {
-              await this.queryUrlCollection(ctx, url, prompt)
-            }
+            await this.llmsBot.urlHandler(ctx, url, prompt)
           } else {
             chatConversation.push({
               role: 'user',
