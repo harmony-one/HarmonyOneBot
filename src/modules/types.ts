@@ -108,7 +108,13 @@ export interface Analytics {
   actualResponseTime: bigint
   sessionState: RequestState
   module: string
+}
 
+export interface PaymentAnalytics {
+  paymentTotal: number
+  paymentFreeCredits: number
+  paymentOneCredits: number
+  paymentFiatCredits: number
 }
 
 export interface BotSessionData {
@@ -123,6 +129,7 @@ export interface TransientStateContext {
   transient: {
     analytics: Analytics
     refunded: boolean
+    payment: PaymentAnalytics
   }
 }
 

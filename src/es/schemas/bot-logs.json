@@ -34,6 +34,18 @@
       },
       "sessionState": {
         "type": "keyword"
+      },
+      "paymentTotal": {
+        "type": "double"
+      },
+      "paymentFreeCredits": {
+        "type": "double"
+      },
+      "paymentOneCredits": {
+        "type": "double"
+      },
+      "paymentFiatCredits": {
+        "type": "double"
       }
     }
   }
