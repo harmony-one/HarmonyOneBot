@@ -135,7 +135,8 @@ export class SDImagesBotBase {
       await sleep(5000 * balancerOperaton.queueNumber || 500)
       balancerOperaton = await getOperationById(balancerOperaton.id)
     }
-
+    console.log(balancerOperaton)
+    console.log('balancer_id: ', balancerOperaton.id)
     return {
       queueMessageId: message_id,
       balancerOperaton
