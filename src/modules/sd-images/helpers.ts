@@ -118,7 +118,7 @@ export const parseCtx = (ctx: Context): IOperation | false => {
     let lora
     let format: MEDIA_FORMAT = MEDIA_FORMAT.JPEG
 
-    if (hasCommand(ctx, 'gif')) {
+    if (hasCommand(ctx, 'gif') || hasCommand(ctx, 'g')) {
       command = COMMAND.TEXT_TO_IMAGE
       format = MEDIA_FORMAT.GIF
       model = getModelByParam('22')
@@ -126,13 +126,13 @@ export const parseCtx = (ctx: Context): IOperation | false => {
     }
 
     if (
-      (hasCommand(ctx, 'image') ?? hasCommand(ctx, 'imagine')) ?? hasCommand(ctx, 'img')
+      (hasCommand(ctx, 'image') || hasCommand(ctx, 'imagine')) || hasCommand(ctx, 'img')
     ) {
       command = COMMAND.TEXT_TO_IMAGE
     }
 
     if (
-      (hasCommand(ctx, 'image2') ?? hasCommand(ctx, 'imagine2')) ?? hasCommand(ctx, 'img2')
+      (hasCommand(ctx, 'image2') || hasCommand(ctx, 'imagine2')) || hasCommand(ctx, 'img2')
     ) {
       command = COMMAND.TEXT_TO_IMAGE
       model = model && ({ ...model, serverNumber: 2 })
@@ -182,9 +182,16 @@ export const parseCtx = (ctx: Context): IOperation | false => {
       command = COMMAND.TEXT_TO_IMAGE
     }
 
-    if (messageText.startsWith('l.')) {
+    if (messageText.startsWith('l.') ?? messageText.startsWith('L.')) {
       model = getModelByParam('xl')
       lora = getLoraByParam('logo', model?.baseModel ?? 'SDXL 1.0')
+    }
+
+    if (messageText.startsWith('g.') || messageText.startsWith('G.')) {
+      command = COMMAND.TEXT_TO_IMAGE
+      format = MEDIA_FORMAT.GIF
+      model = getModelByParam('22')
+      prompt = prompt || '1girl, solo, cherry blossom, hanami, pink flower, white flower, spring season, wisteria, petals, flower, plum blossoms, outdoors, falling petals, black eyes, upper body, from side'
     }
 
     if (!model) {
