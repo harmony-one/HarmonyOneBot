@@ -5,15 +5,13 @@ import type { BotPayments } from '../payment'
 import type { OnMessageContext, PayableBot } from '../types'
 import { gcTextToSpeedClient, type TextToSpeechParams } from '../../google-cloud/gcTextToSpeechClient'
 import { getCommandList, getConfigByCommand } from './commandConfigList'
+import { ElevenlabsClient } from '../../elevenlabs/elevenlabsClient'
+import config from '../../config'
 
 enum SupportedCommands {
   VOICE = 'voice',
-  VOICEHK = 'voicehk',
-  VOICEHKF = 'voicehkf',
-  VOICERU = 'voiceru',
-  VOICECN = 'voicecn',
-  VOICEES = 'voicees'
-
+  V11M = 'v11m',
+  V11F = 'v11f',
 }
 
 export class TextToSpeechBot implements PayableBot {
@@ -53,6 +51,20 @@ export class TextToSpeechBot implements PayableBot {
     if (ctx.hasCommand(SupportedCommands.VOICE)) {
       const text = this.getTextFromMessage(ctx)
       await this.onTextToSpeech(ctx, { text, ssmlGender: 'MALE', languageCode: 'en-US' })
+      return
+    }
+
+    if (ctx.hasCommand(SupportedCommands.V11M)) {
+      const text = this.getTextFromMessage(ctx)
+      // Liam accent: american; age: young; gender: male; use case: narration; description : neutral;
+      await this.onTextToSpeech11Labs(ctx, { text, voiceId: 'TX3LPaxmHKxFdv7VOQHJ' })
+      return
+    }
+
+    if (ctx.hasCommand(SupportedCommands.V11F)) {
+      const text = this.getTextFromMessage(ctx)
+      // Rachel accent: american; description: calm; age: young; gender: female; use case: narration;
+      await this.onTextToSpeech11Labs(ctx, { text, voiceId: '21m00Tcm4TlvDq8ikWAM' })
       return
     }
 
@@ -135,6 +147,35 @@ export class TextToSpeechBot implements PayableBot {
     } else {
       voiceResult = await gcTextToSpeedClient.textToSpeech({ text, ssmlGender, languageCode, voiceName })
     }
+
+    if (!voiceResult) {
+      await ctx.api.editMessageText(ctx.chat.id, progressMessage.message_id, 'An error occurred during the process of generating the message.')
+      return
+    }
+
+    const inputFile = new InputFile(voiceResult)
+
+    await ctx.api.deleteMessage(ctx.chat.id, progressMessage.message_id)
+    await ctx.replyWithVoice(inputFile)
+  }
+
+  public async onTextToSpeech11Labs (ctx: OnMessageContext, params: { text: string, voiceId: string }): Promise<void> {
+    const { text, voiceId } = params
+
+    if (!params.text) {
+      await ctx.reply('/voice command should contain text.')
+      return
+    }
+
+    if (!ctx.chat?.id) {
+      throw new Error('Internal error')
+    }
+
+    const progressMessage = await ctx.reply('Generating...')
+
+    const elevenlabsClient = new ElevenlabsClient(config.elevenlabs.apiKey)
+
+    const voiceResult = await elevenlabsClient.textToSpeech({ text, voiceId })
 
     if (!voiceResult) {
       await ctx.api.editMessageText(ctx.chat.id, progressMessage.message_id, 'An error occurred during the process of generating the message.')
