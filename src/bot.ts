@@ -55,6 +55,7 @@ import { TextToSpeechBot } from './modules/text-to-speech'
 import { VoiceToTextBot } from './modules/voice-to-text'
 import { now } from './utils/perf'
 import { hasPrefix } from './modules/open-ai/helpers'
+import { VoiceToVoiceGPTBot } from './modules/voice-to-voice-gpt'
 
 Events.EventEmitter.defaultMaxListeners = 30
 
@@ -250,6 +251,7 @@ const telegramPayments = new TelegramPayments(payments)
 const voiceTranslateBot = new VoiceTranslateBot(payments)
 const textToSpeechBot = new TextToSpeechBot(payments)
 const voiceToTextBot = new VoiceToTextBot(payments)
+const voiceToVoiceGPTBot = new VoiceToVoiceGPTBot(payments)
 
 bot.on('message:new_chat_members:me', async (ctx) => {
   try {
@@ -364,6 +366,7 @@ const PayableBots: Record<string, PayableBotConfig> = {
   documentBot: { bot: documentBot },
   translateBot: { bot: translateBot },
   textToSpeech: { bot: textToSpeechBot },
+  voiceToVoiceGPTBot: { bot: voiceToVoiceGPTBot },
   voiceToText: { bot: voiceToTextBot },
   openAiBot: {
     enabled: (ctx: OnMessageContext) => ctx.session.openAi.imageGen.isEnabled,
