@@ -10,12 +10,14 @@ import { type ParseMode } from 'grammy/types'
 // import { getChatModel, getChatModelPrice, getTokenNumber } from "./api/openAi";
 import { LlmsModelsEnum } from './types'
 import { type Message } from 'grammy/out/types'
+import { llmAddUrlDocument } from './api/llmApi'
 
 export const SupportedCommands = {
   bardF: { name: 'bard' },
   bard: { name: 'b' },
   pdf: { name: 'pdf' },
-  j2Ultra: { name: 'j2-ultra' }
+  j2Ultra: { name: 'j2-ultra' },
+  sum: { name: 'sum' }
 }
 
 export const MAX_TRIES = 3
@@ -235,4 +237,39 @@ export const prepareConversation = (
       }
       return msgFiltered
     })
+}
+
+export async function addUrlToCollection (ctx: OnMessageContext | OnCallBackQueryData, chatId: number, url: string, prompt: string): Promise<void> {
+  const collectionName = await llmAddUrlDocument({
+    chatId,
+    url
+  })
+  const msgId = (await ctx.reply('...', {
+    message_thread_id:
+    ctx.message?.message_thread_id ??
+    ctx.message?.reply_to_message?.message_thread_id
+  })).message_id
+
+  ctx.session.collections.collectionRequestQueue.push({
+    collectionName,
+    collectionType: 'URL',
+    url: url.toLocaleLowerCase(),
+    prompt,
+    msgId
+  })
+}
+
+export async function addDocToCollection (ctx: OnMessageContext | OnCallBackQueryData, chatId: number, fileName: string, url: string, prompt: string): Promise<void> {
+  const collectionName = await llmAddUrlDocument({
+    chatId,
+    url,
+    fileName
+  })
+  ctx.session.collections.collectionRequestQueue.push({
+    collectionName,
+    collectionType: 'PDF',
+    fileName,
+    url: url.toLocaleLowerCase(),
+    prompt
+  })
 }

@@ -14,7 +14,6 @@ import {
 } from '../types'
 import {
   alterGeneratedImg,
-  // chatCompletion,
   getChatModel,
   getDalleModel,
   getDalleModelPrice,
@@ -33,25 +32,23 @@ import {
   hasNewPrefix,
   hasPrefix,
   hasUrl,
-  // hasUsernamePassword,
   isMentioned,
   MAX_TRIES,
   preparePrompt,
   sendMessage,
-  SupportedCommands,
-  addUrlToCollection
+  SupportedCommands
 } from './helpers'
-// import { getCrawlerPrice, getWebContent } from './utils/web-crawler'
 import * as Sentry from '@sentry/node'
 import { now } from '../../utils/perf'
 import { AxiosError } from 'axios'
-import { llmCheckCollectionStatus, queryUrlDocument } from '../llms/api/llmApi'
 import { Callbacks } from '../types'
+import { LlmsBot } from '../llms'
 
 export class OpenAIBot implements PayableBot {
   public readonly module = 'OpenAIBot'
   private readonly logger: Logger
   private readonly payments: BotPayments
+  private readonly llmsBot: LlmsBot
   private botSuspended: boolean
 
   constructor (payments: BotPayments) {
@@ -67,6 +64,7 @@ export class OpenAIBot implements PayableBot {
     if (!config.openAi.dalle.isEnabled) {
       this.logger.warn('DALL·E 2 Image Bot is disabled in config')
     }
+    this.llmsBot = new LlmsBot(payments)
   }
 
   public isSupportedEvent (
@@ -83,7 +81,7 @@ export class OpenAIBot implements PayableBot {
     if (chatPrefix !== '') {
       return true
     }
-    return hasCommand || hasReply
+    return hasCommand || !!hasReply || this.llmsBot.isSupportedEvent(ctx)
   }
 
   public getEstimatedPrice (ctx: any): number {
@@ -125,6 +123,9 @@ export class OpenAIBot implements PayableBot {
         ) // cents
         return price * priceAdjustment
       }
+      if (this.llmsBot.isSupportedEvent(ctx)) {
+        return 0
+      }
       return 0
     } catch (e) {
       Sentry.captureException(e)
@@ -153,6 +154,12 @@ export class OpenAIBot implements PayableBot {
     }
 
     ctx.transient.analytics.sessionState = RequestState.Success
+
+    if (this.isSupportedImageReply(ctx)) {
+      await this.onAlterImage(ctx)
+      return
+    }
+
     if (
       ctx.hasCommand(SupportedCommands.chat.name) ||
       (ctx.message?.text?.startsWith('chat ') && ctx.chat?.type === 'private')
@@ -214,18 +221,11 @@ export class OpenAIBot implements PayableBot {
       return
     }
 
-    if (this.isSupportedImageReply(ctx)) {
-      await this.onAlterImage(ctx)
+    if (this.llmsBot.isSupportedEvent(ctx)) {
+      await this.llmsBot.onEvent(ctx)
       return
     }
 
-    if (
-      ctx.hasCommand(SupportedCommands.sum.name) ||
-      (ctx.message?.text?.startsWith('sum ') && ctx.chat?.type === 'private')
-    ) {
-      await this.onSum(ctx)
-      return
-    }
     if (ctx.hasCommand(SupportedCommands.last.name)) {
       await this.onLast(ctx)
       return
@@ -271,87 +271,6 @@ export class OpenAIBot implements PayableBot {
       (+balanceOne > +config.openAi.chatGpt.minimumBalance) ||
       (this.payments.isUserInWhitelist(ctx.from.id, ctx.from.username))
     )
-  }
-
-  onGenImgCmd = async (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> => {
-    try {
-      if (ctx.session.openAi.imageGen.isEnabled) {
-        let prompt = (ctx.match ? ctx.match : ctx.message?.text) as string
-        if (!prompt || prompt.split(' ').length === 1) {
-          prompt = config.openAi.dalle.defaultPrompt
-        }
-        ctx.chatAction = 'upload_photo'
-        const numImages = ctx.session.openAi.imageGen.numImages
-        const imgSize = ctx.session.openAi.imageGen.imgSize
-        const imgs = await postGenerateImg(prompt, numImages, imgSize)
-        const msgExtras = getMessageExtras({ caption: `/dalle ${prompt}` })
-        await Promise.all(imgs.map(async (img: any) => {
-          await ctx.replyWithPhoto(img.url, msgExtras).catch(async (e) => {
-            await this.onError(ctx, e, MAX_TRIES)
-          })
-        }))
-        ctx.transient.analytics.sessionState = RequestState.Success
-        ctx.transient.analytics.actualResponseTime = now()
-      } else {
-        ctx.transient.analytics.sessionState = RequestState.Error
-        await sendMessage(ctx, 'Bot disabled').catch(async (e) => {
-          await this.onError(ctx, e, MAX_TRIES, 'Bot disabled')
-        })
-        ctx.transient.analytics.actualResponseTime = now()
-      }
-    } catch (e) {
-      await this.onError(
-        ctx,
-        e,
-        MAX_TRIES,
-        'There was an error while generating the image'
-      )
-    }
-  }
-
-  onAlterImage = async (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> => {
-    try {
-      if (ctx.session.openAi.imageGen.isEnabled) {
-        const photo =
-          ctx.message?.photo ?? ctx.message?.reply_to_message?.photo
-        const prompt = ctx.message?.caption ?? ctx.message?.text
-        const fileId = photo?.pop()?.file_id // with pop() get full image quality
-        if (!fileId) {
-          await ctx.reply('Cannot retrieve the image file. Please try again.')
-          ctx.transient.analytics.actualResponseTime = now()
-          return
-        }
-        const file = await ctx.api.getFile(fileId)
-        const filePath = `${config.openAi.dalle.telegramFileUrl}${config.telegramBotAuthToken}/${file.file_path}`
-        const imgSize = ctx.session.openAi.imageGen.imgSize
-        ctx.chatAction = 'upload_photo'
-        const imgs = await alterGeneratedImg(prompt ?? '', filePath, ctx, imgSize)
-        if (imgs) {
-          imgs.map(async (img: any) => {
-            if (img?.url) {
-              await ctx
-                .replyWithPhoto(img.url, { message_thread_id: ctx.message?.message_thread_id })
-                .catch(async (e) => {
-                  await this.onError(
-                    ctx,
-                    e,
-                    MAX_TRIES,
-                    'There was an error while generating the image'
-                  )
-                })
-            }
-          })
-        }
-        ctx.chatAction = null
-      }
-    } catch (e: any) {
-      await this.onError(
-        ctx,
-        e,
-        MAX_TRIES,
-        'An error occurred while generating the AI edit'
-      )
-    }
   }
 
   private async promptGen (data: ChatPayload, msgId?: number): Promise< { price: number, chat: ChatConversation[] }> {
@@ -403,125 +322,6 @@ export class OpenAIBot implements PayableBot {
       Sentry.captureException(e)
       ctx.chatAction = null
       throw e
-    }
-  }
-
-  private async queryUrlCollection (ctx: OnMessageContext | OnCallBackQueryData,
-    url: string,
-    prompt: string,
-    conversation?: ChatConversation): Promise<void> {
-    try {
-      const collection = ctx.session.collections.activeCollections.find(c => c.url === url)
-      if (collection) {
-        const msgId = (
-          await ctx.reply('...', {
-            message_thread_id:
-              ctx.message?.message_thread_id ??
-              ctx.message?.reply_to_message?.message_thread_id
-          })
-        ).message_id
-        const response = await queryUrlDocument({
-          collectioName: collection.collectionName,
-          prompt,
-          conversation
-        })
-        if (
-          !(await this.payments.pay(ctx as OnMessageContext, response.price))
-        ) {
-          await this.onNotBalanceMessage(ctx)
-        } else {
-          console.log(ctx.chat?.id, msgId)
-          await ctx.api.editMessageText(ctx.chat?.id ?? '',
-            msgId, response.completion,
-            { parse_mode: 'Markdown' })
-            .catch(async (e) => { await this.onError(ctx, e) })
-        }
-      }
-    } catch (e: any) {
-      await this.onError(ctx, e)
-    }
-  }
-
-  async onCheckCollectionStatus (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
-    while (ctx.session.collections.collectionRequestQueue.length > 0) {
-      try {
-        const collection = ctx.session.collections.collectionRequestQueue.shift()
-        if (collection) {
-          const price = await llmCheckCollectionStatus(collection?.collectionName ?? '')
-          if (price > 0) {
-            if (
-              !(await this.payments.pay(ctx as OnMessageContext, price))
-            ) {
-              await this.onNotBalanceMessage(ctx)
-            } else {
-              ctx.session.collections.activeCollections.push(collection)
-              if (collection.msgId) {
-                const oneFee = await this.payments.getPriceInONE(price)
-                let statusMsg
-                if (collection.collectionType === 'URL') {
-                  statusMsg = `${collection.url} processed ${this.payments.toONE(oneFee, false).toFixed(2)} ONE fee)`
-                } else {
-                  statusMsg = `${collection.fileName} processed ${this.payments.toONE(oneFee, false).toFixed(2)} ONE fee)`
-                }
-                await ctx.api.editMessageText(ctx.chat?.id ?? '',
-                  collection.msgId, statusMsg,
-                  {
-                    parse_mode: 'Markdown',
-                    disable_web_page_preview: true
-                  })
-                  .catch(async (e) => { await this.onError(ctx, e) })
-              }
-              await this.queryUrlCollection(ctx, collection.url ?? '', collection.prompt ?? 'summary')
-            }
-          } else {
-            ctx.session.collections.collectionRequestQueue.push(collection)
-            if (ctx.session.collections.collectionRequestQueue.length === 1) {
-              await sleep(5000)
-            } else {
-              await sleep(2500)
-            }
-          }
-        }
-      } catch (e: any) {
-        await this.onError(ctx, e)
-      }
-    }
-  }
-
-  async onSum (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
-    if (this.botSuspended) {
-      ctx.transient.analytics.sessionState = RequestState.Error
-      await sendMessage(ctx, 'The bot is suspended').catch(async (e) => {
-        await this.onError(ctx, e)
-      })
-      ctx.transient.analytics.actualResponseTime = now()
-      return
-    }
-    try {
-      const { prompt } = getCommandNamePrompt(ctx, SupportedCommands)
-      const { url, newPrompt } = hasUrl(ctx, prompt)
-      if (url && ctx.chat?.id) {
-        const collection = ctx.session.collections.activeCollections.find(c => c.url === url)
-        if (!collection) {
-          await addUrlToCollection(ctx, ctx.chat?.id, url, newPrompt)
-          if (!ctx.session.collections.isProcessingQueue) {
-            ctx.session.collections.isProcessingQueue = true
-            await this.onCheckCollectionStatus(ctx).then(() => {
-              ctx.session.collections.isProcessingQueue = false
-            })
-          }
-        } else {
-          await this.queryUrlCollection(ctx, collection.collectionName, newPrompt)
-        }
-      } else {
-        ctx.transient.analytics.sessionState = RequestState.Error
-        await sendMessage(ctx, 'Error: Missing url').catch(async (e) => {
-          await this.onError(ctx, e)
-        })
-        ctx.transient.analytics.actualResponseTime = now()
-      }
-    } catch (e) {
-      await this.onError(ctx, e)
     }
   }
 
@@ -668,13 +468,7 @@ export class OpenAIBot implements PayableBot {
             })
           }
           if (url && ctx.chat?.id) {
-            await addUrlToCollection(ctx, ctx.chat?.id, url, prompt)
-            if (!ctx.session.collections.isProcessingQueue) {
-              ctx.session.collections.isProcessingQueue = true
-              await this.onCheckCollectionStatus(ctx).then(() => {
-                ctx.session.collections.isProcessingQueue = false
-              })
-            }
+            await this.llmsBot.urlHandler(ctx, url, prompt)
           } else {
             chatConversation.push({
               role: 'user',
@@ -700,6 +494,87 @@ export class OpenAIBot implements PayableBot {
       } catch (e: any) {
         await this.onError(ctx, e)
       }
+    }
+  }
+
+  onGenImgCmd = async (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> => {
+    try {
+      if (ctx.session.openAi.imageGen.isEnabled) {
+        let prompt = (ctx.match ? ctx.match : ctx.message?.text) as string
+        if (!prompt || prompt.split(' ').length === 1) {
+          prompt = config.openAi.dalle.defaultPrompt
+        }
+        ctx.chatAction = 'upload_photo'
+        const numImages = ctx.session.openAi.imageGen.numImages
+        const imgSize = ctx.session.openAi.imageGen.imgSize
+        const imgs = await postGenerateImg(prompt, numImages, imgSize)
+        const msgExtras = getMessageExtras({ caption: `/dalle ${prompt}` })
+        await Promise.all(imgs.map(async (img: any) => {
+          await ctx.replyWithPhoto(img.url, msgExtras).catch(async (e) => {
+            await this.onError(ctx, e, MAX_TRIES)
+          })
+        }))
+        ctx.transient.analytics.sessionState = RequestState.Success
+        ctx.transient.analytics.actualResponseTime = now()
+      } else {
+        ctx.transient.analytics.sessionState = RequestState.Error
+        await sendMessage(ctx, 'Bot disabled').catch(async (e) => {
+          await this.onError(ctx, e, MAX_TRIES, 'Bot disabled')
+        })
+        ctx.transient.analytics.actualResponseTime = now()
+      }
+    } catch (e) {
+      await this.onError(
+        ctx,
+        e,
+        MAX_TRIES,
+        'There was an error while generating the image'
+      )
+    }
+  }
+
+  onAlterImage = async (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> => {
+    try {
+      if (ctx.session.openAi.imageGen.isEnabled) {
+        const photo =
+          ctx.message?.photo ?? ctx.message?.reply_to_message?.photo
+        const prompt = ctx.message?.caption ?? ctx.message?.text
+        const fileId = photo?.pop()?.file_id // with pop() get full image quality
+        if (!fileId) {
+          await ctx.reply('Cannot retrieve the image file. Please try again.')
+          ctx.transient.analytics.actualResponseTime = now()
+          return
+        }
+        const file = await ctx.api.getFile(fileId)
+        const filePath = `${config.openAi.dalle.telegramFileUrl}${config.telegramBotAuthToken}/${file.file_path}`
+        const imgSize = ctx.session.openAi.imageGen.imgSize
+        ctx.chatAction = 'upload_photo'
+        const imgs = await alterGeneratedImg(prompt ?? '', filePath, ctx, imgSize)
+        if (imgs) {
+          imgs.map(async (img: any) => {
+            if (img?.url) {
+              await ctx
+                .replyWithPhoto(img.url, { message_thread_id: ctx.message?.message_thread_id })
+                .catch(async (e) => {
+                  await this.onError(
+                    ctx,
+                    e,
+                    MAX_TRIES,
+                    'There was an error while generating the image'
+                  )
+                })
+            }
+          })
+        }
+        ctx.chatAction = null
+      }
+    } catch (e: any) {
+      await this.onError(
+        ctx,
+        e,
+        MAX_TRIES,
+        'An error occurred while generating the AI edit'
+      )
     }
   }
 
@@ -798,6 +673,9 @@ export class OpenAIBot implements PayableBot {
         this.logger.error(
           `On method "${ex.method}" | ${ex.error_code} - ${ex.description}`
         )
+        await sendMessage(ctx, 'Error handling your request').catch(async (e) => {
+          await this.onError(ctx, e, retryCount - 1)
+        })
       }
     } else if (ex instanceof OpenAI.APIError) {
       // 429 RateLimitError

@@ -16,6 +16,7 @@ import { MAX_TRIES, sendMessage } from '../open-ai/helpers'
 import { sleep } from '../sd-images/utils'
 import { isValidUrl } from '../open-ai/utils/web-crawler'
 import { now } from '../../utils/perf'
+import OpenAI from 'openai'
 
 export const SupportedCommands = {
   register: { name: 'rent' },
@@ -525,6 +526,14 @@ export class OneCountryBot implements PayableBot {
     return input.replace(/[^a-z0-9-]/g, '').toLowerCase()
   }
 
+  async onEnd (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
+    ctx.session.collections.activeCollections = []
+    ctx.session.collections.collectionConversation = []
+    ctx.session.collections.collectionRequestQueue = []
+    ctx.session.collections.currentCollection = ''
+    ctx.session.collections.isProcessingQueue = false
+  }
+
   async onError (
     ctx: OnMessageContext | OnCallBackQueryData,
     ex: any,
@@ -572,6 +581,21 @@ export class OneCountryBot implements PayableBot {
         this.logger.error(
           `On method "${ex.method}" | ${ex.error_code} - ${ex.description}`
         )
+      }
+    } else if (ex instanceof OpenAI.APIError) {
+      // 429 RateLimitError
+      // e.status = 400 || e.code = BadRequestError
+      this.logger.error(`OPENAI Error ${ex.status}(${ex.code}) - ${ex.message}`)
+      if (ex.code === 'context_length_exceeded') {
+        await sendMessage(ctx, ex.message).catch(async (e) => { await this.onError(ctx, e, retryCount - 1) })
+        ctx.transient.analytics.actualResponseTime = now()
+        await this.onEnd(ctx)
+      } else {
+        await sendMessage(
+          ctx,
+          'Error accessing OpenAI (ChatGPT). Please try later'
+        ).catch(async (e) => { await this.onError(ctx, e, retryCount - 1) })
+        ctx.transient.analytics.actualResponseTime = now()
       }
     } else {
       this.logger.error(`${ex.toString()}`)

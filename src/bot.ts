@@ -31,8 +31,6 @@ import { OneCountryBot } from './modules/1country'
 import { WalletConnect } from './modules/walletconnect'
 import { BotPayments } from './modules/payment'
 import { BotSchedule } from './modules/schedule'
-import { LlmsBot } from './modules/llms'
-import { DocumentHandler } from './modules/document-handler'
 import config from './config'
 import { commandsHelpText, FEEDBACK, LOVE, MODELS, SUPPORT, TERMS, LANG } from './constants'
 import prometheusRegister, { PrometheusMetrics } from './metrics/prometheus'
@@ -43,7 +41,6 @@ import { autoRetry } from '@grammyjs/auto-retry'
 import { run } from '@grammyjs/runner'
 import { runBotHeartBit } from './monitoring/monitoring'
 import { type BotPaymentLog } from './database/stats.service'
-// import { getChatMemberInfo } from './modules/open-ai/utils/web-crawler'
 import { TelegramPayments } from './modules/telegram_payment'
 import * as Sentry from '@sentry/node'
 import * as Events from 'events'
@@ -209,7 +206,9 @@ function createInitialSessionData (): BotSessionData {
     collections: {
       activeCollections: [],
       collectionRequestQueue: [],
-      isProcessingQueue: false
+      isProcessingQueue: false,
+      currentCollection: '',
+      collectionConversation: []
     },
     llms: {
       model: config.llms.model,
@@ -244,8 +243,6 @@ const schedule = new BotSchedule(bot)
 const openAiBot = new OpenAIBot(payments)
 const oneCountryBot = new OneCountryBot(payments)
 const translateBot = new TranslateBot()
-const llmsBot = new LlmsBot(payments)
-const documentBot = new DocumentHandler()
 const telegramPayments = new TelegramPayments(payments)
 const voiceTranslateBot = new VoiceTranslateBot(payments)
 const textToSpeechBot = new TextToSpeechBot(payments)
@@ -361,17 +358,12 @@ const PayableBots: Record<string, PayableBotConfig> = {
   sdImagesBot: { bot: sdImagesBot },
   voiceTranslate: { bot: voiceTranslateBot },
   voiceMemo: { bot: voiceMemo },
-  documentBot: { bot: documentBot },
   translateBot: { bot: translateBot },
   textToSpeech: { bot: textToSpeechBot },
   voiceToText: { bot: voiceToTextBot },
   openAiBot: {
     enabled: (ctx: OnMessageContext) => ctx.session.openAi.imageGen.isEnabled,
     bot: openAiBot
-  },
-  llmsBot: {
-    enabled: (ctx: OnMessageContext) => ctx.session.openAi.imageGen.isEnabled,
-    bot: llmsBot
   },
   oneCountryBot: { bot: oneCountryBot }
 }

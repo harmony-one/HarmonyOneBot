@@ -86,8 +86,8 @@ export enum RequestState {
 export interface Collection {
   collectionName: string
   collectionType: 'URL' | 'PDF'
+  url: string
   fileName?: string
-  url?: string
   prompt?: string
   msgId?: number
 }
@@ -101,7 +101,8 @@ export interface CollectionSessionData {
   activeCollections: Collection[]
   collectionRequestQueue: Collection[]
   isProcessingQueue: boolean
-  // docsJob: FileDoc[]
+  currentCollection: string
+  collectionConversation: ChatConversation[]
 }
 export interface Analytics {
   firstResponseTime: bigint
