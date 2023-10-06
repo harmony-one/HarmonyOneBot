@@ -1,14 +1,15 @@
 import { type OnMessageContext, type PayableBot, type RefundCallback, RequestState } from '../types'
 import pino, { type Logger } from 'pino'
-import { mapToTargetLang, translator } from './deeplClient'
 import { now } from '../../utils/perf'
+import { gcTranslateClient } from '../../google-cloud/gcTranslateClient'
 
 enum SupportedCommands {
   Translate = 'translate',
   TranslateStop = 'translatestop'
 }
 
-const SupportedLangCommands = ['bg', 'cs', 'da', 'de', 'el', 'es', 'et', 'fi', 'fr', 'hu', 'id', 'it', 'ja', 'ko', 'lt', 'lv', 'nb', 'nl', 'pl', 'ro', 'ru', 'sk', 'sl', 'sv', 'tr', 'uk', 'zh', 'en', 'pt']
+// const SupportedLangCommands = ['bg', 'cs', 'da', 'de', 'el', 'es', 'et', 'fi', 'fr', 'hu', 'id', 'it', 'ja', 'ko', 'lt', 'lv', 'nb', 'nl', 'pl', 'ro', 'ru', 'sk', 'sl', 'sv', 'tr', 'uk', 'zh', 'en', 'pt']
+const SupportedLangCommands = ['af', 'sq', 'am', 'ar', 'hy', 'as', 'ay', 'az', 'bm', 'eu', 'be', 'bn', 'bho', 'bs', 'bg', 'ca', 'ceb', 'ny', 'zh', 'zh-TW', 'co', 'hr', 'cs', 'da', 'dv', 'doi', 'nl', 'en', 'eo', 'et', 'ee', 'tl', 'fi', 'fr', 'fy', 'gl', 'lg', 'ka', 'de', 'el', 'gn', 'gu', 'ht', 'ha', 'haw', 'iw', 'hi', 'hmn', 'hu', 'is', 'ig', 'ilo', 'id', 'ga', 'it', 'ja', 'jw', 'kn', 'kk', 'km', 'rw', 'gom', 'ko', 'kri', 'ku', 'ckb', 'ky', 'lo', 'la', 'lv', 'ln', 'lt', 'lb', 'mk', 'mai', 'mg', 'ms', 'ml', 'mt', 'mi', 'mr', 'mni-Mtei', 'lus', 'mn', 'my', 'ne', 'nso', 'no', 'or', 'om', 'ps', 'fa', 'pl', 'pt', 'pa', 'qu', 'ro', 'ru', 'sm', 'sa', 'gd', 'sr', 'st', 'sn', 'sd', 'si', 'sk', 'sl', 'so', 'es', 'su', 'sw', 'sv', 'tg', 'ta', 'tt', 'te', 'th', 'ti', 'ts', 'tr', 'tk', 'ak', 'uk', 'ur', 'ug', 'uz', 'vi', 'cy', 'xh', 'yi', 'yo', 'zu', 'he', 'jv', 'zh-CN']
 
 export class TranslateBot implements PayableBot {
   public readonly module = 'TranslateBot'
@@ -167,21 +168,14 @@ To disable translation, use the command /translatestop.`)
   }
 
   public async translateMessage (ctx: OnMessageContext, message: string, targetLangCode: string): Promise<void> {
-    const targetLanguage = mapToTargetLang(targetLangCode)
+    const result = await gcTranslateClient.translate(message, targetLangCode)
 
-    if (targetLanguage === null) {
-      await ctx.reply(`Unsupported language: ${targetLangCode}`)
-      return
-    }
-
-    const result = await translator.translateText(message, null, targetLanguage)
-
-    if (!result.text) {
+    if (!result) {
       await ctx.reply('Unexpected error')
       return
     }
 
-    await ctx.reply(result.text)
+    await ctx.reply(result)
   }
 
   public async onTranslatePlainText (ctx: OnMessageContext): Promise<void> {
@@ -201,25 +195,8 @@ To disable translation, use the command /translatestop.`)
 
     const translateResults: string[] = []
     for (const targetLangCode of targetLanguages) {
-      const targetLanguage = mapToTargetLang(targetLangCode)
-
-      if (targetLanguage === null) {
-        translateResults.push(`Unsupported language: ${targetLangCode}`)
-        continue
-      }
-
-      const result = await translator.translateText(message, null, targetLanguage)
-      if (result.detectedSourceLang !== targetLangCode) {
-        translateResults.push(result.text)
-      }
-      // =======
-      //     // can't detect original language
-      //     if (completion01.completion === 'unknown') {
-      //       await ctx.api.deleteMessage(ctx.chat.id, progressMessage.message_id)
-      //       ctx.transient.analytics.actualResponseTime = now()
-      //       ctx.transient.analytics.sessionState = SessionState.Success
-      //       return
-      // >>>>>>> master
+      const result = await gcTranslateClient.translate(message, targetLangCode)
+      translateResults.push(result)
     }
 
     if (translateResults.length === 0) {
