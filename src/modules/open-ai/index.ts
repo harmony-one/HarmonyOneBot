@@ -602,6 +602,11 @@ export class OpenAIBot implements PayableBot {
     ctx.session.openAi.chatGpt.price = 0
   }
 
+  async onStop (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
+    await this.onEnd(ctx)
+    await this.llmsBot.onStop(ctx)
+  }
+
   async onNotBalanceMessage (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
     const accountId = this.payments.getAccountId(ctx)
     const account = this.payments.getUserAccount(accountId)

@@ -30,11 +30,12 @@ import {
 } from './helpers'
 import { getUrlFromText, preparePrompt, sendMessage } from '../open-ai/helpers'
 import { vertexCompletion } from './api/vertex'
-import { type LlmCompletion, llmCompletion, llmCheckCollectionStatus, queryUrlDocument } from './api/llmApi'
+import { type LlmCompletion, llmCompletion, llmCheckCollectionStatus, queryUrlDocument, deleteCollection } from './api/llmApi'
 import { LlmsModelsEnum } from './types'
 import * as Sentry from '@sentry/node'
 import { now } from '../../utils/perf'
 import { AxiosError } from 'axios'
+import OpenAI from 'openai'
 export class LlmsBot implements PayableBot {
   public readonly module = 'LlmsBot'
   private readonly logger: Logger
@@ -130,7 +131,12 @@ export class LlmsBot implements PayableBot {
     }
 
     if (ctx.hasCommand(SupportedCommands.j2Ultra.name)) {
-      await this.onChat(ctx, LlmsModelsEnum.J2_ULTRA) // .J2_ULTRA);
+      await this.onChat(ctx, LlmsModelsEnum.J2_ULTRA)
+      return
+    }
+
+    if (ctx.hasCommand(SupportedCommands.ctx.name)) {
+      await this.onCurrentCollection(ctx)
       return
     }
 
@@ -233,6 +239,64 @@ export class LlmsBot implements PayableBot {
     }
     ctx.session.collections.currentCollection = collection.collectionName
     return []
+  }
+
+  private async onCurrentCollection (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
+    try {
+      let prompt = ''
+      prompt = ctx.match as string
+      // add prefix logic here if prompt == ''
+      const collectionName = ctx.session.collections.currentCollection
+      const collection = ctx.session.collections.activeCollections.find(c => c.collectionName === collectionName)
+      if (collection && collectionName) {
+        const conversation = ctx.session.collections.collectionConversation
+        const msgId = (
+          await ctx.reply('...', {
+            message_thread_id:
+              ctx.message?.message_thread_id ??
+              ctx.message?.reply_to_message?.message_thread_id
+          })
+        ).message_id
+        const response = await queryUrlDocument({
+          collectioName: collection.collectionName,
+          prompt,
+          conversation
+        })
+        if (
+          !(await this.payments.pay(ctx as OnMessageContext, response.price))
+        ) {
+          await this.onNotBalanceMessage(ctx)
+        } else {
+          conversation.push({
+            content: `${prompt} ${collection.url}`,
+            role: 'user'
+          }, {
+            content: response.completion,
+            role: 'system'
+          })
+          await ctx.api.editMessageText(ctx.chat?.id ?? '',
+            msgId, response.completion,
+            { parse_mode: 'Markdown', disable_web_page_preview: true })
+            .catch(async (e) => { await this.onError(ctx, e) })
+          ctx.session.collections.collectionConversation = [...conversation]
+        }
+      } else {
+        await sendMessage(ctx, 'There is no active collection (url/pdf file)')
+      }
+    } catch (e: any) {
+      Sentry.captureException(e)
+      ctx.transient.analytics.sessionState = RequestState.Error
+      if (e instanceof AxiosError) {
+        if (e.message.includes('404')) {
+          ctx.session.collections.activeCollections =
+            [...ctx.session.collections.activeCollections.filter(c => c.collectionName !==
+              ctx.session.collections.currentCollection)]
+          await sendMessage(ctx, 'Collection not found, please try again')
+          return
+        }
+      }
+      await this.onError(ctx, e)
+    }
   }
 
   private async queryUrlCollection (ctx: OnMessageContext | OnCallBackQueryData,
@@ -537,7 +601,16 @@ export class LlmsBot implements PayableBot {
     }
   }
 
-  async onEnd (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
+  async onStop (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
+    for (const c of ctx.session.collections.activeCollections) {
+      this.logger.info(`Deleting collection ${c.collectionName}`)
+      await deleteCollection(c.collectionName)
+    }
+    ctx.session.collections.activeCollections = []
+    ctx.session.collections.collectionConversation = []
+    ctx.session.collections.collectionRequestQueue = []
+    ctx.session.collections.currentCollection = ''
+    ctx.session.collections.isProcessingQueue = false
     ctx.session.llms.chatConversation = []
     ctx.session.llms.usage = 0
     ctx.session.llms.price = 0
@@ -608,9 +681,30 @@ export class LlmsBot implements PayableBot {
         ctx.transient.analytics.actualResponseTime = now()
         await sendMessage(ctx, 'Error handling your request').catch(async (e) => { await this.onError(ctx, e, retryCount - 1) })
       }
+    } else if (e instanceof OpenAI.APIError) {
+      // 429 RateLimitError
+      // e.status = 400 || e.code = BadRequestError
+      this.logger.error(`OPENAI Error ${e.status}(${e.code}) - ${e.message}`)
+      if (e.code === 'context_length_exceeded') {
+        await sendMessage(ctx, e.message).catch(async (e) => { await this.onError(ctx, e, retryCount - 1) })
+        ctx.transient.analytics.actualResponseTime = now()
+        await this.onStop(ctx)
+      } else {
+        await sendMessage(
+          ctx,
+          'Error accessing OpenAI (ChatGPT). Please try later'
+        ).catch(async (e) => { await this.onError(ctx, e, retryCount - 1) })
+        ctx.transient.analytics.actualResponseTime = now()
+      }
+    } else if (e instanceof AxiosError) {
+      await sendMessage(ctx, 'Error handling your request').catch(async (e) => {
+        await this.onError(ctx, e, retryCount - 1)
+      })
     } else {
       this.logger.error(`${e.toString()}`)
-      await sendMessage(ctx, 'Error handling your request').catch(async (e) => { await this.onError(ctx, e, retryCount - 1) })
+      await sendMessage(ctx, 'Error handling your request')
+        .catch(async (e) => { await this.onError(ctx, e, retryCount - 1) }
+        )
       ctx.transient.analytics.actualResponseTime = now()
     }
   }

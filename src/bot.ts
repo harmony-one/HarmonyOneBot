@@ -535,18 +535,14 @@ bot.command('love', async (ctx) => {
   })
 })
 
-bot.command('stop', (ctx) => {
+bot.command('stop', async (ctx) => {
   logger.info('/stop command')
-  ctx.session.openAi.chatGpt.chatConversation = []
-  ctx.session.openAi.chatGpt.usage = 0
-  ctx.session.openAi.chatGpt.price = 0
+  await openAiBot.onStop(ctx as OnMessageContext)
   ctx.session.translate.enable = false
   ctx.session.translate.languages = []
   ctx.session.oneCountry.lastDomain = ''
-  ctx.session.llms.chatConversation = []
-  ctx.session.llms.usage = 0
-  ctx.session.llms.price = 0
 })
+
 // bot.command("memo", (ctx) => {
 //   ctx.reply(MEMO.text, {
 //     parse_mode: "Markdown",

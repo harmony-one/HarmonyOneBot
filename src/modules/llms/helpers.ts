@@ -15,9 +15,9 @@ import { llmAddUrlDocument } from './api/llmApi'
 export const SupportedCommands = {
   bardF: { name: 'bard' },
   bard: { name: 'b' },
-  pdf: { name: 'pdf' },
   j2Ultra: { name: 'j2-ultra' },
-  sum: { name: 'sum' }
+  sum: { name: 'sum' },
+  ctx: { name: 'ctx' }
 }
 
 export const MAX_TRIES = 3
@@ -265,11 +265,17 @@ export async function addDocToCollection (ctx: OnMessageContext | OnCallBackQuer
     url,
     fileName
   })
+  const msgId = (await ctx.reply('...', {
+    message_thread_id:
+    ctx.message?.message_thread_id ??
+    ctx.message?.reply_to_message?.message_thread_id
+  })).message_id
   ctx.session.collections.collectionRequestQueue.push({
     collectionName,
     collectionType: 'PDF',
     fileName,
     url: url.toLocaleLowerCase(),
-    prompt
+    prompt,
+    msgId
   })
 }

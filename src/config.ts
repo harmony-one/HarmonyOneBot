@@ -33,7 +33,7 @@ export default {
     ? parseInt(process.env.SESSION_TIMEOUT)
     : 48, // in hours
   llms: {
-    apiEndpoint: process.env.LLMS_ENDPOINT, // 'http://127.0.0.1:5000',
+    apiEndpoint: process.env.LLMS_ENDPOINT, // 'http://127.0.0.1:5000', // process.env.LLMS_ENDPOINT, //
     wordLimit: 50,
     model: 'chat-bison',
     minimumBalance: 0,
@@ -76,7 +76,7 @@ export default {
       isTypingEnabled: Boolean(
         parseInt(process.env.TYPING_STATUS_ENABLED ?? '1')
       ),
-      model: process.env.OPENAI_MODEL ?? 'gpt-4',
+      model: process.env.OPENAI_MODEL ?? 'gpt-3.5-turbo',
       prefixes: {
         chatPrefix: process.env.ASK_PREFIX
           ? process.env.ASK_PREFIX.split(',')

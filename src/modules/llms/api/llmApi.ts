@@ -1,8 +1,17 @@
 import axios from 'axios'
 import config from '../../../config'
 import { type ChatConversation } from '../../types'
+import pino from 'pino'
 
-const API_ENDPOINT = config.llms.apiEndpoint // 'http://localhost:8080' // http://127.0.0.1:5000' // config.llms.apiEndpoint // config.llms.apiEndpoint // 'http://127.0.0.1:5000'
+const API_ENDPOINT = config.llms.apiEndpoint // 'http://localhost:8080' // http://127.0.0.1:5000' // config.llms.apiEndpoint
+
+const logger = pino({
+  name: 'llmApi',
+  transport: {
+    target: 'pino-pretty',
+    options: { colorize: true }
+  }
+})
 
 export interface LlmCompletion {
   completion: ChatConversation | undefined
@@ -35,7 +44,6 @@ export const llmAddUrlDocument = async (args: LlmAddUrlDocument): Promise<string
 
 export const llmCheckCollectionStatus = async (name: string): Promise<number> => {
   const endpointUrl = `${API_ENDPOINT}/collections/document/${name}` // ?collectionName=${collectionName}`
-  console.log(endpointUrl)
   const response = await axios.get(endpointUrl)
   if (response) {
     return response.data.price
@@ -50,7 +58,6 @@ interface QueryUrlDocumentOutput {
 
 export const queryUrlDocument = async (args: QueryUrlDocument): Promise<QueryUrlDocumentOutput> => {
   const data = { collectionName: args.collectioName, prompt: args.prompt, conversation: args.conversation }
-  console.log(data.conversation)
   const endpointUrl = `${API_ENDPOINT}/collections/query`
   const response = await axios.post(endpointUrl, data)
   if (response) {
@@ -62,11 +69,16 @@ export const queryUrlDocument = async (args: QueryUrlDocument): Promise<QueryUrl
   }
 }
 
+export const deleteCollection = async (collectionName: string): Promise<void> => {
+  const endpointUrl = `${API_ENDPOINT}/collections/document/${collectionName}`
+  await axios.delete(endpointUrl)
+  logger.info(`Collection ${collectionName} deleted`)
+}
+
 export const llmCompletion = async (
   conversation: ChatConversation[],
   model = config.llms.model
 ): Promise<LlmCompletion> => {
-  // eslint-disable-next-line no-useless-catch
   const data = {
     model, // chat-bison@001 'chat-bison', //'gpt-3.5-turbo',
     stream: false,
