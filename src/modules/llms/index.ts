@@ -193,13 +193,6 @@ export class LlmsBot implements PayableBot {
         const collection = ctx.session.collections.activeCollections.find(c => c.fileName === fileName)
         if (collection) {
           await this.queryUrlCollection(ctx, collection.url, prompt)
-        } else {
-          if (!ctx.session.collections.isProcessingQueue) {
-            ctx.session.collections.isProcessingQueue = true
-            await this.onCheckCollectionStatus(ctx).then(() => {
-              ctx.session.collections.isProcessingQueue = false
-            })
-          }
         }
       }
       ctx.transient.analytics.actualResponseTime = now()
@@ -214,17 +207,7 @@ export class LlmsBot implements PayableBot {
       const prompt = ctx.message?.text ?? 'summarize'
       const collection = ctx.session.collections.activeCollections.find(c => c.url === url)
       const newPrompt = `${prompt}` // ${url}
-      if (!collection) {
-        if (ctx.chat?.id) {
-          await addUrlToCollection(ctx, ctx.chat?.id, url, newPrompt)
-          if (!ctx.session.collections.isProcessingQueue) {
-            ctx.session.collections.isProcessingQueue = true
-            await this.onCheckCollectionStatus(ctx).then(() => {
-              ctx.session.collections.isProcessingQueue = false
-            })
-          }
-        }
-      } else {
+      if (collection) {
         await this.queryUrlCollection(ctx, url, newPrompt)
       }
       ctx.transient.analytics.actualResponseTime = now()
@@ -321,6 +304,9 @@ export class LlmsBot implements PayableBot {
         if (
           !(await this.payments.pay(ctx as OnMessageContext, response.price))
         ) {
+          if (ctx.chat?.id) {
+            await ctx.api.deleteMessage(ctx.chat?.id, msgId)
+          }
           await this.onNotBalanceMessage(ctx)
         } else {
           conversation.push({
@@ -333,7 +319,6 @@ export class LlmsBot implements PayableBot {
           await ctx.api.editMessageText(ctx.chat?.id ?? '',
             msgId, response.completion,
             { parse_mode: 'Markdown', disable_web_page_preview: true })
-            .catch(async (e) => { await this.onError(ctx, e) })
           ctx.session.collections.collectionConversation = [...conversation]
         }
       }
@@ -341,7 +326,15 @@ export class LlmsBot implements PayableBot {
     } catch (e: any) {
       Sentry.captureException(e)
       ctx.transient.analytics.sessionState = RequestState.Error
-      if (e instanceof AxiosError) {
+      if (e instanceof GrammyError && e.error_code === 400 &&
+        (e.description.includes('MESSAGE_TOO_LONG') || e.description.includes('find end of the entity starting at byte offset'))) {
+        await sendMessage(
+          ctx,
+          'Error: Completion message too long. Please try again'
+        )
+        ctx.session.collections.collectionConversation = []
+        ctx.transient.analytics.actualResponseTime = now()
+      } else if (e instanceof AxiosError) {
         if (e.message.includes('404')) {
           ctx.session.collections.activeCollections =
             [...ctx.session.collections.activeCollections.filter(c => c.url !== url.toLocaleLowerCase())]
