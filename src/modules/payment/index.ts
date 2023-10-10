@@ -280,6 +280,13 @@ export class BotPayments {
     )
   }
 
+  public isGroupInWhitelist (chatId: number | string): boolean {
+    const { groupWhitelist } = config.payment
+    return (
+      groupWhitelist.includes(chatId.toString())
+    )
+  }
+
   public isPaymentsEnabled (): boolean {
     return Boolean(
       config.payment.isEnabled &&
