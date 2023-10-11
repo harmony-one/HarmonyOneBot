@@ -39,7 +39,8 @@ export default {
     minimumBalance: 0,
     isEnabled: Boolean(parseInt(process.env.LLMS_ENABLED ?? '1')),
     prefixes: { bardPrefix: [',', 'b.', 'B.'] },
-    pdfUrl: process.env.PDF_URL ?? ''
+    pdfUrl: process.env.PDF_URL ?? '',
+    processingTime: 300000
   },
   openAi: {
     dalle: {

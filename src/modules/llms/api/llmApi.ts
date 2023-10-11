@@ -42,13 +42,22 @@ export const llmAddUrlDocument = async (args: LlmAddUrlDocument): Promise<string
   return ''
 }
 
-export const llmCheckCollectionStatus = async (name: string): Promise<number> => {
+interface LlmCheckCollectionStatusOutput {
+  price: number
+  status: 'PROCESSING' | 'DONE'
+  error: 'INVALID_PDF' | undefined
+}
+export const llmCheckCollectionStatus = async (name: string): Promise<LlmCheckCollectionStatusOutput> => {
   const endpointUrl = `${API_ENDPOINT}/collections/document/${name}` // ?collectionName=${collectionName}`
   const response = await axios.get(endpointUrl)
   if (response) {
-    return response.data.price
+    return response.data
   }
-  return -1
+  return {
+    price: -1,
+    status: 'PROCESSING',
+    error: undefined
+  }
 }
 
 interface QueryUrlDocumentOutput {
