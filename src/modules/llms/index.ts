@@ -385,7 +385,7 @@ export class LlmsBot implements PayableBot {
             if (collection.msgId) {
               let statusMsg = ''
               if (collection.collectionType === 'URL') {
-                statusMsg = `${collection.url} - Invalid URL.`
+                statusMsg = `${collection.url} - Invalid URL`
               } else {
                 statusMsg = `${collection.fileName} - Invalid PDF format`
               }
