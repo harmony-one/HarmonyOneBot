@@ -78,7 +78,7 @@ export class LlmsBot implements PayableBot {
 
   isSupportedPdfReply (ctx: OnMessageContext | OnCallBackQueryData): string | undefined {
     const documentType = ctx.message?.reply_to_message?.document?.mime_type
-    if (documentType === 'application/pdf') {
+    if (documentType === 'application/pdf' && ctx.chat?.type === 'private') {
       return ctx.message?.reply_to_message?.document?.file_name
     }
     return undefined
@@ -92,7 +92,7 @@ export class LlmsBot implements PayableBot {
     const documentType = ctx.message?.document?.mime_type
     const SupportedDocuments = { PDF: 'application/pdf' }
 
-    if (documentType !== undefined) {
+    if (documentType !== undefined && ctx.chat?.type === 'private') {
       return Object.values(SupportedDocuments).includes(documentType)
     }
     return false
@@ -165,7 +165,7 @@ export class LlmsBot implements PayableBot {
     try {
       const file = await ctx.getFile()
       const documentType = ctx.message?.document?.mime_type
-      if (documentType === 'application/pdf' && ctx.chat?.id) {
+      if (documentType === 'application/pdf' && ctx.chat?.id && ctx.chat.type === 'private') {
         const url = file.getUrl()
         const fileName = ctx.message?.document?.file_name ?? file.file_id
         const prompt = ctx.message?.caption ?? 'Summarize this context'
@@ -259,7 +259,7 @@ export class LlmsBot implements PayableBot {
           })
           await ctx.api.editMessageText(ctx.chat?.id ?? '',
             msgId, response.completion,
-            { parse_mode: 'Markdown', disable_web_page_preview: true })
+            { disable_web_page_preview: true })
             .catch(async (e) => { await this.onError(ctx, e) })
           ctx.session.collections.collectionConversation = [...conversation]
         }
@@ -371,10 +371,7 @@ export class LlmsBot implements PayableBot {
                 }
                 await ctx.api.editMessageText(ctx.chat?.id ?? '',
                   collection.msgId, statusMsg,
-                  {
-                    parse_mode: 'Markdown',
-                    disable_web_page_preview: true
-                  })
+                  { disable_web_page_preview: true })
                   .catch(async (e) => { await this.onError(ctx, e) })
               }
               await this.queryUrlCollection(ctx, collection.url ?? '',
@@ -424,7 +421,7 @@ export class LlmsBot implements PayableBot {
   }
 
   public async urlHandler (ctx: OnMessageContext | OnCallBackQueryData, url: string, prompt: string): Promise<void> {
-    const collection = ctx.session.collections.activeCollections.find(c => c.url === url)
+    const collection = ctx.session.collections.activeCollections.find(c => c.url === url.toLocaleLowerCase())
     if (ctx.chat?.id) {
       if (!collection) {
         await addUrlToCollection(ctx, ctx.chat?.id, url, prompt)

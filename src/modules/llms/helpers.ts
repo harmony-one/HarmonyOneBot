@@ -239,6 +239,15 @@ export const prepareConversation = (
     })
 }
 
+export function extractPdfFilename (url: string): string | null {
+  const matches = url.match(/\/([^/]+\.pdf)$/)
+  if (matches) {
+    return matches[1]
+  } else {
+    return null
+  }
+}
+
 export async function addUrlToCollection (ctx: OnMessageContext | OnCallBackQueryData, chatId: number, url: string, prompt: string): Promise<void> {
   const collectionName = await llmAddUrlDocument({
     chatId,

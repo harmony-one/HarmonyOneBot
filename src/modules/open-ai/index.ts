@@ -35,6 +35,7 @@ import {
   isMentioned,
   MAX_TRIES,
   preparePrompt,
+  preparePromptWithPDF,
   sendMessage,
   SupportedCommands
 } from './helpers'
@@ -338,7 +339,7 @@ export class OpenAIBot implements PayableBot {
       const { username } = ctx.me
       const prompt = ctx.message?.text?.slice(username.length + 1) ?? '' // @
       ctx.session.openAi.chatGpt.requestQueue.push(
-        await preparePrompt(ctx, prompt)
+        await preparePromptWithPDF(ctx, prompt)
       )
       if (!ctx.session.openAi.chatGpt.isProcessingQueue) {
         ctx.session.openAi.chatGpt.isProcessingQueue = true
@@ -367,7 +368,7 @@ export class OpenAIBot implements PayableBot {
       )
       const prefix = hasPrefix(prompt)
       ctx.session.openAi.chatGpt.requestQueue.push(
-        await preparePrompt(ctx, prompt.slice(prefix.length))
+        await preparePromptWithPDF(ctx, prompt.slice(prefix.length))
       )
       if (!ctx.session.openAi.chatGpt.isProcessingQueue) {
         ctx.session.openAi.chatGpt.isProcessingQueue = true
@@ -429,7 +430,7 @@ export class OpenAIBot implements PayableBot {
         return
       }
       ctx.session.openAi.chatGpt.requestQueue.push(
-        await preparePrompt(ctx, prompt as string)
+        await preparePromptWithPDF(ctx, prompt as string)
       )
       if (!ctx.session.openAi.chatGpt.isProcessingQueue) {
         ctx.session.openAi.chatGpt.isProcessingQueue = true
@@ -460,7 +461,7 @@ export class OpenAIBot implements PayableBot {
             ctx.transient.analytics.actualResponseTime = now()
             return
           }
-          const { url } = hasUrl(ctx, prompt)
+          const { url, newPrompt } = hasUrl(ctx, prompt)
           if (chatConversation.length === 0 && !url) {
             chatConversation.push({
               role: 'system',
@@ -468,7 +469,7 @@ export class OpenAIBot implements PayableBot {
             })
           }
           if (url && ctx.chat?.id) {
-            await this.llmsBot.urlHandler(ctx, url, prompt)
+            await this.llmsBot.urlHandler(ctx, url, newPrompt)
           } else {
             chatConversation.push({
               role: 'user',

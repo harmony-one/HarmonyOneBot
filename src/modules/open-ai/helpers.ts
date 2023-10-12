@@ -3,6 +3,7 @@ import { type OnMessageContext, type OnCallBackQueryData, type MessageExtras, ty
 import { type ParseMode } from 'grammy/types'
 import { getChatModel, getChatModelPrice, getTokenNumber } from './api/openAi'
 import { type Message, type InlineKeyboardMarkup } from 'grammy/out/types'
+import { isValidUrl } from './utils/web-crawler'
 // import { llmAddUrlDocument } from '../llms/api/llmApi'
 
 export const SupportedCommands = {
@@ -70,25 +71,39 @@ export const hasNewPrefix = (prompt: string): string => {
   return ''
 }
 
+const hasUrlPrompt = (prompt: string): string => {
+  const promptArray = prompt.split(' ')
+  let url = ''
+  for (let i = 0; i < promptArray.length; i++) {
+    if (isValidUrl(promptArray[i])) {
+      url = promptArray[i]
+      promptArray.splice(i, 1)
+      break
+    }
+  }
+  return url
+}
+
 export const hasUrl = (
   ctx: OnMessageContext | OnCallBackQueryData,
   prompt: string
 ): { newPrompt: string, url: string } => {
   const urls = ctx.entities('url')
   let url = ''
-  let newPrompt = ''
+  let newPrompt = prompt
   if (urls.length > 0) {
     const { text } = urls[0]
     url = text
-    newPrompt = prompt.replace(url, '')
-    return {
-      url,
-      newPrompt
+    newPrompt = prompt.replace(url, ' this context ')
+  } else {
+    url = hasUrlPrompt(prompt)
+    if (url) {
+      newPrompt = prompt.replace(url, ' this context ')
     }
   }
   return {
     url,
-    newPrompt: prompt
+    newPrompt
   }
 }
 
@@ -150,6 +165,30 @@ export const preparePrompt = async (
   const msg = ctx.message?.reply_to_message?.text
   if (msg) {
     return `${prompt} ${msg}`
+  }
+  return prompt
+}
+
+export const preparePromptWithPDF = async (
+  ctx: OnMessageContext | OnCallBackQueryData,
+  prompt: string
+): Promise<string> => {
+  const documentType = ctx.message?.reply_to_message?.document?.mime_type
+  if (documentType === 'application/pdf' && ctx.chat?.type !== 'private') {
+    const fileId = ctx.message?.reply_to_message?.document?.file_id
+    if (fileId) {
+      const file = await ctx.api.getFile(fileId)
+      const url = file.getUrl()
+      if (url) {
+        return `${prompt} ${url}`
+      }
+    }
+    return prompt
+  }
+  const msg = ctx.message?.reply_to_message?.text
+  if (msg) {
+    const url = hasUrlPrompt(msg)
+    return `${prompt} ${url !== '' ? url : msg}`
   }
   return prompt
 }
