@@ -140,6 +140,11 @@ export class LlmsBot implements PayableBot {
       return
     }
 
+    if (ctx.hasCommand(SupportedCommands.pdf.name)) {
+      await this.onPdfCommand(ctx)
+      return
+    }
+
     if (ctx.hasCommand(SupportedCommands.sum.name) ||
       (ctx.message?.text?.startsWith('sum ') && ctx.chat?.type === 'private')
     ) {
@@ -182,6 +187,37 @@ export class LlmsBot implements PayableBot {
       await this.onError(ctx, ex)
     } finally {
       ctx.transient.analytics.actualResponseTime = now()
+    }
+  }
+
+  async onPdfCommand (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
+    try {
+      const documentType = ctx.message?.reply_to_message?.document?.mime_type
+      if (documentType !== 'application/pdf' && ctx.chat?.type === 'private') {
+        return
+      }
+      const filename = ctx.message?.reply_to_message?.document?.file_name ?? ''
+      const prompt = ctx.message?.text ?? 'Summarize this context'
+      if (filename !== '' && ctx.chat?.id) {
+        const collection = ctx.session.collections.activeCollections.find(c => c.fileName === filename)
+        if (collection) {
+          await this.queryUrlCollection(ctx, collection.url, prompt)
+        } else {
+          const fileId = ctx.message?.reply_to_message?.document?.file_id
+          const file = await ctx.api.getFile(fileId ?? '')
+          const url = file.getUrl()
+          await addDocToCollection(ctx, ctx.chat.id, filename, url, prompt)
+          if (!ctx.session.collections.isProcessingQueue) {
+            ctx.session.collections.isProcessingQueue = true
+            await this.onCheckCollectionStatus(ctx).then(() => {
+              ctx.session.collections.isProcessingQueue = false
+            })
+          }
+        }
+      }
+      ctx.transient.analytics.actualResponseTime = now()
+    } catch (e: any) {
+      await this.onError(ctx, e)
     }
   }
 

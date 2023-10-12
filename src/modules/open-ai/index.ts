@@ -35,7 +35,6 @@ import {
   isMentioned,
   MAX_TRIES,
   preparePrompt,
-  preparePromptWithPDF,
   sendMessage,
   SupportedCommands
 } from './helpers'
@@ -339,7 +338,7 @@ export class OpenAIBot implements PayableBot {
       const { username } = ctx.me
       const prompt = ctx.message?.text?.slice(username.length + 1) ?? '' // @
       ctx.session.openAi.chatGpt.requestQueue.push(
-        await preparePromptWithPDF(ctx, prompt)
+        await preparePrompt(ctx, prompt)
       )
       if (!ctx.session.openAi.chatGpt.isProcessingQueue) {
         ctx.session.openAi.chatGpt.isProcessingQueue = true
@@ -368,7 +367,7 @@ export class OpenAIBot implements PayableBot {
       )
       const prefix = hasPrefix(prompt)
       ctx.session.openAi.chatGpt.requestQueue.push(
-        await preparePromptWithPDF(ctx, prompt.slice(prefix.length))
+        await preparePrompt(ctx, prompt.slice(prefix.length))
       )
       if (!ctx.session.openAi.chatGpt.isProcessingQueue) {
         ctx.session.openAi.chatGpt.isProcessingQueue = true
@@ -430,7 +429,7 @@ export class OpenAIBot implements PayableBot {
         return
       }
       ctx.session.openAi.chatGpt.requestQueue.push(
-        await preparePromptWithPDF(ctx, prompt as string)
+        await preparePrompt(ctx, prompt as string)
       )
       if (!ctx.session.openAi.chatGpt.isProcessingQueue) {
         ctx.session.openAi.chatGpt.isProcessingQueue = true

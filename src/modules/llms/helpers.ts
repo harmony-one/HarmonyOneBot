@@ -17,7 +17,8 @@ export const SupportedCommands = {
   bard: { name: 'b' },
   j2Ultra: { name: 'j2-ultra' },
   sum: { name: 'sum' },
-  ctx: { name: 'ctx' }
+  ctx: { name: 'ctx' },
+  pdf: { name: 'pdf' }
 }
 
 export const MAX_TRIES = 3

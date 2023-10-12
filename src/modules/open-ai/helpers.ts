@@ -169,30 +169,6 @@ export const preparePrompt = async (
   return prompt
 }
 
-export const preparePromptWithPDF = async (
-  ctx: OnMessageContext | OnCallBackQueryData,
-  prompt: string
-): Promise<string> => {
-  const documentType = ctx.message?.reply_to_message?.document?.mime_type
-  if (documentType === 'application/pdf' && ctx.chat?.type !== 'private') {
-    const fileId = ctx.message?.reply_to_message?.document?.file_id
-    if (fileId) {
-      const file = await ctx.api.getFile(fileId)
-      const url = file.getUrl()
-      if (url) {
-        return `${prompt} ${url}`
-      }
-    }
-    return prompt
-  }
-  const msg = ctx.message?.reply_to_message?.text
-  if (msg) {
-    const url = hasUrlPrompt(msg)
-    return `${prompt} ${url !== '' ? url : msg}`
-  }
-  return prompt
-}
-
 export const messageTopic = async (
   ctx: OnMessageContext | OnCallBackQueryData
 ): Promise<undefined | number> => {
