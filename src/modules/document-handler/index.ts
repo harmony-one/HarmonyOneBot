@@ -70,7 +70,8 @@ export class DocumentHandler implements PayableBot {
         collectionType: 'PDF',
         fileName,
         url,
-        prompt
+        prompt,
+        processingTime: 0
       })
     } catch (e: any) {
       await this.onError(ctx, e)

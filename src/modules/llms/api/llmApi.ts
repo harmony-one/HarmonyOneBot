@@ -3,7 +3,7 @@ import config from '../../../config'
 import { type ChatConversation } from '../../types'
 import pino from 'pino'
 
-const API_ENDPOINT = config.llms.apiEndpoint // 'http://localhost:8080' // http://127.0.0.1:5000' // config.llms.apiEndpoint
+const API_ENDPOINT = config.llms.apiEndpoint // config.llms.apiEndpoint // 'http://localhost:8080' // http://127.0.0.1:5000' // config.llms.apiEndpoint
 
 const logger = pino({
   name: 'llmApi',
@@ -42,13 +42,22 @@ export const llmAddUrlDocument = async (args: LlmAddUrlDocument): Promise<string
   return ''
 }
 
-export const llmCheckCollectionStatus = async (name: string): Promise<number> => {
+interface LlmCheckCollectionStatusOutput {
+  price: number
+  status: 'PROCESSING' | 'DONE'
+  error: 'INVALID_COLLECTION' | undefined
+}
+export const llmCheckCollectionStatus = async (name: string): Promise<LlmCheckCollectionStatusOutput> => {
   const endpointUrl = `${API_ENDPOINT}/collections/document/${name}` // ?collectionName=${collectionName}`
   const response = await axios.get(endpointUrl)
   if (response) {
-    return response.data.price
+    return response.data
   }
-  return -1
+  return {
+    price: -1,
+    status: 'PROCESSING',
+    error: undefined
+  }
 }
 
 interface QueryUrlDocumentOutput {

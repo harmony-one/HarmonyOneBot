@@ -94,6 +94,7 @@ export class LlmsBot implements PayableBot {
     if (documentType !== undefined && ctx.chat?.type === 'private') {
       return Object.values(SupportedDocuments).includes(documentType)
     }
+
     return false
   }
 
@@ -384,20 +385,21 @@ export class LlmsBot implements PayableBot {
   }
 
   async onCheckCollectionStatus (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
+    const processingTime = config.llms.processingTime
     while (ctx.session.collections.collectionRequestQueue.length > 0) {
       try {
         const collection = ctx.session.collections.collectionRequestQueue.shift()
         if (collection) {
-          const price = await llmCheckCollectionStatus(collection?.collectionName ?? '')
-          if (price > 0) {
+          const result = await llmCheckCollectionStatus(collection?.collectionName ?? '')
+          if (result.price > 0) {
             if (
-              !(await this.payments.pay(ctx as OnMessageContext, price))
+              !(await this.payments.pay(ctx as OnMessageContext, result.price))
             ) {
               await this.onNotBalanceMessage(ctx)
             } else {
               ctx.session.collections.activeCollections.push(collection)
               if (collection.msgId) {
-                const oneFee = await this.payments.getPriceInONE(price)
+                const oneFee = await this.payments.getPriceInONE(result.price)
                 let statusMsg
                 if (collection.collectionType === 'URL') {
                   statusMsg = `${collection.url} processed (${this.payments.toONE(oneFee, false).toFixed(2)} ONE fee)`
@@ -412,12 +414,37 @@ export class LlmsBot implements PayableBot {
               await this.queryUrlCollection(ctx, collection.url ?? '',
                 collection.prompt ?? 'summary')
             }
+          } else if (result.price < 0) {
+            if (collection.msgId) {
+              let statusMsg = ''
+              if (collection.collectionType === 'URL') {
+                statusMsg = `${collection.url} - Invalid URL`
+              } else {
+                statusMsg = `${collection.fileName} - Invalid PDF format`
+              }
+              await ctx.api.editMessageText(ctx.chat?.id ?? '', collection.msgId, statusMsg,
+                { disable_web_page_preview: true })
+            }
           } else {
-            ctx.session.collections.collectionRequestQueue.push(collection)
-            if (ctx.session.collections.collectionRequestQueue.length === 1) {
-              await sleep(5000)
+            if (collection.processingTime && collection.processingTime > processingTime) { // 5 min max
+              if (collection.msgId) {
+                let statusMsg = ''
+                if (collection.collectionType === 'URL') {
+                  statusMsg = `${collection.url} - Processing time limit reached. Please check the file format and try again`
+                } else {
+                  statusMsg = `${collection.fileName} - Processing time limit reached. Please check the file format and try again`
+                }
+                await ctx.api.editMessageText(ctx.chat?.id ?? '', collection.msgId, statusMsg,
+                  { disable_web_page_preview: true })
+              }
             } else {
-              await sleep(2500)
+              const processingTime = collection.processingTime ? collection.processingTime + 5000 : 5000
+              ctx.session.collections.collectionRequestQueue.push({ ...collection, processingTime })
+              if (ctx.session.collections.collectionRequestQueue.length === 1) {
+                await sleep(6000)
+              } else {
+                await sleep(3000)
+              }
             }
           }
         }

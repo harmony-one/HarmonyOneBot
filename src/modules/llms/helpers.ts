@@ -265,7 +265,8 @@ export async function addUrlToCollection (ctx: OnMessageContext | OnCallBackQuer
     collectionType: 'URL',
     url: url.toLocaleLowerCase(),
     prompt,
-    msgId
+    msgId,
+    processingTime: 0
   })
 }
 
@@ -286,6 +287,7 @@ export async function addDocToCollection (ctx: OnMessageContext | OnCallBackQuer
     fileName,
     url: url.toLocaleLowerCase(),
     prompt,
-    msgId
+    msgId,
+    processingTime: 0
   })
 }
