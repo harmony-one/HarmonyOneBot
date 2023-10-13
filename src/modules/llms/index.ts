@@ -89,12 +89,12 @@ export class LlmsBot implements PayableBot {
   }
 
   isSupportedPdfFile (ctx: OnMessageContext | OnCallBackQueryData): boolean {
-    const documentType = ctx.message?.document?.mime_type
-    const SupportedDocuments = { PDF: 'application/pdf' }
+    // const documentType = ctx.message?.document?.mime_type
+    // const SupportedDocuments = { PDF: 'application/pdf' }
 
-    if (documentType !== undefined) {
-      return Object.values(SupportedDocuments).includes(documentType)
-    }
+    // if (documentType !== undefined) {
+    //   return Object.values(SupportedDocuments).includes(documentType)
+    // }
     return false
   }
 

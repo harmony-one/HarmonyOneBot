@@ -33,8 +33,7 @@ export class DocumentHandler implements PayableBot {
     ctx.transient.analytics.module = this.module
     try {
       const file = await ctx.getFile()
-      const documentType = null
-      // const documentType = ctx.message.document?.mime_type
+      const documentType = ctx.message.document?.mime_type
       if (documentType === 'application/pdf' && ctx.chat.id) {
         const url = file.getUrl()
         const fileName = ctx.message.document?.file_name ?? file.file_id
