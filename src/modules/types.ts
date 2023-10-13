@@ -90,6 +90,7 @@ export interface Collection {
   fileName?: string
   prompt?: string
   msgId?: number
+  processingTime?: number // milliseconds
 }
 
 export interface FileDoc {
