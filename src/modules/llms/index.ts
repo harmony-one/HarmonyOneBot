@@ -91,7 +91,6 @@ export class LlmsBot implements PayableBot {
   isSupportedPdfFile (ctx: OnMessageContext | OnCallBackQueryData): boolean {
     const documentType = ctx.message?.document?.mime_type
     const SupportedDocuments = { PDF: 'application/pdf' }
-
     if (documentType !== undefined && ctx.chat?.type === 'private') {
       return Object.values(SupportedDocuments).includes(documentType)
     }
