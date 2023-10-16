@@ -17,7 +17,8 @@ export const SupportedCommands = {
   bard: { name: 'b' },
   j2Ultra: { name: 'j2-ultra' },
   sum: { name: 'sum' },
-  ctx: { name: 'ctx' }
+  ctx: { name: 'ctx' },
+  pdf: { name: 'pdf' }
 }
 
 export const MAX_TRIES = 3
@@ -237,6 +238,15 @@ export const prepareConversation = (
       }
       return msgFiltered
     })
+}
+
+export function extractPdfFilename (url: string): string | null {
+  const matches = url.match(/\/([^/]+\.pdf)$/)
+  if (matches) {
+    return matches[1]
+  } else {
+    return null
+  }
 }
 
 export async function addUrlToCollection (ctx: OnMessageContext | OnCallBackQueryData, chatId: number, url: string, prompt: string): Promise<void> {

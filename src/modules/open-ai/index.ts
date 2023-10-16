@@ -460,7 +460,7 @@ export class OpenAIBot implements PayableBot {
             ctx.transient.analytics.actualResponseTime = now()
             return
           }
-          const { url } = hasUrl(ctx, prompt)
+          const { url, newPrompt } = hasUrl(ctx, prompt)
           if (chatConversation.length === 0 && !url) {
             chatConversation.push({
               role: 'system',
@@ -468,7 +468,7 @@ export class OpenAIBot implements PayableBot {
             })
           }
           if (url && ctx.chat?.id) {
-            await this.llmsBot.urlHandler(ctx, url, prompt)
+            await this.llmsBot.urlHandler(ctx, url, newPrompt)
           } else {
             chatConversation.push({
               role: 'user',

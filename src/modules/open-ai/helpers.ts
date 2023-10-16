@@ -3,6 +3,7 @@ import { type OnMessageContext, type OnCallBackQueryData, type MessageExtras, ty
 import { type ParseMode } from 'grammy/types'
 import { getChatModel, getChatModelPrice, getTokenNumber } from './api/openAi'
 import { type Message, type InlineKeyboardMarkup } from 'grammy/out/types'
+import { isValidUrl } from './utils/web-crawler'
 // import { llmAddUrlDocument } from '../llms/api/llmApi'
 
 export const SupportedCommands = {
@@ -70,25 +71,39 @@ export const hasNewPrefix = (prompt: string): string => {
   return ''
 }
 
+const hasUrlPrompt = (prompt: string): string => {
+  const promptArray = prompt.split(' ')
+  let url = ''
+  for (let i = 0; i < promptArray.length; i++) {
+    if (isValidUrl(promptArray[i])) {
+      url = promptArray[i]
+      promptArray.splice(i, 1)
+      break
+    }
+  }
+  return url
+}
+
 export const hasUrl = (
   ctx: OnMessageContext | OnCallBackQueryData,
   prompt: string
 ): { newPrompt: string, url: string } => {
   const urls = ctx.entities('url')
   let url = ''
-  let newPrompt = ''
+  let newPrompt = prompt
   if (urls.length > 0) {
     const { text } = urls[0]
     url = text
-    newPrompt = prompt.replace(url, '')
-    return {
-      url,
-      newPrompt
+    newPrompt = prompt.replace(url, ' this context ')
+  } else {
+    url = hasUrlPrompt(prompt)
+    if (url) {
+      newPrompt = prompt.replace(url, ' this context ')
     }
   }
   return {
     url,
-    newPrompt: prompt
+    newPrompt
   }
 }
 
