@@ -37,7 +37,8 @@ export const abbreviateNumber = (value: number): string => {
 
   return (+value / Math.pow(1000, index))
     .toFixed(fractionalDigits)
-    .replace(/\.0$/, '') + suffix[index - 1]
+    // .replace(/\.0$/, '')
+    + suffix[index - 1]
 }
 
 export const lessThan100 = (value: string): string => {
