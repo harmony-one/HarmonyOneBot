@@ -20,6 +20,7 @@ import {
   addDocToCollection,
   addUrlToCollection,
   hasBardPrefix,
+  hasLlamaPrefix,
   hasPrefix,
   hasUrl,
   isMentioned,
@@ -111,6 +112,11 @@ export class LlmsBot implements PayableBot {
       return
     }
 
+    if (hasLlamaPrefix(ctx.message?.text ?? '') !== '') {
+      await this.onCurrentCollection(ctx)
+      return
+    }
+
     if (ctx.hasCommand(SupportedCommands.pdf.name)) {
       await this.onPdfCommand(ctx)
       return
@@ -174,7 +180,7 @@ export class LlmsBot implements PayableBot {
       if (documentType === 'application/pdf' && ctx.chat?.id && ctx.chat.type === 'private') {
         const url = file.getUrl()
         const fileName = ctx.message?.document?.file_name ?? file.file_id
-        const prompt = ctx.message?.caption ?? 'Summarize this context'
+        const prompt = ctx.message?.caption ?? 'Summarize this context' //  from the PDF file
         await addDocToCollection(ctx, ctx.chat.id, fileName, url, prompt)
         if (!ctx.session.collections.isProcessingQueue) {
           ctx.session.collections.isProcessingQueue = true
@@ -202,7 +208,7 @@ export class LlmsBot implements PayableBot {
       if (ctx.match) {
         prompt = ctx.match as string
       } else {
-        prompt = 'Summarize this context'
+        prompt = 'Summarize this context from the PDF file'
       }
       if (filename !== '' && ctx.chat?.id) {
         const collection = ctx.session.collections.activeCollections.find(c => c.fileName === filename)
@@ -269,8 +275,16 @@ export class LlmsBot implements PayableBot {
   private async onCurrentCollection (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
     try {
       let prompt = ''
-      prompt = ctx.match as string
-      // add prefix logic here if prompt == ''
+      if (ctx.match) {
+        prompt = ctx.match as string
+      } else {
+        const prefix = hasLlamaPrefix(ctx.message?.text ?? '')
+        if (prefix && ctx.message?.text) {
+          prompt = ctx.message?.text.slice(prefix.length)
+        } else {
+          prompt = 'Summarize this context'
+        }
+      }
       const collectionName = ctx.session.collections.currentCollection
       const collection = ctx.session.collections.activeCollections.find(c => c.collectionName === collectionName)
       if (collection && collectionName) {
@@ -297,7 +311,7 @@ export class LlmsBot implements PayableBot {
             role: 'user'
           }, {
             content: response.completion,
-            role: 'system'
+            role: 'assistant'
           })
           await ctx.api.editMessageText(ctx.chat?.id ?? '',
             msgId, response.completion,
@@ -331,6 +345,12 @@ export class LlmsBot implements PayableBot {
       const collection = ctx.session.collections.activeCollections.find(c => c.url === url)
       if (collection) {
         const conversation = this.getCollectionConversation(ctx, collection)
+        if (conversation.length === 0) {
+          conversation.push({
+            role: 'system',
+            content: `${collection.collectionType === 'PDF' ? 'The context comes from an URL linked to a PDF file' : 'The context comes from the web crawler of the given URL'}`
+          })
+        }
         const msgId = (
           await ctx.reply('...', {
             message_thread_id:
@@ -356,7 +376,7 @@ export class LlmsBot implements PayableBot {
             role: 'user'
           }, {
             content: response.completion,
-            role: 'system'
+            role: 'assistant'
           })
           await ctx.api.editMessageText(ctx.chat?.id ?? '',
             msgId, response.completion,

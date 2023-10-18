@@ -39,18 +39,8 @@ export const isMentioned = (
   return false
 }
 
-export const hasChatPrefix = (prompt: string): string => {
-  const prefixList = config.openAi.chatGpt.prefixes.chatPrefix
-  for (let i = 0; i < prefixList.length; i++) {
-    if (prompt.toLocaleLowerCase().startsWith(prefixList[i])) {
-      return prefixList[i]
-    }
-  }
-  return ''
-}
-
-export const hasDallePrefix = (prompt: string): string => {
-  const prefixList = config.openAi.chatGpt.prefixes.dallePrefix
+export const hasLlamaPrefix = (prompt: string): string => {
+  const prefixList = config.openAi.chatGpt.prefixes.llamaPrefix
   for (let i = 0; i < prefixList.length; i++) {
     if (prompt.toLocaleLowerCase().startsWith(prefixList[i])) {
       return prefixList[i]
@@ -200,7 +190,7 @@ export const sendMessage = async (
 
 export const hasPrefix = (prompt: string): string => {
   return (
-    hasBardPrefix(prompt)
+    hasBardPrefix(prompt) || hasLlamaPrefix(prompt)
   )
 }
 

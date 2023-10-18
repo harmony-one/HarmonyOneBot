@@ -87,7 +87,8 @@ export default {
           : ['d.'],
         newPrefix: process.env.NEW_PREFIX
           ? process.env.NEW_PREFIX.split(',')
-          : ['n.', '..']
+          : ['n.', '..'],
+        llamaPrefix: ['*']
       },
       minimumBalance: parseInt(process.env.MIN_BALANCE ?? '0')
     }
