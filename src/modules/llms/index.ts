@@ -110,6 +110,12 @@ export class LlmsBot implements PayableBot {
       await this.onPrefix(ctx, LlmsModelsEnum.BISON)
       return
     }
+
+    if (ctx.hasCommand(SupportedCommands.pdf.name)) {
+      await this.onPdfCommand(ctx)
+      return
+    }
+
     if (ctx.hasCommand(SupportedCommands.bard.name) || ctx.hasCommand(SupportedCommands.bardF.name)) {
       await this.onChat(ctx, LlmsModelsEnum.BISON)
       return
@@ -137,11 +143,6 @@ export class LlmsBot implements PayableBot {
 
     if (ctx.hasCommand(SupportedCommands.ctx.name)) {
       await this.onCurrentCollection(ctx)
-      return
-    }
-
-    if (ctx.hasCommand(SupportedCommands.pdf.name)) {
-      await this.onPdfCommand(ctx)
       return
     }
 
@@ -197,7 +198,12 @@ export class LlmsBot implements PayableBot {
         return
       }
       const filename = ctx.message?.reply_to_message?.document?.file_name ?? ''
-      const prompt = ctx.message?.text ?? 'Summarize this context'
+      let prompt = ''
+      if (ctx.match) {
+        prompt = ctx.match as string
+      } else {
+        prompt = 'Summarize this context'
+      }
       if (filename !== '' && ctx.chat?.id) {
         const collection = ctx.session.collections.activeCollections.find(c => c.fileName === filename)
         if (collection) {
