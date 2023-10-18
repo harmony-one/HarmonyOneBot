@@ -280,11 +280,21 @@ export class BotPayments {
     )
   }
 
-  public isGroupInWhitelist (chatId: number | string): boolean {
-    const { groupWhitelist } = config.payment
-    return (
-      groupWhitelist.includes(chatId.toString())
-    )
+  public async isGroupInWhitelist (ctx: OnMessageContext): Promise<boolean> {
+    if (ctx.chat.id && ctx.chat.type !== 'private') {
+      const { whitelist } = config.payment
+      const admins = await ctx.getChatAdministrators()
+      for (let i = 0; i < admins.length; i++) {
+        const username = admins[i].user.username ?? ''
+        if (whitelist.includes(admins[i].user.id.toString()) ||
+        (username && whitelist.includes(username.toString().toLowerCase()))) {
+          return true
+        }
+      }
+      return false
+    } else {
+      return true
+    }
   }
 
   public isPaymentsEnabled (): boolean {
@@ -295,18 +305,27 @@ export class BotPayments {
     )
   }
 
-  private skipPayment (ctx: OnMessageContext, amountUSD: number): boolean {
+  private async skipPayment (ctx: OnMessageContext, amountUSD: number): Promise<boolean> {
     const { id: userId, username = '' } = ctx.update.message.from
 
     if (!this.isPaymentsEnabled()) {
       return true
     }
+
     if (amountUSD === 0) {
       return true
     }
+
     if (this.isUserInWhitelist(userId, username)) {
       this.logger.info(
         `@${username} (${userId}) is in the whitelist, skip payment`
+      )
+      return true
+    }
+
+    if (await this.isGroupInWhitelist(ctx)) {
+      this.logger.info(
+        `The chat ${ctx.chat.id} is in the whitelist, skip payment`
       )
       return true
     }
@@ -384,7 +403,7 @@ export class BotPayments {
       `Payment requested @${from.username}(${from.id}) in chat ${chat.id} (${chat.type}), accountId: ${accountId}, account address: ${userAccount.address}`
     )
 
-    if (this.skipPayment(ctx, amountUSD)) {
+    if (await this.skipPayment(ctx, amountUSD)) {
       await this.writePaymentLog(ctx, BigNumber(0))
       return true
     }
