@@ -193,7 +193,7 @@ export class VoiceMemo implements PayableBot {
             summary = this.enrichSummarization(summary)
           }
           if (kagiResult.status !== 'fulfilled' && summary) {
-            summary = `${summary}\n\n[Speechmatics]`
+            summary = `${summary}` // \n\n[Speechmatics]
           }
           const text = translation.value.translation
           if (text.length > 512) {
