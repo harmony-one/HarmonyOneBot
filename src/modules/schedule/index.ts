@@ -73,7 +73,7 @@ export class BotSchedule {
   }
 
   public isSupportedEvent (ctx: OnMessageContext): boolean {
-    return config.schedule.isEnabled && ctx.hasCommand(Object.values(SupportedCommands))
+    return ctx.hasCommand(Object.values(SupportedCommands))
   }
 
   public async getBotFeeReport (address: string): Promise<string> {
