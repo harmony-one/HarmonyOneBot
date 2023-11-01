@@ -114,17 +114,14 @@ export class SDImagesBotBase {
     const params = getParamsFromPrompt(session.prompt)
 
     let lora = params.loraName ? `${params.loraName}.safetensors` : session.lora?.path
-
     if (!lora && session.format === MEDIA_FORMAT.GIF) {
       lora = 'ym201.safetensors'
     }
-
     let balancerOperaton = await createOperation({
       model: session.model.path,
       lora,
       type: session.command
     })
-
     // eslint-disable-next-line @typescript-eslint/naming-convention
     const { message_id } = await ctx.reply(
       `You are #${balancerOperaton.queueTotalNumber + 1} in line for making images. The wait time is about ${(balancerOperaton.queueNumber + 1) * 15} seconds.`, { message_thread_id: ctx.message?.message_thread_id }
@@ -149,11 +146,11 @@ export class SDImagesBotBase {
     specialMessage?: string
   ): Promise<void> => {
     const { model, prompt, seed, lora, format } = session
-
     let balancerOperatonId
 
     try {
       const { queueMessageId, balancerOperaton } = await this.waitingQueue(session, ctx)
+
       balancerOperatonId = balancerOperaton.id
 
       ctx.chatAction = 'upload_photo'

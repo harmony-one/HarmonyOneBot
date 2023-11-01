@@ -133,9 +133,6 @@ export default {
       '0x9EE59D58606997AAFd2F6Ba46EC64402829f9b6C',
     whitelist: (process.env.PAYMENT_WHITELIST ?? '')
       .split(',')
-      .map((item) => item.toString().toLowerCase()),
-    groupWhitelist: (process.env.PAYMENT_GROUP_WHITELIST ?? '')
-      .split(',')
       .map((item) => item.toString().toLowerCase())
   },
   schedule: {
