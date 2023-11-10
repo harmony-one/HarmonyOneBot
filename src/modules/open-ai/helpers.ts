@@ -4,6 +4,7 @@ import { type ParseMode } from 'grammy/types'
 import { getChatModel, getChatModelPrice, getTokenNumber } from './api/openAi'
 import { type Message, type InlineKeyboardMarkup } from 'grammy/out/types'
 import { isValidUrl } from './utils/web-crawler'
+import type OpenAI from 'openai/index'
 // import { llmAddUrlDocument } from '../llms/api/llmApi'
 
 export const SupportedCommands = {
@@ -289,4 +290,41 @@ export const getUrlFromText = (ctx: OnMessageContext | OnCallBackQueryData): str
     }
   }
   return undefined
+}
+
+type ConversationItem = OpenAI.Chat.Completions.CreateChatCompletionRequestMessage
+
+export function limitConversationContext (conversation: ConversationItem[], charactersCount: number): ConversationItem[] {
+  const filteredConversation: ConversationItem[] = []
+  let totalContentLength = 0
+
+  for (let i = conversation.length - 1; i >= 0; i--) {
+    const message = conversation[i]
+
+    if (!message.content || message.content.length === 0) {
+      continue
+    }
+
+    if (totalContentLength + message.content.length <= charactersCount) {
+      filteredConversation.unshift(message)
+      totalContentLength += message.content.length
+      continue
+    }
+
+    const charsLeft = charactersCount - totalContentLength
+    if (charsLeft > 0) {
+      const length = Math.min(charsLeft, message.content.length)
+      const trimmedContent = message.content.substring(message.content.length - length)
+      const newMessage: ConversationItem = {
+        role: message.role,
+        content: trimmedContent
+      }
+
+      filteredConversation.unshift(newMessage)
+      totalContentLength += trimmedContent.length
+      break
+    }
+  }
+
+  return filteredConversation
 }

@@ -18,6 +18,7 @@ import {
   DalleGPTModels
 } from '../types'
 import type fs from 'fs'
+import { limitConversationContext } from '../helpers'
 
 const openai = new OpenAI({ apiKey: config.openAiKey })
 
@@ -80,12 +81,15 @@ export async function chatCompletion (
   model = config.openAi.chatGpt.model,
   limitTokens = true
 ): Promise<ChatCompletion> {
+  const limitedConversation = limitConversationContext(conversation as OpenAI.Chat.Completions.CreateChatCompletionRequestMessage[], 512)
+
   const payload = {
     model,
     max_tokens: limitTokens ? config.openAi.chatGpt.maxTokens : undefined,
     temperature: config.openAi.dalle.completions.temperature,
-    messages: conversation
+    messages: limitedConversation
   }
+
   const response = await openai.chat.completions.create(
     payload as OpenAI.Chat.CompletionCreateParamsNonStreaming
   )
@@ -115,9 +119,12 @@ export const streamChatCompletion = async (
 ): Promise<string> => {
   let completion = ''
   let wordCountMinimum = 2
+
+  const limitedConversation = limitConversationContext(conversation as OpenAI.Chat.Completions.CreateChatCompletionRequestMessage[], 512)
+
   const stream = await openai.chat.completions.create({
     model,
-    messages: conversation as OpenAI.Chat.Completions.CreateChatCompletionRequestMessage[],
+    messages: limitedConversation,
     stream: true,
     max_tokens: limitTokens ? config.openAi.chatGpt.maxTokens : undefined,
     temperature: config.openAi.dalle.completions.temperature || 0.8
