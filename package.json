@@ -21,18 +21,9 @@
     "bot"
   ],
   "jest": {
-    "transform": {
-      "^.+\\.(ts|tsx)$": "babel-jest"
-    },
-    "testEnvironment": "node",
-    "moduleFileExtensions": [
-      "ts",
-      "tsx",
-      "js",
-      "jsx",
-      "json",
-      "node"
-    ]
+    "preset": "ts-jest",
+    "rootDir": "./src",
+    "testEnvironment": "node"
   },
   "author": "Harmony One",
   "license": "MIT",
