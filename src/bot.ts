@@ -32,7 +32,7 @@ import { WalletConnect } from './modules/walletconnect'
 import { BotPayments } from './modules/payment'
 import { BotSchedule } from './modules/schedule'
 import config from './config'
-import { commandsHelpText, FEEDBACK, LOVE, MODELS, SUPPORT, TERMS, LANG } from './constants'
+import { commandsHelpText, FEEDBACK, LOVE, MODELS, SUPPORT, TERMS, LANG, ALIAS } from './constants'
 import prometheusRegister, { PrometheusMetrics } from './metrics/prometheus'
 
 import { chatService, statsService } from './database/services'
@@ -563,6 +563,15 @@ bot.command('stop', async (ctx) => {
   ctx.session.translate.enable = false
   ctx.session.translate.languages = []
   ctx.session.oneCountry.lastDomain = ''
+})
+
+bot.command(['alias', 'aliases'], async (ctx) => {
+  logger.info('/alias command')
+  return await ctx.reply(ALIAS.text, {
+    parse_mode: 'Markdown',
+    disable_web_page_preview: true,
+    message_thread_id: ctx.message?.message_thread_id
+  })
 })
 
 // bot.command("memo", (ctx) => {
