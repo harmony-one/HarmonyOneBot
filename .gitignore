@@ -6,3 +6,4 @@ node_modules/
 yarn.lock
 # Sentry Auth Token
 .sentryclirc
+.DS_Store

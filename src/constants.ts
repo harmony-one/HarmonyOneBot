@@ -259,17 +259,24 @@ export const PROMPTS = {
 
 export const ALIAS = {
   text: `
-  Productivity Commands 💬 📄
+  Shortcut Commands ⏳
 
-Chat with ChatGPT4: /ask (prompt)
-Chat with Bard: /bard (prompt)
-Summarize Voice Memos: /memo upload an .m4a file
-Transcribe Voice Memos: /text upload an .m4a file
-Menu of Transcribable Languages: /lang
-Transcribe a Telegram Message:   /bg - Bulgarian,  /cs - Czech, /da - Danish,  /de - German,  /el - Greek, /en - English (American),  /es - Spanish, /et - Estonian, /fi - Finnish,  /fr - French,  /hu - Hungarian,  /id - Indonesian, /it - Italian, /ja - Japanese, /ko - Korean, /lt - Lithuanian,  /lv - Latvian, /nb - Norwegian (Bokmål), /nl - Dutch, /pl - Polish, /ro - Romanian, /ru - Russian,  /sk - Slovak, /sl - Slovenian, /sv - Swedish, /tr - Turkish, /uk - Ukrainian,  /zh - Chinese (simplified)
-Text to Speech: /v(language code)(m or f) reply to a Telegram message
-Ask about PDF contents: /pdf (question) upload a .pdf file
-Get context from the PDF: /ctx (question) reply to a PDF upload
-Summarize a link: /sum (link)
+  Productivity Commands:
+  /ask (OR /ask35 /ask4 /chat /. /a. / A. />)
+  /bard (OR /b)
+  
+  Image Generation:
+  /image /images (/i /I. /imagine /img /sd)
+  /sd (/1)
+  /real (/2 /mm)
+  /anime (/3 /ra)
+  /mature (/4 /pw)
+  /majic (/5 /mj /4333 /h7e2)
+  /dream (/6 /ds /4384 /h879)
+  /magic (/7 /de)
+  /weird (/8 /ud)
+  /pastel (/9 /ad)
+  /shaper (/10 /ds)
+  Also /10 … /100, and more on harmony.one/models
   `
 }
