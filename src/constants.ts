@@ -256,3 +256,27 @@ export const PROMPTS = {
   qrNegativePrompt:
     '(KHFB, AuroraNegative),(Worst Quality, Low Quality:1.4), ugly, tiling, poorly drawn hands, poorly drawn feet, poorly drawn face, out of frame, extra limbs, disfigured, deformed, body out of frame, bad anatomy, watermark, signature, cut off, low contrast, underexposed, overexposed, bad art, beginner, amateur, distorted face, blurry, draft, grainy'
 }
+
+export const ALIAS = {
+  text: `
+  Shortcut Commands ⏳
+
+  Productivity Commands:
+  /ask (OR /ask35 /ask4 /chat /. /a. / A. />)
+  /bard (OR /b)
+  
+  Image Generation:
+  /image /images (/i /I. /imagine /img /sd)
+  /sd (/1)
+  /real (/2 /mm)
+  /anime (/3 /ra)
+  /mature (/4 /pw)
+  /majic (/5 /mj /4333 /h7e2)
+  /dream (/6 /ds /4384 /h879)
+  /magic (/7 /de)
+  /weird (/8 /ud)
+  /pastel (/9 /ad)
+  /shaper (/10 /ds)
+  Also /10 … /100, and more on harmony.one/models
+  `
+}
