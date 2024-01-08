@@ -50,6 +50,14 @@ export const ChatGPTModels: Record<string, ChatModel> = {
 }
 
 export const DalleGPTModels: Record<string, DalleGPTModel> = {
+  '1024x1792': {
+    size: '1024x1792',
+    price: 0.02
+  },
+  '1792x1024': {
+    size: '1792x1024',
+    price: 0.02
+  },
   '1024x1024': {
     size: '1024x1024',
     price: 0.02
