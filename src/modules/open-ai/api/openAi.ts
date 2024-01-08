@@ -35,8 +35,8 @@ export async function postGenerateImg (
   imgSize?: string
 ): Promise<OpenAI.Images.Image[]> {
   const payload = {
-    model: 'dall-e-3',
-    quality: 'hd',
+    model: config.openAi.dalle.sessionDefault.model,
+    quality: config.openAi.dalle.sessionDefault.quality,
     prompt,
     n: numImgs ?? config.openAi.dalle.sessionDefault.numImages,
     size: imgSize ?? config.openAi.dalle.sessionDefault.imgSize

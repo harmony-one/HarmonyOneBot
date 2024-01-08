@@ -54,6 +54,8 @@ export default {
       defaultPrompt:
         'beautiful waterfall in a lush jungle, with sunlight shining through the trees',
       sessionDefault: {
+        model: 'dall-e-3',
+        quality: 'hd',
         numImages: 1,
         imgSize: '1024x1024'
       }
