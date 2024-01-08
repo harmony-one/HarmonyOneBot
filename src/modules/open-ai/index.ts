@@ -43,6 +43,7 @@ import { now } from '../../utils/perf'
 import { AxiosError } from 'axios'
 import { Callbacks } from '../types'
 import { LlmsBot } from '../llms'
+import { type PhotoSize } from 'grammy/types'
 
 export class OpenAIBot implements PayableBot {
   public readonly module = 'OpenAIBot'
@@ -156,7 +157,19 @@ export class OpenAIBot implements PayableBot {
     ctx.transient.analytics.sessionState = RequestState.Success
 
     if (this.isSupportedImageReply(ctx)) {
-      await this.onAlterImage(ctx)
+      const photo = ctx.message?.photo ?? ctx.message?.reply_to_message?.photo
+      const prompt = ctx.message?.caption ?? ctx.message?.text
+      ctx.session.openAi.imageGen.imgRequestQueue.push({
+        prompt,
+        photo,
+        command: 'alter'
+      })
+      if (!ctx.session.openAi.imageGen.isProcessingQueue) {
+        ctx.session.openAi.imageGen.isProcessingQueue = true
+        await this.onImgRequestHandler(ctx).then(() => {
+          ctx.session.openAi.imageGen.isProcessingQueue = false
+        })
+      }
       return
     }
 
@@ -217,7 +230,20 @@ export class OpenAIBot implements PayableBot {
       ctx.hasCommand(SupportedCommands.dalleLC.name) ||
       (ctx.message?.text?.startsWith('dalle ') && ctx.chat?.type === 'private')
     ) {
-      await this.onGenImgCmd(ctx)
+      let prompt = (ctx.match ? ctx.match : ctx.message?.text) as string
+      if (!prompt || prompt.split(' ').length === 1) {
+        prompt = config.openAi.dalle.defaultPrompt
+      }
+      ctx.session.openAi.imageGen.imgRequestQueue.push({
+        command: 'dalle',
+        prompt
+      })
+      if (!ctx.session.openAi.imageGen.isProcessingQueue) {
+        ctx.session.openAi.imageGen.isProcessingQueue = true
+        await this.onImgRequestHandler(ctx).then(() => {
+          ctx.session.openAi.imageGen.isProcessingQueue = false
+        })
+      }
       return
     }
 
@@ -497,17 +523,33 @@ export class OpenAIBot implements PayableBot {
     }
   }
 
-  onGenImgCmd = async (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> => {
+  async onImgRequestHandler (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
+    while (ctx.session.openAi.imageGen.imgRequestQueue.length > 0) {
+      try {
+        const img = ctx.session.openAi.imageGen.imgRequestQueue.shift()
+        if (await this.hasBalance(ctx)) {
+          if (img?.command === 'dalle') {
+            await this.onGenImgCmd(img?.prompt, ctx)
+          } else {
+            await this.onAlterImage(img?.photo, img?.prompt, ctx)
+          }
+          ctx.chatAction = null
+        } else {
+          await this.onNotBalanceMessage(ctx)
+        }
+      } catch (e: any) {
+        await this.onError(ctx, e)
+      }
+    }
+  }
+
+  onGenImgCmd = async (prompt: string | undefined, ctx: OnMessageContext | OnCallBackQueryData): Promise<void> => {
     try {
       if (ctx.session.openAi.imageGen.isEnabled) {
-        let prompt = (ctx.match ? ctx.match : ctx.message?.text) as string
-        if (!prompt || prompt.split(' ').length === 1) {
-          prompt = config.openAi.dalle.defaultPrompt
-        }
         ctx.chatAction = 'upload_photo'
         const numImages = ctx.session.openAi.imageGen.numImages
         const imgSize = ctx.session.openAi.imageGen.imgSize
-        const imgs = await postGenerateImg(prompt, numImages, imgSize)
+        const imgs = await postGenerateImg(prompt ?? '', numImages, imgSize)
         const msgExtras = getMessageExtras({ caption: `/dalle ${prompt}` })
         await Promise.all(imgs.map(async (img: any) => {
           await ctx.replyWithPhoto(img.url, msgExtras).catch(async (e) => {
@@ -533,12 +575,9 @@ export class OpenAIBot implements PayableBot {
     }
   }
 
-  onAlterImage = async (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> => {
+  onAlterImage = async (photo: PhotoSize[] | undefined, prompt: string | undefined, ctx: OnMessageContext | OnCallBackQueryData): Promise<void> => {
     try {
       if (ctx.session.openAi.imageGen.isEnabled) {
-        const photo =
-          ctx.message?.photo ?? ctx.message?.reply_to_message?.photo
-        const prompt = ctx.message?.caption ?? ctx.message?.text
         const fileId = photo?.pop()?.file_id // with pop() get full image quality
         if (!fileId) {
           await ctx.reply('Cannot retrieve the image file. Please try again.')
