@@ -545,8 +545,12 @@ export class OpenAIBot implements PayableBot {
 
   onGenImgCmd = async (prompt: string | undefined, ctx: OnMessageContext | OnCallBackQueryData): Promise<void> => {
     try {
-      if (ctx.session.openAi.imageGen.isEnabled) {
+      if (ctx.session.openAi.imageGen.isEnabled && ctx.chat?.id) {
         ctx.chatAction = 'upload_photo'
+        // eslint-disable-next-line @typescript-eslint/naming-convention
+        const { message_id } = await ctx.reply(
+          'Generating dalle image...', { message_thread_id: ctx.message?.message_thread_id }
+        )
         const numImages = ctx.session.openAi.imageGen.numImages
         const imgSize = ctx.session.openAi.imageGen.imgSize
         const imgs = await postGenerateImg(prompt ?? '', numImages, imgSize)
@@ -556,6 +560,7 @@ export class OpenAIBot implements PayableBot {
             await this.onError(ctx, e, MAX_TRIES)
           })
         }))
+        await ctx.api.deleteMessage(ctx.chat?.id, message_id)
         ctx.transient.analytics.sessionState = RequestState.Success
         ctx.transient.analytics.actualResponseTime = now()
       } else {
@@ -749,74 +754,3 @@ export class OpenAIBot implements PayableBot {
     }
   }
 }
-
-// onGenImgEnCmd = async (ctx: OnMessageContext | OnCallBackQueryData) => {
-//   try {
-//     if (ctx.session.openAi.imageGen.isEnabled) {
-//       const prompt = await ctx.match;
-//       if (!prompt) {
-//         sendMessage(ctx, "Error: Missing prompt", {
-//           topicId: ctx.message?.message_thread_id,
-//         }).catch((e) =>
-//           this.onError(ctx, e, MAX_TRIES, "Error: Missing prompt")
-//         );
-//         return;
-//       }
-//       const payload = {
-//         chatId: await ctx.chat?.id!,
-//         prompt: prompt as string,
-//         numImages: await ctx.session.openAi.imageGen.numImages,
-//         imgSize: await ctx.session.openAi.imageGen.imgSize,
-//       };
-//       sendMessage(ctx, "generating improved prompt...", {
-//         topicId: ctx.message?.message_thread_id,
-//       }).catch((e) =>
-//         this.onError(ctx, e, MAX_TRIES, "generating improved prompt...")
-//       );
-//       await imgGenEnhanced(payload, ctx);
-//     } else {
-//       sendMessage(ctx, "Bot disabled", {
-//         topicId: ctx.message?.message_thread_id,
-//       }).catch((e) => this.onError(ctx, e, MAX_TRIES, "Bot disabled"));
-//     }
-//   } catch (e) {
-//     this.onError(ctx, e);
-//   }
-// };
-
-// private async imgGenEnhanced(
-//   data: ImageGenPayload,
-//   ctx: OnMessageContext | OnCallBackQueryData
-// ) {
-//   const { chatId, prompt, numImages, imgSize, model } = data;
-//   try {
-//     const upgratedPrompt = await improvePrompt(prompt, model!);
-//     if (upgratedPrompt) {
-//       await ctx
-//         .reply(
-//           `The following description was added to your prompt: ${upgratedPrompt}`
-//         )
-//         .catch((e) => {
-//           throw e;
-//         });
-//     }
-//     // bot.api.sendMessage(chatId, "generating the output...");
-//     const imgs = await postGenerateImg(
-//       upgratedPrompt || prompt,
-//       numImages,
-//       imgSize
-//     );
-//     imgs.map(async (img: any) => {
-//       await ctx
-//         .replyWithPhoto(img.url, {
-//           caption: `/DALLE ${upgratedPrompt || prompt}`,
-//         })
-//         .catch((e) => {
-//           throw e;
-//         });
-//     });
-//     return true;
-//   } catch (e) {
-//     throw e;
-//   }
-// };
