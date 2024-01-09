@@ -38,7 +38,7 @@ export default {
     model: 'chat-bison',
     minimumBalance: 0,
     isEnabled: Boolean(parseInt(process.env.LLMS_ENABLED ?? '1')),
-    prefixes: { bardPrefix: [',', 'b.', 'B.'] },
+    prefixes: { bardPrefix: ['b.', 'B.'] },
     pdfUrl: process.env.PDF_URL ?? '',
     processingTime: 300000
   },
@@ -84,9 +84,6 @@ export default {
         chatPrefix: process.env.ASK_PREFIX
           ? process.env.ASK_PREFIX.split(',')
           : ['a.', '.'], // , "?", ">",
-        dallePrefix: process.env.DALLE_PREFIX
-          ? process.env.DALLE_PREFIX.split(',')
-          : ['d.'],
         newPrefix: process.env.NEW_PREFIX
           ? process.env.NEW_PREFIX.split(',')
           : ['n.', '..'],

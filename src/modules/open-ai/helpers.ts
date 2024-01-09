@@ -16,14 +16,16 @@ export const SupportedCommands = {
   ask32: { name: 'ask32' },
   gpt: { name: 'gpt' },
   last: { name: 'last' },
-  dalle: { name: 'DALLE' },
-  dalleLC: { name: 'dalle' },
+  dalle: { name: 'image' },
+  dalleShort: { name: 'img' },
   genImgEn: { name: 'genImgEn' },
   on: { name: 'on' },
   off: { name: 'off' }
 }
 
 export const MAX_TRIES = 3
+
+const DALLE_PREFIX_LIST = ['i.', ', ', 'image ', 'd.', 'img ']
 
 export const isMentioned = (
   ctx: OnMessageContext | OnCallBackQueryData
@@ -52,7 +54,7 @@ export const hasChatPrefix = (prompt: string): string => {
 }
 
 export const hasDallePrefix = (prompt: string): string => {
-  const prefixList = config.openAi.chatGpt.prefixes.dallePrefix
+  const prefixList = DALLE_PREFIX_LIST
   for (let i = 0; i < prefixList.length; i++) {
     if (prompt.toLocaleLowerCase().startsWith(prefixList[i])) {
       return prefixList[i]

@@ -29,6 +29,7 @@ import {
   getMessageExtras,
   getPromptPrice,
   hasChatPrefix,
+  hasDallePrefix,
   hasNewPrefix,
   hasPrefix,
   hasUrl,
@@ -101,7 +102,7 @@ export class OpenAIBot implements PayableBot {
       }
       if (
         ctx.hasCommand(SupportedCommands.dalle.name) ||
-        ctx.hasCommand(SupportedCommands.dalleLC.name)
+        ctx.hasCommand(SupportedCommands.dalleShort.name)
       ) {
         const imageNumber = ctx.session.openAi.imageGen.numImages
         const imageSize = ctx.session.openAi.imageGen.imgSize
@@ -226,9 +227,8 @@ export class OpenAIBot implements PayableBot {
     }
 
     if (
-      ctx.hasCommand(SupportedCommands.dalle.name) ||
-      ctx.hasCommand(SupportedCommands.dalleLC.name) ||
-      (ctx.message?.text?.startsWith('dalle ') && ctx.chat?.type === 'private')
+      ctx.hasCommand([SupportedCommands.dalle.name, SupportedCommands.dalleShort.name]) ||
+      (ctx.message?.text?.startsWith('image ') && ctx.chat?.type === 'private')
     ) {
       let prompt = (ctx.match ? ctx.match : ctx.message?.text) as string
       if (!prompt || prompt.split(' ').length === 1) {
@@ -257,13 +257,34 @@ export class OpenAIBot implements PayableBot {
       return
     }
 
-    if (hasNewPrefix(ctx.message?.text ?? '') !== '') {
+    const text = ctx.message?.text ?? ''
+
+    if (hasNewPrefix(text) !== '') {
       await this.onEnd(ctx)
       await this.onPrefix(ctx)
       return
     }
 
-    if (hasChatPrefix(ctx.message?.text ?? '') !== '') {
+    if (hasDallePrefix(text) !== '') {
+      const prefix = hasDallePrefix(text)
+      let prompt = (ctx.match ? ctx.match : ctx.message?.text) as string
+      if (!prompt || prompt.split(' ').length === 1) {
+        prompt = config.openAi.dalle.defaultPrompt
+      }
+      ctx.session.openAi.imageGen.imgRequestQueue.push({
+        command: 'dalle',
+        prompt: prompt.slice(prefix.length)
+      })
+      if (!ctx.session.openAi.imageGen.isProcessingQueue) {
+        ctx.session.openAi.imageGen.isProcessingQueue = true
+        await this.onImgRequestHandler(ctx).then(() => {
+          ctx.session.openAi.imageGen.isProcessingQueue = false
+        })
+      }
+      return
+    }
+
+    if (hasChatPrefix(text) !== '') {
       await this.onPrefix(ctx)
       return
     }
