@@ -113,6 +113,24 @@ export class StatsService {
     return rows
   }
 
+  public async getRevenue (daysPeriod = 7): Promise<string> {
+    const currentTime = moment()
+    const dateStart = moment()
+      .tz('America/Los_Angeles')
+      .set({ hour: 0, minute: 0, second: 0 })
+      .subtract(daysPeriod, 'days')
+      .unix()
+
+    const dateEnd = currentTime.unix()
+    const result = await logRepository.createQueryBuilder('logs')
+    // const result = await invoiceRepository.createQueryBuilder('invoice')
+      .select('SUM(CAST(logs.amountCredits AS NUMERIC)) AS revenue')
+      .where('logs.isSupportedCommand=true')
+      .andWhere(`logs.createdAt BETWEEN TO_TIMESTAMP(${dateStart}) and TO_TIMESTAMP(${dateEnd})`)
+      .execute()
+    return result[0].revenue
+  }
+
   public async addCommandStat ({ tgUserId, rawMessage, command }: { tgUserId: number, rawMessage: string, command: string }): Promise<StatBotCommand> {
     const stat = new StatBotCommand()
 
