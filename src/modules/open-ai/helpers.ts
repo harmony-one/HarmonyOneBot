@@ -16,8 +16,10 @@ export const SupportedCommands = {
   ask32: { name: 'ask32' },
   gpt: { name: 'gpt' },
   last: { name: 'last' },
-  dalle: { name: 'image' },
+  dalle: { name: 'dalle' },
+  dalleImg: { name: 'image' },
   dalleShort: { name: 'img' },
+  dalleShorter: { name: 'i' },
   genImgEn: { name: 'genImgEn' },
   on: { name: 'on' },
   off: { name: 'off' }
@@ -25,7 +27,7 @@ export const SupportedCommands = {
 
 export const MAX_TRIES = 3
 
-const DALLE_PREFIX_LIST = ['i.', ', ', 'image ', 'd.', 'img ']
+const DALLE_PREFIX_LIST = ['i. ', ',', 'image ', 'd.', 'img ', 'i ']
 
 export const isMentioned = (
   ctx: OnMessageContext | OnCallBackQueryData

@@ -101,8 +101,10 @@ export class OpenAIBot implements PayableBot {
         return 0
       }
       if (
-        ctx.hasCommand(SupportedCommands.dalle.name) ||
-        ctx.hasCommand(SupportedCommands.dalleShort.name)
+        ctx.hasCommand([SupportedCommands.dalle.name,
+          SupportedCommands.dalleImg.name,
+          SupportedCommands.dalleShort.name,
+          SupportedCommands.dalleShorter.name])
       ) {
         const imageNumber = ctx.session.openAi.imageGen.numImages
         const imageSize = ctx.session.openAi.imageGen.imgSize
@@ -227,7 +229,10 @@ export class OpenAIBot implements PayableBot {
     }
 
     if (
-      ctx.hasCommand([SupportedCommands.dalle.name, SupportedCommands.dalleShort.name]) ||
+      ctx.hasCommand([SupportedCommands.dalle.name,
+        SupportedCommands.dalleImg.name,
+        SupportedCommands.dalleShort.name,
+        SupportedCommands.dalleShorter.name]) ||
       (ctx.message?.text?.startsWith('image ') && ctx.chat?.type === 'private')
     ) {
       let prompt = (ctx.match ? ctx.match : ctx.message?.text) as string
