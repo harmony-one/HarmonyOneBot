@@ -70,6 +70,28 @@ export class StatsService {
     return rows.length ? +rows[0].count : 0
   }
 
+  public async getNewUsers (daysPeriod = 0): Promise<number> {
+    const currentTime = moment()
+    const dateStart = moment()
+      .tz('America/Los_Angeles')
+      .set({ hour: 0, minute: 0, second: 0 })
+      .subtract(daysPeriod, 'days')
+      .unix()
+
+    const dateEnd = currentTime.unix()
+    const query = logRepository
+      .createQueryBuilder('logs')
+      .select('tgUserId')
+      .where(
+        'logs.createdAt = (SELECT MIN(createdAt) FROM logs WHERE tgUserId = logs.tgUserId)'
+      )
+      .andWhere(`logs.createdAt BETWEEN TO_TIMESTAMP(${dateStart}) and TO_TIMESTAMP(${dateEnd})`)
+
+    const result = await query.getMany()
+    console.log(`DAYS ${daysPeriod}`, result)
+    return 8
+  }
+
   public async getTotalMessages (daysPeriod = 0, onlySupportedCommands = false): Promise<number> {
     const currentTime = moment()
     const dateStart = moment()
@@ -83,8 +105,9 @@ export class StatsService {
     const query = logRepository
       .createQueryBuilder('logs')
       .select('count(*)')
-      .where(`logs.createdAt BETWEEN TO_TIMESTAMP(${dateStart}) and TO_TIMESTAMP(${dateEnd})`)
-
+    if (daysPeriod > 0) {
+      query.where(`logs.createdAt BETWEEN TO_TIMESTAMP(${dateStart}) and TO_TIMESTAMP(${dateEnd})`)
+    }
     if (onlySupportedCommands) {
       query.andWhere('logs.isSupportedCommand=true')
     }
@@ -113,7 +136,7 @@ export class StatsService {
     return rows
   }
 
-  public async getRevenue (daysPeriod = 7): Promise<string> {
+  public async getRevenueFromLog (daysPeriod = 7): Promise<string> {
     const currentTime = moment()
     const dateStart = moment()
       .tz('America/Los_Angeles')
@@ -123,7 +146,6 @@ export class StatsService {
 
     const dateEnd = currentTime.unix()
     const result = await logRepository.createQueryBuilder('logs')
-    // const result = await invoiceRepository.createQueryBuilder('invoice')
       .select('SUM(CAST(logs.amountCredits AS NUMERIC)) AS revenue')
       .where('logs.isSupportedCommand=true')
       .andWhere(`logs.createdAt BETWEEN TO_TIMESTAMP(${dateStart}) and TO_TIMESTAMP(${dateEnd})`)

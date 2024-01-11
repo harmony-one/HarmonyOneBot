@@ -92,8 +92,12 @@ export class BotSchedule {
       swapTradingVolume,
 
       balance,
+      uniqueUsersCount,
+      totalMessage,
+
       weeklyUsers,
-      dailyMessages
+      dailyMessages,
+      weeklyRevenue
     ] = await Promise.all([
       getDailyMetrics(MetricsDailyType.totalFee, 7),
       getDailyMetrics(MetricsDailyType.walletsCount, 7),
@@ -104,9 +108,16 @@ export class BotSchedule {
       getTradingVolume(7),
 
       getAddressBalance(this.holderAddress),
+      statsService.getUniqueUsersCount(),
+      statsService.getTotalMessages(0, true),
+
       statsService.getActiveUsers(7),
-      statsService.getTotalMessages(1, true)
+      statsService.getTotalMessages(7, true),
+      getBotFee(this.holderAddress, 7) // statsService.getRevenue(100)
     ])
+    // await statsService.getNewUsers(100)
+    // await statsService.getNewUsers(400)
+    // await statsService.getNewUsers(600)
 
     const networkFeesSum = networkFeesWeekly.reduce((sum, item) => sum + +item.value, 0)
     const walletsCountSum = walletsCountWeekly.reduce((sum, item) => sum + +item.value, 0)
@@ -123,13 +134,19 @@ export class BotSchedule {
       'Total assets, monthly stakes, weekly swaps: ' +
       `*$${abbreviateNumber(bridgeTVL)}*, ${abbreviateNumber(totalStakeONE)}, $${abbreviateNumber(swapTradingVolumeSum)}`
 
-    const oneBotMetrics =
-      'Bot total earns, weekly users, daily messages: ' +
-      `*${abbreviateNumber(balance / Math.pow(10, 18))}* ONE` +
+    const oneBotWeeklyMetrics =
+      'Bot weekly earns, users, messages: ' +
+      `*${abbreviateNumber(+weeklyRevenue)}* ONE` +
       `, ${lessThan100(abbreviateNumber(weeklyUsers))}` +
       `, ${lessThan100(abbreviateNumber(dailyMessages))}`
 
-    return `${networkUsage}\n${assetsUpdate}\n${oneBotMetrics}`
+    const oneBotMetrics =
+      'Bot total earns, users, messages: ' +
+      `*${abbreviateNumber(balance / Math.pow(10, 18))}* ONE` +
+      `, ${lessThan100(abbreviateNumber(uniqueUsersCount))}` +
+      `, ${lessThan100(abbreviateNumber(totalMessage))}`
+
+    return `${networkUsage}\n${assetsUpdate}\n${oneBotWeeklyMetrics}\n${oneBotMetrics}`
   }
 
   public async generateReportEngagementByCommand (days: number): Promise<string> {
