@@ -96,7 +96,7 @@ export class BotSchedule {
       totalMessage,
 
       weeklyUsers,
-      dailyMessages,
+      newUsers,
       weeklyRevenue
     ] = await Promise.all([
       getDailyMetrics(MetricsDailyType.totalFee, 7),
@@ -112,12 +112,9 @@ export class BotSchedule {
       statsService.getTotalMessages(0, true),
 
       statsService.getActiveUsers(7),
-      statsService.getTotalMessages(7, true),
+      statsService.getNewUsers(7),
       getBotFee(this.holderAddress, 7) // statsService.getRevenue(100)
     ])
-    // await statsService.getNewUsers(100)
-    // await statsService.getNewUsers(400)
-    // await statsService.getNewUsers(600)
 
     const networkFeesSum = networkFeesWeekly.reduce((sum, item) => sum + +item.value, 0)
     const walletsCountSum = walletsCountWeekly.reduce((sum, item) => sum + +item.value, 0)
@@ -135,10 +132,10 @@ export class BotSchedule {
       `*$${abbreviateNumber(bridgeTVL)}*, ${abbreviateNumber(totalStakeONE)}, $${abbreviateNumber(swapTradingVolumeSum)}`
 
     const oneBotWeeklyMetrics =
-      'Bot weekly earns, users, messages: ' +
+      'Bot weekly earns, active users, new users: ' +
       `*${abbreviateNumber(+weeklyRevenue)}* ONE` +
       `, ${lessThan100(abbreviateNumber(weeklyUsers))}` +
-      `, ${lessThan100(abbreviateNumber(dailyMessages))}`
+      `, ${lessThan100(abbreviateNumber(newUsers))}`
 
     const oneBotMetrics =
       'Bot total earns, users, messages: ' +

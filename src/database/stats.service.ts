@@ -79,17 +79,22 @@ export class StatsService {
       .unix()
 
     const dateEnd = currentTime.unix()
+
     const query = logRepository
       .createQueryBuilder('logs')
-      .select('tgUserId')
-      .where(
-        'logs.createdAt = (SELECT MIN(createdAt) FROM logs WHERE tgUserId = logs.tgUserId)'
-      )
-      .andWhere(`logs.createdAt BETWEEN TO_TIMESTAMP(${dateStart}) and TO_TIMESTAMP(${dateEnd})`)
-
-    const result = await query.getMany()
-    console.log(`DAYS ${daysPeriod}`, result)
-    return 8
+      .select('distinct("FirstInsertTime")') // distinct("FirstInsertTime")') // 'logs."tgUserId", MIN(logs."createdAt") AS "FirstTime"')
+      .from(subQuery =>
+        subQuery
+          .select('"tgUserId", MIN("createdAt") AS "FirstInsertTime"')
+          .from(BotLog, 'logs')
+          .groupBy('"tgUserId"'), 'first_inserts')
+    if (daysPeriod > 0) {
+      query.where(`"FirstInsertTime" BETWEEN TO_TIMESTAMP(${dateStart}) and TO_TIMESTAMP(${dateEnd})`)
+    }
+    // query.groupBy('logs."tgUserId"')
+    const result = await query.execute()
+    // console.log(dateStart, dateEnd, result.length)
+    return result.length
   }
 
   public async getTotalMessages (daysPeriod = 0, onlySupportedCommands = false): Promise<number> {
