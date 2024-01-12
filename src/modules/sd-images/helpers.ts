@@ -5,9 +5,9 @@ import { getLoraByParam, type ILora } from './api/loras-config'
 import { childrenWords, sexWords } from './words-blacklist'
 
 export enum COMMAND {
-  TEXT_TO_IMAGE = 'image',
+  TEXT_TO_IMAGE = 'sdimage',
   IMAGE_TO_IMAGE = 'img2img',
-  TEXT_TO_IMAGES = 'images',
+  TEXT_TO_IMAGES = 'sdimages',
   CONSTRUCTOR = 'constructor',
   HELP = 'help',
   TRAIN = 'train'
@@ -38,7 +38,7 @@ const removeSpaceFromBegin = (text: string): string => {
   return text.slice(idx)
 }
 
-const SPECIAL_IMG_CMD_SYMBOLS = ['i.', 'l.', 'I.', '? ', '! ', ': ', '; ', 'r.', 'R.', 'd.', 'D.', '( ', '$ ', '& ', '< ']
+const SPECIAL_IMG_CMD_SYMBOLS = ['l.', '? ', '! ', ': ', '; ', 'r.', 'R.', 'd.', 'D.', '( ', '$ ', '& ', '< ']
 
 export const getPrefix = (prompt: string, prefixList: string[]): string => {
   for (let i = 0; i < prefixList.length; i++) {
@@ -126,13 +126,13 @@ export const parseCtx = (ctx: Context): IOperation | false => {
     }
 
     if (
-      (hasCommand(ctx, 'image') || hasCommand(ctx, 'imagine')) || hasCommand(ctx, 'img')
+      (hasCommand(ctx, 'sdimage') || hasCommand(ctx, 'sdimagine')) || hasCommand(ctx, 'sdimg')
     ) {
       command = COMMAND.TEXT_TO_IMAGE
     }
 
     if (
-      (hasCommand(ctx, 'image2') || hasCommand(ctx, 'imagine2')) || hasCommand(ctx, 'img2')
+      (hasCommand(ctx, 'sdimage2') || hasCommand(ctx, 'sdimagine2')) || hasCommand(ctx, 'sdimg2')
     ) {
       command = COMMAND.TEXT_TO_IMAGE
       model = model && ({ ...model, serverNumber: 2 })
@@ -146,7 +146,7 @@ export const parseCtx = (ctx: Context): IOperation | false => {
       lora = getLoraByParam('logo', model?.baseModel ?? 'SDXL 1.0')
     }
 
-    if (hasCommand(ctx, 'images')) {
+    if (hasCommand(ctx, 'sd-images')) {
       command = COMMAND.TEXT_TO_IMAGES
     }
 

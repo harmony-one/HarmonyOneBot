@@ -16,14 +16,18 @@ export const SupportedCommands = {
   ask32: { name: 'ask32' },
   gpt: { name: 'gpt' },
   last: { name: 'last' },
-  dalle: { name: 'DALLE' },
-  dalleLC: { name: 'dalle' },
+  dalle: { name: 'dalle' },
+  dalleImg: { name: 'image' },
+  dalleShort: { name: 'img' },
+  dalleShorter: { name: 'i' },
   genImgEn: { name: 'genImgEn' },
   on: { name: 'on' },
   off: { name: 'off' }
 }
 
 export const MAX_TRIES = 3
+
+const DALLE_PREFIX_LIST = ['i. ', ',', 'image ', 'd.', 'img ', 'i ']
 
 export const isMentioned = (
   ctx: OnMessageContext | OnCallBackQueryData
@@ -52,7 +56,7 @@ export const hasChatPrefix = (prompt: string): string => {
 }
 
 export const hasDallePrefix = (prompt: string): string => {
-  const prefixList = config.openAi.chatGpt.prefixes.dallePrefix
+  const prefixList = DALLE_PREFIX_LIST
   for (let i = 0; i < prefixList.length; i++) {
     if (prompt.toLocaleLowerCase().startsWith(prefixList[i])) {
       return prefixList[i]
@@ -259,6 +263,18 @@ export const limitPrompt = (prompt: string): string => {
   return `${prompt} in around ${config.openAi.chatGpt.wordLimit} words`
 }
 
+export const getUrlFromText = (ctx: OnMessageContext | OnCallBackQueryData): string | undefined => {
+  const entities = ctx.message?.reply_to_message?.entities
+  if (entities) {
+    const urlEntity = entities.find(e => e.type === 'url')
+    if (urlEntity) {
+      const url = ctx.message?.reply_to_message?.text?.slice(urlEntity.offset, urlEntity.offset + urlEntity.length)
+      return url
+    }
+  }
+  return undefined
+}
+
 // export async function addUrlToCollection (ctx: OnMessageContext | OnCallBackQueryData, chatId: number, url: string, prompt: string): Promise<void> {
 //   const collectionName = await llmAddUrlDocument({
 //     chatId,
@@ -278,15 +294,3 @@ export const limitPrompt = (prompt: string): string => {
 //     msgId
 //   })
 // }
-
-export const getUrlFromText = (ctx: OnMessageContext | OnCallBackQueryData): string | undefined => {
-  const entities = ctx.message?.reply_to_message?.entities
-  if (entities) {
-    const urlEntity = entities.find(e => e.type === 'url')
-    if (urlEntity) {
-      const url = ctx.message?.reply_to_message?.text?.slice(urlEntity.offset, urlEntity.offset + urlEntity.length)
-      return url
-    }
-  }
-  return undefined
-}

@@ -186,7 +186,9 @@ function createInitialSessionData (): BotSessionData {
       imageGen: {
         numImages: config.openAi.dalle.sessionDefault.numImages,
         imgSize: config.openAi.dalle.sessionDefault.imgSize,
-        isEnabled: config.openAi.dalle.isEnabled
+        isEnabled: config.openAi.dalle.isEnabled,
+        imgRequestQueue: [],
+        isProcessingQueue: false
       },
       chatGpt: {
         model: config.openAi.chatGpt.model,
