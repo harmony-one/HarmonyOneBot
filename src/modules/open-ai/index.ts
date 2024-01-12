@@ -29,6 +29,7 @@ import {
   getMessageExtras,
   getPromptPrice,
   hasChatPrefix,
+  hasDallePrefix,
   hasNewPrefix,
   hasPrefix,
   hasUrl,
@@ -43,6 +44,7 @@ import { now } from '../../utils/perf'
 import { AxiosError } from 'axios'
 import { Callbacks } from '../types'
 import { LlmsBot } from '../llms'
+import { type PhotoSize } from 'grammy/types'
 
 export class OpenAIBot implements PayableBot {
   public readonly module = 'OpenAIBot'
@@ -99,8 +101,10 @@ export class OpenAIBot implements PayableBot {
         return 0
       }
       if (
-        ctx.hasCommand(SupportedCommands.dalle.name) ||
-        ctx.hasCommand(SupportedCommands.dalleLC.name)
+        ctx.hasCommand([SupportedCommands.dalle.name,
+          SupportedCommands.dalleImg.name,
+          SupportedCommands.dalleShort.name,
+          SupportedCommands.dalleShorter.name])
       ) {
         const imageNumber = ctx.session.openAi.imageGen.numImages
         const imageSize = ctx.session.openAi.imageGen.imgSize
@@ -156,7 +160,19 @@ export class OpenAIBot implements PayableBot {
     ctx.transient.analytics.sessionState = RequestState.Success
 
     if (this.isSupportedImageReply(ctx)) {
-      await this.onAlterImage(ctx)
+      const photo = ctx.message?.photo ?? ctx.message?.reply_to_message?.photo
+      const prompt = ctx.message?.caption ?? ctx.message?.text
+      ctx.session.openAi.imageGen.imgRequestQueue.push({
+        prompt,
+        photo,
+        command: 'alter'
+      })
+      if (!ctx.session.openAi.imageGen.isProcessingQueue) {
+        ctx.session.openAi.imageGen.isProcessingQueue = true
+        await this.onImgRequestHandler(ctx).then(() => {
+          ctx.session.openAi.imageGen.isProcessingQueue = false
+        })
+      }
       return
     }
 
@@ -213,11 +229,26 @@ export class OpenAIBot implements PayableBot {
     }
 
     if (
-      ctx.hasCommand(SupportedCommands.dalle.name) ||
-      ctx.hasCommand(SupportedCommands.dalleLC.name) ||
-      (ctx.message?.text?.startsWith('dalle ') && ctx.chat?.type === 'private')
+      ctx.hasCommand([SupportedCommands.dalle.name,
+        SupportedCommands.dalleImg.name,
+        SupportedCommands.dalleShort.name,
+        SupportedCommands.dalleShorter.name]) ||
+      (ctx.message?.text?.startsWith('image ') && ctx.chat?.type === 'private')
     ) {
-      await this.onGenImgCmd(ctx)
+      let prompt = (ctx.match ? ctx.match : ctx.message?.text) as string
+      if (!prompt || prompt.split(' ').length === 1) {
+        prompt = config.openAi.dalle.defaultPrompt
+      }
+      ctx.session.openAi.imageGen.imgRequestQueue.push({
+        command: 'dalle',
+        prompt
+      })
+      if (!ctx.session.openAi.imageGen.isProcessingQueue) {
+        ctx.session.openAi.imageGen.isProcessingQueue = true
+        await this.onImgRequestHandler(ctx).then(() => {
+          ctx.session.openAi.imageGen.isProcessingQueue = false
+        })
+      }
       return
     }
 
@@ -231,13 +262,34 @@ export class OpenAIBot implements PayableBot {
       return
     }
 
-    if (hasNewPrefix(ctx.message?.text ?? '') !== '') {
+    const text = ctx.message?.text ?? ''
+
+    if (hasNewPrefix(text) !== '') {
       await this.onEnd(ctx)
       await this.onPrefix(ctx)
       return
     }
 
-    if (hasChatPrefix(ctx.message?.text ?? '') !== '') {
+    if (hasDallePrefix(text) !== '') {
+      const prefix = hasDallePrefix(text)
+      let prompt = (ctx.match ? ctx.match : ctx.message?.text) as string
+      if (!prompt || prompt.split(' ').length === 1) {
+        prompt = config.openAi.dalle.defaultPrompt
+      }
+      ctx.session.openAi.imageGen.imgRequestQueue.push({
+        command: 'dalle',
+        prompt: prompt.slice(prefix.length)
+      })
+      if (!ctx.session.openAi.imageGen.isProcessingQueue) {
+        ctx.session.openAi.imageGen.isProcessingQueue = true
+        await this.onImgRequestHandler(ctx).then(() => {
+          ctx.session.openAi.imageGen.isProcessingQueue = false
+        })
+      }
+      return
+    }
+
+    if (hasChatPrefix(text) !== '') {
       await this.onPrefix(ctx)
       return
     }
@@ -497,23 +549,44 @@ export class OpenAIBot implements PayableBot {
     }
   }
 
-  onGenImgCmd = async (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> => {
-    try {
-      if (ctx.session.openAi.imageGen.isEnabled) {
-        let prompt = (ctx.match ? ctx.match : ctx.message?.text) as string
-        if (!prompt || prompt.split(' ').length === 1) {
-          prompt = config.openAi.dalle.defaultPrompt
+  async onImgRequestHandler (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
+    while (ctx.session.openAi.imageGen.imgRequestQueue.length > 0) {
+      try {
+        const img = ctx.session.openAi.imageGen.imgRequestQueue.shift()
+        if (await this.hasBalance(ctx)) {
+          if (img?.command === 'dalle') {
+            await this.onGenImgCmd(img?.prompt, ctx)
+          } else {
+            await this.onAlterImage(img?.photo, img?.prompt, ctx)
+          }
+          ctx.chatAction = null
+        } else {
+          await this.onNotBalanceMessage(ctx)
         }
+      } catch (e: any) {
+        await this.onError(ctx, e)
+      }
+    }
+  }
+
+  onGenImgCmd = async (prompt: string | undefined, ctx: OnMessageContext | OnCallBackQueryData): Promise<void> => {
+    try {
+      if (ctx.session.openAi.imageGen.isEnabled && ctx.chat?.id) {
         ctx.chatAction = 'upload_photo'
+        // eslint-disable-next-line @typescript-eslint/naming-convention
+        const { message_id } = await ctx.reply(
+          'Generating dalle image...', { message_thread_id: ctx.message?.message_thread_id }
+        )
         const numImages = ctx.session.openAi.imageGen.numImages
         const imgSize = ctx.session.openAi.imageGen.imgSize
-        const imgs = await postGenerateImg(prompt, numImages, imgSize)
+        const imgs = await postGenerateImg(prompt ?? '', numImages, imgSize)
         const msgExtras = getMessageExtras({ caption: `/dalle ${prompt}` })
         await Promise.all(imgs.map(async (img: any) => {
           await ctx.replyWithPhoto(img.url, msgExtras).catch(async (e) => {
             await this.onError(ctx, e, MAX_TRIES)
           })
         }))
+        await ctx.api.deleteMessage(ctx.chat?.id, message_id)
         ctx.transient.analytics.sessionState = RequestState.Success
         ctx.transient.analytics.actualResponseTime = now()
       } else {
@@ -533,12 +606,9 @@ export class OpenAIBot implements PayableBot {
     }
   }
 
-  onAlterImage = async (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> => {
+  onAlterImage = async (photo: PhotoSize[] | undefined, prompt: string | undefined, ctx: OnMessageContext | OnCallBackQueryData): Promise<void> => {
     try {
       if (ctx.session.openAi.imageGen.isEnabled) {
-        const photo =
-          ctx.message?.photo ?? ctx.message?.reply_to_message?.photo
-        const prompt = ctx.message?.caption ?? ctx.message?.text
         const fileId = photo?.pop()?.file_id // with pop() get full image quality
         if (!fileId) {
           await ctx.reply('Cannot retrieve the image file. Please try again.')
@@ -710,74 +780,3 @@ export class OpenAIBot implements PayableBot {
     }
   }
 }
-
-// onGenImgEnCmd = async (ctx: OnMessageContext | OnCallBackQueryData) => {
-//   try {
-//     if (ctx.session.openAi.imageGen.isEnabled) {
-//       const prompt = await ctx.match;
-//       if (!prompt) {
-//         sendMessage(ctx, "Error: Missing prompt", {
-//           topicId: ctx.message?.message_thread_id,
-//         }).catch((e) =>
-//           this.onError(ctx, e, MAX_TRIES, "Error: Missing prompt")
-//         );
-//         return;
-//       }
-//       const payload = {
-//         chatId: await ctx.chat?.id!,
-//         prompt: prompt as string,
-//         numImages: await ctx.session.openAi.imageGen.numImages,
-//         imgSize: await ctx.session.openAi.imageGen.imgSize,
-//       };
-//       sendMessage(ctx, "generating improved prompt...", {
-//         topicId: ctx.message?.message_thread_id,
-//       }).catch((e) =>
-//         this.onError(ctx, e, MAX_TRIES, "generating improved prompt...")
-//       );
-//       await imgGenEnhanced(payload, ctx);
-//     } else {
-//       sendMessage(ctx, "Bot disabled", {
-//         topicId: ctx.message?.message_thread_id,
-//       }).catch((e) => this.onError(ctx, e, MAX_TRIES, "Bot disabled"));
-//     }
-//   } catch (e) {
-//     this.onError(ctx, e);
-//   }
-// };
-
-// private async imgGenEnhanced(
-//   data: ImageGenPayload,
-//   ctx: OnMessageContext | OnCallBackQueryData
-// ) {
-//   const { chatId, prompt, numImages, imgSize, model } = data;
-//   try {
-//     const upgratedPrompt = await improvePrompt(prompt, model!);
-//     if (upgratedPrompt) {
-//       await ctx
-//         .reply(
-//           `The following description was added to your prompt: ${upgratedPrompt}`
-//         )
-//         .catch((e) => {
-//           throw e;
-//         });
-//     }
-//     // bot.api.sendMessage(chatId, "generating the output...");
-//     const imgs = await postGenerateImg(
-//       upgratedPrompt || prompt,
-//       numImages,
-//       imgSize
-//     );
-//     imgs.map(async (img: any) => {
-//       await ctx
-//         .replyWithPhoto(img.url, {
-//           caption: `/DALLE ${upgratedPrompt || prompt}`,
-//         })
-//         .catch((e) => {
-//           throw e;
-//         });
-//     });
-//     return true;
-//   } catch (e) {
-//     throw e;
-//   }
-// };

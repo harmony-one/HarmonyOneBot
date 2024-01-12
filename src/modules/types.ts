@@ -9,7 +9,7 @@ import {
   type ConversationFlavor
 } from '@grammyjs/conversations'
 import { type AutoChatActionFlavor } from '@grammyjs/auto-chat-action'
-import { type ParseMode } from 'grammy/types'
+import { type PhotoSize, type ParseMode } from 'grammy/types'
 import { type InlineKeyboardMarkup } from 'grammy/out/types'
 import type { FileFlavor } from '@grammyjs/files'
 
@@ -17,6 +17,8 @@ export interface ImageGenSessionData {
   numImages: number
   imgSize: string
   isEnabled: boolean
+  imgRequestQueue: ImageRequest[]
+  isProcessingQueue: boolean
 }
 
 export interface MessageExtras {
@@ -42,6 +44,12 @@ export interface ChatConversation {
   author?: string
   content: string
   model?: string
+}
+
+export interface ImageRequest {
+  command?: 'dalle' | 'alter'
+  prompt?: string
+  photo?: PhotoSize[] | undefined
 }
 export interface ChatGptSessionData {
   model: string
