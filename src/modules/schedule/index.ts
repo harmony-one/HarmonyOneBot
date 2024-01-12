@@ -177,7 +177,9 @@ export class BotSchedule {
       weeklyUsers,
       totalMessages,
       totalSupportedMessages,
-      engagementByCommand
+      engagementByCommand,
+      onetimeUsers,
+      newUsers
     ] = await Promise.all([
       this.getBotFeeReport(this.holderAddress),
       getBotFee(this.holderAddress, 7),
@@ -187,15 +189,19 @@ export class BotSchedule {
       statsService.getActiveUsers(7),
       statsService.getTotalMessages(7),
       statsService.getTotalMessages(7, true),
-      this.generateReportEngagementByCommand(7)
+      this.generateReportEngagementByCommand(7),
+      statsService.getOnetimeUsers(),
+      statsService.getNewUsers(7)
     ])
 
     const report = `\nBot fees: *${botFeesReport}*` +
       `\nWeekly bot fees collected: *${abbreviateNumber(botFeesWeekly)}*` +
       `\nDaily Active Users: *${abbreviateNumber(dau)}*` +
+      `\nOne-time users: *${onetimeUsers}*` +
       `\nTotal fees users pay in ONE: *${abbreviateNumber(totalOne)}*` +
       `\nTotal fees users pay in free credits: *${abbreviateNumber(totalCredits)}*` +
       `\nWeekly active users: *${abbreviateNumber(weeklyUsers)}*` +
+      `\nWeekly new users: *${abbreviateNumber(newUsers)}*` +
       `\nWeekly user engagement (any commands): *${abbreviateNumber(totalMessages)}*` +
       `\nWeekly user engagement (commands supported by bot): *${abbreviateNumber(totalSupportedMessages)}*` +
       `\n\n${engagementByCommand}`

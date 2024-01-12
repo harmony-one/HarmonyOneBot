@@ -82,7 +82,7 @@ export class StatsService {
 
     const query = logRepository
       .createQueryBuilder('logs')
-      .select('distinct("FirstInsertTime")') // distinct("FirstInsertTime")') // 'logs."tgUserId", MIN(logs."createdAt") AS "FirstTime"')
+      .select('distinct("FirstInsertTime")')
       .from(subQuery =>
         subQuery
           .select('"tgUserId", MIN("createdAt") AS "FirstInsertTime"')
@@ -91,9 +91,27 @@ export class StatsService {
     if (daysPeriod > 0) {
       query.where(`"FirstInsertTime" BETWEEN TO_TIMESTAMP(${dateStart}) and TO_TIMESTAMP(${dateEnd})`)
     }
-    // query.groupBy('logs."tgUserId"')
     const result = await query.execute()
     // console.log(dateStart, dateEnd, result.length)
+    return result.length
+  }
+
+  // Doesn't check last 7 days.
+  public async getOnetimeUsers (): Promise<number> {
+    const bufferDays = 7
+    const bufferDate = moment()
+      .tz('America/Los_Angeles')
+      .set({ hour: 0, minute: 0, second: 0 })
+      .subtract(bufferDays, 'days')
+      .unix()
+
+    const query = await logRepository
+      .createQueryBuilder('logs')
+      .select('count("tgUserId") AS row_count, "tgUserId", MAX("createdAt") AS max_created')
+      .where(`"createdAt" < TO_TIMESTAMP(${bufferDate})`)
+      .groupBy('"tgUserId"')
+      .getRawMany()
+    const result = query.filter(row => row.row_count === '1')
     return result.length
   }
 
