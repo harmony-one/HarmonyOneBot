@@ -18,6 +18,7 @@ import {
   DalleGPTModels
 } from '../types'
 import type fs from 'fs'
+import { type ChatCompletionCreateParamsNonStreaming } from 'openai/resources/chat/completions'
 
 const openai = new OpenAI({ apiKey: config.openAiKey })
 
@@ -46,6 +47,34 @@ export async function postGenerateImg (
   )
   console.log(response)
   return response.data
+}
+
+export async function imgInquiryWithVision (
+  img: string,
+  prompt: string,
+  ctx: OnMessageContext | OnCallBackQueryData
+): Promise<string> {
+  console.log(img, prompt)
+  const payLoad = {
+    model: 'gpt-4-vision-preview',
+    messages: [
+      {
+        role: 'user',
+        content: [
+          { type: 'text', text: 'What’s in this image?' },
+          {
+            type: 'image_url',
+            image_url: { url: img }
+          }
+        ]
+      }
+    ],
+    max_tokens: 300
+  }
+  console.log('HELLO')
+  const response = await openai.chat.completions.create(payLoad as unknown as ChatCompletionCreateParamsNonStreaming)
+  console.log(response.choices[0].message?.content)
+  return 'hi'
 }
 
 export async function alterGeneratedImg (
@@ -177,13 +206,85 @@ export const streamChatCompletion = async (
       }
     })
   return completion
-  // } catch (e) {
-  //   reject(e)
-  // }
-  //   })
-  // } catch (error: any) {
-  //   return await Promise.reject(error)
-  // }
+}
+export const streamChatVisionCompletion = async (
+  conversation: ChatConversation[],
+  ctx: OnMessageContext | OnCallBackQueryData,
+  model = 'gpt-4-vision-preview',
+  prompt: string,
+  imgUrl: string,
+  msgId: number,
+  limitTokens = true
+): Promise<string> => {
+  let completion = ''
+  let wordCountMinimum = 2
+  const payload = {
+    model,
+    messages: [
+      {
+        role: 'user',
+        content: [
+          { type: 'text', text: prompt },
+          {
+            type: 'image_url',
+            image_url: { url: imgUrl }
+          }
+        ]
+      }
+    ],
+    stream: true,
+    max_tokens: 300
+  }
+  const stream = await openai.chat.completions.create(payload as any)
+  let wordCount = 0
+  if (!ctx.chat?.id) {
+    throw new Error('Context chat id should not be empty after openAI streaming')
+  }
+  for await (const part of stream as any) {
+    wordCount++
+    const chunck = part.choices[0]?.delta?.content
+      ? part.choices[0]?.delta?.content
+      : ''
+    completion += chunck
+
+    if (wordCount > wordCountMinimum) {
+      if (wordCountMinimum < 64) {
+        wordCountMinimum *= 2
+      }
+      completion = completion.replaceAll('...', '')
+      completion += '...'
+      wordCount = 0
+      await ctx.api
+        .editMessageText(ctx.chat?.id, msgId, completion)
+        .catch(async (e: any) => {
+          if (e instanceof GrammyError) {
+            if (e.error_code !== 400) {
+              throw e
+            } else {
+              logger.error(e)
+            }
+          } else {
+            throw e
+          }
+        })
+    }
+  }
+  completion = completion.replaceAll('...', '')
+
+  await ctx.api
+    .editMessageText(ctx.chat?.id, msgId, completion)
+    .catch((e: any) => {
+      if (e instanceof GrammyError) {
+        if (e.error_code !== 400) {
+          throw e
+        } else {
+          logger.error(e)
+        }
+      } else {
+        throw e
+      }
+    })
+  return completion
 }
 
 export async function improvePrompt (promptText: string, model: string): Promise<string> {

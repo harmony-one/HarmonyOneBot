@@ -47,7 +47,7 @@ export interface ChatConversation {
 }
 
 export interface ImageRequest {
-  command?: 'dalle' | 'alter'
+  command?: 'dalle' | 'alter' | 'vision'
   prompt?: string
   photo?: PhotoSize[] | undefined
 }
