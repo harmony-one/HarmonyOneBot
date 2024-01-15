@@ -27,7 +27,7 @@ export const SupportedCommands = {
 
 export const MAX_TRIES = 3
 
-const DALLE_PREFIX_LIST = ['i. ', ',', 'image ', 'd.', 'img ', 'i ']
+const DALLE_PREFIX_LIST = ['i. ', ',', 'image ', 'd.', 'img ']
 
 export const isMentioned = (
   ctx: OnMessageContext | OnCallBackQueryData
