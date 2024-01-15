@@ -14,12 +14,12 @@ import {
 } from '../types'
 import {
   alterGeneratedImg,
+  chatCompletion,
   getChatModel,
   getDalleModel,
   getDalleModelPrice,
   postGenerateImg,
-  streamChatCompletion,
-  streamChatVisionCompletion
+  streamChatCompletion
 } from './api/openAi'
 import { appText } from './utils/text'
 import { chatService } from '../../database/services'
@@ -91,7 +91,7 @@ export class OpenAIBot implements PayableBot {
     try {
       const priceAdjustment = config.openAi.chatGpt.priceAdjustment
       const prompts = ctx.match
-      if (this.isSupportedImageReply(ctx)) {
+      if (this.isSupportedImageReply(ctx) && !isNaN(+prompts)) {
         const imageNumber = ctx.message?.caption || ctx.message?.text
         const imageSize = ctx.session.openAi.imageGen.imgSize
         const model = getDalleModel(imageSize)
@@ -609,18 +609,6 @@ export class OpenAIBot implements PayableBot {
     }
   }
 
-  // imgInquiryWithVision = async (
-  //   img: string,
-  //   prompt: string,
-  //   ctx: OnMessageContext | OnCallBackQueryData
-  // ): Promise<string> => {
-  //   console.log(img, prompt)
-  //   console.log('HELLO')
-  //   const response = await openai.chat.completions.create(payLoad as unknown as ChatCompletionCreateParamsNonStreaming)
-  //   console.log(response.choices[0].message?.content)
-  //   return 'hi'
-  // }
-
   onInquiryImage = async (photo: PhotoSize[] | undefined, prompt: string | undefined, ctx: OnMessageContext | OnCallBackQueryData): Promise<void> => {
     try {
       if (ctx.session.openAi.imageGen.isEnabled) {
@@ -639,30 +627,50 @@ export class OpenAIBot implements PayableBot {
               ctx.message?.reply_to_message?.message_thread_id
           })
         ).message_id
-        const completion = await streamChatVisionCompletion([], ctx, 'gpt-4-vision-preview', prompt ?? '', filePath, msgId, true)
-        console.log(completion)
-        // const inquiry = await imgInquiryWithVision(filePath, prompt ?? '', ctx)
-        // console.log(inquiry)
-        // const imgSize = ctx.session.openAi.imageGen.imgSize
-        // ctx.chatAction = 'upload_photo'
-        // const imgs = await alterGeneratedImg(prompt ?? '', filePath, ctx, imgSize)
-        // if (imgs) {
-        //   imgs.map(async (img: any) => {
-        //     if (img?.url) {
-        //       await ctx
-        //         .replyWithPhoto(img.url, { message_thread_id: ctx.message?.message_thread_id })
-        //         .catch(async (e) => {
-        //           await this.onError(
-        //             ctx,
-        //             e,
-        //             MAX_TRIES,
-        //             'There was an error while generating the image'
-        //           )
-        //         })
-        //     }
-        //   })
-        // }
-        // ctx.chatAction = null
+        const messages = [
+          {
+            role: 'user',
+            content: [
+              { type: 'text', text: prompt },
+              {
+                type: 'image_url',
+                image_url: { url: filePath }
+              }
+            ]
+          }
+        ]
+        const model = ChatGPTModelsEnum.GPT_4_VISION_PREVIEW
+        const completion = await chatCompletion(messages as any, model, true)
+        if (completion) {
+          await ctx.api
+            .editMessageText(`${ctx.chat?.id}`, msgId, completion.completion)
+            .catch(async (e: any) => {
+              await this.onError(
+                ctx,
+                e,
+                MAX_TRIES,
+                'An error occurred while generating the AI edit'
+              )
+            })
+          ctx.transient.analytics.sessionState = RequestState.Success
+          ctx.transient.analytics.actualResponseTime = now()
+          const price = getPromptPrice(completion.completion, {
+            conversation: [],
+            prompt,
+            model,
+            ctx
+          })
+          this.logger.info(
+            `streamChatCompletion result = tokens: ${
+                price.promptTokens + price.completionTokens
+            } | ${model} | price: ${price.price}¢`
+          )
+          if (
+            !(await this.payments.pay(ctx as OnMessageContext, price.price))
+          ) {
+            await this.onNotBalanceMessage(ctx)
+          }
+        }
       }
     } catch (e: any) {
       await this.onError(

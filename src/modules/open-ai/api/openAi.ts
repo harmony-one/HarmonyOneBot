@@ -18,7 +18,7 @@ import {
   DalleGPTModels
 } from '../types'
 import type fs from 'fs'
-import { type ChatCompletionCreateParamsNonStreaming } from 'openai/resources/chat/completions'
+import { type ChatCompletionMessageParam, type ChatCompletionCreateParamsNonStreaming } from 'openai/resources/chat/completions'
 
 const openai = new OpenAI({ apiKey: config.openAiKey })
 
@@ -112,15 +112,12 @@ export async function chatCompletion (
   model = config.openAi.chatGpt.model,
   limitTokens = true
 ): Promise<ChatCompletion> {
-  const payload = {
+  const response = await openai.chat.completions.create({
     model,
     max_tokens: limitTokens ? config.openAi.chatGpt.maxTokens : undefined,
     temperature: config.openAi.dalle.completions.temperature,
-    messages: conversation
-  }
-  const response = await openai.chat.completions.create(
-    payload as OpenAI.Chat.CompletionCreateParamsNonStreaming
-  )
+    messages: conversation as ChatCompletionMessageParam[]
+  })
   const chatModel = getChatModel(model)
   if (response.usage?.prompt_tokens === undefined) {
     throw new Error('Unknown number of prompt tokens used')
@@ -149,7 +146,7 @@ export const streamChatCompletion = async (
   let wordCountMinimum = 2
   const stream = await openai.chat.completions.create({
     model,
-    messages: conversation as OpenAI.Chat.Completions.CreateChatCompletionRequestMessage[],
+    messages: conversation as ChatCompletionMessageParam[], // OpenAI.Chat.Completions.CreateChatCompletionRequestMessage[],
     stream: true,
     max_tokens: limitTokens ? config.openAi.chatGpt.maxTokens : undefined,
     temperature: config.openAi.dalle.completions.temperature || 0.8

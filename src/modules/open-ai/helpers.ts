@@ -235,8 +235,8 @@ export const hasPrefix = (prompt: string): string => {
 export const getPromptPrice = (completion: string, data: ChatPayload): { price: number, promptTokens: number, completionTokens: number } => {
   const { conversation, ctx, model } = data
 
-  const prompt = conversation[conversation.length - 1].content
-  const promptTokens = getTokenNumber(prompt)
+  const prompt = data.prompt ? data.prompt : conversation[conversation.length - 1].content
+  const promptTokens = getTokenNumber(prompt as string)
   const completionTokens = getTokenNumber(completion)
   const modelPrice = getChatModel(model)
   const price =

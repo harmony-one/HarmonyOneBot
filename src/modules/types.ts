@@ -36,13 +36,20 @@ export interface ChatCompletion {
 }
 export interface ChatPayload {
   conversation: ChatConversation[]
+  prompt?: string
   model: string
   ctx: OnMessageContext | OnCallBackQueryData
+}
+
+export interface VisionContent {
+  type: string
+  text?: string
+  image_url?: { url: string }
 }
 export interface ChatConversation {
   role?: string
   author?: string
-  content: string
+  content: string | [VisionContent]
   model?: string
 }
 

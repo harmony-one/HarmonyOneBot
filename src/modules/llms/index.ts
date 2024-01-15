@@ -550,7 +550,7 @@ export class LlmsBot implements PayableBot {
       await ctx.api.editMessageText(
         ctx.chat.id,
         msgId,
-        response.completion.content
+        response.completion.content as string
       )
       conversation.push(response.completion)
       // const price = getPromptPrice(completion, data);
@@ -648,7 +648,7 @@ export class LlmsBot implements PayableBot {
             return
           }
           const chat: ChatConversation = {
-            content: limitPrompt(prompt),
+            content: limitPrompt(prompt as string),
             model
           }
           if (model === LlmsModelsEnum.BISON) {
