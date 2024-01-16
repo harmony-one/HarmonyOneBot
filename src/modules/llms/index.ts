@@ -629,7 +629,7 @@ export class LlmsBot implements PayableBot {
     while (ctx.session.llms.requestQueue.length > 0) {
       try {
         const msg = ctx.session.llms.requestQueue.shift()
-        const prompt = msg?.content
+        const prompt = msg?.content as string
         const model = msg?.model
         const { chatConversation } = ctx.session.llms
         if (await this.hasBalance(ctx)) {
@@ -648,7 +648,7 @@ export class LlmsBot implements PayableBot {
             return
           }
           const chat: ChatConversation = {
-            content: limitPrompt(prompt as string),
+            content: limitPrompt(prompt),
             model
           }
           if (model === LlmsModelsEnum.BISON) {

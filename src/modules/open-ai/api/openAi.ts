@@ -1,10 +1,10 @@
 import OpenAI from 'openai'
 import { encode } from 'gpt-tokenizer'
 import { GrammyError } from 'grammy'
-
 import config from '../../../config'
 import { deleteFile, getImage } from '../utils/file'
 import {
+  // type VisionContent,
   type ChatCompletion,
   type ChatConversation,
   type OnCallBackQueryData,
@@ -15,10 +15,12 @@ import {
   type ChatModel,
   ChatGPTModels,
   type DalleGPTModel,
-  DalleGPTModels
+  DalleGPTModels,
+  ChatGPTModelsEnum
 } from '../types'
 import type fs from 'fs'
 import { type ChatCompletionMessageParam, type ChatCompletionCreateParamsNonStreaming } from 'openai/resources/chat/completions'
+import { type Stream } from 'openai/streaming'
 
 const openai = new OpenAI({ apiKey: config.openAiKey })
 
@@ -204,10 +206,20 @@ export const streamChatCompletion = async (
     })
   return completion
 }
+
+// interface VisionCompletionBody {
+//   model: string
+//   messages: Array<{
+//     role: string
+//     content: string | VisionContent[]
+//   }>
+//   stream: boolean
+//   max_tokens: number | undefined
+// }
 export const streamChatVisionCompletion = async (
   conversation: ChatConversation[],
   ctx: OnMessageContext | OnCallBackQueryData,
-  model = 'gpt-4-vision-preview',
+  model = ChatGPTModelsEnum.GPT_4_VISION_PREVIEW,
   prompt: string,
   imgUrl: string,
   msgId: number,
@@ -215,7 +227,7 @@ export const streamChatVisionCompletion = async (
 ): Promise<string> => {
   let completion = ''
   let wordCountMinimum = 2
-  const payload = {
+  const payload: any = {
     model,
     messages: [
       {
@@ -230,14 +242,14 @@ export const streamChatVisionCompletion = async (
       }
     ],
     stream: true,
-    max_tokens: 300
+    max_tokens: limitTokens ? config.openAi.chatGpt.maxTokens : undefined
   }
-  const stream = await openai.chat.completions.create(payload as any)
+  const stream = await openai.chat.completions.create(payload) as unknown as Stream<OpenAI.Chat.Completions.ChatCompletionChunk>
   let wordCount = 0
   if (!ctx.chat?.id) {
     throw new Error('Context chat id should not be empty after openAI streaming')
   }
-  for await (const part of stream as any) {
+  for await (const part of stream) {
     wordCount++
     const chunck = part.choices[0]?.delta?.content
       ? part.choices[0]?.delta?.content

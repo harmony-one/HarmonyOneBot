@@ -14,12 +14,12 @@ import {
 } from '../types'
 import {
   alterGeneratedImg,
-  chatCompletion,
   getChatModel,
   getDalleModel,
   getDalleModelPrice,
   postGenerateImg,
-  streamChatCompletion
+  streamChatCompletion,
+  streamChatVisionCompletion
 } from './api/openAi'
 import { appText } from './utils/text'
 import { chatService } from '../../database/services'
@@ -578,7 +578,7 @@ export class OpenAIBot implements PayableBot {
         ctx.chatAction = 'upload_photo'
         // eslint-disable-next-line @typescript-eslint/naming-convention
         const { message_id } = await ctx.reply(
-          'Generating dalle image...', { message_thread_id: ctx.message?.message_thread_id }
+          'Generating image via OpenAI\'s DALL·E 3...', { message_thread_id: ctx.message?.message_thread_id }
         )
         const numImages = ctx.session.openAi.imageGen.numImages
         const imgSize = ctx.session.openAi.imageGen.imgSize
@@ -640,21 +640,11 @@ export class OpenAIBot implements PayableBot {
           }
         ]
         const model = ChatGPTModelsEnum.GPT_4_VISION_PREVIEW
-        const completion = await chatCompletion(messages as any, model, true)
+        const completion = await streamChatVisionCompletion(messages, ctx, model, prompt ?? '', filePath, msgId, true)
         if (completion) {
-          await ctx.api
-            .editMessageText(`${ctx.chat?.id}`, msgId, completion.completion)
-            .catch(async (e: any) => {
-              await this.onError(
-                ctx,
-                e,
-                MAX_TRIES,
-                'An error occurred while generating the AI edit'
-              )
-            })
           ctx.transient.analytics.sessionState = RequestState.Success
           ctx.transient.analytics.actualResponseTime = now()
-          const price = getPromptPrice(completion.completion, {
+          const price = getPromptPrice(completion, {
             conversation: [],
             prompt,
             model,

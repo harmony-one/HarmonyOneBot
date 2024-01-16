@@ -4,7 +4,7 @@
     "module": "CommonJS",
     "outDir": "dist",
     "types": ["node"],
-    "lib": ["es2022"],
+    "lib": ["es2022"], // , "dom", "dom.iterable"]
     "target": "es2020",
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,

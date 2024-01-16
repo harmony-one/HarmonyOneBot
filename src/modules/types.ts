@@ -49,7 +49,7 @@ export interface VisionContent {
 export interface ChatConversation {
   role?: string
   author?: string
-  content: string | [VisionContent]
+  content: string | VisionContent[]
   model?: string
 }
 
