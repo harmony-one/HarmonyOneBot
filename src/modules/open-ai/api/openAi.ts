@@ -4,7 +4,6 @@ import { GrammyError } from 'grammy'
 import config from '../../../config'
 import { deleteFile, getImage } from '../utils/file'
 import {
-  // type VisionContent,
   type ChatCompletion,
   type ChatConversation,
   type OnCallBackQueryData,
@@ -207,15 +206,6 @@ export const streamChatCompletion = async (
   return completion
 }
 
-// interface VisionCompletionBody {
-//   model: string
-//   messages: Array<{
-//     role: string
-//     content: string | VisionContent[]
-//   }>
-//   stream: boolean
-//   max_tokens: number | undefined
-// }
 export const streamChatVisionCompletion = async (
   conversation: ChatConversation[],
   ctx: OnMessageContext | OnCallBackQueryData,
