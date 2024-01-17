@@ -145,7 +145,7 @@ export class OpenAIBot implements PayableBot {
     const photo = ctx.message?.photo ?? ctx.message?.reply_to_message?.photo
     if (photo && ctx.session.openAi.imageGen.isEnabled) {
       const prompt = ctx.message?.caption ?? ctx.message?.text
-      if (prompt) { // && !isNaN(+prompt)
+      if (prompt && !isNaN(+prompt)) { // && !isNaN(+prompt)
         return true
       }
     }
