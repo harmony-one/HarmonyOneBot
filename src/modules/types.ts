@@ -57,6 +57,7 @@ export interface ImageRequest {
   command?: 'dalle' | 'alter' | 'vision'
   prompt?: string
   photo?: PhotoSize[] | undefined
+  photoUrl?: string[]
 }
 export interface ChatGptSessionData {
   model: string

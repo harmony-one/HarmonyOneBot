@@ -18,7 +18,7 @@ import {
   ChatGPTModelsEnum
 } from '../types'
 import type fs from 'fs'
-import { type ChatCompletionMessageParam, type ChatCompletionCreateParamsNonStreaming } from 'openai/resources/chat/completions'
+import { type ChatCompletionMessageParam } from 'openai/resources/chat/completions'
 import { type Stream } from 'openai/streaming'
 
 const openai = new OpenAI({ apiKey: config.openAiKey })
@@ -48,34 +48,6 @@ export async function postGenerateImg (
   )
   console.log(response)
   return response.data
-}
-
-export async function imgInquiryWithVision (
-  img: string,
-  prompt: string,
-  ctx: OnMessageContext | OnCallBackQueryData
-): Promise<string> {
-  console.log(img, prompt)
-  const payLoad = {
-    model: 'gpt-4-vision-preview',
-    messages: [
-      {
-        role: 'user',
-        content: [
-          { type: 'text', text: 'What’s in this image?' },
-          {
-            type: 'image_url',
-            image_url: { url: img }
-          }
-        ]
-      }
-    ],
-    max_tokens: 300
-  }
-  console.log('HELLO')
-  const response = await openai.chat.completions.create(payLoad as unknown as ChatCompletionCreateParamsNonStreaming)
-  console.log(response.choices[0].message?.content)
-  return 'hi'
 }
 
 export async function alterGeneratedImg (
@@ -207,11 +179,10 @@ export const streamChatCompletion = async (
 }
 
 export const streamChatVisionCompletion = async (
-  conversation: ChatConversation[],
   ctx: OnMessageContext | OnCallBackQueryData,
   model = ChatGPTModelsEnum.GPT_4_VISION_PREVIEW,
   prompt: string,
-  imgUrl: string,
+  imgUrls: string[],
   msgId: number,
   limitTokens = true
 ): Promise<string> => {
@@ -224,10 +195,10 @@ export const streamChatVisionCompletion = async (
         role: 'user',
         content: [
           { type: 'text', text: prompt },
-          {
+          ...imgUrls.map(img => ({
             type: 'image_url',
-            image_url: { url: imgUrl }
-          }
+            image_url: { url: img }
+          }))
         ]
       }
     ],

@@ -85,7 +85,7 @@ export class LlmsBot implements PayableBot {
     return undefined
   }
 
-  private isSupportedUrlReply (ctx: OnMessageContext | OnCallBackQueryData): string | undefined {
+  private isSupportedUrlReply (ctx: OnMessageContext | OnCallBackQueryData): string[] | undefined {
     return getUrlFromText(ctx)
   }
 
@@ -251,14 +251,16 @@ export class LlmsBot implements PayableBot {
 
   async onUrlReplyHandler (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
     try {
-      const url = getUrlFromText(ctx) ?? ''
-      const prompt = ctx.message?.text ?? 'summarize'
-      const collection = ctx.session.collections.activeCollections.find(c => c.url === url)
-      const newPrompt = `${prompt}` // ${url}
-      if (collection) {
-        await this.queryUrlCollection(ctx, url, newPrompt)
+      const url = getUrlFromText(ctx)
+      if (url) {
+        const prompt = ctx.message?.text ?? 'summarize'
+        const collection = ctx.session.collections.activeCollections.find(c => c.url === url[0])
+        const newPrompt = `${prompt}` // ${url}
+        if (collection) {
+          await this.queryUrlCollection(ctx, url[0], newPrompt)
+        }
+        ctx.transient.analytics.actualResponseTime = now()
       }
-      ctx.transient.analytics.actualResponseTime = now()
     } catch (e: any) {
       await this.onError(ctx, e)
     }

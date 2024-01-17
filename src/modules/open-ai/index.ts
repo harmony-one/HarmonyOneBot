@@ -29,6 +29,7 @@ import { sleep } from '../sd-images/utils'
 import {
   getMessageExtras,
   getPromptPrice,
+  getUrlFromText,
   hasChatPrefix,
   hasDallePrefix,
   hasNewPrefix,
@@ -227,6 +228,24 @@ export class OpenAIBot implements PayableBot {
       ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_4_32K
       await this.onChat(ctx)
       return
+    }
+
+    if (ctx.hasCommand(SupportedCommands.vision.name)) {
+      const photoUrl = getUrlFromText(ctx)
+      if (photoUrl) {
+        const prompt = ctx.match
+        ctx.session.openAi.imageGen.imgRequestQueue.push({
+          prompt,
+          photoUrl,
+          command: !isNaN(+prompt) ? 'alter' : 'vision'
+        })
+        if (!ctx.session.openAi.imageGen.isProcessingQueue) {
+          ctx.session.openAi.imageGen.isProcessingQueue = true
+          await this.onImgRequestHandler(ctx).then(() => {
+            ctx.session.openAi.imageGen.isProcessingQueue = false
+          })
+        }
+      }
     }
 
     if (
@@ -560,7 +579,7 @@ export class OpenAIBot implements PayableBot {
           } else if (img?.command === 'alter') {
             await this.onAlterImage(img?.photo, img?.prompt, ctx)
           } else {
-            await this.onInquiryImage(img?.photo, img?.prompt, ctx)
+            await this.onInquiryImage(img?.photo, img?.photoUrl, img?.prompt, ctx)
           }
           ctx.chatAction = null
         } else {
@@ -609,17 +628,23 @@ export class OpenAIBot implements PayableBot {
     }
   }
 
-  onInquiryImage = async (photo: PhotoSize[] | undefined, prompt: string | undefined, ctx: OnMessageContext | OnCallBackQueryData): Promise<void> => {
+  onInquiryImage = async (photo: PhotoSize[] | undefined, photoUrl: string[] | undefined, prompt: string | undefined, ctx: OnMessageContext | OnCallBackQueryData): Promise<void> => {
     try {
       if (ctx.session.openAi.imageGen.isEnabled) {
-        const fileId = photo?.pop()?.file_id // with pop() get full image quality
-        if (!fileId) {
-          await ctx.reply('Cannot retrieve the image file. Please try again.')
-          ctx.transient.analytics.actualResponseTime = now()
-          return
+        // let filePath = ''
+        let imgList = []
+        if (photo) {
+          const fileId = photo?.pop()?.file_id // with pop() get full image quality
+          if (!fileId) {
+            await ctx.reply('Cannot retrieve the image file. Please try again.')
+            ctx.transient.analytics.actualResponseTime = now()
+            return
+          }
+          const file = await ctx.api.getFile(fileId)
+          imgList.push(`${config.openAi.dalle.telegramFileUrl}${config.telegramBotAuthToken}/${file.file_path}`)
+        } else {
+          imgList = photoUrl ?? []
         }
-        const file = await ctx.api.getFile(fileId)
-        const filePath = `${config.openAi.dalle.telegramFileUrl}${config.telegramBotAuthToken}/${file.file_path}`
         const msgId = (
           await ctx.reply('...', {
             message_thread_id:
@@ -627,20 +652,8 @@ export class OpenAIBot implements PayableBot {
               ctx.message?.reply_to_message?.message_thread_id
           })
         ).message_id
-        const messages = [
-          {
-            role: 'user',
-            content: [
-              { type: 'text', text: prompt },
-              {
-                type: 'image_url',
-                image_url: { url: filePath }
-              }
-            ]
-          }
-        ]
         const model = ChatGPTModelsEnum.GPT_4_VISION_PREVIEW
-        const completion = await streamChatVisionCompletion(messages, ctx, model, prompt ?? '', filePath, msgId, true)
+        const completion = await streamChatVisionCompletion(ctx, model, prompt ?? '', imgList, msgId, true)
         if (completion) {
           ctx.transient.analytics.sessionState = RequestState.Success
           ctx.transient.analytics.actualResponseTime = now()
