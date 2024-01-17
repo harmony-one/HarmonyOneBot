@@ -388,7 +388,6 @@ export class BotPayments {
   public async pay (ctx: OnMessageContext, amountUSD: number): Promise<boolean> {
     // eslint-disable-next-line @typescript-eslint/naming-convention
     const { from, message_id, chat } = ctx.update.message
-
     const accountId = this.getAccountId(ctx)
     const userAccount = this.getUserAccount(accountId)
     if (!userAccount) {

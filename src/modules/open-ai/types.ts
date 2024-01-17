@@ -16,6 +16,7 @@ export enum ChatGPTModelsEnum {
   GPT_4_32K = 'gpt-4-32k',
   GPT_35_TURBO = 'gpt-3.5-turbo',
   GPT_35_TURBO_16K = 'gpt-3.5-turbo-16k',
+  GPT_4_VISION_PREVIEW = 'gpt-4-vision-preview'
 }
 
 export const ChatGPTModels: Record<string, ChatModel> = {
@@ -44,6 +45,13 @@ export const ChatGPTModels: Record<string, ChatModel> = {
     name: 'gpt-3.5-turbo-16k',
     inputPrice: 0.003,
     outputPrice: 0.004,
+    maxContextTokens: 16000,
+    chargeType: 'TOKEN'
+  },
+  'gpt-4-vision-preview': {
+    name: 'gpt-4-vision-preview',
+    inputPrice: 0.03,
+    outputPrice: 0.06,
     maxContextTokens: 16000,
     chargeType: 'TOKEN'
   }

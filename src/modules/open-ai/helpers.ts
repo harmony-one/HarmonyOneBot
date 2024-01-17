@@ -9,7 +9,7 @@ import { isValidUrl } from './utils/web-crawler'
 export const SupportedCommands = {
   chat: { name: 'chat' },
   ask: { name: 'ask' },
-  // sum: { name: 'sum' },
+  vision: { name: 'vision' },
   ask35: { name: 'ask35' },
   new: { name: 'new' },
   gpt4: { name: 'gpt4' },
@@ -235,8 +235,8 @@ export const hasPrefix = (prompt: string): string => {
 export const getPromptPrice = (completion: string, data: ChatPayload): { price: number, promptTokens: number, completionTokens: number } => {
   const { conversation, ctx, model } = data
 
-  const prompt = conversation[conversation.length - 1].content
-  const promptTokens = getTokenNumber(prompt)
+  const prompt = data.prompt ? data.prompt : conversation[conversation.length - 1].content
+  const promptTokens = getTokenNumber(prompt as string)
   const completionTokens = getTokenNumber(completion)
   const modelPrice = getChatModel(model)
   const price =
@@ -263,13 +263,14 @@ export const limitPrompt = (prompt: string): string => {
   return `${prompt} in around ${config.openAi.chatGpt.wordLimit} words`
 }
 
-export const getUrlFromText = (ctx: OnMessageContext | OnCallBackQueryData): string | undefined => {
-  const entities = ctx.message?.reply_to_message?.entities
-  if (entities) {
-    const urlEntity = entities.find(e => e.type === 'url')
-    if (urlEntity) {
-      const url = ctx.message?.reply_to_message?.text?.slice(urlEntity.offset, urlEntity.offset + urlEntity.length)
-      return url
+export const getUrlFromText = (ctx: OnMessageContext | OnCallBackQueryData): string[] | undefined => {
+  const entities = ctx.message?.entities ? ctx.message?.entities : ctx.message?.reply_to_message?.entities
+  const text = ctx.message?.text ? ctx.message?.text : ctx.message?.reply_to_message?.text
+  if (entities && text) {
+    const urlEntity = entities.filter(e => e.type === 'url')
+    if (urlEntity.length > 0) {
+      const urls = urlEntity.map(e => text.slice(e.offset, e.offset + e.length))
+      return urls
     }
   }
   return undefined

@@ -1,7 +1,6 @@
 import OpenAI from 'openai'
 import { encode } from 'gpt-tokenizer'
 import { GrammyError } from 'grammy'
-
 import config from '../../../config'
 import { deleteFile, getImage } from '../utils/file'
 import {
@@ -15,9 +14,12 @@ import {
   type ChatModel,
   ChatGPTModels,
   type DalleGPTModel,
-  DalleGPTModels
+  DalleGPTModels,
+  ChatGPTModelsEnum
 } from '../types'
 import type fs from 'fs'
+import { type ChatCompletionMessageParam } from 'openai/resources/chat/completions'
+import { type Stream } from 'openai/streaming'
 
 const openai = new OpenAI({ apiKey: config.openAiKey })
 
@@ -83,15 +85,12 @@ export async function chatCompletion (
   model = config.openAi.chatGpt.model,
   limitTokens = true
 ): Promise<ChatCompletion> {
-  const payload = {
+  const response = await openai.chat.completions.create({
     model,
     max_tokens: limitTokens ? config.openAi.chatGpt.maxTokens : undefined,
     temperature: config.openAi.dalle.completions.temperature,
-    messages: conversation
-  }
-  const response = await openai.chat.completions.create(
-    payload as OpenAI.Chat.CompletionCreateParamsNonStreaming
-  )
+    messages: conversation as ChatCompletionMessageParam[]
+  })
   const chatModel = getChatModel(model)
   if (response.usage?.prompt_tokens === undefined) {
     throw new Error('Unknown number of prompt tokens used')
@@ -120,7 +119,7 @@ export const streamChatCompletion = async (
   let wordCountMinimum = 2
   const stream = await openai.chat.completions.create({
     model,
-    messages: conversation as OpenAI.Chat.Completions.CreateChatCompletionRequestMessage[],
+    messages: conversation as ChatCompletionMessageParam[], // OpenAI.Chat.Completions.CreateChatCompletionRequestMessage[],
     stream: true,
     max_tokens: limitTokens ? config.openAi.chatGpt.maxTokens : undefined,
     temperature: config.openAi.dalle.completions.temperature || 0.8
@@ -177,13 +176,85 @@ export const streamChatCompletion = async (
       }
     })
   return completion
-  // } catch (e) {
-  //   reject(e)
-  // }
-  //   })
-  // } catch (error: any) {
-  //   return await Promise.reject(error)
-  // }
+}
+
+export const streamChatVisionCompletion = async (
+  ctx: OnMessageContext | OnCallBackQueryData,
+  model = ChatGPTModelsEnum.GPT_4_VISION_PREVIEW,
+  prompt: string,
+  imgUrls: string[],
+  msgId: number,
+  limitTokens = true
+): Promise<string> => {
+  let completion = ''
+  let wordCountMinimum = 2
+  const payload: any = {
+    model,
+    messages: [
+      {
+        role: 'user',
+        content: [
+          { type: 'text', text: prompt },
+          ...imgUrls.map(img => ({
+            type: 'image_url',
+            image_url: { url: img }
+          }))
+        ]
+      }
+    ],
+    stream: true,
+    max_tokens: limitTokens ? config.openAi.chatGpt.maxTokens : undefined
+  }
+  const stream = await openai.chat.completions.create(payload) as unknown as Stream<OpenAI.Chat.Completions.ChatCompletionChunk>
+  let wordCount = 0
+  if (!ctx.chat?.id) {
+    throw new Error('Context chat id should not be empty after openAI streaming')
+  }
+  for await (const part of stream) {
+    wordCount++
+    const chunck = part.choices[0]?.delta?.content
+      ? part.choices[0]?.delta?.content
+      : ''
+    completion += chunck
+
+    if (wordCount > wordCountMinimum) {
+      if (wordCountMinimum < 64) {
+        wordCountMinimum *= 2
+      }
+      completion = completion.replaceAll('...', '')
+      completion += '...'
+      wordCount = 0
+      await ctx.api
+        .editMessageText(ctx.chat?.id, msgId, completion)
+        .catch(async (e: any) => {
+          if (e instanceof GrammyError) {
+            if (e.error_code !== 400) {
+              throw e
+            } else {
+              logger.error(e)
+            }
+          } else {
+            throw e
+          }
+        })
+    }
+  }
+  completion = completion.replaceAll('...', '')
+
+  await ctx.api
+    .editMessageText(ctx.chat?.id, msgId, completion)
+    .catch((e: any) => {
+      if (e instanceof GrammyError) {
+        if (e.error_code !== 400) {
+          throw e
+        } else {
+          logger.error(e)
+        }
+      } else {
+        throw e
+      }
+    })
+  return completion
 }
 
 export async function improvePrompt (promptText: string, model: string): Promise<string> {

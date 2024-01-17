@@ -18,7 +18,8 @@ import {
   getDalleModel,
   getDalleModelPrice,
   postGenerateImg,
-  streamChatCompletion
+  streamChatCompletion,
+  streamChatVisionCompletion
 } from './api/openAi'
 import { appText } from './utils/text'
 import { chatService } from '../../database/services'
@@ -28,6 +29,7 @@ import { sleep } from '../sd-images/utils'
 import {
   getMessageExtras,
   getPromptPrice,
+  getUrlFromText,
   hasChatPrefix,
   hasDallePrefix,
   hasNewPrefix,
@@ -90,7 +92,7 @@ export class OpenAIBot implements PayableBot {
     try {
       const priceAdjustment = config.openAi.chatGpt.priceAdjustment
       const prompts = ctx.match
-      if (this.isSupportedImageReply(ctx)) {
+      if (this.isSupportedImageReply(ctx) && !isNaN(+prompts)) {
         const imageNumber = ctx.message?.caption || ctx.message?.text
         const imageSize = ctx.session.openAi.imageGen.imgSize
         const model = getDalleModel(imageSize)
@@ -142,7 +144,7 @@ export class OpenAIBot implements PayableBot {
     const photo = ctx.message?.photo ?? ctx.message?.reply_to_message?.photo
     if (photo && ctx.session.openAi.imageGen.isEnabled) {
       const prompt = ctx.message?.caption ?? ctx.message?.text
-      if (prompt && !isNaN(+prompt)) {
+      if (prompt) { // && !isNaN(+prompt)
         return true
       }
     }
@@ -161,11 +163,11 @@ export class OpenAIBot implements PayableBot {
 
     if (this.isSupportedImageReply(ctx)) {
       const photo = ctx.message?.photo ?? ctx.message?.reply_to_message?.photo
-      const prompt = ctx.message?.caption ?? ctx.message?.text
+      const prompt = ctx.message?.caption ?? ctx.message?.text ?? ''
       ctx.session.openAi.imageGen.imgRequestQueue.push({
         prompt,
         photo,
-        command: 'alter'
+        command: !isNaN(+prompt) ? 'alter' : 'vision'
       })
       if (!ctx.session.openAi.imageGen.isProcessingQueue) {
         ctx.session.openAi.imageGen.isProcessingQueue = true
@@ -226,6 +228,24 @@ export class OpenAIBot implements PayableBot {
       ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_4_32K
       await this.onChat(ctx)
       return
+    }
+
+    if (ctx.hasCommand(SupportedCommands.vision.name)) {
+      const photoUrl = getUrlFromText(ctx)
+      if (photoUrl) {
+        const prompt = ctx.match
+        ctx.session.openAi.imageGen.imgRequestQueue.push({
+          prompt,
+          photoUrl,
+          command: !isNaN(+prompt) ? 'alter' : 'vision'
+        })
+        if (!ctx.session.openAi.imageGen.isProcessingQueue) {
+          ctx.session.openAi.imageGen.isProcessingQueue = true
+          await this.onImgRequestHandler(ctx).then(() => {
+            ctx.session.openAi.imageGen.isProcessingQueue = false
+          })
+        }
+      }
     }
 
     if (
@@ -556,8 +576,10 @@ export class OpenAIBot implements PayableBot {
         if (await this.hasBalance(ctx)) {
           if (img?.command === 'dalle') {
             await this.onGenImgCmd(img?.prompt, ctx)
-          } else {
+          } else if (img?.command === 'alter') {
             await this.onAlterImage(img?.photo, img?.prompt, ctx)
+          } else {
+            await this.onInquiryImage(img?.photo, img?.photoUrl, img?.prompt, ctx)
           }
           ctx.chatAction = null
         } else {
@@ -575,7 +597,7 @@ export class OpenAIBot implements PayableBot {
         ctx.chatAction = 'upload_photo'
         // eslint-disable-next-line @typescript-eslint/naming-convention
         const { message_id } = await ctx.reply(
-          'Generating dalle image...', { message_thread_id: ctx.message?.message_thread_id }
+          'Generating image via OpenAI\'s DALL·E 3...', { message_thread_id: ctx.message?.message_thread_id }
         )
         const numImages = ctx.session.openAi.imageGen.numImages
         const imgSize = ctx.session.openAi.imageGen.imgSize
@@ -602,6 +624,63 @@ export class OpenAIBot implements PayableBot {
         e,
         MAX_TRIES,
         'There was an error while generating the image'
+      )
+    }
+  }
+
+  onInquiryImage = async (photo: PhotoSize[] | undefined, photoUrl: string[] | undefined, prompt: string | undefined, ctx: OnMessageContext | OnCallBackQueryData): Promise<void> => {
+    try {
+      if (ctx.session.openAi.imageGen.isEnabled) {
+        // let filePath = ''
+        let imgList = []
+        if (photo) {
+          const fileId = photo?.pop()?.file_id // with pop() get full image quality
+          if (!fileId) {
+            await ctx.reply('Cannot retrieve the image file. Please try again.')
+            ctx.transient.analytics.actualResponseTime = now()
+            return
+          }
+          const file = await ctx.api.getFile(fileId)
+          imgList.push(`${config.openAi.dalle.telegramFileUrl}${config.telegramBotAuthToken}/${file.file_path}`)
+        } else {
+          imgList = photoUrl ?? []
+        }
+        const msgId = (
+          await ctx.reply('...', {
+            message_thread_id:
+              ctx.message?.message_thread_id ??
+              ctx.message?.reply_to_message?.message_thread_id
+          })
+        ).message_id
+        const model = ChatGPTModelsEnum.GPT_4_VISION_PREVIEW
+        const completion = await streamChatVisionCompletion(ctx, model, prompt ?? '', imgList, msgId, true)
+        if (completion) {
+          ctx.transient.analytics.sessionState = RequestState.Success
+          ctx.transient.analytics.actualResponseTime = now()
+          const price = getPromptPrice(completion, {
+            conversation: [],
+            prompt,
+            model,
+            ctx
+          })
+          this.logger.info(
+            `streamChatCompletion result = tokens: ${
+                price.promptTokens + price.completionTokens
+            } | ${model} | price: ${price.price}¢`
+          )
+          if (
+            !(await this.payments.pay(ctx as OnMessageContext, price.price))
+          ) {
+            await this.onNotBalanceMessage(ctx)
+          }
+        }
+      }
+    } catch (e: any) {
+      await this.onError(
+        ctx,
+        e,
+        MAX_TRIES,
+        'An error occurred while generating the AI edit'
       )
     }
   }
