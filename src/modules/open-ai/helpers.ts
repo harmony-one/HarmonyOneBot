@@ -88,6 +88,11 @@ const hasUrlPrompt = (prompt: string): string => {
   return url
 }
 
+export const hasCodeSnippet = (ctx: OnMessageContext | OnCallBackQueryData): boolean => {
+  const entities = ctx.entities('pre') // pre => code snippets
+  return entities.length > 0
+}
+
 export const hasUrl = (
   ctx: OnMessageContext | OnCallBackQueryData,
   prompt: string

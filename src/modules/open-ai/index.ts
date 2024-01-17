@@ -35,6 +35,7 @@ import {
   hasNewPrefix,
   hasPrefix,
   hasUrl,
+  hasCodeSnippet,
   isMentioned,
   MAX_TRIES,
   preparePrompt,
@@ -533,13 +534,14 @@ export class OpenAIBot implements PayableBot {
             return
           }
           const { url, newPrompt } = hasUrl(ctx, prompt)
-          if (chatConversation.length === 0 && !url) {
+          const hasCode = hasCodeSnippet(ctx)
+          if (chatConversation.length === 0 && (hasCode || !url)) {
             chatConversation.push({
               role: 'system',
               content: config.openAi.chatGpt.chatCompletionContext
             })
           }
-          if (url && ctx.chat?.id) {
+          if (!hasCode && url && ctx.chat?.id) {
             await this.llmsBot.urlHandler(ctx, url, newPrompt)
           } else {
             chatConversation.push({
