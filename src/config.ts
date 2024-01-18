@@ -38,7 +38,6 @@ export default {
     model: 'chat-bison',
     minimumBalance: 0,
     isEnabled: Boolean(parseInt(process.env.LLMS_ENABLED ?? '1')),
-    prefixes: { bardPrefix: ['b.', 'B.'] },
     pdfUrl: process.env.PDF_URL ?? '',
     processingTime: 300000
   },
@@ -96,10 +95,7 @@ export default {
     defaultRPC: 'https://api.harmony.one',
     restrictedPhrases: process.env.RESTRICTED_PHRASES
       ? process.env.RESTRICTED_PHRASES.split(', ')
-      : ['metamask', 'walletconnect'],
-    registerPrefix: process.env.COUNTRY_PREFIX
-      ? process.env.COUNTRY_PREFIX.split(',')
-      : ['+', '%']
+      : ['metamask', 'walletconnect']
   },
   voiceMemo: {
     isEnabled: Boolean(parseInt(process.env.VOICE_MEMO_ENABLED ?? '1')),

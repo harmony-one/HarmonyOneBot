@@ -63,7 +63,7 @@ export class LlmsBot implements PayableBot {
     ctx: OnMessageContext | OnCallBackQueryData
   ): boolean {
     const hasCommand = ctx.hasCommand(
-      Object.values(SupportedCommands).map((command) => command.name)
+      Object.values(SupportedCommands).map((command) => command)
     )
     if (isMentioned(ctx)) {
       return true
@@ -117,12 +117,12 @@ export class LlmsBot implements PayableBot {
       return
     }
 
-    if (ctx.hasCommand(SupportedCommands.pdf.name)) {
+    if (ctx.hasCommand(SupportedCommands.pdf)) {
       await this.onPdfCommand(ctx)
       return
     }
 
-    if (ctx.hasCommand(SupportedCommands.bard.name) || ctx.hasCommand(SupportedCommands.bardF.name)) {
+    if (ctx.hasCommand(SupportedCommands.bard) || ctx.hasCommand(SupportedCommands.bardF)) {
       await this.onChat(ctx, LlmsModelsEnum.BISON)
       return
     }
@@ -142,17 +142,17 @@ export class LlmsBot implements PayableBot {
       return
     }
 
-    if (ctx.hasCommand(SupportedCommands.j2Ultra.name)) {
+    if (ctx.hasCommand(SupportedCommands.j2Ultra)) {
       await this.onChat(ctx, LlmsModelsEnum.J2_ULTRA)
       return
     }
 
-    if (ctx.hasCommand(SupportedCommands.ctx.name)) {
+    if (ctx.hasCommand(SupportedCommands.ctx)) {
       await this.onCurrentCollection(ctx)
       return
     }
 
-    if (ctx.hasCommand(SupportedCommands.sum.name) ||
+    if (ctx.hasCommand(SupportedCommands.sum) ||
       (ctx.message?.text?.startsWith('sum ') && ctx.chat?.type === 'private')
     ) {
       await this.onSum(ctx)
