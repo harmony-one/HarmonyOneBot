@@ -147,6 +147,8 @@ export class OpenAIBot implements PayableBot {
       const prompt = ctx.message?.caption ?? ctx.message?.text
       if (prompt && !isNaN(+prompt)) { // && !isNaN(+prompt)
         return true
+      } else if (prompt && (ctx.chat?.type === 'private' || ctx.hasCommand(SupportedCommands.vision.name))) {
+        return true
       }
     }
     return false
