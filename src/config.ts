@@ -80,15 +80,6 @@ export default {
         parseInt(process.env.TYPING_STATUS_ENABLED ?? '1')
       ),
       model: process.env.OPENAI_MODEL ?? 'gpt-3.5-turbo',
-      prefixes: {
-        chatPrefix: process.env.ASK_PREFIX
-          ? process.env.ASK_PREFIX.split(',')
-          : ['a.', '.'], // , "?", ">",
-        newPrefix: process.env.NEW_PREFIX
-          ? process.env.NEW_PREFIX.split(',')
-          : ['n.', '..'],
-        llamaPrefix: ['*']
-      },
       minimumBalance: parseInt(process.env.MIN_BALANCE ?? '0')
     }
   },

@@ -2,7 +2,6 @@ import { GrammyError, InlineKeyboard } from 'grammy'
 import OpenAI from 'openai'
 import { type Logger, pino } from 'pino'
 
-import { getCommandNamePrompt } from '../1country/utils'
 import { type BotPayments } from '../payment'
 import {
   type ChatConversation,
@@ -76,7 +75,7 @@ export class OpenAIBot implements PayableBot {
     ctx: OnMessageContext | OnCallBackQueryData
   ): boolean {
     const hasCommand = ctx.hasCommand(
-      Object.values(SupportedCommands).map((command) => command.name)
+      Object.values(SupportedCommands).map((command) => command)
     )
     if (isMentioned(ctx)) {
       return true
@@ -104,10 +103,10 @@ export class OpenAIBot implements PayableBot {
         return 0
       }
       if (
-        ctx.hasCommand([SupportedCommands.dalle.name,
-          SupportedCommands.dalleImg.name,
-          SupportedCommands.dalleShort.name,
-          SupportedCommands.dalleShorter.name])
+        ctx.hasCommand([SupportedCommands.dalle,
+          SupportedCommands.dalleImg,
+          SupportedCommands.dalleShort,
+          SupportedCommands.dalleShorter])
       ) {
         const imageNumber = ctx.session.openAi.imageGen.numImages
         const imageSize = ctx.session.openAi.imageGen.imgSize
@@ -115,7 +114,7 @@ export class OpenAIBot implements PayableBot {
         const price = getDalleModelPrice(model, true, imageNumber) // cents
         return price * priceAdjustment
       }
-      if (ctx.hasCommand(SupportedCommands.genImgEn.name)) {
+      if (ctx.hasCommand(SupportedCommands.genImgEn)) {
         const imageNumber = ctx.session.openAi.imageGen.numImages
         const imageSize = ctx.session.openAi.imageGen.imgSize
         const chatModelName = ctx.session.openAi.chatGpt.model
@@ -147,7 +146,7 @@ export class OpenAIBot implements PayableBot {
       const prompt = ctx.message?.caption ?? ctx.message?.text
       if (prompt && !isNaN(+prompt)) { // && !isNaN(+prompt)
         return true
-      } else if (prompt && (ctx.chat?.type === 'private' || ctx.hasCommand(SupportedCommands.vision.name))) {
+      } else if (prompt && (ctx.chat?.type === 'private' || ctx.hasCommand(SupportedCommands.vision))) {
         return true
       }
     }
@@ -182,7 +181,7 @@ export class OpenAIBot implements PayableBot {
     }
 
     if (
-      ctx.hasCommand(SupportedCommands.chat.name) ||
+      ctx.hasCommand(SupportedCommands.chat) ||
       (ctx.message?.text?.startsWith('chat ') && ctx.chat?.type === 'private')
     ) {
       ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_4
@@ -191,17 +190,16 @@ export class OpenAIBot implements PayableBot {
     }
 
     if (
-      ctx.hasCommand(SupportedCommands.new.name) ||
+      ctx.hasCommand(SupportedCommands.new) ||
       (ctx.message?.text?.startsWith('new ') && ctx.chat?.type === 'private')
     ) {
-      ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_4
       await this.onEnd(ctx)
       await this.onChat(ctx)
       return
     }
 
     if (
-      ctx.hasCommand(SupportedCommands.ask.name) ||
+      ctx.hasCommand(SupportedCommands.ask) ||
       (ctx.message?.text?.startsWith('ask ') && ctx.chat?.type === 'private')
     ) {
       ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_4
@@ -209,31 +207,31 @@ export class OpenAIBot implements PayableBot {
       return
     }
 
-    if (ctx.hasCommand(SupportedCommands.ask35.name)) {
+    if (ctx.hasCommand(SupportedCommands.ask35)) {
       ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_35_TURBO_16K
       await this.onChat(ctx)
       return
     }
 
-    if (ctx.hasCommand(SupportedCommands.gpt4.name)) {
+    if (ctx.hasCommand(SupportedCommands.gpt4)) {
       ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_4
       await this.onChat(ctx)
       return
     }
 
-    if (ctx.hasCommand(SupportedCommands.gpt.name)) {
+    if (ctx.hasCommand(SupportedCommands.gpt)) {
       ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_4
       await this.onChat(ctx)
       return
     }
 
-    if (ctx.hasCommand(SupportedCommands.ask32.name)) {
+    if (ctx.hasCommand(SupportedCommands.ask32)) {
       ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_4_32K
       await this.onChat(ctx)
       return
     }
 
-    if (ctx.hasCommand(SupportedCommands.vision.name)) {
+    if (ctx.hasCommand(SupportedCommands.vision)) {
       const photoUrl = getUrlFromText(ctx)
       if (photoUrl) {
         const prompt = ctx.match
@@ -252,10 +250,10 @@ export class OpenAIBot implements PayableBot {
     }
 
     if (
-      ctx.hasCommand([SupportedCommands.dalle.name,
-        SupportedCommands.dalleImg.name,
-        SupportedCommands.dalleShort.name,
-        SupportedCommands.dalleShorter.name]) ||
+      ctx.hasCommand([SupportedCommands.dalle,
+        SupportedCommands.dalleImg,
+        SupportedCommands.dalleShort,
+        SupportedCommands.dalleShorter]) ||
       (ctx.message?.text?.startsWith('image ') && ctx.chat?.type === 'private')
     ) {
       let prompt = (ctx.match ? ctx.match : ctx.message?.text) as string
@@ -280,16 +278,16 @@ export class OpenAIBot implements PayableBot {
       return
     }
 
-    if (ctx.hasCommand(SupportedCommands.last.name)) {
+    if (ctx.hasCommand(SupportedCommands.last)) {
       await this.onLast(ctx)
       return
     }
 
     const text = ctx.message?.text ?? ''
-
-    if (hasNewPrefix(text) !== '') {
+    const newPrefix = hasNewPrefix(text)
+    if (newPrefix !== '') {
       await this.onEnd(ctx)
-      await this.onPrefix(ctx)
+      await this.onPrefix(ctx, newPrefix)
       return
     }
 
@@ -311,9 +309,9 @@ export class OpenAIBot implements PayableBot {
       }
       return
     }
-
-    if (hasChatPrefix(text) !== '') {
-      await this.onPrefix(ctx)
+    const prefix = hasChatPrefix(text)
+    if (prefix !== '') {
+      await this.onPrefix(ctx, prefix)
       return
     }
 
@@ -426,7 +424,7 @@ export class OpenAIBot implements PayableBot {
     }
   }
 
-  async onPrefix (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
+  async onPrefix (ctx: OnMessageContext | OnCallBackQueryData, prefix: string): Promise<void> {
     try {
       if (this.botSuspended) {
         ctx.transient.analytics.sessionState = RequestState.Error
@@ -436,13 +434,9 @@ export class OpenAIBot implements PayableBot {
         ctx.transient.analytics.actualResponseTime = now()
         return
       }
-      const { prompt } = getCommandNamePrompt(
-        ctx,
-        SupportedCommands
-      )
-      const prefix = hasPrefix(prompt)
+      const prompt = ctx.message?.text?.slice(prefix.length) ?? ''
       ctx.session.openAi.chatGpt.requestQueue.push(
-        await preparePrompt(ctx, prompt.slice(prefix.length))
+        await preparePrompt(ctx, prompt)
       )
       if (!ctx.session.openAi.chatGpt.isProcessingQueue) {
         ctx.session.openAi.chatGpt.isProcessingQueue = true
@@ -750,6 +744,7 @@ export class OpenAIBot implements PayableBot {
   }
 
   async onEnd (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
+    ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_4
     ctx.session.openAi.chatGpt.chatConversation = []
     ctx.session.openAi.chatGpt.usage = 0
     ctx.session.openAi.chatGpt.price = 0

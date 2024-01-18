@@ -22,6 +22,7 @@ export const SupportedCommands = {
 }
 
 export const MAX_TRIES = 3
+const LLAMA_PREFIX_LIST = ['*']
 
 export const isMentioned = (
   ctx: OnMessageContext | OnCallBackQueryData
@@ -40,7 +41,7 @@ export const isMentioned = (
 }
 
 export const hasLlamaPrefix = (prompt: string): string => {
-  const prefixList = config.openAi.chatGpt.prefixes.llamaPrefix
+  const prefixList = LLAMA_PREFIX_LIST
   for (let i = 0; i < prefixList.length; i++) {
     if (prompt.toLocaleLowerCase().startsWith(prefixList[i])) {
       return prefixList[i]
