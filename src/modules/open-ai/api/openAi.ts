@@ -192,6 +192,10 @@ export const streamChatVisionCompletion = async (
     model,
     messages: [
       {
+        role: 'system',
+        content: config.openAi.chatGpt.visionCompletionContext
+      },
+      {
         role: 'user',
         content: [
           { type: 'text', text: prompt },

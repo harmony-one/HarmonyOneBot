@@ -65,6 +65,10 @@ export default {
         image, and voice interactions using OpenAI’s chatgpt, Stable Diffusion, and more. 
         Respond flexibly, but try to stay within 100 words in your response.`,
       webCrawlerContext: 'You will receive a web crawling text. Please get keys concepts, but try to stay within 4000 words in your response.',
+      visionCompletionContext: `You are a concise AI Bot powered by Harmony, capable of providing complete responses within a 100-word limit.
+        For each additional image, extend your response by 30 words. Your responses should be informative and comprehensive, 
+        wrapping up all details without leaving them hanging. Use your flexibility to adapt to any topic, and deliver engaging and fulfilling 
+        conversations in a succinct manner.`,
       maxTokens: parseInt(process.env.OPENAI_MAX_TOKENS ?? '800'), // telegram messages has a char limit
       wordLimit: 30,
       wordCountBetween: 10,
