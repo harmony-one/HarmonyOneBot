@@ -48,6 +48,7 @@ import { Callbacks } from '../types'
 import { LlmsBot } from '../llms'
 import { type PhotoSize } from 'grammy/types'
 
+const priceAdjustment = config.openAi.chatGpt.priceAdjustment
 export class OpenAIBot implements PayableBot {
   public readonly module = 'OpenAIBot'
   private readonly logger: Logger
@@ -90,7 +91,6 @@ export class OpenAIBot implements PayableBot {
 
   public getEstimatedPrice (ctx: any): number {
     try {
-      const priceAdjustment = config.openAi.chatGpt.priceAdjustment
       const prompts = ctx.match
       if (this.isSupportedImageReply(ctx) && !isNaN(+prompts)) {
         const imageNumber = ctx.message?.caption || ctx.message?.text
@@ -378,9 +378,7 @@ export class OpenAIBot implements PayableBot {
         ctx.transient.analytics.actualResponseTime = now()
         const price = getPromptPrice(completion, data)
         this.logger.info(
-          `streamChatCompletion result = tokens: ${
-            price.promptTokens + price.completionTokens
-          } | ${model} | price: ${price.price}¢`
+          `streamChatCompletion result = tokens: ${price.totalTokens} | ${model} | price: ${price.price}¢` // price.promptTokens + price.completionTokens  }
         )
         return {
           price: price.price,

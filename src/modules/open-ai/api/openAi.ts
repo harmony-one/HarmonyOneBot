@@ -281,11 +281,11 @@ export const getChatModelPrice = (
   model: ChatModel,
   inCents = true,
   inputTokens: number,
-  outPutTokens?: number
+  outputTokens?: number
 ): number => {
   let price = model.inputPrice * inputTokens
-  price += outPutTokens
-    ? outPutTokens * model.outputPrice
+  price += outputTokens
+    ? outputTokens * model.outputPrice
     : model.maxContextTokens * model.outputPrice
   price = inCents ? price * 100 : price
   return price / 1000

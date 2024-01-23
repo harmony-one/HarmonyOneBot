@@ -75,7 +75,7 @@ export default {
       //   ? parseInt(process.env.WORD_COUNT_BETWEEN)
       //   : 10,
       priceAdjustment: process.env.PRICE_ADJUSTMENT
-        ? parseInt(process.env.PRICE_ADJUSTMENT)
+        ? parseFloat(process.env.PRICE_ADJUSTMENT)
         : 2,
       isFreePromptChatGroups: false,
       isEnabled: Boolean(parseInt(process.env.CHAT_GPT_ENABLED ?? '1')),

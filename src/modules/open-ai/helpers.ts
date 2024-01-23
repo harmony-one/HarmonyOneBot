@@ -238,23 +238,24 @@ export const hasPrefix = (prompt: string): string => {
   )
 }
 
-export const getPromptPrice = (completion: string, data: ChatPayload): { price: number, promptTokens: number, completionTokens: number } => {
+export const getPromptPrice = (completion: string, data: ChatPayload): { price: number, promptTokens: number, completionTokens: number, totalTokens: number } => {
   const { conversation, ctx, model } = data
-
+  const currentUsage = data.prompt ? 0 : ctx.session.openAi.chatGpt.usage
   const prompt = data.prompt ? data.prompt : conversation[conversation.length - 1].content
-  const promptTokens = getTokenNumber(prompt as string)
+  const promptTokens = getTokenNumber(prompt as string) + currentUsage
   const completionTokens = getTokenNumber(completion)
   const modelPrice = getChatModel(model)
   const price =
     getChatModelPrice(modelPrice, true, promptTokens, completionTokens) *
     config.openAi.chatGpt.priceAdjustment
   conversation.push({ content: completion, role: 'system' })
-  ctx.session.openAi.chatGpt.usage += promptTokens + completionTokens
+  ctx.session.openAi.chatGpt.usage += completionTokens
   ctx.session.openAi.chatGpt.price += price
   return {
     price,
     promptTokens,
-    completionTokens
+    completionTokens,
+    totalTokens: data.prompt ? promptTokens + completionTokens : ctx.session.openAi.chatGpt.usage
   }
 }
 
