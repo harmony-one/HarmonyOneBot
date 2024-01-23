@@ -291,10 +291,8 @@ export class BotPayments {
           return true
         }
       }
-      return false
-    } else {
-      return true
     }
+    return false
   }
 
   public isPaymentsEnabled (): boolean {

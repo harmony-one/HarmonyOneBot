@@ -38,7 +38,6 @@ export default {
     model: 'chat-bison',
     minimumBalance: 0,
     isEnabled: Boolean(parseInt(process.env.LLMS_ENABLED ?? '1')),
-    prefixes: { bardPrefix: ['b.', 'B.'] },
     pdfUrl: process.env.PDF_URL ?? '',
     processingTime: 300000
   },
@@ -65,6 +64,10 @@ export default {
         image, and voice interactions using OpenAI’s chatgpt, Stable Diffusion, and more. 
         Respond flexibly, but try to stay within 100 words in your response.`,
       webCrawlerContext: 'You will receive a web crawling text. Please get keys concepts, but try to stay within 4000 words in your response.',
+      visionCompletionContext: `You are a concise AI Bot powered by Harmony, capable of providing complete responses within a 100-word limit.
+        For each additional image, extend your response by 30 words. Your responses should be informative and comprehensive, 
+        wrapping up all details without leaving them hanging. Use your flexibility to adapt to any topic, and deliver engaging and fulfilling 
+        conversations in a succinct manner.`,
       maxTokens: parseInt(process.env.OPENAI_MAX_TOKENS ?? '800'), // telegram messages has a char limit
       wordLimit: 30,
       wordCountBetween: 10,
@@ -72,7 +75,7 @@ export default {
       //   ? parseInt(process.env.WORD_COUNT_BETWEEN)
       //   : 10,
       priceAdjustment: process.env.PRICE_ADJUSTMENT
-        ? parseInt(process.env.PRICE_ADJUSTMENT)
+        ? parseFloat(process.env.PRICE_ADJUSTMENT)
         : 2,
       isFreePromptChatGroups: false,
       isEnabled: Boolean(parseInt(process.env.CHAT_GPT_ENABLED ?? '1')),
@@ -80,15 +83,6 @@ export default {
         parseInt(process.env.TYPING_STATUS_ENABLED ?? '1')
       ),
       model: process.env.OPENAI_MODEL ?? 'gpt-3.5-turbo',
-      prefixes: {
-        chatPrefix: process.env.ASK_PREFIX
-          ? process.env.ASK_PREFIX.split(',')
-          : ['a.', '.'], // , "?", ">",
-        newPrefix: process.env.NEW_PREFIX
-          ? process.env.NEW_PREFIX.split(',')
-          : ['n.', '..'],
-        llamaPrefix: ['*']
-      },
       minimumBalance: parseInt(process.env.MIN_BALANCE ?? '0')
     }
   },
@@ -101,10 +95,7 @@ export default {
     defaultRPC: 'https://api.harmony.one',
     restrictedPhrases: process.env.RESTRICTED_PHRASES
       ? process.env.RESTRICTED_PHRASES.split(', ')
-      : ['metamask', 'walletconnect'],
-    registerPrefix: process.env.COUNTRY_PREFIX
-      ? process.env.COUNTRY_PREFIX.split(',')
-      : ['+', '%']
+      : ['metamask', 'walletconnect']
   },
   voiceMemo: {
     isEnabled: Boolean(parseInt(process.env.VOICE_MEMO_ENABLED ?? '1')),

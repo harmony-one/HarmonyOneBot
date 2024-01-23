@@ -11,30 +11,21 @@ import { type OnMessageContext, type OnCallBackQueryData, type PayableBot, Reque
 import { type BotPayments } from '../payment'
 import { getCommandNamePrompt, getUrl } from './utils/'
 import { isAdmin } from '../open-ai/utils/context'
-import config from '../../config'
 import { MAX_TRIES, sendMessage } from '../open-ai/helpers'
 import { sleep } from '../sd-images/utils'
 import { isValidUrl } from '../open-ai/utils/web-crawler'
 import { now } from '../../utils/perf'
 
-export const SupportedCommands = {
-  register: { name: 'rent' },
-  visit: { name: 'visit' },
-  check: { name: 'check' },
-  cert: { name: 'cert' },
-  nft: { name: 'nft' },
-  set: { name: 'set' }
+export enum SupportedCommands {
+  register = 'rent',
+  visit = 'visit',
+  check = 'check',
+  cert = 'cert',
+  nft = 'nft',
+  set = 'set'
 }
 
-// enum SupportedCommands {
-//   CHECK = "check",
-//   NFT = "nft",
-//   VISIT = "visit",
-//   CERT = "cert",
-//   RENEW = "renew",
-//   NOTION = "notion",
-//   SUBDOMAIN = "subdomain",
-// }
+const COUNTRY_PREFIX_LIST = ['+', '%']
 
 export class OneCountryBot implements PayableBot {
   public readonly module = 'OneCountryBot'
@@ -58,7 +49,7 @@ export class OneCountryBot implements PayableBot {
     ctx: OnMessageContext | OnCallBackQueryData
   ): boolean {
     const hasCommand = ctx.hasCommand(
-      Object.values(SupportedCommands).map((command) => command.name)
+      Object.values(SupportedCommands).map((command) => command)
     )
     const hasPrefix = this.hasPrefix(ctx.message?.text ?? '')
     if (hasPrefix && ctx.session.oneCountry.lastDomain) {
@@ -68,7 +59,7 @@ export class OneCountryBot implements PayableBot {
   }
 
   private hasPrefix (prompt: string): boolean {
-    const prefixList = config.country.registerPrefix
+    const prefixList = COUNTRY_PREFIX_LIST
     for (let i = 0; i < prefixList.length; i++) {
       if (prompt.toLocaleLowerCase().startsWith(prefixList[i])) {
         return true
@@ -88,17 +79,17 @@ export class OneCountryBot implements PayableBot {
       return
     }
 
-    if (ctx.hasCommand(SupportedCommands.visit.name)) {
+    if (ctx.hasCommand(SupportedCommands.visit)) {
       await this.onVistitCmd(ctx)
       return
     }
 
-    if (ctx.hasCommand(SupportedCommands.check.name)) {
+    if (ctx.hasCommand(SupportedCommands.check)) {
       await this.onCheckCmd(ctx)
       return
     }
 
-    if (ctx.hasCommand(SupportedCommands.register.name)) {
+    if (ctx.hasCommand(SupportedCommands.register)) {
       await this.onRegister(ctx)
       return
     }
@@ -108,17 +99,17 @@ export class OneCountryBot implements PayableBot {
       return
     }
 
-    if (ctx.hasCommand(SupportedCommands.nft.name)) {
+    if (ctx.hasCommand(SupportedCommands.nft)) {
       await this.onNftCmd(ctx)
       return
     }
 
-    if (ctx.hasCommand(SupportedCommands.cert.name)) {
+    if (ctx.hasCommand(SupportedCommands.cert)) {
       await this.onCertCmd(ctx)
       return
     }
 
-    if (ctx.hasCommand(SupportedCommands.set.name)) {
+    if (ctx.hasCommand(SupportedCommands.set)) {
       await this.onSet(ctx)
       return
     }

@@ -1,4 +1,3 @@
-import config from '../../config'
 import {
   type OnMessageContext,
   type OnCallBackQueryData,
@@ -7,21 +6,22 @@ import {
   type ChatPayload
 } from '../types'
 import { type ParseMode } from 'grammy/types'
-// import { getChatModel, getChatModelPrice, getTokenNumber } from "./api/openAi";
 import { LlmsModelsEnum } from './types'
 import { type Message } from 'grammy/out/types'
 import { llmAddUrlDocument } from './api/llmApi'
 
-export const SupportedCommands = {
-  bardF: { name: 'bard' },
-  bard: { name: 'b' },
-  j2Ultra: { name: 'j2-ultra' },
-  sum: { name: 'sum' },
-  ctx: { name: 'ctx' },
-  pdf: { name: 'pdf' }
+export enum SupportedCommands {
+  bardF = 'bard',
+  bard = 'b',
+  j2Ultra = 'j2-ultra',
+  sum = 'sum',
+  ctx = 'ctx',
+  pdf = 'pdf'
 }
 
 export const MAX_TRIES = 3
+const LLAMA_PREFIX_LIST = ['*']
+const BARD_PREFIX_LIST = ['b.', 'B.']
 
 export const isMentioned = (
   ctx: OnMessageContext | OnCallBackQueryData
@@ -40,7 +40,7 @@ export const isMentioned = (
 }
 
 export const hasLlamaPrefix = (prompt: string): string => {
-  const prefixList = config.openAi.chatGpt.prefixes.llamaPrefix
+  const prefixList = LLAMA_PREFIX_LIST
   for (let i = 0; i < prefixList.length; i++) {
     if (prompt.toLocaleLowerCase().startsWith(prefixList[i])) {
       return prefixList[i]
@@ -50,7 +50,7 @@ export const hasLlamaPrefix = (prompt: string): string => {
 }
 
 export const hasBardPrefix = (prompt: string): string => {
-  const prefixList = config.llms.prefixes.bardPrefix
+  const prefixList = BARD_PREFIX_LIST
   for (let i = 0; i < prefixList.length; i++) {
     if (prompt.toLocaleLowerCase().startsWith(prefixList[i])) {
       return prefixList[i]

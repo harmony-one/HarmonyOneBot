@@ -4,30 +4,31 @@ import { type ParseMode } from 'grammy/types'
 import { getChatModel, getChatModelPrice, getTokenNumber } from './api/openAi'
 import { type Message, type InlineKeyboardMarkup } from 'grammy/out/types'
 import { isValidUrl } from './utils/web-crawler'
-// import { llmAddUrlDocument } from '../llms/api/llmApi'
 
-export const SupportedCommands = {
-  chat: { name: 'chat' },
-  ask: { name: 'ask' },
-  vision: { name: 'vision' },
-  ask35: { name: 'ask35' },
-  new: { name: 'new' },
-  gpt4: { name: 'gpt4' },
-  ask32: { name: 'ask32' },
-  gpt: { name: 'gpt' },
-  last: { name: 'last' },
-  dalle: { name: 'dalle' },
-  dalleImg: { name: 'image' },
-  dalleShort: { name: 'img' },
-  dalleShorter: { name: 'i' },
-  genImgEn: { name: 'genImgEn' },
-  on: { name: 'on' },
-  off: { name: 'off' }
+export enum SupportedCommands {
+  chat = 'chat',
+  ask = 'ask',
+  vision = 'vision',
+  ask35 = 'ask35',
+  new = 'new',
+  gpt4 = 'gpt4',
+  ask32 = 'ask32',
+  gpt = 'gpt',
+  last = 'last',
+  dalle = 'dalle',
+  dalleImg = 'image',
+  dalleShort = 'img',
+  dalleShorter = 'i',
+  genImgEn = 'genImgEn',
+  on = 'on',
+  off = 'off'
 }
 
 export const MAX_TRIES = 3
 
-const DALLE_PREFIX_LIST = ['i. ', ',', 'image ', 'd.', 'img ']
+export const DALLE_PREFIX_LIST = ['i. ', ',', 'image ', 'd.', 'img ']
+export const CHAT_GPT_PREFIX_LIST = ['a.', '.']
+export const NEW_PREFIX_LIST = ['n.', '..']
 
 export const isMentioned = (
   ctx: OnMessageContext | OnCallBackQueryData
@@ -46,7 +47,7 @@ export const isMentioned = (
 }
 
 export const hasChatPrefix = (prompt: string): string => {
-  const prefixList = config.openAi.chatGpt.prefixes.chatPrefix
+  const prefixList = CHAT_GPT_PREFIX_LIST
   for (let i = 0; i < prefixList.length; i++) {
     if (prompt.toLocaleLowerCase().startsWith(prefixList[i])) {
       return prefixList[i]
@@ -66,7 +67,7 @@ export const hasDallePrefix = (prompt: string): string => {
 }
 
 export const hasNewPrefix = (prompt: string): string => {
-  const prefixList = config.openAi.chatGpt.prefixes.newPrefix
+  const prefixList = NEW_PREFIX_LIST
   for (let i = 0; i < prefixList.length; i++) {
     if (prompt.toLocaleLowerCase().startsWith(prefixList[i])) {
       return prefixList[i]
@@ -86,6 +87,11 @@ const hasUrlPrompt = (prompt: string): string => {
     }
   }
   return url
+}
+
+export const hasCodeSnippet = (ctx: OnMessageContext | OnCallBackQueryData): boolean => {
+  const entities = ctx.entities('pre') // pre => code snippets
+  return entities.length > 0
 }
 
 export const hasUrl = (
@@ -232,23 +238,24 @@ export const hasPrefix = (prompt: string): string => {
   )
 }
 
-export const getPromptPrice = (completion: string, data: ChatPayload): { price: number, promptTokens: number, completionTokens: number } => {
+export const getPromptPrice = (completion: string, data: ChatPayload): { price: number, promptTokens: number, completionTokens: number, totalTokens: number } => {
   const { conversation, ctx, model } = data
-
+  const currentUsage = data.prompt ? 0 : ctx.session.openAi.chatGpt.usage
   const prompt = data.prompt ? data.prompt : conversation[conversation.length - 1].content
-  const promptTokens = getTokenNumber(prompt as string)
+  const promptTokens = getTokenNumber(prompt as string) + currentUsage
   const completionTokens = getTokenNumber(completion)
   const modelPrice = getChatModel(model)
   const price =
     getChatModelPrice(modelPrice, true, promptTokens, completionTokens) *
     config.openAi.chatGpt.priceAdjustment
   conversation.push({ content: completion, role: 'system' })
-  ctx.session.openAi.chatGpt.usage += promptTokens + completionTokens
+  ctx.session.openAi.chatGpt.usage += completionTokens
   ctx.session.openAi.chatGpt.price += price
   return {
     price,
     promptTokens,
-    completionTokens
+    completionTokens,
+    totalTokens: data.prompt ? promptTokens + completionTokens : ctx.session.openAi.chatGpt.usage
   }
 }
 
