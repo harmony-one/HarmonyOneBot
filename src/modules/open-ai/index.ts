@@ -153,6 +153,49 @@ export class OpenAIBot implements PayableBot {
     return false
   }
 
+  public async voiceCommand (ctx: OnMessageContext | OnCallBackQueryData, command: string, transcribedText: string): Promise<void> {
+    try {
+      switch (command) {
+        case SupportedCommands.vision: {
+          const photo = ctx.message?.photo ?? ctx.message?.reply_to_message?.photo
+          if (photo) {
+            ctx.session.openAi.imageGen.imgRequestQueue.push({
+              prompt: transcribedText,
+              photo,
+              command
+            })
+            if (!ctx.session.openAi.imageGen.isProcessingQueue) {
+              ctx.session.openAi.imageGen.isProcessingQueue = true
+              await this.onImgRequestHandler(ctx).then(() => {
+                ctx.session.openAi.imageGen.isProcessingQueue = false
+              })
+            }
+          }
+          break
+        }
+        case SupportedCommands.ask: {
+          if (this.botSuspended) {
+            ctx.transient.analytics.sessionState = RequestState.Error
+            await sendMessage(ctx, 'The bot is suspended').catch(async (e) => { await this.onError(ctx, e) })
+            ctx.transient.analytics.actualResponseTime = now()
+            return
+          }
+          ctx.session.openAi.chatGpt.requestQueue.push(
+            await preparePrompt(ctx, transcribedText)
+          )
+          if (!ctx.session.openAi.chatGpt.isProcessingQueue) {
+            ctx.session.openAi.chatGpt.isProcessingQueue = true
+            await this.onChatRequestHandler(ctx).then(() => {
+              ctx.session.openAi.chatGpt.isProcessingQueue = false
+            })
+          }
+        }
+      }
+    } catch (e: any) {
+      await this.onError(ctx, e)
+    }
+  }
+
   public async onEvent (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
     ctx.transient.analytics.module = this.module
     if (!(this.isSupportedEvent(ctx)) && (ctx.chat?.type !== 'private') && !ctx.session.openAi.chatGpt.isFreePromptChatGroups) {
@@ -660,7 +703,7 @@ export class OpenAIBot implements PayableBot {
             ctx
           })
           this.logger.info(
-            `streamChatCompletion result = tokens: ${
+            `streamChatVisionCompletion result = tokens: ${
                 price.promptTokens + price.completionTokens
             } | ${model} | price: ${price.price}¢`
           )

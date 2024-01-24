@@ -70,7 +70,6 @@ export class VoiceToTextBot implements PayableBot {
 
     const filename = path + '.' + ext
     fs.renameSync(path, filename)
-
     const resultText = await speechToText(fs.createReadStream(filename))
     fs.rmSync(filename)
 
