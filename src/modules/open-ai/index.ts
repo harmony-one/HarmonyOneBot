@@ -155,12 +155,13 @@ export class OpenAIBot implements PayableBot {
 
   public async voiceCommand (ctx: OnMessageContext | OnCallBackQueryData, command: string, transcribedText: string): Promise<void> {
     try {
+      let prompt = transcribedText.slice(command.length)
       switch (command) {
         case SupportedCommands.vision: {
           const photo = ctx.message?.photo ?? ctx.message?.reply_to_message?.photo
           if (photo) {
             ctx.session.openAi.imageGen.imgRequestQueue.push({
-              prompt: transcribedText,
+              prompt,
               photo,
               command
             })
@@ -181,7 +182,7 @@ export class OpenAIBot implements PayableBot {
             return
           }
           ctx.session.openAi.chatGpt.requestQueue.push(
-            await preparePrompt(ctx, transcribedText)
+            await preparePrompt(ctx, prompt)
           )
           if (!ctx.session.openAi.chatGpt.isProcessingQueue) {
             ctx.session.openAi.chatGpt.isProcessingQueue = true
@@ -189,6 +190,23 @@ export class OpenAIBot implements PayableBot {
               ctx.session.openAi.chatGpt.isProcessingQueue = false
             })
           }
+          break
+        }
+        case SupportedCommands.dalleImg: {
+          if (!prompt || prompt.split(' ').length === 1) {
+            prompt = config.openAi.dalle.defaultPrompt
+          }
+          ctx.session.openAi.imageGen.imgRequestQueue.push({
+            command: 'dalle',
+            prompt
+          })
+          if (!ctx.session.openAi.imageGen.isProcessingQueue) {
+            ctx.session.openAi.imageGen.isProcessingQueue = true
+            await this.onImgRequestHandler(ctx).then(() => {
+              ctx.session.openAi.imageGen.isProcessingQueue = false
+            })
+          }
+          break
         }
       }
     } catch (e: any) {

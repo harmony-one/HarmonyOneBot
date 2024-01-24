@@ -8,7 +8,11 @@ import config from '../../config'
 import { type OpenAIBot } from '../open-ai'
 import { SupportedCommands as OpenAISupportedCommands } from '../open-ai/helpers'
 
-const VOICE_COMMAND_LIST = [OpenAISupportedCommands.vision, OpenAISupportedCommands.ask]
+const VOICE_COMMAND_LIST = [
+  OpenAISupportedCommands.vision,
+  OpenAISupportedCommands.ask,
+  OpenAISupportedCommands.dalleImg
+]
 export class VoiceCommand implements PayableBot {
   public readonly module = 'VoiceCommand'
   private readonly logger: Logger
