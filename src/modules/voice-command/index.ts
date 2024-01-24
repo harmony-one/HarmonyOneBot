@@ -44,6 +44,12 @@ export class VoiceCommand implements PayableBot {
     return ''
   }
 
+  getRandomEmoji (): string {
+    const emojis = ['👌', '🖖', '🤙', '👇']
+    const randomIndex = Math.floor(Math.random() * emojis.length)
+    return emojis[randomIndex]
+  }
+
   public async onEvent (ctx: OnMessageContext): Promise<void> {
     ctx.transient.analytics.module = this.module
     const { voice } = ctx.update.message
@@ -57,8 +63,9 @@ export class VoiceCommand implements PayableBot {
       await ctx.reply('The message must include audio content')
       return
     }
+    const progressMessage = await ctx.reply('Listening...')
 
-    const file = await ctx.api.getFile(fileId) // bot.api.getFile(fileId)
+    const file = await ctx.api.getFile(fileId)
 
     const path = await download(file)
 
@@ -70,11 +77,18 @@ export class VoiceCommand implements PayableBot {
     const filename = path + '.' + ext
     fs.renameSync(path, filename)
     const resultText = await speechToText(fs.createReadStream(filename))
+
+    console.log('VoiceCommand prompt detected', resultText)
+
     fs.rmSync(filename)
     const command = this.getCommand(resultText)
 
     if (command) {
+      await ctx.api.editMessageText(ctx.chat.id, progressMessage.message_id, this.getRandomEmoji(), { parse_mode: 'Markdown' })
       await this.openAIBot.voiceCommand(ctx, command, resultText)
+      await ctx.api.deleteMessage(ctx.chat.id, progressMessage.message_id)
+    } else {
+      await ctx.api.editMessageText(ctx.chat.id, progressMessage.message_id, `No command detected. This is what I heard 😉: _${resultText}_`, { parse_mode: 'Markdown' })
     }
   }
 }
