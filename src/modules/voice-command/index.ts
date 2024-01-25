@@ -11,7 +11,8 @@ import { SupportedCommands as OpenAISupportedCommands } from '../open-ai/helpers
 const VOICE_COMMAND_LIST = [
   OpenAISupportedCommands.vision,
   OpenAISupportedCommands.ask,
-  OpenAISupportedCommands.dalleImg
+  OpenAISupportedCommands.dalleImg,
+  OpenAISupportedCommands.talk
 ]
 export class VoiceCommand implements PayableBot {
   public readonly module = 'VoiceCommand'

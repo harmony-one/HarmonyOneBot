@@ -59,6 +59,13 @@ export interface ImageRequest {
   photo?: PhotoSize[] | undefined
   photoUrl?: string[]
 }
+
+export interface promptRequest {
+  prompt: string
+  msgId?: number
+  outputFormat?: 'text' | 'voice'
+  commandPrefix?: string
+}
 export interface ChatGptSessionData {
   model: string
   isEnabled: boolean
@@ -66,7 +73,7 @@ export interface ChatGptSessionData {
   chatConversation: ChatConversation[]
   usage: number
   price: number
-  requestQueue: string[]
+  requestQueue: promptRequest[]
   isProcessingQueue: boolean
 }
 

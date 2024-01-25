@@ -13,6 +13,7 @@ import {
 } from '../types'
 import {
   alterGeneratedImg,
+  chatCompletion,
   getChatModel,
   getDalleModel,
   getDalleModelPrice,
@@ -47,6 +48,7 @@ import { AxiosError } from 'axios'
 import { Callbacks } from '../types'
 import { LlmsBot } from '../llms'
 import { type PhotoSize } from 'grammy/types'
+import { responseWithVoice } from '../voice-to-voice-gpt/helpers'
 
 const priceAdjustment = config.openAi.chatGpt.priceAdjustment
 export class OpenAIBot implements PayableBot {
@@ -174,16 +176,21 @@ export class OpenAIBot implements PayableBot {
           }
           break
         }
-        case SupportedCommands.ask: {
+        case SupportedCommands.ask:
+        case SupportedCommands.talk: {
           if (this.botSuspended) {
             ctx.transient.analytics.sessionState = RequestState.Error
             await sendMessage(ctx, 'The bot is suspended').catch(async (e) => { await this.onError(ctx, e) })
             ctx.transient.analytics.actualResponseTime = now()
             return
           }
-          ctx.session.openAi.chatGpt.requestQueue.push(
-            await preparePrompt(ctx, prompt)
-          )
+          const adaptedPrompt = (SupportedCommands.talk === command
+            ? 'Keep it short, like a phone call'
+            : '') + await preparePrompt(ctx, prompt)
+          ctx.session.openAi.chatGpt.requestQueue.push({
+            prompt: adaptedPrompt,
+            outputFormat: SupportedCommands.ask === command ? 'text' : 'voice'
+          })
           if (!ctx.session.openAi.chatGpt.isProcessingQueue) {
             ctx.session.openAi.chatGpt.isProcessingQueue = true
             await this.onChatRequestHandler(ctx).then(() => {
@@ -407,7 +414,7 @@ export class OpenAIBot implements PayableBot {
     )
   }
 
-  private async promptGen (data: ChatPayload, msgId?: number): Promise< { price: number, chat: ChatConversation[] }> {
+  private async completionGen (data: ChatPayload, msgId?: number, outputFormat = 'text'): Promise< { price: number, chat: ChatConversation[] }> {
     const { conversation, ctx, model } = data
     try {
       if (!msgId) {
@@ -420,29 +427,42 @@ export class OpenAIBot implements PayableBot {
           })
         ).message_id
       }
-      const isTypingEnabled = config.openAi.chatGpt.isTypingEnabled
-      if (isTypingEnabled) {
-        ctx.chatAction = 'typing'
-      }
-      const completion = await streamChatCompletion(
-        conversation,
-        ctx,
-        model,
-        msgId,
-        true // telegram messages has a character limit
-      )
-      if (isTypingEnabled) {
-        ctx.chatAction = null
-      }
-      if (completion) {
-        ctx.transient.analytics.sessionState = RequestState.Success
-        ctx.transient.analytics.actualResponseTime = now()
-        const price = getPromptPrice(completion, data)
-        this.logger.info(
-          `streamChatCompletion result = tokens: ${price.totalTokens} | ${model} | price: ${price.price}¢` // price.promptTokens + price.completionTokens  }
+      if (outputFormat === 'text') {
+        const isTypingEnabled = config.openAi.chatGpt.isTypingEnabled
+        if (isTypingEnabled) {
+          ctx.chatAction = 'typing'
+        }
+        const completion = await streamChatCompletion(
+          conversation,
+          ctx,
+          model,
+          msgId,
+          true // telegram messages has a character limit
         )
+        if (isTypingEnabled) {
+          ctx.chatAction = null
+        }
+        if (completion) {
+          ctx.transient.analytics.sessionState = RequestState.Success
+          ctx.transient.analytics.actualResponseTime = now()
+          const price = getPromptPrice(completion, data)
+          this.logger.info(
+            `streamChatCompletion result = tokens: ${price.totalTokens} | ${model} | price: ${price.price}¢` // price.promptTokens + price.completionTokens  }
+          )
+          return {
+            price: price.price,
+            chat: conversation
+          }
+        }
+      } else {
+        const response = await chatCompletion(conversation, ChatGPTModelsEnum.GPT_35_TURBO_16K)
+        conversation.push({
+          role: 'system',
+          content: response.completion
+        })
+        await responseWithVoice(response.completion, ctx as OnMessageContext, msgId)
         return {
-          price: price.price,
+          price: response.price,
           chat: conversation
         }
       }
@@ -469,9 +489,10 @@ export class OpenAIBot implements PayableBot {
       }
       const { username } = ctx.me
       const prompt = ctx.message?.text?.slice(username.length + 1) ?? '' // @
-      ctx.session.openAi.chatGpt.requestQueue.push(
-        await preparePrompt(ctx, prompt)
-      )
+      ctx.session.openAi.chatGpt.requestQueue.push({
+        prompt: await preparePrompt(ctx, prompt),
+        outputFormat: 'text'
+      })
       if (!ctx.session.openAi.chatGpt.isProcessingQueue) {
         ctx.session.openAi.chatGpt.isProcessingQueue = true
         await this.onChatRequestHandler(ctx).then(() => {
@@ -494,9 +515,10 @@ export class OpenAIBot implements PayableBot {
         return
       }
       const prompt = ctx.message?.text?.slice(prefix.length) ?? ''
-      ctx.session.openAi.chatGpt.requestQueue.push(
-        await preparePrompt(ctx, prompt)
-      )
+      ctx.session.openAi.chatGpt.requestQueue.push({
+        prompt: await preparePrompt(ctx, prompt),
+        outputFormat: 'text'
+      })
       if (!ctx.session.openAi.chatGpt.isProcessingQueue) {
         ctx.session.openAi.chatGpt.isProcessingQueue = true
         await this.onChatRequestHandler(ctx).then(() => {
@@ -516,9 +538,10 @@ export class OpenAIBot implements PayableBot {
         ctx.transient.analytics.actualResponseTime = now()
         return
       }
-      ctx.session.openAi.chatGpt.requestQueue.push(
-        await preparePrompt(ctx, ctx.message?.text ?? '')
-      )
+      ctx.session.openAi.chatGpt.requestQueue.push({
+        prompt: await preparePrompt(ctx, ctx.message?.text ?? ''),
+        outputFormat: 'text'
+      })
       if (!ctx.session.openAi.chatGpt.isProcessingQueue) {
         ctx.session.openAi.chatGpt.isProcessingQueue = true
         await this.onChatRequestHandler(ctx).then(() => {
@@ -556,9 +579,10 @@ export class OpenAIBot implements PayableBot {
       if (await this.freePromptChatGroup(ctx, prompt as string)) {
         return
       }
-      ctx.session.openAi.chatGpt.requestQueue.push(
-        await preparePrompt(ctx, prompt as string)
-      )
+      ctx.session.openAi.chatGpt.requestQueue.push({
+        prompt: await preparePrompt(ctx, prompt as string),
+        outputFormat: 'text'
+      })
       if (!ctx.session.openAi.chatGpt.isProcessingQueue) {
         ctx.session.openAi.chatGpt.isProcessingQueue = true
         await this.onChatRequestHandler(ctx).then(() => {
@@ -588,7 +612,7 @@ export class OpenAIBot implements PayableBot {
             ctx.transient.analytics.actualResponseTime = now()
             return
           }
-          const { url, newPrompt } = hasUrl(ctx, prompt)
+          const { url, newPrompt } = hasUrl(ctx, prompt.prompt)
           const hasCode = hasCodeSnippet(ctx)
           if (chatConversation.length === 0 && (hasCode || !url)) {
             chatConversation.push({
@@ -601,14 +625,14 @@ export class OpenAIBot implements PayableBot {
           } else {
             chatConversation.push({
               role: 'user',
-              content: prompt
+              content: prompt.prompt
             })
             const payload = {
               conversation: chatConversation,
               model: model || config.openAi.chatGpt.model,
               ctx
             }
-            const result = await this.promptGen(payload)
+            const result = await this.completionGen(payload, prompt.msgId, prompt.outputFormat)
             ctx.session.openAi.chatGpt.chatConversation = [...result.chat]
             if (
               !(await this.payments.pay(ctx as OnMessageContext, result.price))
