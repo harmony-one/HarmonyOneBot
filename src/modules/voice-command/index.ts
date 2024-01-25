@@ -35,7 +35,9 @@ export class VoiceCommand implements PayableBot {
   }
 
   public getEstimatedPrice (ctx: OnMessageContext): number {
-    return 0
+    const { voice } = ctx.update.message
+    const seconds = voice?.duration ?? 0
+    return seconds * 0.005
   }
 
   getCommand (transcribedText: string): string {
@@ -82,7 +84,7 @@ export class VoiceCommand implements PayableBot {
     fs.renameSync(path, filename)
     const resultText = await speechToText(fs.createReadStream(filename))
 
-    console.log('VoiceCommand prompt detected', resultText)
+    this.logger.info(`[VoiceCommand] prompt detected: ${resultText}`)
 
     fs.rmSync(filename)
     const command = this.getCommand(resultText)
