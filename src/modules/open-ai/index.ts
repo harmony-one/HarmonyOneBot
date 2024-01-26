@@ -157,7 +157,7 @@ export class OpenAIBot implements PayableBot {
 
   public async voiceCommand (ctx: OnMessageContext | OnCallBackQueryData, command: string, transcribedText: string): Promise<void> {
     try {
-      let prompt = transcribedText.slice(command.length)
+      let prompt = transcribedText.slice(command.length).replace(/^[.,\s]+/, '')
       switch (command) {
         case SupportedCommands.vision: {
           const photo = ctx.message?.photo ?? ctx.message?.reply_to_message?.photo

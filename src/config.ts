@@ -99,7 +99,7 @@ export default {
   },
   voiceCommand: {
     isEnabled: true,
-    voiceDuration: 15
+    voiceDuration: 30
   },
   voiceMemo: {
     isEnabled: Boolean(parseInt(process.env.VOICE_MEMO_ENABLED ?? '1')),
