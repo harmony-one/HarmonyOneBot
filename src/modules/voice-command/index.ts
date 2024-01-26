@@ -18,6 +18,7 @@ export class VoiceCommand implements PayableBot {
   public readonly module = 'VoiceCommand'
   private readonly logger: Logger
   private readonly openAIBot: OpenAIBot
+  private lastCommand: string = ''
 
   constructor (openAIBot: OpenAIBot) {
     this.logger = pino({
@@ -32,7 +33,11 @@ export class VoiceCommand implements PayableBot {
 
   public isSupportedEvent (ctx: OnMessageContext): boolean {
     const { voice } = ctx.update.message
-    return !!voice && voice.mime_type === 'audio/ogg' && voice.duration < config.voiceCommand.voiceDuration && !!voice.file_id
+    const isSupported = !!voice && voice.mime_type === 'audio/ogg' && voice.duration < config.voiceCommand.voiceDuration && !!voice.file_id
+    if (!isSupported) {
+      this.lastCommand = '' // user is using other command. Is not reusing the same voice command.
+    }
+    return isSupported
   }
 
   public getEstimatedPrice (ctx: OnMessageContext): number {
@@ -60,7 +65,6 @@ export class VoiceCommand implements PayableBot {
   public async onEvent (ctx: OnMessageContext): Promise<void> {
     ctx.transient.analytics.module = this.module
     const { voice } = ctx.update.message
-
     if (!ctx.chat?.id) {
       throw Error('chat id is undefined')
     }
@@ -88,9 +92,10 @@ export class VoiceCommand implements PayableBot {
     this.logger.info(`[VoiceCommand] prompt detected: ${resultText}`)
 
     fs.rmSync(filename)
-    const command = this.getCommand(resultText)
+    const command = this.getCommand(resultText) || this.lastCommand
 
     if (command) {
+      this.lastCommand = command
       await ctx.api.editMessageText(ctx.chat.id, progressMessage.message_id, this.getRandomEmoji(), { parse_mode: 'Markdown' })
       await this.openAIBot.voiceCommand(ctx, command, resultText)
       await ctx.api.deleteMessage(ctx.chat.id, progressMessage.message_id)
