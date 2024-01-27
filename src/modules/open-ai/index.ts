@@ -88,7 +88,10 @@ export class OpenAIBot implements PayableBot {
     if (chatPrefix !== '') {
       return true
     }
-    return hasCommand || !!hasReply || this.llmsBot.isSupportedEvent(ctx)
+
+    const hasCallbackQuery = this.isSupportedCallbackQuery(ctx)
+
+    return hasCommand || !!hasReply || this.llmsBot.isSupportedEvent(ctx) || hasCallbackQuery
   }
 
   public getEstimatedPrice (ctx: any): number {
@@ -155,70 +158,21 @@ export class OpenAIBot implements PayableBot {
     return false
   }
 
-  public async voiceCommand (ctx: OnMessageContext | OnCallBackQueryData, command: string, transcribedText: string): Promise<void> {
-    try {
-      let prompt = transcribedText.slice(command.length).replace(/^[.,\s]+/, '')
-      switch (command) {
-        case SupportedCommands.vision: {
-          const photo = ctx.message?.photo ?? ctx.message?.reply_to_message?.photo
-          if (photo) {
-            ctx.session.openAi.imageGen.imgRequestQueue.push({
-              prompt,
-              photo,
-              command
-            })
-            if (!ctx.session.openAi.imageGen.isProcessingQueue) {
-              ctx.session.openAi.imageGen.isProcessingQueue = true
-              await this.onImgRequestHandler(ctx).then(() => {
-                ctx.session.openAi.imageGen.isProcessingQueue = false
-              })
-            }
-          }
-          break
-        }
-        case SupportedCommands.ask:
-        case SupportedCommands.talk: {
-          if (this.botSuspended) {
-            ctx.transient.analytics.sessionState = RequestState.Error
-            await sendMessage(ctx, 'The bot is suspended').catch(async (e) => { await this.onError(ctx, e) })
-            ctx.transient.analytics.actualResponseTime = now()
-            return
-          }
-          const adaptedPrompt = (SupportedCommands.talk === command
-            ? 'Keep it short, like a phone call'
-            : '') + await preparePrompt(ctx, prompt)
-          ctx.session.openAi.chatGpt.requestQueue.push({
-            prompt: adaptedPrompt,
-            outputFormat: SupportedCommands.ask === command ? 'text' : 'voice'
-          })
-          if (!ctx.session.openAi.chatGpt.isProcessingQueue) {
-            ctx.session.openAi.chatGpt.isProcessingQueue = true
-            await this.onChatRequestHandler(ctx).then(() => {
-              ctx.session.openAi.chatGpt.isProcessingQueue = false
-            })
-          }
-          break
-        }
-        case SupportedCommands.dalleImg: {
-          if (!prompt || prompt.split(' ').length === 1) {
-            prompt = config.openAi.dalle.defaultPrompt
-          }
-          ctx.session.openAi.imageGen.imgRequestQueue.push({
-            command: 'dalle',
-            prompt
-          })
-          if (!ctx.session.openAi.imageGen.isProcessingQueue) {
-            ctx.session.openAi.imageGen.isProcessingQueue = true
-            await this.onImgRequestHandler(ctx).then(() => {
-              ctx.session.openAi.imageGen.isProcessingQueue = false
-            })
-          }
-          break
-        }
-      }
-    } catch (e: any) {
-      await this.onError(ctx, e)
+  async shareImg (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
+    if (ctx.callbackQuery?.data) {
+      console.log(ctx.session.openAi.imageGen.imageGenerated)
+      const imgId = +ctx.callbackQuery?.data?.split('|')[1] - 1
+      console.log(imgId)
     }
+  }
+
+  public isSupportedCallbackQuery (
+    ctx: OnMessageContext | OnCallBackQueryData
+  ): boolean {
+    if (!ctx.callbackQuery?.data) {
+      return false
+    }
+    return ctx.callbackQuery?.data.startsWith('share-payload')
   }
 
   public async onEvent (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
@@ -228,8 +182,11 @@ export class OpenAIBot implements PayableBot {
       this.logger.warn(`### unsupported command ${ctx.message?.text}`)
       return
     }
-
     ctx.transient.analytics.sessionState = RequestState.Success
+    if (this.isSupportedCallbackQuery(ctx)) {
+      await this.shareImg(ctx)
+      return
+    }
 
     if (this.isSupportedImageReply(ctx)) {
       const photo = ctx.message?.photo ?? ctx.message?.reply_to_message?.photo
@@ -412,6 +369,72 @@ export class OpenAIBot implements PayableBot {
       (+balanceOne > +config.openAi.chatGpt.minimumBalance) ||
       (this.payments.isUserInWhitelist(ctx.from.id, ctx.from.username))
     )
+  }
+
+  public async voiceCommand (ctx: OnMessageContext | OnCallBackQueryData, command: string, transcribedText: string): Promise<void> {
+    try {
+      let prompt = transcribedText.slice(command.length).replace(/^[.,\s]+/, '')
+      switch (command) {
+        case SupportedCommands.vision: {
+          const photo = ctx.message?.photo ?? ctx.message?.reply_to_message?.photo
+          if (photo) {
+            ctx.session.openAi.imageGen.imgRequestQueue.push({
+              prompt,
+              photo,
+              command
+            })
+            if (!ctx.session.openAi.imageGen.isProcessingQueue) {
+              ctx.session.openAi.imageGen.isProcessingQueue = true
+              await this.onImgRequestHandler(ctx).then(() => {
+                ctx.session.openAi.imageGen.isProcessingQueue = false
+              })
+            }
+          }
+          break
+        }
+        case SupportedCommands.ask:
+        case SupportedCommands.talk: {
+          if (this.botSuspended) {
+            ctx.transient.analytics.sessionState = RequestState.Error
+            await sendMessage(ctx, 'The bot is suspended').catch(async (e) => { await this.onError(ctx, e) })
+            ctx.transient.analytics.actualResponseTime = now()
+            return
+          }
+          const adaptedPrompt = (SupportedCommands.talk === command
+            ? 'Keep it short, like a phone call'
+            : '') + await preparePrompt(ctx, prompt)
+          ctx.session.openAi.chatGpt.requestQueue.push({
+            prompt: adaptedPrompt,
+            outputFormat: SupportedCommands.ask === command ? 'text' : 'voice'
+          })
+          if (!ctx.session.openAi.chatGpt.isProcessingQueue) {
+            ctx.session.openAi.chatGpt.isProcessingQueue = true
+            await this.onChatRequestHandler(ctx).then(() => {
+              ctx.session.openAi.chatGpt.isProcessingQueue = false
+            })
+          }
+          break
+        }
+        case SupportedCommands.dalleImg: {
+          if (!prompt || prompt.split(' ').length === 1) {
+            prompt = config.openAi.dalle.defaultPrompt
+          }
+          ctx.session.openAi.imageGen.imgRequestQueue.push({
+            command: 'dalle',
+            prompt
+          })
+          if (!ctx.session.openAi.imageGen.isProcessingQueue) {
+            ctx.session.openAi.imageGen.isProcessingQueue = true
+            await this.onImgRequestHandler(ctx).then(() => {
+              ctx.session.openAi.imageGen.isProcessingQueue = false
+            })
+          }
+          break
+        }
+      }
+    } catch (e: any) {
+      await this.onError(ctx, e)
+    }
   }
 
   private async completionGen (data: ChatPayload, msgId?: number, outputFormat = 'text'): Promise< { price: number, chat: ChatConversation[] }> {
@@ -683,21 +706,28 @@ export class OpenAIBot implements PayableBot {
         const numImages = ctx.session.openAi.imageGen.numImages
         const imgSize = ctx.session.openAi.imageGen.imgSize
         const imgs = await postGenerateImg(prompt ?? '', numImages, imgSize)
-        const msgExtras = getMessageExtras({ caption: `/dalle ${prompt}` })
-        await Promise.all(imgs.map(async (img: any) => {
-          await ctx.replyWithPhoto(img.url, msgExtras).catch(async (e) => {
-            await this.onError(ctx, e, MAX_TRIES)
+        if (imgs.length > 0) {
+          ctx.session.openAi.imageGen.imageGenerated.push({ prompt, photoUrl: imgs.map(i => i.url) as string[] })
+          const inlineKeyboard = new InlineKeyboard().text('share', `share-payload|${ctx.session.openAi.imageGen.imageGenerated.length}`) // ${imgs[0].url}
+          const msgExtras = getMessageExtras({
+            caption: `/dalle ${prompt}`,
+            reply_markup: ctx.session.openAi.imageGen.isInscriptionEnabled ? inlineKeyboard : undefined
           })
-        }))
-        await ctx.api.deleteMessage(ctx.chat?.id, message_id)
-        ctx.transient.analytics.sessionState = RequestState.Success
-        ctx.transient.analytics.actualResponseTime = now()
-      } else {
-        ctx.transient.analytics.sessionState = RequestState.Error
-        await sendMessage(ctx, 'Bot disabled').catch(async (e) => {
-          await this.onError(ctx, e, MAX_TRIES, 'Bot disabled')
-        })
-        ctx.transient.analytics.actualResponseTime = now()
+          await Promise.all(imgs.map(async (img: any) => {
+            await ctx.replyWithPhoto(img.url, msgExtras).catch(async (e) => {
+              await this.onError(ctx, e, MAX_TRIES)
+            })
+          }))
+          await ctx.api.deleteMessage(ctx.chat?.id, message_id)
+          ctx.transient.analytics.sessionState = RequestState.Success
+          ctx.transient.analytics.actualResponseTime = now()
+        } else {
+          ctx.transient.analytics.sessionState = RequestState.Error
+          await sendMessage(ctx, 'Bot disabled').catch(async (e) => {
+            await this.onError(ctx, e, MAX_TRIES, 'Bot disabled')
+          })
+          ctx.transient.analytics.actualResponseTime = now()
+        }
       }
     } catch (e) {
       await this.onError(

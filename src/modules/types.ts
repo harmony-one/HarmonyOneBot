@@ -17,8 +17,10 @@ export interface ImageGenSessionData {
   numImages: number
   imgSize: string
   isEnabled: boolean
+  isInscriptionEnabled: boolean
   imgRequestQueue: ImageRequest[]
   isProcessingQueue: boolean
+  imageGenerated: ImageRequest[]
 }
 
 export interface MessageExtras {

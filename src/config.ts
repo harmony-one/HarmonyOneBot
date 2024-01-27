@@ -44,6 +44,7 @@ export default {
   openAi: {
     dalle: {
       isEnabled: Boolean(parseInt(process.env.IMAGE_GEN_ENABLED ?? '1')),
+      isInscriptionEnabled: true,
       telegramFileUrl: 'https://api.telegram.org/file/bot',
       completions: {
         temperature:

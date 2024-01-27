@@ -189,7 +189,9 @@ function createInitialSessionData (): BotSessionData {
         imgSize: config.openAi.dalle.sessionDefault.imgSize,
         isEnabled: config.openAi.dalle.isEnabled,
         imgRequestQueue: [],
-        isProcessingQueue: false
+        isProcessingQueue: false,
+        imageGenerated: [],
+        isInscriptionEnabled: config.openAi.dalle.isInscriptionEnabled
       },
       chatGpt: {
         model: config.openAi.chatGpt.model,
@@ -460,6 +462,11 @@ const onCallback = async (ctx: OnCallBackQueryData): Promise<void> => {
       await sdImagesBot.onEvent(ctx, (e) => {
         logger.info(e, '// TODO refund payment')
       })
+      return
+    }
+
+    if (openAiBot.isSupportedEvent(ctx)) {
+      await openAiBot.onEvent(ctx)
     }
   } catch (ex: any) {
     Sentry.captureException(ex)
