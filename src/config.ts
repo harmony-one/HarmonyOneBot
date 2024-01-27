@@ -97,6 +97,10 @@ export default {
       ? process.env.RESTRICTED_PHRASES.split(', ')
       : ['metamask', 'walletconnect']
   },
+  voiceCommand: {
+    isEnabled: true,
+    voiceDuration: 30
+  },
   voiceMemo: {
     isEnabled: Boolean(parseInt(process.env.VOICE_MEMO_ENABLED ?? '1')),
     telegramApiId: parseInt(process.env.TELEGRAM_API_ID ?? ''),

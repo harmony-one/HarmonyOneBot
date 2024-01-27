@@ -5,9 +5,8 @@ import type { Logger } from 'pino'
 import type { BotPayments } from '../payment'
 import { chatCompletion, speechToText } from '../open-ai/api/openAi'
 import type { OnMessageContext, PayableBot } from '../types'
-import config from '../../config'
 import { ChatGPTModelsEnum } from '../open-ai/types'
-import { ElevenlabsClient } from '../../elevenlabs/elevenlabsClient'
+import { generateVoiceFromText } from './helpers'
 
 export class VoiceToVoiceGPTBot implements PayableBot {
   private readonly payments: BotPayments
@@ -67,9 +66,7 @@ export class VoiceToVoiceGPTBot implements PayableBot {
     const conversation = [{ role: 'user', content: resultText }]
     const response = await chatCompletion(conversation, ChatGPTModelsEnum.GPT_35_TURBO_16K)
 
-    const elevenlabsClient = new ElevenlabsClient(config.elevenlabs.apiKey)
-
-    const voiceResult = await elevenlabsClient.textToSpeech({ text: response.completion, voiceId: '21m00Tcm4TlvDq8ikWAM' })
+    const voiceResult = await generateVoiceFromText(response.completion)
     // const voiceResult = await gcTextToSpeedClient.ssmlTextToSpeech({ text: response.completion, ssmlGender: 'MALE', languageCode: 'en-US' })
 
     if (!voiceResult) {

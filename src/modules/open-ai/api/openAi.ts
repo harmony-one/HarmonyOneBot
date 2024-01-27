@@ -329,6 +329,5 @@ export async function speechToText (readStream: fs.ReadStream): Promise<string> 
     file: readStream,
     model: 'whisper-1'
   })
-
   return result.text
 }

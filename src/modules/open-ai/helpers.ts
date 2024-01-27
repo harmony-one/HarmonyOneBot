@@ -21,7 +21,8 @@ export enum SupportedCommands {
   dalleShorter = 'i',
   genImgEn = 'genImgEn',
   on = 'on',
-  off = 'off'
+  off = 'off',
+  talk = 'talk'
 }
 
 export const MAX_TRIES = 3

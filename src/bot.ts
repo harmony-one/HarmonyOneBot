@@ -53,6 +53,7 @@ import { VoiceToTextBot } from './modules/voice-to-text'
 import { now } from './utils/perf'
 import { hasPrefix } from './modules/open-ai/helpers'
 import { VoiceToVoiceGPTBot } from './modules/voice-to-voice-gpt'
+import { VoiceCommand } from './modules/voice-command'
 
 Events.EventEmitter.defaultMaxListeners = 30
 
@@ -251,6 +252,7 @@ const voiceTranslateBot = new VoiceTranslateBot(payments)
 const textToSpeechBot = new TextToSpeechBot(payments)
 const voiceToTextBot = new VoiceToTextBot(payments)
 const voiceToVoiceGPTBot = new VoiceToVoiceGPTBot(payments)
+const voiceCommand = new VoiceCommand(openAiBot)
 
 bot.on('message:new_chat_members:me', async (ctx) => {
   try {
@@ -358,6 +360,7 @@ const writeCommandLog = async (
 }
 
 const PayableBots: Record<string, PayableBotConfig> = {
+  voiceCommand: { bot: voiceCommand },
   qrCodeBot: { bot: qrCodeBot },
   sdImagesBot: { bot: sdImagesBot },
   voiceTranslate: { bot: voiceTranslateBot },
@@ -397,7 +400,6 @@ const onMessage = async (ctx: OnMessageContext): Promise<void> => {
         await telegramPayments.onEvent(ctx)
         return
       }
-
       for (const config of Object.values(PayableBots)) {
         const bot = config.bot
 

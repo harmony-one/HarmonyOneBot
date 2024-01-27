@@ -303,8 +303,9 @@ export class LlmsBot implements PayableBot {
           prompt,
           conversation
         })
+        const price = response.price * config.openAi.chatGpt.priceAdjustment
         if (
-          !(await this.payments.pay(ctx as OnMessageContext, response.price))
+          !(await this.payments.pay(ctx as OnMessageContext, price))
         ) {
           await this.onNotBalanceMessage(ctx)
         } else {
@@ -365,8 +366,9 @@ export class LlmsBot implements PayableBot {
           prompt,
           conversation
         })
+        const price = response.price * config.openAi.chatGpt.priceAdjustment
         if (
-          !(await this.payments.pay(ctx as OnMessageContext, response.price))
+          !(await this.payments.pay(ctx as OnMessageContext, price))
         ) {
           if (ctx.chat?.id) {
             await ctx.api.deleteMessage(ctx.chat?.id, msgId)
@@ -421,13 +423,13 @@ export class LlmsBot implements PayableBot {
           const result = await llmCheckCollectionStatus(collection?.collectionName ?? '')
           if (result.price > 0) {
             if (
-              !(await this.payments.pay(ctx as OnMessageContext, result.price))
+              !(await this.payments.pay(ctx as OnMessageContext, result.price)) // price 0.05 x collections (chunks)
             ) {
               await this.onNotBalanceMessage(ctx)
             } else {
               ctx.session.collections.activeCollections.push(collection)
               if (collection.msgId) {
-                const oneFee = await this.payments.getPriceInONE(result.price)
+                const oneFee = await this.payments.getPriceInONE(result.price) // price in cents
                 let statusMsg
                 if (collection.collectionType === 'URL') {
                   statusMsg = `${collection.url} processed (${this.payments.toONE(oneFee, false).toFixed(2)} ONE fee)`
