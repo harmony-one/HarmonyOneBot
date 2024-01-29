@@ -20,7 +20,7 @@ export interface ImageGenSessionData {
   isInscriptionEnabled: boolean
   imgRequestQueue: ImageRequest[]
   isProcessingQueue: boolean
-  imageGenerated: ImageRequest[]
+  imageGenerated: ImageGenerated[]
 }
 
 export interface MessageExtras {
@@ -60,6 +60,14 @@ export interface ImageRequest {
   prompt?: string
   photo?: PhotoSize[] | undefined
   photoUrl?: string[]
+}
+
+export interface ImageGenerated {
+  command?: 'dalle' | 'alter' | 'vision'
+  prompt?: string
+  photo?: PhotoSize[] | undefined
+  photoUrl?: string[]
+  photoId?: string | undefined
 }
 
 export interface promptRequest {

@@ -160,9 +160,8 @@ export class OpenAIBot implements PayableBot {
 
   async shareImg (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
     if (ctx.callbackQuery?.data) {
-      console.log(ctx.session.openAi.imageGen.imageGenerated)
-      const imgId = +ctx.callbackQuery?.data?.split('|')[1] - 1
-      console.log(imgId)
+      const imgId = +ctx.callbackQuery?.data?.split('|')[1]
+      console.log(ctx.session.openAi.imageGen.imageGenerated[imgId])
     }
   }
 
@@ -707,16 +706,21 @@ export class OpenAIBot implements PayableBot {
         const imgSize = ctx.session.openAi.imageGen.imgSize
         const imgs = await postGenerateImg(prompt ?? '', numImages, imgSize)
         if (imgs.length > 0) {
-          ctx.session.openAi.imageGen.imageGenerated.push({ prompt, photoUrl: imgs.map(i => i.url) as string[] })
-          const inlineKeyboard = new InlineKeyboard().text('share', `share-payload|${ctx.session.openAi.imageGen.imageGenerated.length}`) // ${imgs[0].url}
-          const msgExtras = getMessageExtras({
-            caption: `/dalle ${prompt}`,
-            reply_markup: ctx.session.openAi.imageGen.isInscriptionEnabled ? inlineKeyboard : undefined
-          })
           await Promise.all(imgs.map(async (img: any) => {
-            await ctx.replyWithPhoto(img.url, msgExtras).catch(async (e) => {
-              await this.onError(ctx, e, MAX_TRIES)
-            })
+            if (ctx.session.openAi.imageGen.isInscriptionEnabled) {
+              const inlineKeyboard = new InlineKeyboard().text('share', `share-payload|${ctx.session.openAi.imageGen.imageGenerated.length}`) // ${imgs[0].url}
+              const msgExtras = getMessageExtras({
+                caption: `/dalle ${prompt}`,
+                reply_markup: ctx.session.openAi.imageGen.isInscriptionEnabled ? inlineKeyboard : undefined
+              })
+              const msg = await ctx.replyWithPhoto(img.url, msgExtras)
+              const genImg = msg.photo
+              const fileId = genImg?.pop()?.file_id
+              ctx.session.openAi.imageGen.imageGenerated.push({ prompt, photoUrl: img.url, photoId: fileId })
+            } else {
+              const msgExtras = getMessageExtras({ caption: `/dalle ${prompt}` })
+              await ctx.replyWithPhoto(img.url, msgExtras)
+            }
           }))
           await ctx.api.deleteMessage(ctx.chat?.id, message_id)
           ctx.transient.analytics.sessionState = RequestState.Success
