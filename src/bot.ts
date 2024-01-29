@@ -404,7 +404,6 @@ const onMessage = async (ctx: OnMessageContext): Promise<void> => {
       }
       for (const config of Object.values(PayableBots)) {
         const bot = config.bot
-
         if (!bot.isSupportedEvent(ctx)) {
           continue
         }
