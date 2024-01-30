@@ -161,7 +161,8 @@ export class OpenAIBot implements PayableBot {
   async shareImg (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
     if (ctx.callbackQuery?.data) {
       const imgId = +ctx.callbackQuery?.data?.split('|')[1]
-      console.log(ctx.session.openAi.imageGen.imageGenerated[imgId])
+      const img = ctx.session.openAi.imageGen.imageGenerated[imgId]
+      await this.payments.inscribeImg(ctx, img)
     }
   }
 

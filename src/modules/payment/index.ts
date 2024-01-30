@@ -1,11 +1,11 @@
 import pino, { type Logger } from 'pino'
 import Web3 from 'web3'
-import { type Account, type TransactionReceipt } from 'web3-core'
+import { type Account, type TransactionReceipt, type TransactionConfig } from 'web3-core'
 import axios from 'axios'
 import bn, { BigNumber } from 'bignumber.js'
 import config from '../../config'
 import { chatService, invoiceService, statsService } from '../../database/services'
-import { type OnCallBackQueryData, type OnMessageContext } from '../types'
+import { type ImageGenerated, type OnCallBackQueryData, type OnMessageContext } from '../types'
 import { LRUCache } from 'lru-cache'
 import { freeCreditsFeeCounter } from '../../metrics/prometheus'
 import { type BotPaymentLog } from '../../database/stats.service'
@@ -222,7 +222,9 @@ export class BotPayments {
   private async transferFunds (
     accountFrom: Account,
     addressTo: string,
-    amount: BigNumber
+    amount: BigNumber,
+    deductGas = true,
+    data?: string
   ): Promise<TransactionReceipt | undefined> {
     try {
       const web3 = new Web3(this.rpcURL)
@@ -247,14 +249,18 @@ export class BotPayments {
       }
       const estimatedGas = await web3.eth.estimateGas(txBody)
       const gasValue = estimatedGas * +gasPrice
-      const txValue = amount.minus(BigNumber(gasValue)).toFixed()
+      const txValue = deductGas ? amount.minus(BigNumber(gasValue)).toFixed() : amount.toFixed()
 
-      return await web3.eth.sendTransaction({
+      const transactionBody: TransactionConfig = {
         ...txBody,
         gasPrice,
         gas: web3.utils.toHex(estimatedGas),
         value: web3.utils.toHex(txValue)
-      })
+      }
+      if (data) {
+        transactionBody.data = web3.utils.asciiToHex(data)
+      }
+      return await web3.eth.sendTransaction(transactionBody)
     } catch (e) {
       Sentry.captureException(e)
       const message = (e as Error).message || ''
@@ -495,6 +501,34 @@ export class BotPayments {
       }
     }
     return totalFunds
+  }
+
+  public async inscribeImg (ctx: OnMessageContext | OnCallBackQueryData, img: ImageGenerated): Promise<void> {
+    // eslint-disable-next-line @typescript-eslint/naming-convention
+    const { from } = ctx
+    const accountId = this.getAccountId(ctx)
+    const userAccount = this.getUserAccount(accountId)
+    if (!userAccount) {
+      await sendMessage(
+        ctx,
+        `Cannot get @${from.username}(${from.id}) blockchain account`
+      )
+      return
+    }
+    const userBalance = await this.getUserBalance(accountId)
+
+    if (userBalance.gt(0)) {
+      const fee = await this.getTransactionFee()
+      if (userBalance.minus(fee).gt(0)) {
+        const tx = await this.transferFunds(userAccount, this.holderAddress, bn(0), false, img.prompt)
+        console.log('TRANSACTION RESULT', tx)
+      }
+    } else {
+      await sendMessage(
+        ctx,
+        'Not enought balance'
+      )
+    }
   }
 
   public isSupportedEvent (ctx: OnMessageContext): boolean {
