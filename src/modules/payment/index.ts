@@ -116,7 +116,9 @@ export class BotPayments {
 
         // always hold 1 ONE on user balance to pay fees
         const minOneAmount = new BigNumber(10 ** 18)
-        if(availableBalance.minus(txFee).gt(minOneAmount)) {
+        if(availableBalance.minus(txFee).lt(minOneAmount)) {
+          return
+        } else {
           availableBalance = availableBalance.minus(minOneAmount)
         }
 
