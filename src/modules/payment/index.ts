@@ -248,12 +248,14 @@ export class BotPayments {
         nonce = await web3.eth.getTransactionCount(accountFrom.address)
       }
       this.noncePending.set(accountFrom.address, nonce)
-
-      const txBody = {
+      const txBody: TransactionConfig = {
         from: accountFrom.address,
         to: addressTo,
         value: web3.utils.toHex(amount.toFixed()),
         nonce
+      }
+      if (data) {
+        txBody.data = web3.utils.toHex(data) //  asciiToHex
       }
       const estimatedGas = await web3.eth.estimateGas(txBody)
       const gasValue = estimatedGas * +gasPrice
@@ -264,9 +266,6 @@ export class BotPayments {
         gasPrice,
         gas: web3.utils.toHex(estimatedGas),
         value: web3.utils.toHex(txValue)
-      }
-      if (data) {
-        transactionBody.data = web3.utils.toHex(data) //  asciiToHex
       }
       return await web3.eth.sendTransaction(transactionBody)
     } catch (e) {
@@ -511,31 +510,47 @@ export class BotPayments {
     return totalFunds
   }
 
-  public async inscribeImg (ctx: OnMessageContext | OnCallBackQueryData, img: ImageGenerated): Promise<void> {
+  public async inscribeImg (ctx: OnMessageContext | OnCallBackQueryData, img: ImageGenerated, msgId: number): Promise<void> {
     // eslint-disable-next-line @typescript-eslint/naming-convention
-    const { from } = ctx
-    const accountId = this.getAccountId(ctx)
-    const userAccount = this.getUserAccount(accountId)
-    if (!userAccount) {
-      await sendMessage(
-        ctx,
-        `Cannot get @${from.username}(${from.id}) blockchain account`
-      )
-      return
-    }
-    const userBalance = await this.getUserBalance(accountId)
-    console.log('USER BALANCE', userBalance)
-    if (userBalance.gt(0)) {
-      const fee = await this.getTransactionFee()
-      if (userBalance.minus(fee).gt(0)) {
-        const tx = await this.transferFunds(userAccount, this.holderAddress, bn(0), false, img.prompt)
-        console.log('TRANSACTION RESULT', tx)
+    try {
+      const { from } = ctx
+      const accountId = this.getAccountId(ctx)
+      const userAccount = this.getUserAccount(accountId)
+      if (!userAccount) {
+        await sendMessage(
+          ctx,
+          `Cannot get @${from.username}(${from.id}) blockchain account`
+        )
+        return
       }
-    } else {
-      await sendMessage(
-        ctx,
-        'Not enought balance'
-      )
+      const userBalance = await this.getUserBalance(accountId)
+      if (userBalance.gt(0)) {
+        const tx = await this.transferFunds(userAccount, config.payment.inscriptionDestinationAddress, bn(0), false, img.prompt) //
+        if (tx) {
+          const oneCountryDomain = tx.transactionHash.slice(-2)
+          if (ctx.chat?.id) {
+            await ctx.api.editMessageText(ctx.chat?.id, msgId, `You can check your inscription in [${oneCountryDomain}.country](https://${oneCountryDomain}.country)`, { parse_mode: 'Markdown' })
+          } else {
+            await sendMessage(ctx, `You can check your inscription in [${oneCountryDomain}.country](https://${oneCountryDomain}.country)`, { parseMode: 'Markdown' })
+          }
+        }
+        this.logger.info('Inscription tx', tx)
+      } else {
+        if (ctx.chat?.id) {
+          await ctx.api.editMessageText(ctx.chat?.id, msgId, `Not enought balance. To recharge send ONE to \`${userAccount.address}\``, { parse_mode: 'Markdown' })
+        } else {
+          await sendMessage(ctx, `Not enought balance. To recharge send ONE to \`${userAccount.address}\``, { parseMode: 'Markdown' })
+        }
+      }
+    } catch (e) {
+      if (ctx.chat?.id) {
+        await ctx.api.editMessageText(ctx.chat?.id, msgId, 'There was an error processing your request')
+      } else {
+        await sendMessage(
+          ctx,
+          'There was an error processing your request'
+        )
+      }
     }
   }
 
