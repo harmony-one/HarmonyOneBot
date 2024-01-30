@@ -114,6 +114,12 @@ export class BotPayments {
           this.logger.error(`Cannot get user balance ${accountId} ${userAccount.address}`)
         }
 
+        // always hold 1 ONE on user balance to pay fees
+        const minOneAmount = new BigNumber(10 ** 18)
+        if (availableBalance.minus(txFee).gt(minOneAmount)) {
+          availableBalance = availableBalance.minus(minOneAmount)
+        }
+
         if (availableBalance.minus(txFee).gt(0)) {
           try {
             this.logger.info(`User ${accountId} ${userAccount.address} transfer funds ${availableBalance.toFixed()} ONE to multisig wallet: ${this.holderAddress}...`)
