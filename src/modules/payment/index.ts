@@ -264,7 +264,7 @@ export class BotPayments {
         value: web3.utils.toHex(txValue)
       }
       if (data) {
-        transactionBody.data = web3.utils.asciiToHex(data)
+        transactionBody.data = web3.utils.toHex(data) //  asciiToHex
       }
       return await web3.eth.sendTransaction(transactionBody)
     } catch (e) {
@@ -522,7 +522,7 @@ export class BotPayments {
       return
     }
     const userBalance = await this.getUserBalance(accountId)
-
+    console.log('USER BALANCE', userBalance)
     if (userBalance.gt(0)) {
       const fee = await this.getTransactionFee()
       if (userBalance.minus(fee).gt(0)) {
