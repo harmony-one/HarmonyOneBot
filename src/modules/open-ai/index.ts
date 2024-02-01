@@ -163,15 +163,6 @@ export class OpenAIBot implements PayableBot {
     if (ctx.callbackQuery?.data) {
       const imgId = +ctx.callbackQuery?.data?.split('|')[1]
       const img = ctx.session.openAi.imageGen.imageGenerated[imgId]
-      // const img: ImageGenerated = {
-      //   photoUrl: ['https://oaidalleapiprodscus.blob.core.windows.net/private/org-4qYC8zhTh4Nn3fI6qMSDzx7W/user-TMCBZ9s1RIH5V8gC2saLAnFY/img-n8lt2sqIazwvTHzdkwhKsmGb.png?st=2024-01-30T12%3A13%3A57Z&se=2024-01-30T14%3A13%3A57Z&sp=r&sv=2021-08-06&sr=b&rscd=inline&rsct=image/png&skoid=6aaadede-4fb3-4698-a8f6-684d7786b067&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2024-01-30T00%3A38%3A23Z&ske=2024-01-31T00%3A38%3A23Z&sks=b&skv=2021-08-06&sig=iEHlUA7G5lQuVP3p32PHaOxa%2B70KwIoqHwqKk9ivQTg%3D'],
-      //   prompt: 'A clown eating pizza'
-      // }
-      // prompt: `Create a vibrant scene featuring a clown with an exaggerated smile, colorful clothes, and goofy shoes.
-      //     This clown is in the middle of an energetic dance, moving fluidly with a sense of joy and whimsy. Red, blue,
-      //     and yellow confetti rain down around the clown, adding to the festive atmosphere. The background shows a circus
-      //     tent with its bright stripes and electric lights. It's a lively spectacle meant to bring laughter and
-      //     fun to all who witness it. Overall, the image is a captivating mix of color and movement.`
       const msgId = (
         await ctx.reply('Inscribing the image...', {
           message_thread_id:
@@ -726,10 +717,12 @@ export class OpenAIBot implements PayableBot {
         if (imgs.length > 0) {
           await Promise.all(imgs.map(async (img: any) => {
             if (ctx.session.openAi.imageGen.isInscriptionEnabled) {
-              const inlineKeyboard = new InlineKeyboard().text('share', `share-payload|${ctx.session.openAi.imageGen.imageGenerated.length}`) // ${imgs[0].url}
+              const inlineKeyboard = new InlineKeyboard().text('Share to enter lottery', `share-payload|${ctx.session.openAi.imageGen.imageGenerated.length}`) // ${imgs[0].url}
               const msgExtras = getMessageExtras({
-                caption: `/dalle ${prompt}`,
-                reply_markup: ctx.session.openAi.imageGen.isInscriptionEnabled ? inlineKeyboard : undefined
+                caption: `/dalle ${prompt}\n\n Check [q.country](https://q.country) for general lottery information`,
+                reply_markup: inlineKeyboard,
+                disable_web_page_preview: true,
+                parseMode: 'Markdown'
               })
               const msg = await ctx.replyWithPhoto(img.url, msgExtras)
               const genImg = msg.photo

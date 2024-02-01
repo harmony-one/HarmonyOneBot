@@ -525,7 +525,18 @@ export class BotPayments {
       }
       const userBalance = await this.getUserBalance(accountId)
       if (userBalance.gt(0)) {
-        const tx = await this.transferFunds(userAccount, config.payment.inscriptionDestinationAddress, bn(0), false, img.prompt) //
+        const payload = {
+          type: 'image',
+          prompt: img.prompt,
+          imageId: img.photoId
+        }
+        const tx = await this.transferFunds(
+          userAccount,
+          config.payment.inscriptionDestinationAddress,
+          bn(0),
+          false,
+          JSON.stringify(payload)
+        )
         if (tx) {
           const oneCountryDomain = tx.transactionHash.slice(-2)
           if (ctx.chat?.id) {
