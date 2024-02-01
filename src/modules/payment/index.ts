@@ -510,7 +510,7 @@ export class BotPayments {
     return totalFunds
   }
 
-  public async inscribeImg (ctx: OnMessageContext | OnCallBackQueryData, img: ImageGenerated, msgId: number): Promise<void> {
+  public async inscribeImg (ctx: OnMessageContext | OnCallBackQueryData, img: ImageGenerated, msgId: number): Promise<boolean> {
     // eslint-disable-next-line @typescript-eslint/naming-convention
     try {
       const { from } = ctx
@@ -521,14 +521,17 @@ export class BotPayments {
           ctx,
           `Cannot get @${from.username}(${from.id}) blockchain account`
         )
-        return
+        return false
       }
       const userBalance = await this.getUserBalance(accountId)
       if (userBalance.gt(0)) {
         const payload = {
           type: 'image',
           prompt: img.prompt,
-          imageId: img.photoId
+          imageId: img.photoId,
+          bot: ctx.me.username,
+          username: ctx.from.username ?? '',
+          userWallet: userAccount.address
         }
         const tx = await this.transferFunds(
           userAccount,
@@ -545,7 +548,8 @@ export class BotPayments {
             await sendMessage(ctx, `You can check your inscription in [${oneCountryDomain}.country](https://${oneCountryDomain}.country)`, { parseMode: 'Markdown' })
           }
         }
-        this.logger.info('Inscription tx', tx)
+        this.logger.info('Inscription TX', tx)
+        return true
       } else {
         if (ctx.chat?.id) {
           await ctx.api.editMessageText(ctx.chat?.id, msgId, `Not enough balance. To recharge send ONE to \`${userAccount.address}\``, { parse_mode: 'Markdown' })
@@ -553,6 +557,7 @@ export class BotPayments {
           await sendMessage(ctx, `Not enough balance. To recharge send ONE to \`${userAccount.address}\``, { parseMode: 'Markdown' })
         }
       }
+      return false
     } catch (e) {
       if (ctx.chat?.id) {
         await ctx.api.editMessageText(ctx.chat?.id, msgId, 'There was an error processing your request')
@@ -563,6 +568,7 @@ export class BotPayments {
         )
       }
     }
+    return false
   }
 
   public isSupportedEvent (ctx: OnMessageContext): boolean {

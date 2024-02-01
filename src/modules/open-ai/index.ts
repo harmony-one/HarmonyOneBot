@@ -170,7 +170,10 @@ export class OpenAIBot implements PayableBot {
             ctx.message?.reply_to_message?.message_thread_id
         })
       ).message_id
-      await this.payments.inscribeImg(ctx, img, msgId)
+      const result = await this.payments.inscribeImg(ctx, img, msgId)
+      if (result) {
+        await ctx.editMessageReplyMarkup({})
+      }
     }
   }
 
