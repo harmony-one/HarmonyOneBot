@@ -562,6 +562,7 @@ export class BotPayments {
       }
       return false
     } catch (e) {
+      this.logger.error(`InscribeImg Error: ${e}`)
       if (ctx.chat?.id) {
         await ctx.api.editMessageText(ctx.chat?.id, msgId, 'There was an error processing your request')
       } else {
