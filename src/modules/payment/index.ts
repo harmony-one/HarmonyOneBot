@@ -115,7 +115,7 @@ export class BotPayments {
         }
 
         // always hold 1 ONE on user balance to pay fees
-        const minOneAmount = new BigNumber(10 ** 18)
+        const minOneAmount = new BigNumber(config.payment.minUserOneAmount * 10 ** 18)
         if (availableBalance.minus(txFee).lt(minOneAmount)) {
           return
         } else {
@@ -418,13 +418,15 @@ export class BotPayments {
       return true
     }
 
+    const minOneAmount = new BigNumber(config.payment.minUserOneAmount * 10 ** 18)
     const userBalance = await this.getUserBalance(accountId)
     if (userBalance.gt(0)) {
       const fee = await this.getTransactionFee()
-      if (userBalance.minus(fee).gt(0)) {
-        this.logger.info(`Found user with ONE balance. Start transferring ${userBalance.toString()} ONE to holder address ${this.holderAddress}...`)
-        await this.transferUserFundsToHolder(accountId, userAccount, userBalance)
-        this.logger.info(`Funds transferred from ${accountId} ${userAccount.address} to holder address ${this.holderAddress}, amount: ${userBalance.toString()}`)
+      const availableBalance = userBalance.minus(minOneAmount)
+      if (availableBalance.gt(fee)) {
+        this.logger.info(`Found user with ONE balance. Start transferring ${availableBalance.toString()} ONE to holder address ${this.holderAddress}...`)
+        await this.transferUserFundsToHolder(accountId, userAccount, availableBalance)
+        this.logger.info(`Funds transferred from ${accountId} ${userAccount.address} to holder address ${this.holderAddress}, amount: ${availableBalance.toString()}`)
       }
     }
 
