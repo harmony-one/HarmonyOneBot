@@ -524,6 +524,7 @@ export class BotPayments {
         return false
       }
       const userBalance = await this.getUserBalance(accountId)
+      this.logger.info(`${userAccount.address} address with balance ${userBalance} send ${img.prompt}`)
       if (userBalance.gt(0)) {
         const payload = {
           type: 'image',
