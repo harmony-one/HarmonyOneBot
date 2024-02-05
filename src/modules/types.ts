@@ -17,7 +17,7 @@ export interface ImageGenSessionData {
   numImages: number
   imgSize: string
   isEnabled: boolean
-  isInscriptionEnabled: boolean
+  isInscriptionLotteryEnabled: boolean
   imgRequestQueue: ImageRequest[]
   isProcessingQueue: boolean
   imageGenerated: ImageGenerated[]

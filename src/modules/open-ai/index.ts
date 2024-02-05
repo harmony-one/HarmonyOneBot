@@ -745,7 +745,7 @@ export class OpenAIBot implements PayableBot {
         const imgs = await postGenerateImg(prompt ?? '', numImages, imgSize)
         if (imgs.length > 0) {
           await Promise.all(imgs.map(async (img: any) => {
-            if (ctx.session.openAi.imageGen.isInscriptionEnabled) {
+            if (ctx.session.openAi.imageGen.isInscriptionLotteryEnabled) {
               const inlineKeyboard = new InlineKeyboard().text('Share to enter lottery', `share-payload|${ctx.session.openAi.imageGen.imageGenerated.length}`) // ${imgs[0].url}
               const msgExtras = getMessageExtras({
                 caption: `/dalle ${prompt}\n\n Check [q.country](https://q.country) for general lottery information`,

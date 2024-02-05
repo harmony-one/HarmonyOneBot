@@ -191,7 +191,7 @@ function createInitialSessionData (): BotSessionData {
         imgRequestQueue: [],
         isProcessingQueue: false,
         imageGenerated: [],
-        isInscriptionEnabled: config.openAi.dalle.isInscriptionEnabled
+        isInscriptionLotteryEnabled: config.openAi.dalle.isInscriptionLotteryEnabled
       },
       chatGpt: {
         model: config.openAi.chatGpt.model,
