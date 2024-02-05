@@ -429,7 +429,9 @@ const onMessage = async (ctx: OnMessageContext): Promise<void> => {
       }
       // Any message interacts with ChatGPT (only for private chats or /ask on enabled on group chats)
       if (ctx.update.message.chat && (ctx.chat.type === 'private' || ctx.session.openAi.chatGpt.isFreePromptChatGroups)) {
-        await openAiBot.onEvent(ctx)
+        await openAiBot.onEvent(ctx, (e) => {
+          logger.error(e)
+        })
         return
       }
       if (ctx.update.message.chat) {
@@ -465,7 +467,9 @@ const onCallback = async (ctx: OnCallBackQueryData): Promise<void> => {
     }
 
     if (openAiBot.isSupportedEvent(ctx)) {
-      await openAiBot.onEvent(ctx)
+      await openAiBot.onEvent(ctx, (e) => {
+        logger.error(e)
+      })
     }
   } catch (ex: any) {
     Sentry.captureException(ex)

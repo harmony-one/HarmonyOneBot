@@ -50,6 +50,7 @@ import { Callbacks } from '../types'
 import { LlmsBot } from '../llms'
 import { type PhotoSize } from 'grammy/types'
 import { responseWithVoice } from '../voice-to-voice-gpt/helpers'
+import { promptHasBadWords } from '../sd-images/helpers'
 
 const priceAdjustment = config.openAi.chatGpt.priceAdjustment
 export class OpenAIBot implements PayableBot {
@@ -186,7 +187,10 @@ export class OpenAIBot implements PayableBot {
     return ctx.callbackQuery?.data.startsWith('share-payload')
   }
 
-  public async onEvent (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
+  public async onEvent (
+    ctx: OnMessageContext | OnCallBackQueryData,
+    refundCallback: (reason?: string) => void
+  ): Promise<void> {
     ctx.transient.analytics.module = this.module
     if (!(this.isSupportedEvent(ctx)) && (ctx.chat?.type !== 'private') && !ctx.session.openAi.chatGpt.isFreePromptChatGroups) {
       ctx.transient.analytics.sessionState = RequestState.Error
@@ -296,6 +300,17 @@ export class OpenAIBot implements PayableBot {
       if (!prompt || prompt.split(' ').length === 1) {
         prompt = config.openAi.dalle.defaultPrompt
       }
+      if (promptHasBadWords(prompt)) {
+        console.log(`### promptHasBadWords ${ctx.message?.text}`)
+        await sendMessage(
+          ctx,
+          'Your prompt has been flagged for potentially generating illegal or malicious content. If you believe there has been a mistake, please reach out to support.'
+        )
+        ctx.transient.analytics.sessionState = RequestState.Error
+        ctx.transient.analytics.actualResponseTime = now()
+        refundCallback('Prompt has bad words')
+        return
+      }
       ctx.session.openAi.imageGen.imgRequestQueue.push({
         command: 'dalle',
         prompt
@@ -332,6 +347,17 @@ export class OpenAIBot implements PayableBot {
       let prompt = (ctx.match ? ctx.match : ctx.message?.text) as string
       if (!prompt || prompt.split(' ').length === 1) {
         prompt = config.openAi.dalle.defaultPrompt
+      }
+      if (promptHasBadWords(prompt)) {
+        console.log(`### promptHasBadWords ${ctx.message?.text}`)
+        await sendMessage(
+          ctx,
+          'Your prompt has been flagged for potentially generating illegal or malicious content. If you believe there has been a mistake, please reach out to support.'
+        )
+        ctx.transient.analytics.sessionState = RequestState.Error
+        ctx.transient.analytics.actualResponseTime = now()
+        refundCallback('Prompt has bad words')
+        return
       }
       ctx.session.openAi.imageGen.imgRequestQueue.push({
         command: 'dalle',
@@ -965,7 +991,10 @@ export class OpenAIBot implements PayableBot {
       // 429 RateLimitError
       // e.status = 400 || e.code = BadRequestError
       this.logger.error(`OPENAI Error ${ex.status}(${ex.code}) - ${ex.message}`)
-      if (ex.code === 'context_length_exceeded') {
+      if (ex.code === 'content_policy_violation') {
+        await sendMessage(ctx, ex.message).catch(async (e) => { await this.onError(ctx, e, retryCount - 1) })
+        ctx.transient.analytics.actualResponseTime = now()
+      } else if (ex.code === 'context_length_exceeded') {
         await sendMessage(ctx, ex.message).catch(async (e) => { await this.onError(ctx, e, retryCount - 1) })
         ctx.transient.analytics.actualResponseTime = now()
         await this.onEnd(ctx)
