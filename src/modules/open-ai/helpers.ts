@@ -27,7 +27,7 @@ export enum SupportedCommands {
 
 export const MAX_TRIES = 3
 
-export const DALLE_PREFIX_LIST = ['i.', ', ', 'image ', 'd.', 'img ']
+export const DALLE_PREFIX_LIST = ['i.', ', ', 'd.']
 export const CHAT_GPT_PREFIX_LIST = ['a.', '. ']
 export const NEW_PREFIX_LIST = ['n.', '.. ']
 
