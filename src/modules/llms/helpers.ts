@@ -21,7 +21,7 @@ export enum SupportedCommands {
 
 export const MAX_TRIES = 3
 const LLAMA_PREFIX_LIST = ['* ']
-const BARD_PREFIX_LIST = ['b.', 'B.']
+const BARD_PREFIX_LIST = ['b. ', 'B. ']
 
 export const isMentioned = (
   ctx: OnMessageContext | OnCallBackQueryData

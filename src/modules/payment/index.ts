@@ -555,9 +555,9 @@ export class BotPayments {
         return true
       } else {
         if (ctx.chat?.id) {
-          await ctx.api.editMessageText(ctx.chat?.id, msgId, `Not enough balance. To recharge send ONE to \`${userAccount.address}\``, { parse_mode: 'Markdown' })
+          await ctx.api.editMessageText(ctx.chat?.id, msgId, `Insufficient ONE balance to cover gas fees. Please send 1 ONE to \`${userAccount.address}\` to cover gas fees`, { parse_mode: 'Markdown' })
         } else {
-          await sendMessage(ctx, `Not enough balance. To recharge send ONE to \`${userAccount.address}\``, { parseMode: 'Markdown' })
+          await sendMessage(ctx, `Insufficient ONE balance to cover gas fees. Please send 1 ONE to \`${userAccount.address}\` to cover gas fees`, { parseMode: 'Markdown' })
         }
       }
       return false
