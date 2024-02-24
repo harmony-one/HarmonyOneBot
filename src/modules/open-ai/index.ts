@@ -85,6 +85,13 @@ export class OpenAIBot implements PayableBot {
     if (isMentioned(ctx)) {
       return true
     }
+    const photo = ctx.message?.reply_to_message?.photo
+    if (photo) {
+      const imgId = (photo?.[0].file_unique_id) ?? ''
+      if (ctx.session.openAi.imageGen.imgInquiried.find(i => i === imgId)) {
+        return false
+      }
+    }
     const hasReply = this.isSupportedImageReply(ctx)
     const chatPrefix = hasPrefix(ctx.message?.text ?? '')
     if (chatPrefix !== '') {
@@ -206,16 +213,21 @@ export class OpenAIBot implements PayableBot {
     if (this.isSupportedImageReply(ctx)) {
       const photo = ctx.message?.photo ?? ctx.message?.reply_to_message?.photo
       const prompt = ctx.message?.caption ?? ctx.message?.text ?? ''
-      ctx.session.openAi.imageGen.imgRequestQueue.push({
-        prompt,
-        photo,
-        command: !isNaN(+prompt) ? 'alter' : 'vision'
-      })
-      if (!ctx.session.openAi.imageGen.isProcessingQueue) {
-        ctx.session.openAi.imageGen.isProcessingQueue = true
-        await this.onImgRequestHandler(ctx).then(() => {
-          ctx.session.openAi.imageGen.isProcessingQueue = false
+      const imgId = (photo?.[0].file_unique_id) ?? ''
+      if (!ctx.session.openAi.imageGen.imgInquiried.find(i => i === imgId)) {
+        ctx.session.openAi.imageGen.imgRequestQueue.push({
+          prompt,
+          photo,
+          command: !isNaN(+prompt) ? 'alter' : 'vision'
         })
+        if (!ctx.session.openAi.imageGen.isProcessingQueue) {
+          ctx.session.openAi.imageGen.isProcessingQueue = true
+          await this.onImgRequestHandler(ctx).then(() => {
+            ctx.session.openAi.imageGen.isProcessingQueue = false
+          })
+        }
+      } else {
+        refundCallback('This image was already inquired')
       }
       return
     }
@@ -719,8 +731,14 @@ export class OpenAIBot implements PayableBot {
             await this.onGenImgCmd(img?.prompt, ctx)
           } else if (img?.command === 'alter') {
             await this.onAlterImage(img?.photo, img?.prompt, ctx)
+            if (img?.photo?.[0].file_unique_id) {
+              ctx.session.openAi.imageGen.imgInquiried.push(img?.photo?.[0].file_unique_id)
+            }
           } else {
             await this.onInquiryImage(img?.photo, img?.photoUrl, img?.prompt, ctx)
+            if (img?.photo?.[0].file_unique_id) {
+              ctx.session.openAi.imageGen.imgInquiried.push(img?.photo?.[0].file_unique_id)
+            }
           }
           ctx.chatAction = null
         } else {

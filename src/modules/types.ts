@@ -21,6 +21,7 @@ export interface ImageGenSessionData {
   imgRequestQueue: ImageRequest[]
   isProcessingQueue: boolean
   imageGenerated: ImageGenerated[]
+  imgInquiried: string[] // to avoid multiple vision and dalle 2 img alter request
 }
 
 export interface MessageExtras {
