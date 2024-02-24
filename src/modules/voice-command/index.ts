@@ -2,11 +2,13 @@ import fs from 'fs'
 import pino from 'pino'
 import type { Logger } from 'pino'
 import { speechToText } from '../open-ai/api/openAi'
-import type { OnMessageContext, PayableBot } from '../types'
+import { RequestState, type OnMessageContext, type PayableBot } from '../types'
 import { download } from '../../utils/files'
 import config from '../../config'
 import { type OpenAIBot } from '../open-ai'
-import { SupportedCommands as OpenAISupportedCommands } from '../open-ai/helpers'
+import { SupportedCommands as OpenAISupportedCommands, sendMessage } from '../open-ai/helpers'
+import { promptHasBadWords } from '../sd-images/helpers'
+import { now } from '../../utils/perf'
 
 const VOICE_COMMAND_LIST = [
   OpenAISupportedCommands.vision,
@@ -62,7 +64,10 @@ export class VoiceCommand implements PayableBot {
     return emojis[randomIndex]
   }
 
-  public async onEvent (ctx: OnMessageContext): Promise<void> {
+  public async onEvent (
+    ctx: OnMessageContext,
+    refundCallback: (reason?: string) => void
+  ): Promise<void> {
     ctx.transient.analytics.module = this.module
     const { voice } = ctx.update.message
     if (!ctx.chat?.id) {
@@ -88,7 +93,17 @@ export class VoiceCommand implements PayableBot {
     const filename = path + '.' + ext
     fs.renameSync(path, filename)
     const resultText = await speechToText(fs.createReadStream(filename))
-
+    if (promptHasBadWords(resultText)) {
+      console.log(`### promptHasBadWords ${ctx.message?.text}`)
+      await sendMessage(
+        ctx,
+        'Your prompt has been flagged for potentially generating illegal or malicious content. If you believe there has been a mistake, please reach out to support.'
+      )
+      ctx.transient.analytics.sessionState = RequestState.Error
+      ctx.transient.analytics.actualResponseTime = now()
+      refundCallback('Prompt has bad words')
+      return
+    }
     this.logger.info(`[VoiceCommand] prompt detected: ${resultText}`)
 
     fs.rmSync(filename)

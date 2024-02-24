@@ -17,8 +17,11 @@ export interface ImageGenSessionData {
   numImages: number
   imgSize: string
   isEnabled: boolean
+  isInscriptionLotteryEnabled: boolean
   imgRequestQueue: ImageRequest[]
   isProcessingQueue: boolean
+  imageGenerated: ImageGenerated[]
+  imgInquiried: string[] // to avoid multiple vision and dalle 2 img alter request
 }
 
 export interface MessageExtras {
@@ -58,6 +61,14 @@ export interface ImageRequest {
   prompt?: string
   photo?: PhotoSize[] | undefined
   photoUrl?: string[]
+}
+
+export interface ImageGenerated {
+  command?: 'dalle' | 'alter' | 'vision'
+  prompt?: string
+  photo?: PhotoSize[] | undefined
+  photoUrl?: string[]
+  photoId?: string | undefined
 }
 
 export interface promptRequest {

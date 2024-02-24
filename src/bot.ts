@@ -189,7 +189,10 @@ function createInitialSessionData (): BotSessionData {
         imgSize: config.openAi.dalle.sessionDefault.imgSize,
         isEnabled: config.openAi.dalle.isEnabled,
         imgRequestQueue: [],
-        isProcessingQueue: false
+        isProcessingQueue: false,
+        imageGenerated: [],
+        isInscriptionLotteryEnabled: config.openAi.dalle.isInscriptionLotteryEnabled,
+        imgInquiried: []
       },
       chatGpt: {
         model: config.openAi.chatGpt.model,
@@ -427,7 +430,9 @@ const onMessage = async (ctx: OnMessageContext): Promise<void> => {
       }
       // Any message interacts with ChatGPT (only for private chats or /ask on enabled on group chats)
       if (ctx.update.message.chat && (ctx.chat.type === 'private' || ctx.session.openAi.chatGpt.isFreePromptChatGroups)) {
-        await openAiBot.onEvent(ctx)
+        await openAiBot.onEvent(ctx, (e) => {
+          logger.error(e)
+        })
         return
       }
       if (ctx.update.message.chat) {
@@ -458,6 +463,13 @@ const onCallback = async (ctx: OnCallBackQueryData): Promise<void> => {
     if (sdImagesBot.isSupportedEvent(ctx)) {
       await sdImagesBot.onEvent(ctx, (e) => {
         logger.info(e, '// TODO refund payment')
+      })
+      return
+    }
+
+    if (openAiBot.isSupportedEvent(ctx)) {
+      await openAiBot.onEvent(ctx, (e) => {
+        logger.error(e)
       })
     }
   } catch (ex: any) {

@@ -35,7 +35,7 @@ export const getCommandNamePrompt = (
   supportedCommands: any
 ): { commandName: string, prompt: string } => {
   const hasCommand = ctx.hasCommand(
-    Object.values(supportedCommands).map((command: any) => command.name)
+    Object.values(supportedCommands).map((command: any) => command)
   )
   const commandName = hasCommand
     ? ctx.message?.text?.split(' ')[0].slice(1)

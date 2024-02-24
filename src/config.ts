@@ -44,6 +44,7 @@ export default {
   openAi: {
     dalle: {
       isEnabled: Boolean(parseInt(process.env.IMAGE_GEN_ENABLED ?? '1')),
+      isInscriptionLotteryEnabled: false,
       telegramFileUrl: 'https://api.telegram.org/file/bot',
       completions: {
         temperature:
@@ -125,6 +126,8 @@ export default {
     holderAddress:
       process.env.PAYMENT_HOLDER_ADDRESS ??
       '0x9EE59D58606997AAFd2F6Ba46EC64402829f9b6C',
+    inscriptionDestinationAddress: '0x3abf101D3C31Aec5489C78E8efc86CaA3DF7B053',
+    minUserOneAmount: parseInt('1'), // always hold 1 ONE on user hot wallet balance to pay fees
     whitelist: (process.env.PAYMENT_WHITELIST ?? '')
       .split(',')
       .map((item) => item.toString().toLowerCase()),

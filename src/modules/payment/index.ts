@@ -1,11 +1,11 @@
 import pino, { type Logger } from 'pino'
 import Web3 from 'web3'
-import { type Account, type TransactionReceipt } from 'web3-core'
+import { type Account, type TransactionReceipt, type TransactionConfig } from 'web3-core'
 import axios from 'axios'
 import bn, { BigNumber } from 'bignumber.js'
 import config from '../../config'
 import { chatService, invoiceService, statsService } from '../../database/services'
-import { type OnCallBackQueryData, type OnMessageContext } from '../types'
+import { type ImageGenerated, type OnCallBackQueryData, type OnMessageContext } from '../types'
 import { LRUCache } from 'lru-cache'
 import { freeCreditsFeeCounter } from '../../metrics/prometheus'
 import { type BotPaymentLog } from '../../database/stats.service'
@@ -112,6 +112,14 @@ export class BotPayments {
         } catch (e) {
           Sentry.captureException(e)
           this.logger.error(`Cannot get user balance ${accountId} ${userAccount.address}`)
+        }
+
+        // always hold 1 ONE on user balance to pay fees
+        const minOneAmount = new BigNumber(config.payment.minUserOneAmount * 10 ** 18)
+        if (availableBalance.minus(txFee).lt(minOneAmount)) {
+          return
+        } else {
+          availableBalance = availableBalance.minus(minOneAmount)
         }
 
         if (availableBalance.minus(txFee).gt(0)) {
@@ -222,7 +230,9 @@ export class BotPayments {
   private async transferFunds (
     accountFrom: Account,
     addressTo: string,
-    amount: BigNumber
+    amount: BigNumber,
+    deductGas = true,
+    data?: string
   ): Promise<TransactionReceipt | undefined> {
     try {
       const web3 = new Web3(this.rpcURL)
@@ -238,23 +248,26 @@ export class BotPayments {
         nonce = await web3.eth.getTransactionCount(accountFrom.address)
       }
       this.noncePending.set(accountFrom.address, nonce)
-
-      const txBody = {
+      const txBody: TransactionConfig = {
         from: accountFrom.address,
         to: addressTo,
         value: web3.utils.toHex(amount.toFixed()),
         nonce
       }
+      if (data) {
+        txBody.data = web3.utils.toHex(data) //  asciiToHex
+      }
       const estimatedGas = await web3.eth.estimateGas(txBody)
       const gasValue = estimatedGas * +gasPrice
-      const txValue = amount.minus(BigNumber(gasValue)).toFixed()
+      const txValue = deductGas ? amount.minus(BigNumber(gasValue)).toFixed() : amount.toFixed()
 
-      return await web3.eth.sendTransaction({
+      const transactionBody: TransactionConfig = {
         ...txBody,
         gasPrice,
         gas: web3.utils.toHex(estimatedGas),
         value: web3.utils.toHex(txValue)
-      })
+      }
+      return await web3.eth.sendTransaction(transactionBody)
     } catch (e) {
       Sentry.captureException(e)
       const message = (e as Error).message || ''
@@ -405,13 +418,15 @@ export class BotPayments {
       return true
     }
 
+    const minOneAmount = new BigNumber(config.payment.minUserOneAmount * 10 ** 18)
     const userBalance = await this.getUserBalance(accountId)
     if (userBalance.gt(0)) {
       const fee = await this.getTransactionFee()
-      if (userBalance.minus(fee).gt(0)) {
-        this.logger.info(`Found user with ONE balance. Start transferring ${userBalance.toString()} ONE to holder address ${this.holderAddress}...`)
-        await this.transferUserFundsToHolder(accountId, userAccount, userBalance)
-        this.logger.info(`Funds transferred from ${accountId} ${userAccount.address} to holder address ${this.holderAddress}, amount: ${userBalance.toString()}`)
+      const availableBalance = userBalance.minus(minOneAmount)
+      if (availableBalance.gt(fee)) {
+        this.logger.info(`Found user with ONE balance. Start transferring ${availableBalance.toString()} ONE to holder address ${this.holderAddress}...`)
+        await this.transferUserFundsToHolder(accountId, userAccount, availableBalance)
+        this.logger.info(`Funds transferred from ${accountId} ${userAccount.address} to holder address ${this.holderAddress}, amount: ${availableBalance.toString()}`)
       }
     }
 
@@ -495,6 +510,69 @@ export class BotPayments {
       }
     }
     return totalFunds
+  }
+
+  public async inscribeImg (ctx: OnMessageContext | OnCallBackQueryData, img: ImageGenerated, msgId: number): Promise<boolean> {
+    // eslint-disable-next-line @typescript-eslint/naming-convention
+    try {
+      const { from } = ctx
+      const accountId = this.getAccountId(ctx)
+      const userAccount = this.getUserAccount(accountId)
+      if (!userAccount) {
+        await sendMessage(
+          ctx,
+          `Cannot get @${from.username}(${from.id}) blockchain account`
+        )
+        return false
+      }
+      const userBalance = await this.getUserBalance(accountId)
+      this.logger.info(`${userAccount.address} address with balance ${userBalance} send ${img.prompt}`)
+      if (userBalance.gt(0)) {
+        const payload = {
+          type: 'image',
+          prompt: img.prompt,
+          imageId: img.photoId,
+          bot: ctx.me.username,
+          username: ctx.from.username ?? '',
+          userWallet: userAccount.address
+        }
+        const tx = await this.transferFunds(
+          userAccount,
+          config.payment.inscriptionDestinationAddress,
+          bn(0),
+          false,
+          JSON.stringify(payload)
+        )
+        if (tx) {
+          const oneCountryDomain = tx.transactionHash.slice(-2)
+          if (ctx.chat?.id) {
+            await ctx.api.editMessageText(ctx.chat?.id, msgId, `You can check your inscription in [${oneCountryDomain}.country](https://${oneCountryDomain}.country)`, { parse_mode: 'Markdown' })
+          } else {
+            await sendMessage(ctx, `You can check your inscription in [${oneCountryDomain}.country](https://${oneCountryDomain}.country)`, { parseMode: 'Markdown' })
+          }
+        }
+        this.logger.info('Inscription TX', tx)
+        return true
+      } else {
+        if (ctx.chat?.id) {
+          await ctx.api.editMessageText(ctx.chat?.id, msgId, `Insufficient ONE balance to cover gas fees. Please send 1 ONE to \`${userAccount.address}\` to cover gas fees`, { parse_mode: 'Markdown' })
+        } else {
+          await sendMessage(ctx, `Insufficient ONE balance to cover gas fees. Please send 1 ONE to \`${userAccount.address}\` to cover gas fees`, { parseMode: 'Markdown' })
+        }
+      }
+      return false
+    } catch (e) {
+      this.logger.error(`InscribeImg Error: ${e}`)
+      if (ctx.chat?.id) {
+        await ctx.api.editMessageText(ctx.chat?.id, msgId, 'There was an error processing your request')
+      } else {
+        await sendMessage(
+          ctx,
+          'There was an error processing your request'
+        )
+      }
+    }
+    return false
   }
 
   public isSupportedEvent (ctx: OnMessageContext): boolean {

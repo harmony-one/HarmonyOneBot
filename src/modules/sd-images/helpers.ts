@@ -38,7 +38,7 @@ const removeSpaceFromBegin = (text: string): string => {
   return text.slice(idx)
 }
 
-const SPECIAL_IMG_CMD_SYMBOLS = ['l.', '? ', '! ', ': ', '; ', 'r.', 'R.', 'd.', 'D.', '( ', '$ ', '& ', '< ']
+const SPECIAL_IMG_CMD_SYMBOLS = ['l. ', '? ', '! ', ': ', '; ', 'r. ', 'R. ', '( ', '$ ', '& ', '< ']
 
 export const getPrefix = (prompt: string, prefixList: string[]): string => {
   for (let i = 0; i < prefixList.length; i++) {
@@ -182,12 +182,12 @@ export const parseCtx = (ctx: Context): IOperation | false => {
       command = COMMAND.TEXT_TO_IMAGE
     }
 
-    if (messageText.startsWith('l.') ?? messageText.startsWith('L.')) {
+    if (messageText.startsWith('l. ') ?? messageText.startsWith('L. ')) {
       model = getModelByParam('xl')
       lora = getLoraByParam('logo', model?.baseModel ?? 'SDXL 1.0')
     }
 
-    if (messageText.startsWith('g.') || messageText.startsWith('G.')) {
+    if (messageText.startsWith('g. ') || messageText.startsWith('G. ')) {
       command = COMMAND.TEXT_TO_IMAGE
       format = MEDIA_FORMAT.GIF
       model = getModelByParam('22')
