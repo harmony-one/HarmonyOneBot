@@ -38,7 +38,7 @@ export const commandsHelpText = {
   
 Your credits in 1Bot Credits: $CREDITS
 
-Send to: \`$WALLET_ADDRESS\`
+Send ONE to: \`$WALLET_ADDRESS\`
 `,
   more: `/ explain like i am 5, what is a superconductor?
 . explain like i have a phd, what is category theory?

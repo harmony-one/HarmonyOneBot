@@ -12,6 +12,6 @@ Where:
 
   registerKeepWriting: 'keep writing new options starting the following prompts with *+ <DOMAIN_NAME>*.',
   registerConfirmation: 'Write */rent* to purchase it ',
-  notEnoughBalance: 'Your credits: $CREDITS ONE tokens. To recharge, send to `$WALLET_ADDRESS`',
+  notEnoughBalance: 'Your credits: $CREDITS ONE tokens. To recharge, send ONE to `$WALLET_ADDRESS`',
   setParameterError: 'Parameter error.\n*/set <domain> <subdomain> <url>*'
 }
