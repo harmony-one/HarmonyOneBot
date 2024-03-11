@@ -467,7 +467,7 @@ export class BotPayments {
       )
 
       await sendMessage(ctx,
-        `Your credits: ${creditsFormatted} ONE tokens. To recharge, send to \`${userAccount.address}\`.`,
+        `Your credits: ${creditsFormatted} ONE tokens. To recharge, send ONE to \`${userAccount.address}\`.`,
         {
           parseMode: 'Markdown',
           replyId: message_id,
@@ -630,7 +630,7 @@ export class BotPayments {
           ctx,
           `Your 1Bot credits in ONE tokens: ${balanceFormatted.toFixed(2)}
 
-To recharge, send to: \`${account.address}\`. Buy tokens on harmony.one/buy.`,
+To recharge, send ONE to: \`${account.address}\`. Buy tokens on harmony.one/buy.`,
           {
             parseMode: 'Markdown',
             disable_web_page_preview: true,
