@@ -24,8 +24,8 @@ import {
 import { mainMenu } from './pages'
 import { TranslateBot } from './modules/translate/TranslateBot'
 import { VoiceMemo } from './modules/voice-memo'
-import { QRCodeBot } from './modules/qrcode/QRCodeBot'
-import { SDImagesBot } from './modules/sd-images'
+// import { QRCodeBot } from './modules/qrcode/QRCodeBot'
+// import { SDImagesBot } from './modules/sd-images'
 import { OpenAIBot } from './modules/open-ai'
 import { OneCountryBot } from './modules/1country'
 import { WalletConnect } from './modules/walletconnect'
@@ -242,8 +242,8 @@ bot.use(autoChatAction())
 bot.use(mainMenu)
 
 const voiceMemo = new VoiceMemo()
-const qrCodeBot = new QRCodeBot()
-const sdImagesBot = new SDImagesBot()
+// const qrCodeBot = new QRCodeBot()
+// const sdImagesBot = new SDImagesBot()
 const walletConnect = new WalletConnect()
 const payments = new BotPayments()
 const schedule = new BotSchedule(bot)
@@ -364,8 +364,8 @@ const writeCommandLog = async (
 
 const PayableBots: Record<string, PayableBotConfig> = {
   voiceCommand: { bot: voiceCommand },
-  qrCodeBot: { bot: qrCodeBot },
-  sdImagesBot: { bot: sdImagesBot },
+  // qrCodeBot: { bot: qrCodeBot },
+  // sdImagesBot: { bot: sdImagesBot },
   voiceTranslate: { bot: voiceTranslateBot },
   voiceMemo: { bot: voiceMemo },
   translateBot: { bot: translateBot },
@@ -448,24 +448,24 @@ const onMessage = async (ctx: OnMessageContext): Promise<void> => {
 
 const onCallback = async (ctx: OnCallBackQueryData): Promise<void> => {
   try {
-    if (qrCodeBot.isSupportedEvent(ctx)) {
-      await qrCodeBot.onEvent(ctx, (reason) => {
-        logger.error(`qr generate error: ${reason}`)
-      })
-      return
-    }
+    // if (qrCodeBot.isSupportedEvent(ctx)) {
+    //   await qrCodeBot.onEvent(ctx, (reason) => {
+    //     logger.error(`qr generate error: ${reason}`)
+    //   })
+    //   return
+    // }
 
     if (telegramPayments.isSupportedEvent(ctx)) {
       await telegramPayments.onEvent(ctx)
       return
     }
 
-    if (sdImagesBot.isSupportedEvent(ctx)) {
-      await sdImagesBot.onEvent(ctx, (e) => {
-        logger.info(e, '// TODO refund payment')
-      })
-      return
-    }
+    // if (sdImagesBot.isSupportedEvent(ctx)) {
+    //   await sdImagesBot.onEvent(ctx, (e) => {
+    //     logger.info(e, '// TODO refund payment')
+    //   })
+    //   return
+    // }
 
     if (openAiBot.isSupportedEvent(ctx)) {
       await openAiBot.onEvent(ctx, (e) => {
