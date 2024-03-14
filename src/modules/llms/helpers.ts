@@ -12,11 +12,20 @@ import { llmAddUrlDocument } from './api/llmApi'
 
 export enum SupportedCommands {
   bardF = 'bard',
+  claudeOpus = 'claude',
+  opus = 'opus',
+  claudeSonnet = 'claudes',
+  sonnet = 'sonnet',
   bard = 'b',
   j2Ultra = 'j2-ultra',
   sum = 'sum',
   ctx = 'ctx',
   pdf = 'pdf'
+}
+
+export enum SupportedModels {
+  bison = 'chat-bison',
+  claude = 'claude-3-opus-20240229'
 }
 
 export const MAX_TRIES = 3

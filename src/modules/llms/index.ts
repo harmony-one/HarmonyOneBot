@@ -37,6 +37,7 @@ import * as Sentry from '@sentry/node'
 import { now } from '../../utils/perf'
 import { AxiosError } from 'axios'
 import OpenAI from 'openai'
+import { anthropicCompletion } from './api/athropic'
 export class LlmsBot implements PayableBot {
   public readonly module = 'LlmsBot'
   private readonly logger: Logger
@@ -122,6 +123,18 @@ export class LlmsBot implements PayableBot {
       return
     }
 
+    if (ctx.hasCommand(SupportedCommands.bard) || ctx.hasCommand(SupportedCommands.bardF)) {
+      await this.onChat(ctx, LlmsModelsEnum.BISON)
+      return
+    }
+    if (ctx.hasCommand([SupportedCommands.claudeOpus, SupportedCommands.opus])) {
+      await this.onChat(ctx, LlmsModelsEnum.CLAUDE_OPUS)
+      return
+    }
+    if (ctx.hasCommand([SupportedCommands.claudeSonnet, SupportedCommands.sonnet])) {
+      await this.onChat(ctx, LlmsModelsEnum.CLAUDE_SONNET)
+      return
+    }
     if (ctx.hasCommand(SupportedCommands.bard) || ctx.hasCommand(SupportedCommands.bardF)) {
       await this.onChat(ctx, LlmsModelsEnum.BISON)
       return
@@ -547,8 +560,10 @@ export class LlmsBot implements PayableBot {
     const chat = prepareConversation(conversation, model)
     if (model === LlmsModelsEnum.BISON) {
       response = await vertexCompletion(chat, model) // "chat-bison@001");
+    } else if (model === LlmsModelsEnum.CLAUDE_OPUS || model === LlmsModelsEnum.CLAUDE_SONNET) {
+      response = await anthropicCompletion(chat, model)
     } else {
-      response = await llmCompletion(chat, model)
+      response = await llmCompletion(chat, model as LlmsModelsEnum)
     }
     if (response.completion) {
       await ctx.api.editMessageText(
@@ -568,7 +583,7 @@ export class LlmsBot implements PayableBot {
         chat: conversation
       }
     }
-    ctx.chatAction = null
+    // ctx.chatAction = null
     ctx.transient.analytics.actualResponseTime = now()
     return {
       price: 0,
@@ -678,6 +693,9 @@ export class LlmsBot implements PayableBot {
           await this.onNotBalanceMessage(ctx)
         }
       } catch (e: any) {
+        console.log('HERE FCO')
+        ctx.chatAction = null
+        ctx.session.llms.chatConversation = []
         await this.onError(ctx, e)
       }
     }
@@ -722,6 +740,7 @@ export class LlmsBot implements PayableBot {
     ctx.transient.analytics.sessionState = RequestState.Error
     Sentry.setContext('llms', { retryCount, msg })
     Sentry.captureException(e)
+    ctx.chatAction = null
     if (retryCount === 0) {
       // Retry limit reached, log an error or take alternative action
       this.logger.error(`Retry limit reached for error: ${e}`)

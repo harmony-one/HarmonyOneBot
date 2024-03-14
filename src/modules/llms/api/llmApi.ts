@@ -2,6 +2,7 @@ import axios from 'axios'
 import config from '../../../config'
 import { type ChatConversation } from '../../types'
 import pino from 'pino'
+import { LlmsModelsEnum } from '../types'
 
 const API_ENDPOINT = config.llms.apiEndpoint // config.llms.apiEndpoint // 'http://localhost:8080' // http://127.0.0.1:5000' // config.llms.apiEndpoint
 
@@ -86,7 +87,7 @@ export const deleteCollection = async (collectionName: string): Promise<void> =>
 
 export const llmCompletion = async (
   conversation: ChatConversation[],
-  model = config.llms.model
+  model = LlmsModelsEnum.BISON
 ): Promise<LlmCompletion> => {
   const data = {
     model, // chat-bison@001 'chat-bison', //'gpt-3.5-turbo',

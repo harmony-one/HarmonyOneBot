@@ -963,6 +963,7 @@ export class OpenAIBot implements PayableBot {
     ctx.transient.analytics.sessionState = RequestState.Error
     Sentry.setContext('open-ai', { retryCount, msg })
     Sentry.captureException(ex)
+    ctx.chatAction = null
     if (retryCount === 0) {
       // Retry limit reached, log an error or take alternative action
       this.logger.error(`Retry limit reached for error: ${ex}`)
