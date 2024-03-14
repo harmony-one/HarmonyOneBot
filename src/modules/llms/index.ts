@@ -693,8 +693,6 @@ export class LlmsBot implements PayableBot {
           await this.onNotBalanceMessage(ctx)
         }
       } catch (e: any) {
-        console.log('HERE FCO')
-        ctx.chatAction = null
         ctx.session.llms.chatConversation = []
         await this.onError(ctx, e)
       }
