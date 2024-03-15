@@ -18,8 +18,8 @@ export const LlmsModels: Record<string, ChatModel> = {
   },
   'gpt-4-32k': {
     name: 'gpt-4-32k',
-    inputPrice: 0.06,
-    outputPrice: 0.12,
+    inputPrice: 0.06, // 6
+    outputPrice: 0.12, // 12
     maxContextTokens: 32000,
     chargeType: 'TOKEN'
   },
@@ -32,16 +32,16 @@ export const LlmsModels: Record<string, ChatModel> = {
   },
   'claude-3-opus-20240229': {
     name: 'claude-3-opus-20240229',
-    inputPrice: 0.03,
-    outputPrice: 0.06,
-    maxContextTokens: 8192,
+    inputPrice: 0.015, // 15.00 (1M Tokens) =>  0.015 (1K tokens)
+    outputPrice: 0.075,
+    maxContextTokens: 4096,
     chargeType: 'TOKEN'
   },
   'claude-3-sonnet-20240229': {
     name: 'claude-3-sonnet-20240229',
-    inputPrice: 0.03,
-    outputPrice: 0.06,
-    maxContextTokens: 8192,
+    inputPrice: 0.003, // 3.00 (1M Tokens) =>  0.003 (1K tokens)
+    outputPrice: 0.015,
+    maxContextTokens: 4096,
     chargeType: 'TOKEN'
   }
 }
