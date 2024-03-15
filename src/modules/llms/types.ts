@@ -5,7 +5,8 @@ export enum LlmsModelsEnum {
   BISON = 'chat-bison',
   J2_ULTRA = 'j2-ultra',
   CLAUDE_OPUS = 'claude-3-opus-20240229',
-  CLAUDE_SONNET = 'claude-3-sonnet-20240229'
+  CLAUDE_SONNET = 'claude-3-sonnet-20240229',
+  CLAUDE_HAIKU = 'claude-3-haiku-20240307'
 }
 
 export const LlmsModels: Record<string, ChatModel> = {
@@ -41,6 +42,13 @@ export const LlmsModels: Record<string, ChatModel> = {
     name: 'claude-3-sonnet-20240229',
     inputPrice: 0.003, // 3.00 (1M Tokens) =>  0.003 (1K tokens)
     outputPrice: 0.015,
+    maxContextTokens: 4096,
+    chargeType: 'TOKEN'
+  },
+  'claude-3-haiku-20240307': {
+    name: 'claude-3-haiku-20240307',
+    inputPrice: 0.00025, // 3.00 (1M Tokens) =>  0.003 (1K tokens)
+    outputPrice: 0.00125,
     maxContextTokens: 4096,
     chargeType: 'TOKEN'
   }

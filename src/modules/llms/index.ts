@@ -20,6 +20,7 @@ import {
   addDocToCollection,
   addUrlToCollection,
   hasBardPrefix,
+  hasClaudeOpusPrefix,
   hasLlamaPrefix,
   hasPrefix,
   hasUrl,
@@ -127,12 +128,16 @@ export class LlmsBot implements PayableBot {
       await this.onChat(ctx, LlmsModelsEnum.BISON)
       return
     }
-    if (ctx.hasCommand([SupportedCommands.claudeOpus, SupportedCommands.opus])) {
+    if (ctx.hasCommand([SupportedCommands.claudeOpus, SupportedCommands.opus, SupportedCommands.opusShort]) || (hasClaudeOpusPrefix(ctx.message?.text ?? '') !== '')) {
       await this.onChat(ctx, LlmsModelsEnum.CLAUDE_OPUS)
       return
     }
-    if (ctx.hasCommand([SupportedCommands.claudeSonnet, SupportedCommands.sonnet])) {
+    if (ctx.hasCommand([SupportedCommands.claudeSonnet, SupportedCommands.sonnet, SupportedCommands.sonnetShort])) {
       await this.onChat(ctx, LlmsModelsEnum.CLAUDE_SONNET)
+      return
+    }
+    if (ctx.hasCommand([SupportedCommands.claudeHaiku, SupportedCommands.haikuShort])) {
+      await this.onChat(ctx, LlmsModelsEnum.CLAUDE_HAIKU)
       return
     }
     if (ctx.hasCommand(SupportedCommands.bard) || ctx.hasCommand(SupportedCommands.bardF)) {
@@ -560,7 +565,7 @@ export class LlmsBot implements PayableBot {
     const chat = prepareConversation(conversation, model)
     if (model === LlmsModelsEnum.BISON) {
       response = await vertexCompletion(chat, model) // "chat-bison@001");
-    } else if (model === LlmsModelsEnum.CLAUDE_OPUS || model === LlmsModelsEnum.CLAUDE_SONNET) {
+    } else if (model === LlmsModelsEnum.CLAUDE_OPUS || model === LlmsModelsEnum.CLAUDE_SONNET || model === LlmsModelsEnum.CLAUDE_HAIKU) {
       response = await anthropicCompletion(chat, model)
     } else {
       response = await llmCompletion(chat, model as LlmsModelsEnum)

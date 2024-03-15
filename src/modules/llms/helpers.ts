@@ -15,7 +15,11 @@ export enum SupportedCommands {
   claudeOpus = 'claude',
   opus = 'opus',
   claudeSonnet = 'claudes',
+  opusShort = 'c',
   sonnet = 'sonnet',
+  sonnetShort = 's',
+  claudeHaiku = 'haiku',
+  haikuShort = 'h',
   bard = 'b',
   j2Ultra = 'j2-ultra',
   sum = 'sum',
@@ -23,14 +27,10 @@ export enum SupportedCommands {
   pdf = 'pdf'
 }
 
-export enum SupportedModels {
-  bison = 'chat-bison',
-  claude = 'claude-3-opus-20240229'
-}
-
 export const MAX_TRIES = 3
 const LLAMA_PREFIX_LIST = ['* ']
 const BARD_PREFIX_LIST = ['b. ', 'B. ']
+const CLAUDE_OPUS_PREFIX_LIST = ['c. ']
 
 export const isMentioned = (
   ctx: OnMessageContext | OnCallBackQueryData
@@ -60,6 +60,16 @@ export const hasLlamaPrefix = (prompt: string): string => {
 
 export const hasBardPrefix = (prompt: string): string => {
   const prefixList = BARD_PREFIX_LIST
+  for (let i = 0; i < prefixList.length; i++) {
+    if (prompt.toLocaleLowerCase().startsWith(prefixList[i])) {
+      return prefixList[i]
+    }
+  }
+  return ''
+}
+
+export const hasClaudeOpusPrefix = (prompt: string): string => {
+  const prefixList = CLAUDE_OPUS_PREFIX_LIST
   for (let i = 0; i < prefixList.length; i++) {
     if (prompt.toLocaleLowerCase().startsWith(prefixList[i])) {
       return prefixList[i]
@@ -199,7 +209,7 @@ export const sendMessage = async (
 
 export const hasPrefix = (prompt: string): string => {
   return (
-    hasBardPrefix(prompt) || hasLlamaPrefix(prompt)
+    hasBardPrefix(prompt) || hasLlamaPrefix(prompt) || hasClaudeOpusPrefix(prompt)
   )
 }
 
