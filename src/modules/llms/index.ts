@@ -19,6 +19,7 @@ import { sleep } from '../sd-images/utils'
 import {
   addDocToCollection,
   addUrlToCollection,
+  getPromptPrice,
   hasBardPrefix,
   hasClaudeOpusPrefix,
   hasLlamaPrefix,
@@ -38,7 +39,7 @@ import * as Sentry from '@sentry/node'
 import { now } from '../../utils/perf'
 import { AxiosError } from 'axios'
 import OpenAI from 'openai'
-import { anthropicCompletion } from './api/athropic'
+import { anthropicCompletion, anthropicStreamCompletion } from './api/athropic'
 export class LlmsBot implements PayableBot {
   public readonly module = 'LlmsBot'
   private readonly logger: Logger
@@ -548,6 +549,72 @@ export class LlmsBot implements PayableBot {
     ctx.transient.analytics.actualResponseTime = now()
   }
 
+  private async completionGen (data: ChatPayload, msgId?: number, outputFormat = 'text'): Promise< { price: number, chat: ChatConversation[] }> {
+    const { conversation, ctx, model } = data
+    try {
+      if (!msgId) {
+        ctx.transient.analytics.firstResponseTime = now()
+        msgId = (
+          await ctx.reply('...', {
+            message_thread_id:
+              ctx.message?.message_thread_id ??
+              ctx.message?.reply_to_message?.message_thread_id
+          })
+        ).message_id
+      }
+      if (outputFormat === 'text') {
+        const isTypingEnabled = config.openAi.chatGpt.isTypingEnabled
+        if (isTypingEnabled) {
+          ctx.chatAction = 'typing'
+        }
+        const completion = await anthropicStreamCompletion(
+          conversation,
+          model as LlmsModelsEnum,
+          ctx,
+          msgId,
+          true // telegram messages has a character limit
+        )
+        if (isTypingEnabled) {
+          ctx.chatAction = null
+        }
+        if (completion) {
+          ctx.transient.analytics.sessionState = RequestState.Success
+          ctx.transient.analytics.actualResponseTime = now()
+          const price = getPromptPrice(completion, data)
+          this.logger.info(
+            `streamChatCompletion result = tokens: ${price.promptTokens + price.completionTokens} | ${model} | price: ${price.price}¢` //   }
+          )
+          conversation.push({
+            role: 'assistant',
+            content: completion.completion?.content ?? ''
+          })
+          return {
+            price: price.price,
+            chat: conversation
+          }
+        }
+      } else {
+        const response = await anthropicCompletion(conversation, model as LlmsModelsEnum)
+        conversation.push({
+          role: 'assistant',
+          content: response.completion?.content ?? ''
+        })
+        return {
+          price: response.price,
+          chat: conversation
+        }
+      }
+      return {
+        price: 0,
+        chat: conversation
+      }
+    } catch (e: any) {
+      Sentry.captureException(e)
+      ctx.chatAction = null
+      throw e
+    }
+  }
+
   private async promptGen (data: ChatPayload): Promise<{ price: number, chat: ChatConversation[] }> {
     const { conversation, ctx, model } = data
     if (!ctx.chat?.id) {
@@ -686,7 +753,12 @@ export class LlmsBot implements PayableBot {
             model: model ?? config.llms.model,
             ctx
           }
-          const result = await this.promptGen(payload)
+          let result: { price: number, chat: ChatConversation[] } = { price: 0, chat: [] }
+          if (model === LlmsModelsEnum.CLAUDE_OPUS || model === LlmsModelsEnum.CLAUDE_SONNET) {
+            result = await this.completionGen(payload) // , prompt.msgId, prompt.outputFormat)
+          } else {
+            result = await this.promptGen(payload)
+          }
           ctx.session.llms.chatConversation = [...result.chat]
           if (
             !(await this.payments.pay(ctx as OnMessageContext, result.price))

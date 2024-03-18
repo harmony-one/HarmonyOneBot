@@ -8,7 +8,9 @@ import {
 import { type ParseMode } from 'grammy/types'
 import { LlmsModelsEnum } from './types'
 import { type Message } from 'grammy/out/types'
-import { llmAddUrlDocument } from './api/llmApi'
+import { type LlmCompletion, getChatModel, llmAddUrlDocument } from './api/llmApi'
+import { getChatModelPrice } from '../open-ai/api/openAi'
+import config from '../../config'
 
 export enum SupportedCommands {
   bardF = 'bard',
@@ -213,11 +215,18 @@ export const hasPrefix = (prompt: string): string => {
   )
 }
 
-export const getPromptPrice = (completion: string, data: ChatPayload): { price: number, promptTokens: number, completionTokens: number } => {
+export const getPromptPrice = (completion: LlmCompletion, data: ChatPayload): { price: number, promptTokens: number, completionTokens: number } => {
+  const { ctx, model } = data
+  const modelPrice = getChatModel(model)
+  const price =
+    getChatModelPrice(modelPrice, true, completion.inputTokens ?? 0, completion.outputTokens ?? 0) *
+    config.openAi.chatGpt.priceAdjustment
+  ctx.session.llms.usage += completion.outputTokens ?? 0
+  ctx.session.llms.price += price
   return {
-    price: 0,
-    promptTokens: 10,
-    completionTokens: 60
+    price,
+    promptTokens: completion.inputTokens ?? 0,
+    completionTokens: completion.outputTokens ?? 0
   }
 }
 
