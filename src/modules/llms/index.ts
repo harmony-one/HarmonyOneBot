@@ -830,7 +830,6 @@ export class LlmsBot implements PayableBot {
     Sentry.setContext('llms', { retryCount, msg })
     Sentry.captureException(e)
     ctx.chatAction = null
-    console.log('FCO', e)
     if (retryCount === 0) {
       // Retry limit reached, log an error or take alternative action
       this.logger.error(`Retry limit reached for error: ${e}`)
