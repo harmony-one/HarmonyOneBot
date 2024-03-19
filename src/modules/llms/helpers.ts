@@ -8,10 +8,20 @@ import {
 import { type ParseMode } from 'grammy/types'
 import { LlmsModelsEnum } from './types'
 import { type Message } from 'grammy/out/types'
-import { llmAddUrlDocument } from './api/llmApi'
+import { type LlmCompletion, getChatModel, llmAddUrlDocument } from './api/llmApi'
+import { getChatModelPrice } from '../open-ai/api/openAi'
+import config from '../../config'
 
 export enum SupportedCommands {
   bardF = 'bard',
+  claudeOpus = 'claude',
+  opus = 'opus',
+  claudeSonnet = 'claudes',
+  opusShort = 'c',
+  sonnet = 'sonnet',
+  sonnetShort = 's',
+  claudeHaiku = 'haiku',
+  haikuShort = 'h',
   bard = 'b',
   j2Ultra = 'j2-ultra',
   sum = 'sum',
@@ -22,6 +32,7 @@ export enum SupportedCommands {
 export const MAX_TRIES = 3
 const LLAMA_PREFIX_LIST = ['* ']
 const BARD_PREFIX_LIST = ['b. ', 'B. ']
+const CLAUDE_OPUS_PREFIX_LIST = ['c. ']
 
 export const isMentioned = (
   ctx: OnMessageContext | OnCallBackQueryData
@@ -51,6 +62,16 @@ export const hasLlamaPrefix = (prompt: string): string => {
 
 export const hasBardPrefix = (prompt: string): string => {
   const prefixList = BARD_PREFIX_LIST
+  for (let i = 0; i < prefixList.length; i++) {
+    if (prompt.toLocaleLowerCase().startsWith(prefixList[i])) {
+      return prefixList[i]
+    }
+  }
+  return ''
+}
+
+export const hasClaudeOpusPrefix = (prompt: string): string => {
+  const prefixList = CLAUDE_OPUS_PREFIX_LIST
   for (let i = 0; i < prefixList.length; i++) {
     if (prompt.toLocaleLowerCase().startsWith(prefixList[i])) {
       return prefixList[i]
@@ -190,15 +211,22 @@ export const sendMessage = async (
 
 export const hasPrefix = (prompt: string): string => {
   return (
-    hasBardPrefix(prompt) || hasLlamaPrefix(prompt)
+    hasBardPrefix(prompt) || hasLlamaPrefix(prompt) || hasClaudeOpusPrefix(prompt)
   )
 }
 
-export const getPromptPrice = (completion: string, data: ChatPayload): { price: number, promptTokens: number, completionTokens: number } => {
+export const getPromptPrice = (completion: LlmCompletion, data: ChatPayload): { price: number, promptTokens: number, completionTokens: number } => {
+  const { ctx, model } = data
+  const modelPrice = getChatModel(model)
+  const price =
+    getChatModelPrice(modelPrice, true, completion.inputTokens ?? 0, completion.outputTokens ?? 0) *
+    config.openAi.chatGpt.priceAdjustment
+  ctx.session.llms.usage += completion.outputTokens ?? 0
+  ctx.session.llms.price += price
   return {
-    price: 0,
-    promptTokens: 10,
-    completionTokens: 60
+    price,
+    promptTokens: completion.inputTokens ?? 0,
+    completionTokens: completion.outputTokens ?? 0
   }
 }
 

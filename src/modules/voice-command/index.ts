@@ -115,7 +115,7 @@ export class VoiceCommand implements PayableBot {
       await this.openAIBot.voiceCommand(ctx, command, resultText)
       await ctx.api.deleteMessage(ctx.chat.id, progressMessage.message_id)
     } else {
-      await ctx.api.editMessageText(ctx.chat.id, progressMessage.message_id, `No command detected. This is what I heard 😉: _${resultText}_`, { parse_mode: 'Markdown' })
+      await ctx.api.editMessageText(ctx.chat.id, progressMessage.message_id, `No command detected. This is what I heard: _${resultText}_`, { parse_mode: 'Markdown' })
     }
   }
 }

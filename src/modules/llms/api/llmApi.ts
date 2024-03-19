@@ -2,6 +2,8 @@ import axios from 'axios'
 import config from '../../../config'
 import { type ChatConversation } from '../../types'
 import pino from 'pino'
+import { LlmsModels, LlmsModelsEnum } from '../types'
+import { type ChatModel } from '../../open-ai/types'
 
 const API_ENDPOINT = config.llms.apiEndpoint // config.llms.apiEndpoint // 'http://localhost:8080' // http://127.0.0.1:5000' // config.llms.apiEndpoint
 
@@ -17,6 +19,8 @@ export interface LlmCompletion {
   completion: ChatConversation | undefined
   usage: number
   price: number
+  inputTokens?: number
+  outputTokens?: number
 }
 
 interface LlmAddUrlDocument {
@@ -30,6 +34,10 @@ interface QueryUrlDocument {
   collectioName: string
   prompt: string
   conversation?: ChatConversation[]
+}
+
+export const getChatModel = (modelName: string): ChatModel => {
+  return LlmsModels[modelName]
 }
 
 export const llmAddUrlDocument = async (args: LlmAddUrlDocument): Promise<string> => {
@@ -86,7 +94,7 @@ export const deleteCollection = async (collectionName: string): Promise<void> =>
 
 export const llmCompletion = async (
   conversation: ChatConversation[],
-  model = config.llms.model
+  model = LlmsModelsEnum.BISON
 ): Promise<LlmCompletion> => {
   const data = {
     model, // chat-bison@001 'chat-bison', //'gpt-3.5-turbo',

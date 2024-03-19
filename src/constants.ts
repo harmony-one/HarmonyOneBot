@@ -40,12 +40,33 @@ Your credits in 1Bot Credits: $CREDITS
 
 Send ONE to: \`$WALLET_ADDRESS\`
 `,
+  // more: `/ explain like i am 5, what is a superconductor?
+  // . explain like i have a phd, what is category theory?
+
+  // /images vintage hot rod with custom flame paint job
+
+  // /qr s.country/ai astronaut, exuberant, anime girl, smile, sky, colorful
+
+  // /connect (Wallet Connect to MetaMask / Gnosis Safe / Timeless)
+
+  // /send TARGET-WALLET-ADDRESS ONE-TOKEN-AMOUNT
+  // /send 0x742c4788CC47A94cf260abc474E2Fa45695a79Cd 42
+
+  // /memo (Send voice messages via microphone button on bottom right)
+
+  // ❤️‍🔥 [Join our team](https://xn--qv9h.s.country/p/dear-engineer-our-tech-lead-role) to build [AI ∩ Crypto](https://xn--qv9h.s.country/p/radically-fair-economy-for-1country)! [Product roadmap](https://xn--qv9h.s.country/p/generating-roadmap-as-ceo-vs-cto):
+
+  // [🧠 Web∞](https://xn--qv9h.s.country/p/learning-machine-cryptography): CivitAI custom models (low-rank adaptations, clothes & accessories, human poses, comics & brand characters, video-to-video transformations), Character.AI celebrity chats, RunwayML video clips, HuggingFace embedding ControlNet, Meta segment anything, ElevenLabs speech clones, Zapier task automations, document or website queries.
+
+  // [🌳 Web3](https://xn--qv9h.s.country/p/telegram-bots-and-clients-self-custody): self-custody wallets, token swaps, cross-chain bridges, fiat onramps, lending yields, collectible mints, price auctions, multi-signature safes, governance votes, portfolio management, .1 name services.
+
+  // [🐝 Web2](https://xn--qv9h.s.country/p/new-forum-for-ai-crypto-reddit-discourse): news curation, gated access, emoji tipping, collective moments, group discount, social commerce.
+
+  // [🏴‍☠️ Web1](https://xn--qv9h.s.country/p/controlnet-lora-1country-qr-code): .country domains, email aliases, vanity URLs, Notion/Substack hosting.
+  //   `
+  // }
   more: `/ explain like i am 5, what is a superconductor?
 . explain like i have a phd, what is category theory?
-
-/images vintage hot rod with custom flame paint job
-
-/qr s.country/ai astronaut, exuberant, anime girl, smile, sky, colorful
 
 /connect (Wallet Connect to MetaMask / Gnosis Safe / Timeless)
 
