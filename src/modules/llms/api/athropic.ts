@@ -16,7 +16,7 @@ const logger = pino({
   }
 })
 
-const API_ENDPOINT = config.llms.apiEndpoint // 'http://127.0.0.1:5000' // config.llms.apiEndpoint
+const API_ENDPOINT = config.llms.apiEndpoint // config.llms.apiEndpoint // 'http://127.0.0.1:5000' // config.llms.apiEndpoint
 
 export const anthropicCompletion = async (
   conversation: ChatConversation[],

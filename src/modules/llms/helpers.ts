@@ -26,7 +26,9 @@ export enum SupportedCommands {
   j2Ultra = 'j2-ultra',
   sum = 'sum',
   ctx = 'ctx',
-  pdf = 'pdf'
+  pdf = 'pdf',
+  gemini = 'gemini',
+  gShort = 'g'
 }
 
 export const MAX_TRIES = 3

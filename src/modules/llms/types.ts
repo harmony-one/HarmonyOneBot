@@ -6,7 +6,8 @@ export enum LlmsModelsEnum {
   J2_ULTRA = 'j2-ultra',
   CLAUDE_OPUS = 'claude-3-opus-20240229',
   CLAUDE_SONNET = 'claude-3-sonnet-20240229',
-  CLAUDE_HAIKU = 'claude-3-haiku-20240307'
+  CLAUDE_HAIKU = 'claude-3-haiku-20240307',
+  GEMINI = 'gemini-1.0-pro'
 }
 
 export const LlmsModels: Record<string, ChatModel> = {
@@ -15,6 +16,13 @@ export const LlmsModels: Record<string, ChatModel> = {
     inputPrice: 0.03,
     outputPrice: 0.06,
     maxContextTokens: 8192,
+    chargeType: 'CHAR'
+  },
+  'gemini-1.0-pro': {
+    name: 'gemini-1.0-pro',
+    inputPrice: 0.00025, // 3.00 (1M Tokens) =>  0.003 (1K tokens)
+    outputPrice: 0.00125,
+    maxContextTokens: 4096,
     chargeType: 'CHAR'
   },
   'gpt-4-32k': {
