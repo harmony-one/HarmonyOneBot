@@ -7,7 +7,7 @@ import { GrammyError } from 'grammy'
 import { pino } from 'pino'
 import { LlmsModelsEnum } from '../types'
 
-const API_ENDPOINT = config.llms.apiEndpoint // config.llms.apiEndpoint // http://localhost:8080' // config.llms.apiEndpoint
+const API_ENDPOINT = config.llms.apiEndpoint // config.llms.apiEndpoint // config.llms.apiEndpoint // 'http://127.0.0.1:5000' // config.llms.apiEndpoint
 
 const logger = pino({
   name: 'Gemini - llmsBot',
@@ -71,26 +71,34 @@ export const vertexStreamCompletion = async (
   const completionStream: Readable = response.data
   // Read and process the stream
   let completion = ''
+  let outputTokens = ''
+  let inputTokens = ''
   for await (const chunk of completionStream) {
     const msg = chunk.toString()
     if (msg) {
-      completion += msg.split('Text: ')[1]
-      completion = completion.replaceAll('...', '')
-      completion += '...'
-      if (ctx.chat?.id) {
-        await ctx.api
-          .editMessageText(ctx.chat?.id, msgId, completion)
-          .catch(async (e: any) => {
-            if (e instanceof GrammyError) {
-              if (e.error_code !== 400) {
-                throw e
+      if (msg.startsWith('Text')) {
+        completion += msg.split('Text: ')[1]
+        completion = completion.replaceAll('...', '')
+        completion += '...'
+        if (ctx.chat?.id) {
+          await ctx.api
+            .editMessageText(ctx.chat?.id, msgId, completion)
+            .catch(async (e: any) => {
+              if (e instanceof GrammyError) {
+                if (e.error_code !== 400) {
+                  throw e
+                } else {
+                  logger.error(e)
+                }
               } else {
-                logger.error(e)
+                throw e
               }
-            } else {
-              throw e
-            }
-          })
+            })
+        }
+      } else if (msg.startsWith('Input Token')) {
+        const tokenMsg = msg.split('Input Token: ')[1]
+        inputTokens = tokenMsg.split('Output Tokens: ')[0]
+        outputTokens = tokenMsg.split('Output Tokens: ')[1]
       }
     }
   }
@@ -108,8 +116,9 @@ export const vertexStreamCompletion = async (
         throw e
       }
     })
-  const totalOutputTokens = '10' // response.headers['x-openai-output-tokens']
-  const totalInputTokens = '10' // response.headers['x-openai-input-tokens']
+  const totalOutputTokens = outputTokens // response.headers['x-openai-output-tokens']
+  const totalInputTokens = inputTokens // response.headers['x-openai-input-tokens']
+
   return {
     completion: {
       content: completion,
