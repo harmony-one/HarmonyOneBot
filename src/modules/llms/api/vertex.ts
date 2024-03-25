@@ -78,6 +78,12 @@ export const vertexStreamCompletion = async (
     if (msg) {
       if (msg.startsWith('Text')) {
         completion += msg.split('Text: ')[1]
+        if (msg.includes('Input Token:')) {
+          const tokenMsg = msg.split('Input Token: ')[1]
+          inputTokens = tokenMsg.split('Output Tokens: ')[0]
+          outputTokens = tokenMsg.split('Output Tokens: ')[1]
+          completion = completion.split('Input Token: ')[0]
+        }
         completion = completion.replaceAll('...', '')
         completion += '...'
         if (ctx.chat?.id) {
@@ -95,10 +101,6 @@ export const vertexStreamCompletion = async (
               }
             })
         }
-      } else if (msg.startsWith('Input Token')) {
-        const tokenMsg = msg.split('Input Token: ')[1]
-        inputTokens = tokenMsg.split('Output Tokens: ')[0]
-        outputTokens = tokenMsg.split('Output Tokens: ')[1]
       }
     }
   }
