@@ -599,7 +599,7 @@ export class LlmsBot implements PayableBot {
             `streamChatCompletion result = tokens: ${price.promptTokens + price.completionTokens} | ${model} | price: ${price.price}¢` //   }
           )
           conversation.push({
-            role: model === LlmsModelsEnum.GEMINI ? 'model' : 'assistant',
+            role: 'assistant',
             content: completion.completion?.content ?? ''
           })
           return {
