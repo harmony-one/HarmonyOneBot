@@ -22,6 +22,7 @@ import {
   getPromptPrice,
   hasBardPrefix,
   hasClaudeOpusPrefix,
+  hasGeminiPrefix,
   hasLlamaPrefix,
   hasPrefix,
   hasUrl,
@@ -129,7 +130,7 @@ export class LlmsBot implements PayableBot {
       await this.onChat(ctx, LlmsModelsEnum.BISON)
       return
     }
-    if (ctx.hasCommand(SupportedCommands.gemini) || ctx.hasCommand(SupportedCommands.gShort)) {
+    if (ctx.hasCommand([SupportedCommands.gemini, SupportedCommands.gShort]) || (hasGeminiPrefix(ctx.message?.text ?? '') !== '')) {
       await this.onChat(ctx, LlmsModelsEnum.GEMINI)
       return
     }

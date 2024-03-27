@@ -35,6 +35,7 @@ export const MAX_TRIES = 3
 const LLAMA_PREFIX_LIST = ['* ']
 const BARD_PREFIX_LIST = ['b. ', 'B. ']
 const CLAUDE_OPUS_PREFIX_LIST = ['c. ']
+const GEMINI_PREFIX_LIST = ['g. ']
 
 export const isMentioned = (
   ctx: OnMessageContext | OnCallBackQueryData
@@ -74,6 +75,16 @@ export const hasBardPrefix = (prompt: string): string => {
 
 export const hasClaudeOpusPrefix = (prompt: string): string => {
   const prefixList = CLAUDE_OPUS_PREFIX_LIST
+  for (let i = 0; i < prefixList.length; i++) {
+    if (prompt.toLocaleLowerCase().startsWith(prefixList[i])) {
+      return prefixList[i]
+    }
+  }
+  return ''
+}
+
+export const hasGeminiPrefix = (prompt: string): string => {
+  const prefixList = GEMINI_PREFIX_LIST
   for (let i = 0; i < prefixList.length; i++) {
     if (prompt.toLocaleLowerCase().startsWith(prefixList[i])) {
       return prefixList[i]
@@ -213,7 +224,7 @@ export const sendMessage = async (
 
 export const hasPrefix = (prompt: string): string => {
   return (
-    hasBardPrefix(prompt) || hasLlamaPrefix(prompt) || hasClaudeOpusPrefix(prompt)
+    hasBardPrefix(prompt) || hasLlamaPrefix(prompt) || hasClaudeOpusPrefix(prompt) || hasGeminiPrefix(prompt)
   )
 }
 
