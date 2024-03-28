@@ -22,6 +22,7 @@ import {
   getPromptPrice,
   hasBardPrefix,
   hasClaudeOpusPrefix,
+  hasGeminiPrefix,
   hasLlamaPrefix,
   hasPrefix,
   hasUrl,
@@ -32,7 +33,7 @@ import {
   SupportedCommands
 } from './helpers'
 import { getUrlFromText, preparePrompt, sendMessage } from '../open-ai/helpers'
-import { vertexCompletion } from './api/vertex'
+import { vertexCompletion, vertexStreamCompletion } from './api/vertex'
 import { type LlmCompletion, llmCompletion, llmCheckCollectionStatus, queryUrlDocument, deleteCollection } from './api/llmApi'
 import { LlmsModelsEnum } from './types'
 import * as Sentry from '@sentry/node'
@@ -127,6 +128,10 @@ export class LlmsBot implements PayableBot {
 
     if (ctx.hasCommand(SupportedCommands.bard) || ctx.hasCommand(SupportedCommands.bardF)) {
       await this.onChat(ctx, LlmsModelsEnum.BISON)
+      return
+    }
+    if (ctx.hasCommand([SupportedCommands.gemini, SupportedCommands.gShort]) || (hasGeminiPrefix(ctx.message?.text ?? '') !== '')) {
+      await this.onChat(ctx, LlmsModelsEnum.GEMINI)
       return
     }
     if (ctx.hasCommand([SupportedCommands.claudeOpus, SupportedCommands.opus, SupportedCommands.opusShort]) || (hasClaudeOpusPrefix(ctx.message?.text ?? '') !== '')) {
@@ -567,13 +572,23 @@ export class LlmsBot implements PayableBot {
         if (isTypingEnabled) {
           ctx.chatAction = 'typing'
         }
-        const completion = await anthropicStreamCompletion(
-          conversation,
-          model as LlmsModelsEnum,
-          ctx,
-          msgId,
-          true // telegram messages has a character limit
-        )
+        let completion: LlmCompletion
+        if (model === LlmsModelsEnum.GEMINI) {
+          completion = await vertexStreamCompletion(conversation,
+            model as LlmsModelsEnum,
+            ctx,
+            msgId,
+            true // telegram messages has a character limit
+          )
+        } else {
+          completion = await anthropicStreamCompletion(
+            conversation,
+            model as LlmsModelsEnum,
+            ctx,
+            msgId,
+            true // telegram messages has a character limit
+          )
+        }
         if (isTypingEnabled) {
           ctx.chatAction = null
         }
@@ -754,7 +769,7 @@ export class LlmsBot implements PayableBot {
             ctx
           }
           let result: { price: number, chat: ChatConversation[] } = { price: 0, chat: [] }
-          if (model === LlmsModelsEnum.CLAUDE_OPUS || model === LlmsModelsEnum.CLAUDE_SONNET) {
+          if (model === LlmsModelsEnum.CLAUDE_OPUS || model === LlmsModelsEnum.CLAUDE_SONNET || model === LlmsModelsEnum.GEMINI) {
             result = await this.completionGen(payload) // , prompt.msgId, prompt.outputFormat)
           } else {
             result = await this.promptGen(payload)
@@ -873,6 +888,7 @@ export class LlmsBot implements PayableBot {
         ctx.transient.analytics.actualResponseTime = now()
       }
     } else if (e instanceof AxiosError) {
+      this.logger.error(`${e.message}`)
       await sendMessage(ctx, 'Error handling your request').catch(async (e) => {
         await this.onError(ctx, e, retryCount - 1)
       })
