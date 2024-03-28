@@ -7,7 +7,7 @@ import { GrammyError } from 'grammy'
 import { pino } from 'pino'
 import { LlmsModelsEnum } from '../types'
 
-const API_ENDPOINT = config.llms.apiEndpoint // config.llms.apiEndpoint // config.llms.apiEndpoint // 'http://127.0.0.1:5000' // config.llms.apiEndpoint
+const API_ENDPOINT = config.llms.apiEndpoint // config.llms.apiEndpoint  // 'http://127.0.0.1:5000' // config.llms.apiEndpoint
 
 const logger = pino({
   name: 'Gemini - llmsBot',
@@ -76,31 +76,29 @@ export const vertexStreamCompletion = async (
   for await (const chunk of completionStream) {
     const msg = chunk.toString()
     if (msg) {
-      if (msg.startsWith('Text')) {
-        completion += msg.split('Text: ')[1]
-        if (msg.includes('Input Token:')) {
-          const tokenMsg = msg.split('Input Token: ')[1]
-          inputTokens = tokenMsg.split('Output Tokens: ')[0]
-          outputTokens = tokenMsg.split('Output Tokens: ')[1]
-          completion = completion.split('Input Token: ')[0]
-        }
-        completion = completion.replaceAll('...', '')
-        completion += '...'
-        if (ctx.chat?.id) {
-          await ctx.api
-            .editMessageText(ctx.chat?.id, msgId, completion)
-            .catch(async (e: any) => {
-              if (e instanceof GrammyError) {
-                if (e.error_code !== 400) {
-                  throw e
-                } else {
-                  logger.error(e)
-                }
-              } else {
+      completion += msg // .split('Text: ')[1]
+      if (msg.includes('Input Token:')) {
+        const tokenMsg = msg.split('Input Token: ')[1]
+        inputTokens = tokenMsg.split('Output Tokens: ')[0]
+        outputTokens = tokenMsg.split('Output Tokens: ')[1]
+        completion = completion.split('Input Token: ')[0]
+      }
+      completion = completion.replaceAll('...', '')
+      completion += '...'
+      if (ctx.chat?.id) {
+        await ctx.api
+          .editMessageText(ctx.chat?.id, msgId, completion)
+          .catch(async (e: any) => {
+            if (e instanceof GrammyError) {
+              if (e.error_code !== 400) {
                 throw e
+              } else {
+                logger.error(e)
               }
-            })
-        }
+            } else {
+              throw e
+            }
+          })
       }
     }
   }
