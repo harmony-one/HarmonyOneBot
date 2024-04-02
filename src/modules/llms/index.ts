@@ -133,7 +133,7 @@ export class LlmsBot implements PayableBot {
       await this.onChat(ctx, LlmsModelsEnum.GEMINI)
       return
     }
-    if (ctx.hasCommand([SupportedCommands.claudeOpus, SupportedCommands.opus, SupportedCommands.opusShort]) || (hasClaudeOpusPrefix(ctx.message?.text ?? '') !== '')) {
+    if (ctx.hasCommand([SupportedCommands.claudeOpus, SupportedCommands.opus, SupportedCommands.opusShort, SupportedCommands.claudeShort]) || (hasClaudeOpusPrefix(ctx.message?.text ?? '') !== '')) {
       await this.onChat(ctx, LlmsModelsEnum.CLAUDE_OPUS)
       return
     }
