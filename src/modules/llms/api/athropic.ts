@@ -16,7 +16,7 @@ const logger = pino({
   }
 })
 
-const API_ENDPOINT = config.llms.apiEndpoint // 'http://127.0.0.1:5000' // config.llms.apiEndpoint
+const API_ENDPOINT = config.llms.apiEndpoint // config.llms.apiEndpoint // 'http://127.0.0.1:5000' // config.llms.apiEndpoint
 
 export const anthropicCompletion = async (
   conversation: ChatConversation[],
@@ -88,9 +88,16 @@ export const anthropicStreamCompletion = async (
     if (msg) {
       if (msg.startsWith('Input Token')) {
         inputTokens = msg.split('Input Token: ')[1]
-      } else if (msg.startsWith('Text')) {
+      } else if (msg.startsWith('Output Tokens')) {
+        outputTokens = msg.split('Output Tokens: ')[1]
+      } else {
         wordCount++
-        completion += msg.split('Text: ')[1]
+        completion += msg // .split('Text: ')[1]
+        if (msg.includes('Output Tokens:')) {
+          const tokenMsg = msg.split('Output Tokens: ')[1]
+          outputTokens = tokenMsg.split('Output Tokens: ')[1]
+          completion = completion.split('Output Tokens: ')[0]
+        }
         if (wordCount > wordCountMinimum) { // if (chunck === '.' && wordCount > wordCountMinimum) {
           if (wordCountMinimum < 64) {
             wordCountMinimum *= 2
@@ -114,8 +121,6 @@ export const anthropicStreamCompletion = async (
               })
           }
         }
-      } else if (msg.startsWith('Output Tokens')) {
-        outputTokens = msg.split('Output Tokens: ')[1]
       }
     }
   }
