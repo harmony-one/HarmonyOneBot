@@ -29,7 +29,6 @@ import {
   isMentioned,
   limitPrompt,
   MAX_TRIES,
-  prepareConversation,
   SupportedCommands
 } from './helpers'
 import { getUrlFromText, preparePrompt, sendMessage } from '../open-ai/helpers'
@@ -134,7 +133,7 @@ export class LlmsBot implements PayableBot {
       await this.onChat(ctx, LlmsModelsEnum.GEMINI)
       return
     }
-    if (ctx.hasCommand([SupportedCommands.claudeOpus, SupportedCommands.opus, SupportedCommands.opusShort]) || (hasClaudeOpusPrefix(ctx.message?.text ?? '') !== '')) {
+    if (ctx.hasCommand([SupportedCommands.claudeOpus, SupportedCommands.opus, SupportedCommands.opusShort, SupportedCommands.claudeShort]) || (hasClaudeOpusPrefix(ctx.message?.text ?? '') !== '')) {
       await this.onChat(ctx, LlmsModelsEnum.CLAUDE_OPUS)
       return
     }
@@ -601,7 +600,8 @@ export class LlmsBot implements PayableBot {
           )
           conversation.push({
             role: 'assistant',
-            content: completion.completion?.content ?? ''
+            content: completion.completion?.content ?? '',
+            model
           })
           return {
             price: price.price,
@@ -612,7 +612,8 @@ export class LlmsBot implements PayableBot {
         const response = await anthropicCompletion(conversation, model as LlmsModelsEnum)
         conversation.push({
           role: 'assistant',
-          content: response.completion?.content ?? ''
+          content: response.completion?.content ?? '',
+          model
         })
         return {
           price: response.price,
@@ -644,13 +645,12 @@ export class LlmsBot implements PayableBot {
       usage: 0,
       price: 0
     }
-    const chat = prepareConversation(conversation, model)
     if (model === LlmsModelsEnum.BISON) {
-      response = await vertexCompletion(chat, model) // "chat-bison@001");
+      response = await vertexCompletion(conversation, model) // "chat-bison@001");
     } else if (model === LlmsModelsEnum.CLAUDE_OPUS || model === LlmsModelsEnum.CLAUDE_SONNET || model === LlmsModelsEnum.CLAUDE_HAIKU) {
-      response = await anthropicCompletion(chat, model)
+      response = await anthropicCompletion(conversation, model)
     } else {
-      response = await llmCompletion(chat, model as LlmsModelsEnum)
+      response = await llmCompletion(conversation, model as LlmsModelsEnum)
     }
     if (response.completion) {
       await ctx.api.editMessageText(
@@ -755,12 +755,8 @@ export class LlmsBot implements PayableBot {
           }
           const chat: ChatConversation = {
             content: limitPrompt(prompt),
+            role: 'user',
             model
-          }
-          if (model === LlmsModelsEnum.BISON) {
-            chat.author = 'user'
-          } else {
-            chat.role = 'user'
           }
           chatConversation.push(chat)
           const payload = {

@@ -23,13 +23,13 @@ export const anthropicCompletion = async (
   model = LlmsModelsEnum.CLAUDE_OPUS
 ): Promise<LlmCompletion> => {
   logger.info(`Handling ${model} completion`)
-
   const data = {
     model,
     stream: false,
     system: config.openAi.chatGpt.chatCompletionContext,
     max_tokens: +config.openAi.chatGpt.maxTokens,
-    messages: conversation
+    messages: conversation.filter(c => c.model === model)
+      .map(m => { return { content: m.content, role: m.role } })
   }
   const url = `${API_ENDPOINT}/anthropic/completions`
   const response = await axios.post(url, data)
@@ -68,7 +68,7 @@ export const anthropicStreamCompletion = async (
     stream: true, // Set stream to true to receive the completion as a stream
     system: config.openAi.chatGpt.chatCompletionContext,
     max_tokens: limitTokens ? +config.openAi.chatGpt.maxTokens : undefined,
-    messages: conversation.map(m => { return { content: m.content, role: m.role } })
+    messages: conversation.filter(c => c.model === model).map(m => { return { content: m.content, role: m.role } })
   }
   let wordCount = 0
   let wordCountMinimum = 2

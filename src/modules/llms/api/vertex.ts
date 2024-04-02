@@ -24,8 +24,18 @@ export const vertexCompletion = async (
   const data = {
     model, // chat-bison@001 'chat-bison', //'gpt-3.5-turbo',
     stream: false,
-    messages: conversation
+    messages: conversation.filter(c => c.model === model)
+      .map((msg) => {
+        const msgFiltered: ChatConversation = { content: msg.content, model: msg.model }
+        if (model === LlmsModelsEnum.BISON) {
+          msgFiltered.author = msg.role
+        } else {
+          msgFiltered.role = msg.role
+        }
+        return msgFiltered
+      })
   }
+
   const url = `${API_ENDPOINT}/vertex/completions`
   const response = await axios.post(url, data)
   if (response) {
@@ -34,7 +44,7 @@ export const vertexCompletion = async (
     return {
       completion: {
         content: response.data._prediction_response[0][0].candidates[0].content,
-        author: 'bot',
+        role: 'bot', // role replace to author attribute will be done later
         model
       },
       usage: totalOutputTokens + totalInputTokens,
@@ -60,7 +70,8 @@ export const vertexStreamCompletion = async (
     stream: true, // Set stream to true to receive the completion as a stream
     system: config.openAi.chatGpt.chatCompletionContext,
     max_tokens: limitTokens ? +config.openAi.chatGpt.maxTokens : undefined,
-    messages: conversation.map(m => { return { parts: { text: m.content }, role: m.role !== 'user' ? 'model' : 'user' } })
+    messages: conversation.filter(c => c.model === model)
+      .map(m => { return { parts: { text: m.content }, role: m.role !== 'user' ? 'model' : 'user' } })
   }
   const url = `${API_ENDPOINT}/vertex/completions/gemini`
   if (!ctx.chat?.id) {
