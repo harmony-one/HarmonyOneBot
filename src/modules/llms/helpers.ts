@@ -2,11 +2,9 @@ import {
   type OnMessageContext,
   type OnCallBackQueryData,
   type MessageExtras,
-  type ChatConversation,
   type ChatPayload
 } from '../types'
 import { type ParseMode } from 'grammy/types'
-import { LlmsModelsEnum } from './types'
 import { type Message } from 'grammy/out/types'
 import { type LlmCompletion, getChatModel, llmAddUrlDocument } from './api/llmApi'
 import { getChatModelPrice } from '../open-ai/api/openAi'
@@ -252,23 +250,6 @@ export const limitPrompt = (prompt: string): string => {
   // }
   // return `${prompt} in around ${config.openAi.chatGpt.wordLimit} words`
   return prompt
-}
-
-export const prepareConversation = (
-  conversation: ChatConversation[],
-  model: string
-): ChatConversation[] => {
-  return conversation
-    .filter((msg) => msg.model === model)
-    .map((msg) => {
-      const msgFiltered: ChatConversation = { content: msg.content }
-      if (model === LlmsModelsEnum.BISON) {
-        msgFiltered.author = msg.author
-      } else {
-        msgFiltered.role = msg.role
-      }
-      return msgFiltered
-    })
 }
 
 export function extractPdfFilename (url: string): string | null {

@@ -99,7 +99,7 @@ export const llmCompletion = async (
   const data = {
     model, // chat-bison@001 'chat-bison', //'gpt-3.5-turbo',
     stream: false,
-    messages: conversation
+    messages: conversation.filter(c => c.model === model)
   }
   const url = `${API_ENDPOINT}/llms/completions`
   const response = await axios.post(url, data)
