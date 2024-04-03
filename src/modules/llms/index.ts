@@ -19,6 +19,7 @@ import { sleep } from '../sd-images/utils'
 import {
   addDocToCollection,
   addUrlToCollection,
+  getMinBalance,
   getPromptPrice,
   hasBardPrefix,
   hasClaudeOpusPrefix,
@@ -184,15 +185,18 @@ export class LlmsBot implements PayableBot {
     ctx.transient.analytics.actualResponseTime = now()
   }
 
-  private async hasBalance (ctx: OnMessageContext | OnCallBackQueryData): Promise<boolean> {
+  private async hasBalance (ctx: OnMessageContext | OnCallBackQueryData, minBalance = +config.llms.minimumBalance): Promise<boolean> {
+    const minBalanceOne = this.payments.toONE(await this.payments.getPriceInONE(minBalance), false)
     const accountId = this.payments.getAccountId(ctx)
     const addressBalance = await this.payments.getUserBalance(accountId)
     const { totalCreditsAmount } = await chatService.getUserCredits(accountId)
     const balance = addressBalance.plus(totalCreditsAmount)
     const balanceOne = this.payments.toONE(balance, false).toFixed(2)
+    const isGroupInWhiteList = await this.payments.isGroupInWhitelist(ctx as OnMessageContext)
     return (
-      +balanceOne > +config.llms.minimumBalance ||
-      (this.payments.isUserInWhitelist(ctx.from.id, ctx.from.username))
+      +balanceOne > +minBalanceOne ||
+      (this.payments.isUserInWhitelist(ctx.from.id, ctx.from.username)) ||
+      isGroupInWhiteList
     )
   }
 
@@ -441,9 +445,11 @@ export class LlmsBot implements PayableBot {
     const processingTime = config.llms.processingTime
     while (ctx.session.collections.collectionRequestQueue.length > 0) {
       try {
+        // console.log('HERE MY FRIENDS')
         const collection = ctx.session.collections.collectionRequestQueue.shift()
         if (collection) {
           const result = await llmCheckCollectionStatus(collection?.collectionName ?? '')
+          // console.log('onCheckCollectionStatus', result)
           if (result.price > 0) {
             if (
               !(await this.payments.pay(ctx as OnMessageContext, result.price)) // price 0.05 x collections (chunks)
@@ -738,7 +744,8 @@ export class LlmsBot implements PayableBot {
         const prompt = msg?.content as string
         const model = msg?.model
         const { chatConversation } = ctx.session.llms
-        if (await this.hasBalance(ctx)) {
+        const minBalance = await getMinBalance(ctx, msg?.model as LlmsModelsEnum)
+        if (await this.hasBalance(ctx, minBalance)) {
           if (!prompt) {
             const msg =
               chatConversation.length > 0

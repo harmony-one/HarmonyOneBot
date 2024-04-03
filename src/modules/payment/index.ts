@@ -297,6 +297,7 @@ export class BotPayments {
     if (ctx.chat.id && ctx.chat.type !== 'private') {
       const { whitelist } = config.payment
       const admins = await ctx.getChatAdministrators()
+      this.logger.info(`Chat Admins(${admins.length})`)
       for (let i = 0; i < admins.length; i++) {
         const username = admins[i].user.username ?? ''
         if (whitelist.includes(admins[i].user.id.toString()) ||

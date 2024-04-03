@@ -16,7 +16,7 @@ const logger = pino({
   }
 })
 
-const API_ENDPOINT = config.llms.apiEndpoint // config.llms.apiEndpoint // 'http://127.0.0.1:5000' // config.llms.apiEndpoint
+const API_ENDPOINT = config.llms.apiEndpoint // 'http://127.0.0.1:5000' // config.llms.apiEndpoint
 
 export const anthropicCompletion = async (
   conversation: ChatConversation[],
@@ -87,15 +87,23 @@ export const anthropicStreamCompletion = async (
     const msg = chunk.toString()
     if (msg) {
       if (msg.startsWith('Input Token')) {
-        inputTokens = msg.split('Input Token: ')[1]
+        const regex = /Input Token: (\d+)(.*)/
+        // Execute the regular expression
+        const match = regex.exec(msg)
+        if (match) {
+          inputTokens = match[1].trim() // Extract the integer part
+          if (match.length >= 3) {
+            completion += match[2]
+          }
+        }
       } else if (msg.startsWith('Output Tokens')) {
-        outputTokens = msg.split('Output Tokens: ')[1]
+        outputTokens = msg.split('Output Tokens: ')[1].trim()
       } else {
         wordCount++
-        completion += msg // .split('Text: ')[1]
+        completion += msg
         if (msg.includes('Output Tokens:')) {
-          const tokenMsg = msg.split('Output Tokens: ')[1]
-          outputTokens = tokenMsg.split('Output Tokens: ')[1]
+          outputTokens = msg.split('Output Tokens: ')[1].trim()
+          // outputTokens = tokenMsg.split('Output Tokens: ')[1].trim()
           completion = completion.split('Output Tokens: ')[0]
         }
         if (wordCount > wordCountMinimum) { // if (chunck === '.' && wordCount > wordCountMinimum) {

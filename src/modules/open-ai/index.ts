@@ -245,7 +245,7 @@ export class OpenAIBot implements PayableBot {
       ctx.hasCommand(SupportedCommands.new) ||
       (ctx.message?.text?.startsWith('new ') && ctx.chat?.type === 'private')
     ) {
-      await this.onEnd(ctx)
+      await this.onStop(ctx)
       await this.onChat(ctx)
       return
     }
@@ -408,14 +408,15 @@ export class OpenAIBot implements PayableBot {
     ctx.transient.analytics.actualResponseTime = now()
   }
 
-  private async hasBalance (ctx: OnMessageContext | OnCallBackQueryData): Promise<boolean> {
+  private async hasBalance (ctx: OnMessageContext | OnCallBackQueryData,
+    minBalance = +config.openAi.chatGpt.minimumBalance): Promise<boolean> {
     const accountId = this.payments.getAccountId(ctx)
     const addressBalance = await this.payments.getUserBalance(accountId)
     const { totalCreditsAmount } = await chatService.getUserCredits(accountId)
     const balance = addressBalance.plus(totalCreditsAmount)
     const balanceOne = this.payments.toONE(balance, false)
     return (
-      (+balanceOne > +config.openAi.chatGpt.minimumBalance) ||
+      (+balanceOne > minBalance) ||
       (this.payments.isUserInWhitelist(ctx.from.id, ctx.from.username))
     )
   }

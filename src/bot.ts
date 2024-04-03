@@ -589,6 +589,15 @@ bot.command(['alias', 'aliases'], async (ctx) => {
   })
 })
 
+// bot.command(['end'], async (ctx) => {
+//   logger.info('/end command')
+//   return await ctx.reply(ALIAS.text, {
+//     parse_mode: 'Markdown',
+//     disable_web_page_preview: true,
+//     message_thread_id: ctx.message?.message_thread_id
+//   })
+// })
+
 // bot.command("memo", (ctx) => {
 //   ctx.reply(MEMO.text, {
 //     parse_mode: "Markdown",
