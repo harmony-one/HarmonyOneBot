@@ -19,7 +19,7 @@ export const chatMainMenu = new Menu<BotContext>(MenuIds.CHAT_GPT_MAIN)
     ctx
       .editMessageText(text, {
         parse_mode: 'Markdown',
-        disable_web_page_preview: true
+        link_preview_options: { is_disabled: true }
       })
       .catch((ex) => {
         console.log('### ex', ex)

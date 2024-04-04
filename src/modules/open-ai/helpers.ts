@@ -191,11 +191,12 @@ interface GetMessagesExtras {
   caption?: string | undefined
   replyId?: number | undefined
   reply_markup?: InlineKeyboardMarkup
-  disable_web_page_preview?: boolean
+  // disable_web_page_preview?: boolean
+  link_preview_options?: { is_disabled: boolean }
 }
 
 export const getMessageExtras = (params: GetMessagesExtras): MessageExtras => {
-  const { parseMode, caption, replyId, disable_web_page_preview: disableWebPagePreview } = params
+  const { parseMode, caption, replyId, link_preview_options: disableWebPagePreview } = params
   const extras: MessageExtras = {}
   if (parseMode) {
     extras.parse_mode = parseMode
@@ -207,7 +208,7 @@ export const getMessageExtras = (params: GetMessagesExtras): MessageExtras => {
     extras.caption = caption
   }
   if (disableWebPagePreview) {
-    extras.disable_web_page_preview = disableWebPagePreview
+    extras.link_preview_options = disableWebPagePreview
   }
   if (params.reply_markup) {
     extras.reply_markup = params.reply_markup

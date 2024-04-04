@@ -296,7 +296,7 @@ export class BotPayments {
   public async isGroupInWhitelist (ctx: OnMessageContext): Promise<boolean> {
     if (ctx.chat.id && ctx.chat.type !== 'private') {
       const { whitelist } = config.payment
-      const admins = await ctx.getChatAdministrators()
+      const admins = await ctx.api.getChatAdministrators(ctx.chat.id)
       this.logger.info(`Chat Admins(${admins.length})`)
       for (let i = 0; i < admins.length; i++) {
         const username = admins[i].user.username ?? ''
@@ -634,7 +634,7 @@ export class BotPayments {
 To recharge, send ONE to: \`${account.address}\`. Buy tokens on harmony.one/buy.`,
           {
             parseMode: 'Markdown',
-            disable_web_page_preview: true,
+            link_preview_options: { is_disabled: true },
             reply_markup: buyCreditsButton
           }
         )

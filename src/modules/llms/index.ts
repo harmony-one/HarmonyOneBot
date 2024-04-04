@@ -345,7 +345,7 @@ export class LlmsBot implements PayableBot {
           })
           await ctx.api.editMessageText(ctx.chat?.id ?? '',
             msgId, response.completion,
-            { disable_web_page_preview: true })
+            { link_preview_options: { is_disabled: true } })
             .catch(async (e) => { await this.onError(ctx, e) })
           ctx.session.collections.collectionConversation = [...conversation]
         }
@@ -411,7 +411,7 @@ export class LlmsBot implements PayableBot {
           })
           await ctx.api.editMessageText(ctx.chat?.id ?? '',
             msgId, response.completion,
-            { parse_mode: 'Markdown', disable_web_page_preview: true })
+            { parse_mode: 'Markdown', link_preview_options: { is_disabled: true } })
           ctx.session.collections.collectionConversation = [...conversation]
         }
       }
@@ -467,7 +467,7 @@ export class LlmsBot implements PayableBot {
                 }
                 await ctx.api.editMessageText(ctx.chat?.id ?? '',
                   collection.msgId, statusMsg,
-                  { disable_web_page_preview: true })
+                  { link_preview_options: { is_disabled: true } })
                   .catch(async (e) => { await this.onError(ctx, e) })
               }
               await this.queryUrlCollection(ctx, collection.url ?? '',
@@ -482,7 +482,7 @@ export class LlmsBot implements PayableBot {
                 statusMsg = `${collection.fileName} - Invalid PDF format`
               }
               await ctx.api.editMessageText(ctx.chat?.id ?? '', collection.msgId, statusMsg,
-                { disable_web_page_preview: true })
+                { link_preview_options: { is_disabled: true } })
             }
           } else {
             if (collection.processingTime && collection.processingTime > processingTime) { // 5 min max
@@ -494,7 +494,7 @@ export class LlmsBot implements PayableBot {
                   statusMsg = `${collection.fileName} - Processing time limit reached. Please check the file format and try again`
                 }
                 await ctx.api.editMessageText(ctx.chat?.id ?? '', collection.msgId, statusMsg,
-                  { disable_web_page_preview: true })
+                  { link_preview_options: { is_disabled: true } })
               }
             } else {
               const processingTime = collection.processingTime ? collection.processingTime + 5000 : 5000

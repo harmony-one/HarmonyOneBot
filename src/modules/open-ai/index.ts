@@ -168,15 +168,12 @@ export class OpenAIBot implements PayableBot {
   }
 
   async shareImg (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
+    const threadId = ctx.message?.message_thread_id ? ctx.message?.message_thread_id : ctx.message?.reply_to_message?.message_thread_id
     if (ctx.callbackQuery?.data) {
       const imgId = +ctx.callbackQuery?.data?.split('|')[1]
       const img = ctx.session.openAi.imageGen.imageGenerated[imgId]
       const msgId = (
-        await ctx.reply('Inscribing the image...', {
-          message_thread_id:
-            ctx.message?.message_thread_id ??
-            ctx.message?.reply_to_message?.message_thread_id
-        })
+        await ctx.reply('Inscribing the image...', { message_thread_id: threadId })
       ).message_id
       const result = await this.payments.inscribeImg(ctx, img, msgId)
       if (result) {
@@ -769,7 +766,7 @@ export class OpenAIBot implements PayableBot {
               const msgExtras = getMessageExtras({
                 caption: `/dalle ${prompt}\n\n Check [q.country](https://q.country) for general lottery information`,
                 reply_markup: inlineKeyboard,
-                disable_web_page_preview: true,
+                link_preview_options: { is_disabled: true },
                 parseMode: 'Markdown'
               })
               const msg = await ctx.replyWithPhoto(img.url, msgExtras)
@@ -874,8 +871,9 @@ export class OpenAIBot implements PayableBot {
         ctx.chatAction = 'upload_photo'
         const imgs = await alterGeneratedImg(prompt ?? '', filePath, ctx, imgSize)
         if (imgs) {
-          imgs.map(async (img: any) => {
-            if (img?.url) {
+          for (let i = 0; i < imgs.length; i++) {
+            const img = imgs[i]
+            if (img.url) {
               await ctx
                 .replyWithPhoto(img.url, { message_thread_id: ctx.message?.message_thread_id })
                 .catch(async (e) => {
@@ -887,7 +885,22 @@ export class OpenAIBot implements PayableBot {
                   )
                 })
             }
-          })
+          }
+          // eslint-disable-next-line @typescript-eslint/no-floating-promises
+          // imgs.map(async (img: any) => {
+          //   if (img?.url) {
+          //     await ctx
+          //       .replyWithPhoto(img.url, { message_thread_id: ctx.message?.message_thread_id })
+          //       .catch(async (e) => {
+          //         await this.onError(
+          //           ctx,
+          //           e,
+          //           MAX_TRIES,
+          //           'There was an error while generating the image'
+          //         )
+          //       })
+          //   }
+          // })
         }
         ctx.chatAction = null
       }

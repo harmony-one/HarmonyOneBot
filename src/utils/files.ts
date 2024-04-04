@@ -2,7 +2,7 @@ import * as pathLib from 'path'
 import * as fs from 'fs'
 import * as os from 'os'
 import * as https from 'https'
-import type { File } from '@grammyjs/types/manage.js'
+import type { File } from '@grammyjs/types'
 import config from '../config'
 
 export const createTempFile = async (): Promise<string> =>
