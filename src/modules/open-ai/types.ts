@@ -1,3 +1,5 @@
+import { type ChatConversation } from '../types'
+
 export interface ChatModel {
   name: string
   inputPrice: number
@@ -17,6 +19,13 @@ export enum ChatGPTModelsEnum {
   GPT_35_TURBO = 'gpt-3.5-turbo',
   GPT_35_TURBO_16K = 'gpt-3.5-turbo-16k',
   GPT_4_VISION_PREVIEW = 'gpt-4-vision-preview'
+}
+export interface ChatGptCompletion {
+  completion: ChatConversation | undefined
+  usage: number
+  price?: number
+  inputTokens?: number
+  outputTokens?: number
 }
 
 export const ChatGPTModels: Record<string, ChatModel> = {

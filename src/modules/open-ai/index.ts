@@ -41,7 +41,8 @@ import {
   MAX_TRIES,
   preparePrompt,
   sendMessage,
-  SupportedCommands
+  SupportedCommands,
+  getMinBalance
 } from './helpers'
 import * as Sentry from '@sentry/node'
 import { now } from '../../utils/perf'
@@ -407,14 +408,17 @@ export class OpenAIBot implements PayableBot {
 
   private async hasBalance (ctx: OnMessageContext | OnCallBackQueryData,
     minBalance = +config.openAi.chatGpt.minimumBalance): Promise<boolean> {
+    const minBalanceOne = this.payments.toONE(await this.payments.getPriceInONE(minBalance), false)
     const accountId = this.payments.getAccountId(ctx)
     const addressBalance = await this.payments.getUserBalance(accountId)
     const { totalCreditsAmount } = await chatService.getUserCredits(accountId)
     const balance = addressBalance.plus(totalCreditsAmount)
     const balanceOne = this.payments.toONE(balance, false)
+    const isGroupInWhiteList = await this.payments.isGroupInWhitelist(ctx as OnMessageContext)
     return (
-      (+balanceOne > minBalance) ||
-      (this.payments.isUserInWhitelist(ctx.from.id, ctx.from.username))
+      +balanceOne > +minBalanceOne ||
+      (this.payments.isUserInWhitelist(ctx.from.id, ctx.from.username)) ||
+      isGroupInWhiteList
     )
   }
 
@@ -517,8 +521,12 @@ export class OpenAIBot implements PayableBot {
           ctx.transient.analytics.actualResponseTime = now()
           const price = getPromptPrice(completion, data)
           this.logger.info(
-            `streamChatCompletion result = tokens: ${price.totalTokens} | ${model} | price: ${price.price}¢` // price.promptTokens + price.completionTokens  }
+            `streamChatCompletion result = tokens: ${price.promptTokens + price.completionTokens} | ${model} | price: ${price.price}¢` // price.promptTokens + price.completionTokens  }
           )
+          conversation.push({
+            role: 'assistant',
+            content: completion.completion?.content ?? ''
+          })
           return {
             price: price.price,
             chat: conversation
@@ -527,7 +535,7 @@ export class OpenAIBot implements PayableBot {
       } else {
         const response = await chatCompletion(conversation, ChatGPTModelsEnum.GPT_35_TURBO_16K)
         conversation.push({
-          role: 'system',
+          role: 'assistant',
           content: response.completion
         })
         await responseWithVoice(response.completion, ctx as OnMessageContext, msgId)
@@ -669,7 +677,8 @@ export class OpenAIBot implements PayableBot {
       try {
         const prompt = ctx.session.openAi.chatGpt.requestQueue.shift() ?? ''
         const { chatConversation, model } = ctx.session.openAi.chatGpt
-        if (await this.hasBalance(ctx)) {
+        const minBalance = await getMinBalance(ctx, ChatGPTModelsEnum.GPT_4_32K)
+        if (await this.hasBalance(ctx, minBalance)) {
           if (prompt === '') {
             const msg =
               chatConversation.length > 0
@@ -724,7 +733,8 @@ export class OpenAIBot implements PayableBot {
     while (ctx.session.openAi.imageGen.imgRequestQueue.length > 0) {
       try {
         const img = ctx.session.openAi.imageGen.imgRequestQueue.shift()
-        if (await this.hasBalance(ctx)) {
+        const minBalance = await getMinBalance(ctx, ChatGPTModelsEnum.GPT_4_32K)
+        if (await this.hasBalance(ctx, minBalance)) {
           if (img?.command === 'dalle') {
             await this.onGenImgCmd(img?.prompt, ctx)
           } else if (img?.command === 'alter') {

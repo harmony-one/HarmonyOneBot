@@ -15,7 +15,8 @@ import {
   ChatGPTModels,
   type DalleGPTModel,
   DalleGPTModels,
-  ChatGPTModelsEnum
+  ChatGPTModelsEnum,
+  type ChatGptCompletion
 } from '../types'
 import type fs from 'fs'
 import { type ChatCompletionMessageParam } from 'openai/resources/chat/completions'
@@ -114,7 +115,7 @@ export const streamChatCompletion = async (
   model = config.openAi.chatGpt.model,
   msgId: number,
   limitTokens = true
-): Promise<string> => {
+): Promise<ChatGptCompletion> => {
   let completion = ''
   let wordCountMinimum = 2
   const stream = await openai.chat.completions.create({
@@ -161,7 +162,8 @@ export const streamChatCompletion = async (
     }
   }
   completion = completion.replaceAll('...', '')
-
+  const inputTokens = getTokenNumber(conversation[conversation.length - 1].content as string) + ctx.session.openAi.chatGpt.usage
+  const outputTokens = getTokenNumber(completion)
   await ctx.api
     .editMessageText(ctx.chat?.id, msgId, completion)
     .catch((e: any) => {
@@ -175,7 +177,16 @@ export const streamChatCompletion = async (
         throw e
       }
     })
-  return completion
+  return {
+    completion: {
+      content: completion,
+      role: 'assistant'
+    },
+    usage: outputTokens + inputTokens,
+    price: 0,
+    inputTokens,
+    outputTokens
+  }
 }
 
 export const streamChatVisionCompletion = async (
@@ -185,7 +196,7 @@ export const streamChatVisionCompletion = async (
   imgUrls: string[],
   msgId: number,
   limitTokens = true
-): Promise<string> => {
+): Promise<ChatGptCompletion> => {
   let completion = ''
   let wordCountMinimum = 2
   const payload: any = {
@@ -244,7 +255,8 @@ export const streamChatVisionCompletion = async (
     }
   }
   completion = completion.replaceAll('...', '')
-
+  const inputTokens = getTokenNumber(prompt) + ctx.session.openAi.chatGpt.usage
+  const outputTokens = getTokenNumber(completion)
   await ctx.api
     .editMessageText(ctx.chat?.id, msgId, completion)
     .catch((e: any) => {
@@ -258,7 +270,16 @@ export const streamChatVisionCompletion = async (
         throw e
       }
     })
-  return completion
+  return {
+    completion: {
+      content: completion,
+      role: 'assistant'
+    },
+    usage: outputTokens + inputTokens,
+    price: 0,
+    inputTokens,
+    outputTokens
+  }
 }
 
 export async function improvePrompt (promptText: string, model: string): Promise<string> {

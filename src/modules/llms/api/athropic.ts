@@ -63,6 +63,7 @@ export const anthropicStreamCompletion = async (
   msgId: number,
   limitTokens = true
 ): Promise<LlmCompletion> => {
+  logger.info(`Handling ${model} stream completion`)
   const data = {
     model,
     stream: true, // Set stream to true to receive the completion as a stream
