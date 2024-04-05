@@ -227,6 +227,15 @@ function createInitialSessionData (): BotSessionData {
       usage: 0,
       isProcessingQueue: false,
       requestQueue: []
+    },
+    chatGpt: {
+      model: config.llms.model,
+      isEnabled: config.llms.isEnabled,
+      chatConversation: [],
+      price: 0,
+      usage: 0,
+      isProcessingQueue: false,
+      requestQueue: []
     }
   }
 }

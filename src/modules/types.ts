@@ -159,6 +159,7 @@ export interface BotSessionData {
   openAi: OpenAiSessionData
   translate: TranslateBotData
   llms: LmmsSessionData
+  chatGpt: LmmsSessionData
 }
 
 export interface TransientStateContext {

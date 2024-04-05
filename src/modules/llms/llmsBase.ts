@@ -9,7 +9,9 @@ import {
   type ChatConversation,
   type ChatPayload,
   type PayableBot,
-  RequestState
+  RequestState,
+  type BotSessionData,
+  type LmmsSessionData
 } from '../types'
 import { appText } from '../open-ai/utils/text'
 import { chatService } from '../../database/services'
@@ -32,11 +34,15 @@ import { type LlmsModelsEnum } from './types'
 
 export abstract class LlmsBase implements PayableBot {
   public module: string
+  protected sessionDataKey: string
   protected readonly logger: Logger
   protected readonly payments: BotPayments
   protected botSuspended: boolean
 
-  constructor (payments: BotPayments, module: string) {
+  constructor (payments: BotPayments,
+    module: string,
+    sessionDataKey: string
+  ) {
     this.module = module
     this.logger = pino({
       name: this.module,
@@ -45,6 +51,7 @@ export abstract class LlmsBase implements PayableBot {
         options: { colorize: true }
       }
     })
+    this.sessionDataKey = sessionDataKey
     this.botSuspended = false
     this.payments = payments
   }
@@ -70,7 +77,12 @@ export abstract class LlmsBase implements PayableBot {
 
   protected abstract hasPrefix (prompt: string): string
 
+  protected getSession (ctx: OnMessageContext | OnCallBackQueryData): LmmsSessionData {
+    return (ctx.session[this.sessionDataKey as keyof BotSessionData] as LmmsSessionData)
+  }
+
   async onPrefix (ctx: OnMessageContext | OnCallBackQueryData, model: string, stream: boolean): Promise<void> {
+    const session = this.getSession(ctx)
     try {
       if (this.botSuspended) {
         ctx.transient.analytics.sessionState = RequestState.Error
@@ -83,14 +95,14 @@ export abstract class LlmsBase implements PayableBot {
         SupportedCommands
       )
       const prefix = this.hasPrefix(prompt)
-      ctx.session.llms.requestQueue.push({
+      session.requestQueue.push({
         content: await preparePrompt(ctx, prompt.slice(prefix.length)),
         model
       })
-      if (!ctx.session.llms.isProcessingQueue) {
-        ctx.session.llms.isProcessingQueue = true
+      if (!session.isProcessingQueue) {
+        session.isProcessingQueue = true
         await this.onChatRequestHandler(ctx, stream).then(() => {
-          ctx.session.llms.isProcessingQueue = false
+          session.isProcessingQueue = false
         })
       }
     } catch (e) {
@@ -99,6 +111,7 @@ export abstract class LlmsBase implements PayableBot {
   }
 
   async onChat (ctx: OnMessageContext | OnCallBackQueryData, model: string, stream: boolean): Promise<void> {
+    const session = this.getSession(ctx)
     try {
       if (this.botSuspended) {
         ctx.transient.analytics.sessionState = RequestState.Error
@@ -107,14 +120,14 @@ export abstract class LlmsBase implements PayableBot {
         return
       }
       const prompt = ctx.match ? ctx.match : ctx.message?.text
-      ctx.session.llms.requestQueue.push({
+      session.requestQueue.push({
         model,
         content: await preparePrompt(ctx, prompt as string)
       })
-      if (!ctx.session.llms.isProcessingQueue) {
-        ctx.session.llms.isProcessingQueue = true
+      if (!session.isProcessingQueue) {
+        session.isProcessingQueue = true
         await this.onChatRequestHandler(ctx, stream).then(() => {
-          ctx.session.llms.isProcessingQueue = false
+          session.isProcessingQueue = false
         })
       }
       ctx.transient.analytics.actualResponseTime = now()
@@ -124,12 +137,13 @@ export abstract class LlmsBase implements PayableBot {
   }
 
   async onChatRequestHandler (ctx: OnMessageContext | OnCallBackQueryData, stream: boolean): Promise<void> {
-    while (ctx.session.llms.requestQueue.length > 0) {
+    const session = this.getSession(ctx)
+    while (session.requestQueue.length > 0) {
       try {
-        const msg = ctx.session.llms.requestQueue.shift()
+        const msg = session.requestQueue.shift()
         const prompt = msg?.content as string
         const model = msg?.model
-        const { chatConversation } = ctx.session.llms
+        const { chatConversation } = session
         const minBalance = await getMinBalance(ctx, msg?.model as LlmsModelsEnum)
         if (await this.hasBalance(ctx, minBalance)) {
           if (!prompt) {
@@ -163,7 +177,7 @@ export abstract class LlmsBase implements PayableBot {
           } else {
             result = await this.promptGen(payload)
           }
-          ctx.session.llms.chatConversation = [...result.chat]
+          session.chatConversation = [...result.chat]
           if (
             !(await this.payments.pay(ctx as OnMessageContext, result.price))
           ) {
@@ -174,13 +188,14 @@ export abstract class LlmsBase implements PayableBot {
           await this.onNotBalanceMessage(ctx)
         }
       } catch (e: any) {
-        ctx.session.llms.chatConversation = []
+        session.chatConversation = []
         await this.onError(ctx, e)
       }
     }
   }
 
   async onStop (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
+    const session = this.getSession(ctx)
     for (const c of ctx.session.collections.activeCollections) {
       this.logger.info(`Deleting collection ${c.collectionName}`)
       await deleteCollection(c.collectionName)
@@ -190,9 +205,9 @@ export abstract class LlmsBase implements PayableBot {
     ctx.session.collections.collectionRequestQueue = []
     ctx.session.collections.currentCollection = ''
     ctx.session.collections.isProcessingQueue = false
-    ctx.session.llms.chatConversation = []
-    ctx.session.llms.usage = 0
-    ctx.session.llms.price = 0
+    session.chatConversation = []
+    session.usage = 0
+    session.price = 0
   }
 
   private async hasBalance (ctx: OnMessageContext | OnCallBackQueryData, minBalance = +config.llms.minimumBalance): Promise<boolean> {

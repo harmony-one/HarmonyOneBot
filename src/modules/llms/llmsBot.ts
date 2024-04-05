@@ -14,7 +14,7 @@ import { LlmsBase } from './llmsBase'
 
 export class LlmsBot extends LlmsBase {
   constructor (payments: BotPayments) {
-    super(payments, 'LlmsBot')
+    super(payments, 'LlmsBot', 'llms')
   }
 
   public getEstimatedPrice (ctx: any): number {

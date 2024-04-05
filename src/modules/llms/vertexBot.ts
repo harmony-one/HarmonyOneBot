@@ -17,7 +17,7 @@ import { LlmsBase } from './llmsBase'
 import { vertexCompletion, vertexStreamCompletion } from './api/vertex'
 export class VertexBot extends LlmsBase {
   constructor (payments: BotPayments) {
-    super(payments, 'VertexBot')
+    super(payments, 'VertexBot', 'llms')
   }
 
   public getEstimatedPrice (ctx: any): number {

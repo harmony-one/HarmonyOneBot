@@ -16,7 +16,7 @@ import { anthropicCompletion, anthropicStreamCompletion } from './api/athropic'
 import { LlmsBase } from './llmsBase'
 export class ClaudeBot extends LlmsBase {
   constructor (payments: BotPayments) {
-    super(payments, 'ClaudeBot')
+    super(payments, 'ClaudeBot', 'llms')
   }
 
   public getEstimatedPrice (ctx: any): number {
@@ -81,7 +81,13 @@ export class ClaudeBot extends LlmsBase {
       return
     }
 
-    if (ctx.hasCommand([SupportedCommands.claudeOpus, SupportedCommands.opus, SupportedCommands.opusShort, SupportedCommands.claudeShort]) || (hasClaudeOpusPrefix(ctx.message?.text ?? '') !== '')) {
+    if (ctx.hasCommand([
+      SupportedCommands.claudeOpus,
+      SupportedCommands.opus,
+      SupportedCommands.opusShort,
+      SupportedCommands.claudeShort]) ||
+      (hasClaudeOpusPrefix(ctx.message?.text ?? '') !== '')
+    ) {
       await this.onChat(ctx, LlmsModelsEnum.CLAUDE_OPUS, true)
       return
     }
