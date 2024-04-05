@@ -677,7 +677,7 @@ export class OpenAIBot implements PayableBot {
       try {
         const prompt = ctx.session.openAi.chatGpt.requestQueue.shift() ?? ''
         const { chatConversation, model } = ctx.session.openAi.chatGpt
-        const minBalance = await getMinBalance(ctx, ChatGPTModelsEnum.GPT_4_32K)
+        const minBalance = await getMinBalance(ctx, ctx.session.openAi.chatGpt.model)
         if (await this.hasBalance(ctx, minBalance)) {
           if (prompt === '') {
             const msg =
@@ -733,7 +733,7 @@ export class OpenAIBot implements PayableBot {
     while (ctx.session.openAi.imageGen.imgRequestQueue.length > 0) {
       try {
         const img = ctx.session.openAi.imageGen.imgRequestQueue.shift()
-        const minBalance = await getMinBalance(ctx, ChatGPTModelsEnum.GPT_4_32K)
+        const minBalance = await getMinBalance(ctx, ctx.session.openAi.chatGpt.model)
         if (await this.hasBalance(ctx, minBalance)) {
           if (img?.command === 'dalle') {
             await this.onGenImgCmd(img?.prompt, ctx)

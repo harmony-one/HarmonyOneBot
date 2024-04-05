@@ -21,11 +21,7 @@ import {
   addUrlToCollection,
   getMinBalance,
   getPromptPrice,
-  hasBardPrefix,
-  hasClaudeOpusPrefix,
-  hasGeminiPrefix,
   hasLlamaPrefix,
-  hasPrefix,
   hasUrl,
   isMentioned,
   limitPrompt,
@@ -63,6 +59,12 @@ export class LlmsBot implements PayableBot {
     return 0
   }
 
+  hasPrefix (prompt: string): string {
+    return (
+      hasLlamaPrefix(prompt)
+    )
+  }
+
   public isSupportedEvent (
     ctx: OnMessageContext | OnCallBackQueryData
   ): boolean {
@@ -72,7 +74,7 @@ export class LlmsBot implements PayableBot {
     if (isMentioned(ctx)) {
       return true
     }
-    const chatPrefix = hasPrefix(ctx.message?.text ?? '')
+    const chatPrefix = this.hasPrefix(ctx.message?.text ?? '')
     const hasUrl = this.isSupportedUrlReply(ctx)
     const hasPdf = this.isSupportedPdfReply(ctx)
     if (chatPrefix !== '') {
@@ -111,10 +113,10 @@ export class LlmsBot implements PayableBot {
       return
     }
 
-    if (hasBardPrefix(ctx.message?.text ?? '') !== '') {
-      await this.onPrefix(ctx, LlmsModelsEnum.BISON)
-      return
-    }
+    // if (hasBardPrefix(ctx.message?.text ?? '') !== '') {
+    //   await this.onPrefix(ctx, LlmsModelsEnum.BISON)
+    //   return
+    // }
 
     if (hasLlamaPrefix(ctx.message?.text ?? '') !== '') {
       await this.onCurrentCollection(ctx)
@@ -126,30 +128,30 @@ export class LlmsBot implements PayableBot {
       return
     }
 
-    if (ctx.hasCommand(SupportedCommands.bard) || ctx.hasCommand(SupportedCommands.bardF)) {
-      await this.onChat(ctx, LlmsModelsEnum.BISON)
-      return
-    }
-    if (ctx.hasCommand([SupportedCommands.gemini, SupportedCommands.gShort]) || (hasGeminiPrefix(ctx.message?.text ?? '') !== '')) {
-      await this.onChat(ctx, LlmsModelsEnum.GEMINI)
-      return
-    }
-    if (ctx.hasCommand([SupportedCommands.claudeOpus, SupportedCommands.opus, SupportedCommands.opusShort, SupportedCommands.claudeShort]) || (hasClaudeOpusPrefix(ctx.message?.text ?? '') !== '')) {
-      await this.onChat(ctx, LlmsModelsEnum.CLAUDE_OPUS)
-      return
-    }
-    if (ctx.hasCommand([SupportedCommands.claudeSonnet, SupportedCommands.sonnet, SupportedCommands.sonnetShort])) {
-      await this.onChat(ctx, LlmsModelsEnum.CLAUDE_SONNET)
-      return
-    }
-    if (ctx.hasCommand([SupportedCommands.claudeHaiku, SupportedCommands.haikuShort])) {
-      await this.onChat(ctx, LlmsModelsEnum.CLAUDE_HAIKU)
-      return
-    }
-    if (ctx.hasCommand(SupportedCommands.bard) || ctx.hasCommand(SupportedCommands.bardF)) {
-      await this.onChat(ctx, LlmsModelsEnum.BISON)
-      return
-    }
+    // if (ctx.hasCommand(SupportedCommands.bard) || ctx.hasCommand(SupportedCommands.bardF)) {
+    //   await this.onChat(ctx, LlmsModelsEnum.BISON)
+    //   return
+    // }
+    // if (ctx.hasCommand([SupportedCommands.gemini, SupportedCommands.gShort]) || (hasGeminiPrefix(ctx.message?.text ?? '') !== '')) {
+    //   await this.onChat(ctx, LlmsModelsEnum.GEMINI)
+    //   return
+    // }
+    // if (ctx.hasCommand([SupportedCommands.claudeOpus, SupportedCommands.opus, SupportedCommands.opusShort, SupportedCommands.claudeShort]) || (hasClaudeOpusPrefix(ctx.message?.text ?? '') !== '')) {
+    //   await this.onChat(ctx, LlmsModelsEnum.CLAUDE_OPUS)
+    //   return
+    // }
+    // if (ctx.hasCommand([SupportedCommands.claudeSonnet, SupportedCommands.sonnet, SupportedCommands.sonnetShort])) {
+    //   await this.onChat(ctx, LlmsModelsEnum.CLAUDE_SONNET)
+    //   return
+    // }
+    // if (ctx.hasCommand([SupportedCommands.claudeHaiku, SupportedCommands.haikuShort])) {
+    //   await this.onChat(ctx, LlmsModelsEnum.CLAUDE_HAIKU)
+    //   return
+    // }
+    // if (ctx.hasCommand(SupportedCommands.bard) || ctx.hasCommand(SupportedCommands.bardF)) {
+    //   await this.onChat(ctx, LlmsModelsEnum.BISON)
+    //   return
+    // }
 
     if (this.isSupportedUrlReply(ctx)) {
       await this.onUrlReplyHandler(ctx)
@@ -166,10 +168,10 @@ export class LlmsBot implements PayableBot {
       return
     }
 
-    if (ctx.hasCommand(SupportedCommands.j2Ultra)) {
-      await this.onChat(ctx, LlmsModelsEnum.J2_ULTRA)
-      return
-    }
+    // if (ctx.hasCommand(SupportedCommands.j2Ultra)) {
+    //   await this.onChat(ctx, LlmsModelsEnum.J2_ULTRA)
+    //   return
+    // }
 
     if (ctx.hasCommand(SupportedCommands.ctx)) {
       await this.onCurrentCollection(ctx)
@@ -696,7 +698,7 @@ export class LlmsBot implements PayableBot {
         ctx,
         SupportedCommands
       )
-      const prefix = hasPrefix(prompt)
+      const prefix = this.hasPrefix(prompt)
       ctx.session.llms.requestQueue.push({
         content: await preparePrompt(ctx, prompt.slice(prefix.length)),
         model

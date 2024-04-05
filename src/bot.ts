@@ -27,6 +27,8 @@ import { VoiceMemo } from './modules/voice-memo'
 // import { QRCodeBot } from './modules/qrcode/QRCodeBot'
 // import { SDImagesBot } from './modules/sd-images'
 import { OpenAIBot } from './modules/open-ai'
+import { ClaudeBot } from './modules/llms/claudeBot'
+import { VertexBot } from './modules/llms/vertexBot'
 import { OneCountryBot } from './modules/1country'
 import { WalletConnect } from './modules/walletconnect'
 import { BotPayments } from './modules/payment'
@@ -248,6 +250,8 @@ const walletConnect = new WalletConnect()
 const payments = new BotPayments()
 const schedule = new BotSchedule(bot)
 const openAiBot = new OpenAIBot(payments)
+const claudeBot = new ClaudeBot(payments)
+const vertexBot = new VertexBot(payments)
 const oneCountryBot = new OneCountryBot(payments)
 const translateBot = new TranslateBot()
 const telegramPayments = new TelegramPayments(payments)
@@ -372,6 +376,8 @@ const PayableBots: Record<string, PayableBotConfig> = {
   textToSpeech: { bot: textToSpeechBot },
   voiceToVoiceGPTBot: { bot: voiceToVoiceGPTBot },
   voiceToText: { bot: voiceToTextBot },
+  claudeBot: { bot: claudeBot },
+  vertexBot: { bot: vertexBot },
   openAiBot: {
     enabled: (ctx: OnMessageContext) => ctx.session.openAi.imageGen.isEnabled,
     bot: openAiBot
@@ -466,6 +472,16 @@ const onCallback = async (ctx: OnCallBackQueryData): Promise<void> => {
     //   })
     //   return
     // }
+
+    if (vertexBot.isSupportedEvent(ctx)) {
+      await vertexBot.onEvent(ctx)
+      return
+    }
+
+    if (claudeBot.isSupportedEvent(ctx)) {
+      await claudeBot.onEvent(ctx)
+      return
+    }
 
     if (openAiBot.isSupportedEvent(ctx)) {
       await openAiBot.onEvent(ctx, (e) => {
@@ -575,6 +591,7 @@ bot.command('love', async (ctx) => {
 bot.command('stop', async (ctx) => {
   logger.info('/stop command')
   await openAiBot.onStop(ctx as OnMessageContext)
+  await claudeBot.onStop(ctx as OnMessageContext)
   ctx.session.translate.enable = false
   ctx.session.translate.languages = []
   ctx.session.oneCountry.lastDomain = ''

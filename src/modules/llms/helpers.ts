@@ -221,11 +221,11 @@ export const sendMessage = async (
   return await ctx.reply(msg, extras)
 }
 
-export const hasPrefix = (prompt: string): string => {
-  return (
-    hasBardPrefix(prompt) || hasLlamaPrefix(prompt) || hasClaudeOpusPrefix(prompt) || hasGeminiPrefix(prompt)
-  )
-}
+// export const hasPrefix = (prompt: string): string => {
+//   return (
+//     hasBardPrefix(prompt) || hasLlamaPrefix(prompt) || hasClaudeOpusPrefix(prompt) || hasGeminiPrefix(prompt)
+//   )
+// }
 
 export const getPromptPrice = (completion: LlmCompletion, data: ChatPayload, updateSession = true): { price: number, promptTokens: number, completionTokens: number } => {
   const { ctx, model } = data
