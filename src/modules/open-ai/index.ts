@@ -41,7 +41,8 @@ import {
   MAX_TRIES,
   preparePrompt,
   sendMessage,
-  SupportedCommands
+  SupportedCommands,
+  getMinBalance
 } from './helpers'
 import * as Sentry from '@sentry/node'
 import { now } from '../../utils/perf'
@@ -168,15 +169,12 @@ export class OpenAIBot implements PayableBot {
   }
 
   async shareImg (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
+    const threadId = ctx.message?.message_thread_id ? ctx.message?.message_thread_id : ctx.message?.reply_to_message?.message_thread_id
     if (ctx.callbackQuery?.data) {
       const imgId = +ctx.callbackQuery?.data?.split('|')[1]
       const img = ctx.session.openAi.imageGen.imageGenerated[imgId]
       const msgId = (
-        await ctx.reply('Inscribing the image...', {
-          message_thread_id:
-            ctx.message?.message_thread_id ??
-            ctx.message?.reply_to_message?.message_thread_id
-        })
+        await ctx.reply('Inscribing the image...', { message_thread_id: threadId })
       ).message_id
       const result = await this.payments.inscribeImg(ctx, img, msgId)
       if (result) {
@@ -245,7 +243,7 @@ export class OpenAIBot implements PayableBot {
       ctx.hasCommand(SupportedCommands.new) ||
       (ctx.message?.text?.startsWith('new ') && ctx.chat?.type === 'private')
     ) {
-      await this.onEnd(ctx)
+      await this.onStop(ctx)
       await this.onChat(ctx)
       return
     }
@@ -408,15 +406,19 @@ export class OpenAIBot implements PayableBot {
     ctx.transient.analytics.actualResponseTime = now()
   }
 
-  private async hasBalance (ctx: OnMessageContext | OnCallBackQueryData): Promise<boolean> {
+  private async hasBalance (ctx: OnMessageContext | OnCallBackQueryData,
+    minBalance = +config.openAi.chatGpt.minimumBalance): Promise<boolean> {
+    const minBalanceOne = this.payments.toONE(await this.payments.getPriceInONE(minBalance), false)
     const accountId = this.payments.getAccountId(ctx)
     const addressBalance = await this.payments.getUserBalance(accountId)
     const { totalCreditsAmount } = await chatService.getUserCredits(accountId)
     const balance = addressBalance.plus(totalCreditsAmount)
     const balanceOne = this.payments.toONE(balance, false)
+    const isGroupInWhiteList = await this.payments.isGroupInWhitelist(ctx as OnMessageContext)
     return (
-      (+balanceOne > +config.openAi.chatGpt.minimumBalance) ||
-      (this.payments.isUserInWhitelist(ctx.from.id, ctx.from.username))
+      +balanceOne > +minBalanceOne ||
+      (this.payments.isUserInWhitelist(ctx.from.id, ctx.from.username)) ||
+      isGroupInWhiteList
     )
   }
 
@@ -519,8 +521,12 @@ export class OpenAIBot implements PayableBot {
           ctx.transient.analytics.actualResponseTime = now()
           const price = getPromptPrice(completion, data)
           this.logger.info(
-            `streamChatCompletion result = tokens: ${price.totalTokens} | ${model} | price: ${price.price}¢` // price.promptTokens + price.completionTokens  }
+            `streamChatCompletion result = tokens: ${price.promptTokens + price.completionTokens} | ${model} | price: ${price.price}¢` // price.promptTokens + price.completionTokens  }
           )
+          conversation.push({
+            role: 'assistant',
+            content: completion.completion?.content ?? ''
+          })
           return {
             price: price.price,
             chat: conversation
@@ -529,7 +535,7 @@ export class OpenAIBot implements PayableBot {
       } else {
         const response = await chatCompletion(conversation, ChatGPTModelsEnum.GPT_35_TURBO_16K)
         conversation.push({
-          role: 'system',
+          role: 'assistant',
           content: response.completion
         })
         await responseWithVoice(response.completion, ctx as OnMessageContext, msgId)
@@ -671,7 +677,8 @@ export class OpenAIBot implements PayableBot {
       try {
         const prompt = ctx.session.openAi.chatGpt.requestQueue.shift() ?? ''
         const { chatConversation, model } = ctx.session.openAi.chatGpt
-        if (await this.hasBalance(ctx)) {
+        const minBalance = await getMinBalance(ctx, ctx.session.openAi.chatGpt.model)
+        if (await this.hasBalance(ctx, minBalance)) {
           if (prompt === '') {
             const msg =
               chatConversation.length > 0
@@ -726,7 +733,8 @@ export class OpenAIBot implements PayableBot {
     while (ctx.session.openAi.imageGen.imgRequestQueue.length > 0) {
       try {
         const img = ctx.session.openAi.imageGen.imgRequestQueue.shift()
-        if (await this.hasBalance(ctx)) {
+        const minBalance = await getMinBalance(ctx, ctx.session.openAi.chatGpt.model)
+        if (await this.hasBalance(ctx, minBalance)) {
           if (img?.command === 'dalle') {
             await this.onGenImgCmd(img?.prompt, ctx)
           } else if (img?.command === 'alter') {
@@ -768,7 +776,7 @@ export class OpenAIBot implements PayableBot {
               const msgExtras = getMessageExtras({
                 caption: `/dalle ${prompt}\n\n Check [q.country](https://q.country) for general lottery information`,
                 reply_markup: inlineKeyboard,
-                disable_web_page_preview: true,
+                link_preview_options: { is_disabled: true },
                 parseMode: 'Markdown'
               })
               const msg = await ctx.replyWithPhoto(img.url, msgExtras)
@@ -873,8 +881,9 @@ export class OpenAIBot implements PayableBot {
         ctx.chatAction = 'upload_photo'
         const imgs = await alterGeneratedImg(prompt ?? '', filePath, ctx, imgSize)
         if (imgs) {
-          imgs.map(async (img: any) => {
-            if (img?.url) {
+          for (let i = 0; i < imgs.length; i++) {
+            const img = imgs[i]
+            if (img.url) {
               await ctx
                 .replyWithPhoto(img.url, { message_thread_id: ctx.message?.message_thread_id })
                 .catch(async (e) => {
@@ -886,7 +895,22 @@ export class OpenAIBot implements PayableBot {
                   )
                 })
             }
-          })
+          }
+          // eslint-disable-next-line @typescript-eslint/no-floating-promises
+          // imgs.map(async (img: any) => {
+          //   if (img?.url) {
+          //     await ctx
+          //       .replyWithPhoto(img.url, { message_thread_id: ctx.message?.message_thread_id })
+          //       .catch(async (e) => {
+          //         await this.onError(
+          //           ctx,
+          //           e,
+          //           MAX_TRIES,
+          //           'There was an error while generating the image'
+          //         )
+          //       })
+          //   }
+          // })
         }
         ctx.chatAction = null
       }

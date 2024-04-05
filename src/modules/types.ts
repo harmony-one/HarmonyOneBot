@@ -23,14 +23,14 @@ export interface ImageGenSessionData {
   imageGenerated: ImageGenerated[]
   imgInquiried: string[] // to avoid multiple vision and dalle 2 img alter request
 }
-
 export interface MessageExtras {
   caption?: string
   message_thread_id?: number
   parse_mode?: ParseMode
   reply_to_message_id?: number
-  disable_web_page_preview?: boolean
+  // disable_web_page_preview?: boolean
   reply_markup?: InlineKeyboardMarkup
+  link_preview_options?: { is_disabled: boolean }
 }
 export interface ChatCompletion {
   completion: string

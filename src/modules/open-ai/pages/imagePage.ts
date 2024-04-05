@@ -46,7 +46,7 @@ export const imageGenMainMenu = new Menu<BotContext>(MenuIds.IMAGE_GEN_MAIN)
         ctx
           .editMessageText('Only the group owner can enable/disable this bot', {
             parse_mode: 'Markdown',
-            disable_web_page_preview: true
+            link_preview_options: { is_disabled: true }
           })
           .catch((ex: any) => { console.log('### ex', ex) })
       }
@@ -69,7 +69,7 @@ export const imageGenMainMenu = new Menu<BotContext>(MenuIds.IMAGE_GEN_MAIN)
           'Only the group owner can change OpenAI configuration',
           {
             parse_mode: 'Markdown',
-            disable_web_page_preview: true
+            link_preview_options: { is_disabled: true }
           }
         )
         .catch((ex: any) => { console.log('### ex', ex) })

@@ -19,12 +19,9 @@ import { sleep } from '../sd-images/utils'
 import {
   addDocToCollection,
   addUrlToCollection,
+  getMinBalance,
   getPromptPrice,
-  hasBardPrefix,
-  hasClaudeOpusPrefix,
-  hasGeminiPrefix,
   hasLlamaPrefix,
-  hasPrefix,
   hasUrl,
   isMentioned,
   limitPrompt,
@@ -62,6 +59,12 @@ export class LlmsBot implements PayableBot {
     return 0
   }
 
+  hasPrefix (prompt: string): string {
+    return (
+      hasLlamaPrefix(prompt)
+    )
+  }
+
   public isSupportedEvent (
     ctx: OnMessageContext | OnCallBackQueryData
   ): boolean {
@@ -71,7 +74,7 @@ export class LlmsBot implements PayableBot {
     if (isMentioned(ctx)) {
       return true
     }
-    const chatPrefix = hasPrefix(ctx.message?.text ?? '')
+    const chatPrefix = this.hasPrefix(ctx.message?.text ?? '')
     const hasUrl = this.isSupportedUrlReply(ctx)
     const hasPdf = this.isSupportedPdfReply(ctx)
     if (chatPrefix !== '') {
@@ -110,10 +113,10 @@ export class LlmsBot implements PayableBot {
       return
     }
 
-    if (hasBardPrefix(ctx.message?.text ?? '') !== '') {
-      await this.onPrefix(ctx, LlmsModelsEnum.BISON)
-      return
-    }
+    // if (hasBardPrefix(ctx.message?.text ?? '') !== '') {
+    //   await this.onPrefix(ctx, LlmsModelsEnum.BISON)
+    //   return
+    // }
 
     if (hasLlamaPrefix(ctx.message?.text ?? '') !== '') {
       await this.onCurrentCollection(ctx)
@@ -125,30 +128,30 @@ export class LlmsBot implements PayableBot {
       return
     }
 
-    if (ctx.hasCommand(SupportedCommands.bard) || ctx.hasCommand(SupportedCommands.bardF)) {
-      await this.onChat(ctx, LlmsModelsEnum.BISON)
-      return
-    }
-    if (ctx.hasCommand([SupportedCommands.gemini, SupportedCommands.gShort]) || (hasGeminiPrefix(ctx.message?.text ?? '') !== '')) {
-      await this.onChat(ctx, LlmsModelsEnum.GEMINI)
-      return
-    }
-    if (ctx.hasCommand([SupportedCommands.claudeOpus, SupportedCommands.opus, SupportedCommands.opusShort, SupportedCommands.claudeShort]) || (hasClaudeOpusPrefix(ctx.message?.text ?? '') !== '')) {
-      await this.onChat(ctx, LlmsModelsEnum.CLAUDE_OPUS)
-      return
-    }
-    if (ctx.hasCommand([SupportedCommands.claudeSonnet, SupportedCommands.sonnet, SupportedCommands.sonnetShort])) {
-      await this.onChat(ctx, LlmsModelsEnum.CLAUDE_SONNET)
-      return
-    }
-    if (ctx.hasCommand([SupportedCommands.claudeHaiku, SupportedCommands.haikuShort])) {
-      await this.onChat(ctx, LlmsModelsEnum.CLAUDE_HAIKU)
-      return
-    }
-    if (ctx.hasCommand(SupportedCommands.bard) || ctx.hasCommand(SupportedCommands.bardF)) {
-      await this.onChat(ctx, LlmsModelsEnum.BISON)
-      return
-    }
+    // if (ctx.hasCommand(SupportedCommands.bard) || ctx.hasCommand(SupportedCommands.bardF)) {
+    //   await this.onChat(ctx, LlmsModelsEnum.BISON)
+    //   return
+    // }
+    // if (ctx.hasCommand([SupportedCommands.gemini, SupportedCommands.gShort]) || (hasGeminiPrefix(ctx.message?.text ?? '') !== '')) {
+    //   await this.onChat(ctx, LlmsModelsEnum.GEMINI)
+    //   return
+    // }
+    // if (ctx.hasCommand([SupportedCommands.claudeOpus, SupportedCommands.opus, SupportedCommands.opusShort, SupportedCommands.claudeShort]) || (hasClaudeOpusPrefix(ctx.message?.text ?? '') !== '')) {
+    //   await this.onChat(ctx, LlmsModelsEnum.CLAUDE_OPUS)
+    //   return
+    // }
+    // if (ctx.hasCommand([SupportedCommands.claudeSonnet, SupportedCommands.sonnet, SupportedCommands.sonnetShort])) {
+    //   await this.onChat(ctx, LlmsModelsEnum.CLAUDE_SONNET)
+    //   return
+    // }
+    // if (ctx.hasCommand([SupportedCommands.claudeHaiku, SupportedCommands.haikuShort])) {
+    //   await this.onChat(ctx, LlmsModelsEnum.CLAUDE_HAIKU)
+    //   return
+    // }
+    // if (ctx.hasCommand(SupportedCommands.bard) || ctx.hasCommand(SupportedCommands.bardF)) {
+    //   await this.onChat(ctx, LlmsModelsEnum.BISON)
+    //   return
+    // }
 
     if (this.isSupportedUrlReply(ctx)) {
       await this.onUrlReplyHandler(ctx)
@@ -165,10 +168,10 @@ export class LlmsBot implements PayableBot {
       return
     }
 
-    if (ctx.hasCommand(SupportedCommands.j2Ultra)) {
-      await this.onChat(ctx, LlmsModelsEnum.J2_ULTRA)
-      return
-    }
+    // if (ctx.hasCommand(SupportedCommands.j2Ultra)) {
+    //   await this.onChat(ctx, LlmsModelsEnum.J2_ULTRA)
+    //   return
+    // }
 
     if (ctx.hasCommand(SupportedCommands.ctx)) {
       await this.onCurrentCollection(ctx)
@@ -184,15 +187,18 @@ export class LlmsBot implements PayableBot {
     ctx.transient.analytics.actualResponseTime = now()
   }
 
-  private async hasBalance (ctx: OnMessageContext | OnCallBackQueryData): Promise<boolean> {
+  private async hasBalance (ctx: OnMessageContext | OnCallBackQueryData, minBalance = +config.llms.minimumBalance): Promise<boolean> {
+    const minBalanceOne = this.payments.toONE(await this.payments.getPriceInONE(minBalance), false)
     const accountId = this.payments.getAccountId(ctx)
     const addressBalance = await this.payments.getUserBalance(accountId)
     const { totalCreditsAmount } = await chatService.getUserCredits(accountId)
     const balance = addressBalance.plus(totalCreditsAmount)
     const balanceOne = this.payments.toONE(balance, false).toFixed(2)
+    const isGroupInWhiteList = await this.payments.isGroupInWhitelist(ctx as OnMessageContext)
     return (
-      +balanceOne > +config.llms.minimumBalance ||
-      (this.payments.isUserInWhitelist(ctx.from.id, ctx.from.username))
+      +balanceOne > +minBalanceOne ||
+      (this.payments.isUserInWhitelist(ctx.from.id, ctx.from.username)) ||
+      isGroupInWhiteList
     )
   }
 
@@ -341,7 +347,7 @@ export class LlmsBot implements PayableBot {
           })
           await ctx.api.editMessageText(ctx.chat?.id ?? '',
             msgId, response.completion,
-            { disable_web_page_preview: true })
+            { link_preview_options: { is_disabled: true } })
             .catch(async (e) => { await this.onError(ctx, e) })
           ctx.session.collections.collectionConversation = [...conversation]
         }
@@ -407,7 +413,7 @@ export class LlmsBot implements PayableBot {
           })
           await ctx.api.editMessageText(ctx.chat?.id ?? '',
             msgId, response.completion,
-            { parse_mode: 'Markdown', disable_web_page_preview: true })
+            { parse_mode: 'Markdown', link_preview_options: { is_disabled: true } })
           ctx.session.collections.collectionConversation = [...conversation]
         }
       }
@@ -441,9 +447,11 @@ export class LlmsBot implements PayableBot {
     const processingTime = config.llms.processingTime
     while (ctx.session.collections.collectionRequestQueue.length > 0) {
       try {
+        // console.log('HERE MY FRIENDS')
         const collection = ctx.session.collections.collectionRequestQueue.shift()
         if (collection) {
           const result = await llmCheckCollectionStatus(collection?.collectionName ?? '')
+          // console.log('onCheckCollectionStatus', result)
           if (result.price > 0) {
             if (
               !(await this.payments.pay(ctx as OnMessageContext, result.price)) // price 0.05 x collections (chunks)
@@ -461,7 +469,7 @@ export class LlmsBot implements PayableBot {
                 }
                 await ctx.api.editMessageText(ctx.chat?.id ?? '',
                   collection.msgId, statusMsg,
-                  { disable_web_page_preview: true })
+                  { link_preview_options: { is_disabled: true } })
                   .catch(async (e) => { await this.onError(ctx, e) })
               }
               await this.queryUrlCollection(ctx, collection.url ?? '',
@@ -476,7 +484,7 @@ export class LlmsBot implements PayableBot {
                 statusMsg = `${collection.fileName} - Invalid PDF format`
               }
               await ctx.api.editMessageText(ctx.chat?.id ?? '', collection.msgId, statusMsg,
-                { disable_web_page_preview: true })
+                { link_preview_options: { is_disabled: true } })
             }
           } else {
             if (collection.processingTime && collection.processingTime > processingTime) { // 5 min max
@@ -488,7 +496,7 @@ export class LlmsBot implements PayableBot {
                   statusMsg = `${collection.fileName} - Processing time limit reached. Please check the file format and try again`
                 }
                 await ctx.api.editMessageText(ctx.chat?.id ?? '', collection.msgId, statusMsg,
-                  { disable_web_page_preview: true })
+                  { link_preview_options: { is_disabled: true } })
               }
             } else {
               const processingTime = collection.processingTime ? collection.processingTime + 5000 : 5000
@@ -690,7 +698,7 @@ export class LlmsBot implements PayableBot {
         ctx,
         SupportedCommands
       )
-      const prefix = hasPrefix(prompt)
+      const prefix = this.hasPrefix(prompt)
       ctx.session.llms.requestQueue.push({
         content: await preparePrompt(ctx, prompt.slice(prefix.length)),
         model
@@ -738,7 +746,8 @@ export class LlmsBot implements PayableBot {
         const prompt = msg?.content as string
         const model = msg?.model
         const { chatConversation } = ctx.session.llms
-        if (await this.hasBalance(ctx)) {
+        const minBalance = await getMinBalance(ctx, msg?.model as LlmsModelsEnum)
+        if (await this.hasBalance(ctx, minBalance)) {
           if (!prompt) {
             const msg =
               chatConversation.length > 0

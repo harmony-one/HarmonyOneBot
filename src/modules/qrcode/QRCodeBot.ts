@@ -60,6 +60,7 @@ export class QRCodeBot implements PayableBot {
     refundCallback: RefundCallback
   ): Promise<void> {
     ctx.transient.analytics.module = this.module
+    const threadId = ctx.message?.message_thread_id
     if (!this.isSupportedEvent(ctx)) {
       await ctx.reply(`Unsupported command: ${ctx.message?.text}`, { message_thread_id: ctx.message?.message_thread_id })
       ctx.transient.analytics.sessionState = RequestState.Error
@@ -93,7 +94,7 @@ export class QRCodeBot implements PayableBot {
         const cmd = this.parseQrCommand(msg)
 
         if (cmd.error ?? !cmd.command ?? !cmd.url ?? !cmd.prompt) {
-          await ctx.reply("Message haven't contain command: " + msg, { message_thread_id: ctx.message?.message_thread_id })
+          await ctx.reply("Message haven't contain command: " + msg, { message_thread_id: threadId })
           ctx.transient.analytics.sessionState = RequestState.Error
           ctx.transient.analytics.actualResponseTime = now()
           refundCallback("Message haven't contain command: ")
@@ -169,7 +170,7 @@ export class QRCodeBot implements PayableBot {
       // Please add <URL> <PROMPT>
       //
       // /qr h.country/ai Dramatic bonfire on a remote beach, captured at the magic hour with flames dancing against the twilight sky; using a shallow depth of field, a fast lens, and controlled exposure to emphasize the intricate patterns and textures of the fire, complemented by embers in the wind and the gentle glow reflecting on the ocean's edge, moody, intense, and alive.`, {
-      //         disable_web_page_preview: true,
+      //         link_preview_options: { is_disabled: true },
       //       });
       //       return
     }

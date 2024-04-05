@@ -1,9 +1,10 @@
 import config from '../../config'
 import { type OnMessageContext, type OnCallBackQueryData, type MessageExtras, type ChatPayload } from '../types'
 import { type ParseMode } from 'grammy/types'
-import { getChatModel, getChatModelPrice, getTokenNumber } from './api/openAi'
+import { getChatModel, getChatModelPrice } from './api/openAi'
 import { type Message, type InlineKeyboardMarkup } from 'grammy/out/types'
 import { isValidUrl } from './utils/web-crawler'
+import { type ChatGptCompletion } from './types'
 
 export enum SupportedCommands {
   chat = 'chat',
@@ -191,11 +192,12 @@ interface GetMessagesExtras {
   caption?: string | undefined
   replyId?: number | undefined
   reply_markup?: InlineKeyboardMarkup
-  disable_web_page_preview?: boolean
+  // disable_web_page_preview?: boolean
+  link_preview_options?: { is_disabled: boolean }
 }
 
 export const getMessageExtras = (params: GetMessagesExtras): MessageExtras => {
-  const { parseMode, caption, replyId, disable_web_page_preview: disableWebPagePreview } = params
+  const { parseMode, caption, replyId, link_preview_options: disableWebPagePreview } = params
   const extras: MessageExtras = {}
   if (parseMode) {
     extras.parse_mode = parseMode
@@ -207,7 +209,7 @@ export const getMessageExtras = (params: GetMessagesExtras): MessageExtras => {
     extras.caption = caption
   }
   if (disableWebPagePreview) {
-    extras.disable_web_page_preview = disableWebPagePreview
+    extras.link_preview_options = disableWebPagePreview
   }
   if (params.reply_markup) {
     extras.reply_markup = params.reply_markup
@@ -239,24 +241,20 @@ export const hasPrefix = (prompt: string): string => {
   )
 }
 
-export const getPromptPrice = (completion: string, data: ChatPayload): { price: number, promptTokens: number, completionTokens: number, totalTokens: number } => {
-  const { conversation, ctx, model } = data
-  const currentUsage = data.prompt ? 0 : ctx.session.openAi.chatGpt.usage
-  const prompt = data.prompt ? data.prompt : conversation[conversation.length - 1].content
-  const promptTokens = getTokenNumber(prompt as string) + currentUsage
-  const completionTokens = getTokenNumber(completion)
+export const getPromptPrice = (completion: ChatGptCompletion, data: ChatPayload, updateSession = true): { price: number, promptTokens: number, completionTokens: number } => {
+  const { ctx, model } = data
   const modelPrice = getChatModel(model)
   const price =
-    getChatModelPrice(modelPrice, true, promptTokens, completionTokens) *
+    getChatModelPrice(modelPrice, true, completion.inputTokens ?? 0, completion.outputTokens ?? 0) *
     config.openAi.chatGpt.priceAdjustment
-  conversation.push({ content: completion, role: 'system' })
-  ctx.session.openAi.chatGpt.usage += completionTokens
-  ctx.session.openAi.chatGpt.price += price
+  if (updateSession) {
+    ctx.session.openAi.chatGpt.usage += completion.outputTokens ?? 0
+    ctx.session.openAi.chatGpt.price += price
+  }
   return {
     price,
-    promptTokens,
-    completionTokens,
-    totalTokens: data.prompt ? promptTokens + completionTokens : ctx.session.openAi.chatGpt.usage
+    promptTokens: completion.inputTokens ?? 0,
+    completionTokens: completion.outputTokens ?? 0
   }
 }
 
@@ -284,22 +282,18 @@ export const getUrlFromText = (ctx: OnMessageContext | OnCallBackQueryData): str
   return undefined
 }
 
-// export async function addUrlToCollection (ctx: OnMessageContext | OnCallBackQueryData, chatId: number, url: string, prompt: string): Promise<void> {
-//   const collectionName = await llmAddUrlDocument({
-//     chatId,
-//     url
-//   })
-//   const msgId = (await ctx.reply('...', {
-//     message_thread_id:
-//     ctx.message?.message_thread_id ??
-//     ctx.message?.reply_to_message?.message_thread_id
-//   })).message_id
-
-//   ctx.session.collections.collectionRequestQueue.push({
-//     collectionName,
-//     collectionType: 'URL',
-//     url,
-//     prompt,
-//     msgId
-//   })
-// }
+export const getMinBalance = async (ctx: OnMessageContext | OnCallBackQueryData,
+  model: string): Promise<number> => {
+  const minBalance = getPromptPrice({
+    inputTokens: 400,
+    outputTokens: 800,
+    completion: undefined,
+    usage: 0,
+    price: 0
+  }, {
+    ctx,
+    model: model ?? '',
+    conversation: []
+  }, false)
+  return minBalance.price
+}

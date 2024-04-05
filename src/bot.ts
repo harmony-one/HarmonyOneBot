@@ -27,6 +27,8 @@ import { VoiceMemo } from './modules/voice-memo'
 // import { QRCodeBot } from './modules/qrcode/QRCodeBot'
 // import { SDImagesBot } from './modules/sd-images'
 import { OpenAIBot } from './modules/open-ai'
+import { ClaudeBot } from './modules/llms/claudeBot'
+import { VertexBot } from './modules/llms/vertexBot'
 import { OneCountryBot } from './modules/1country'
 import { WalletConnect } from './modules/walletconnect'
 import { BotPayments } from './modules/payment'
@@ -248,6 +250,8 @@ const walletConnect = new WalletConnect()
 const payments = new BotPayments()
 const schedule = new BotSchedule(bot)
 const openAiBot = new OpenAIBot(payments)
+const claudeBot = new ClaudeBot(payments)
+const vertexBot = new VertexBot(payments)
 const oneCountryBot = new OneCountryBot(payments)
 const translateBot = new TranslateBot()
 const telegramPayments = new TelegramPayments(payments)
@@ -372,6 +376,8 @@ const PayableBots: Record<string, PayableBotConfig> = {
   textToSpeech: { bot: textToSpeechBot },
   voiceToVoiceGPTBot: { bot: voiceToVoiceGPTBot },
   voiceToText: { bot: voiceToTextBot },
+  claudeBot: { bot: claudeBot },
+  vertexBot: { bot: vertexBot },
   openAiBot: {
     enabled: (ctx: OnMessageContext) => ctx.session.openAi.imageGen.isEnabled,
     bot: openAiBot
@@ -396,7 +402,7 @@ const executeOrRefund = (ctx: OnMessageContext, price: number, bot: PayableBot):
 const onMessage = async (ctx: OnMessageContext): Promise<void> => {
   try {
     // bot doesn't handle forwarded messages
-    if (!ctx.message.forward_from) {
+    if (!ctx.message.forward_origin) {
       await assignFreeCredits(ctx)
 
       if (telegramPayments.isSupportedEvent(ctx)) {
@@ -467,6 +473,16 @@ const onCallback = async (ctx: OnCallBackQueryData): Promise<void> => {
     //   return
     // }
 
+    if (vertexBot.isSupportedEvent(ctx)) {
+      await vertexBot.onEvent(ctx)
+      return
+    }
+
+    if (claudeBot.isSupportedEvent(ctx)) {
+      await claudeBot.onEvent(ctx)
+      return
+    }
+
     if (openAiBot.isSupportedEvent(ctx)) {
       await openAiBot.onEvent(ctx, (e) => {
         logger.error(e)
@@ -501,7 +517,7 @@ bot.command(['start', 'help', 'menu'], async (ctx) => {
   await ctx.reply(startText, {
     parse_mode: 'Markdown',
     reply_markup: mainMenu,
-    disable_web_page_preview: true,
+    link_preview_options: { is_disabled: true },
     message_thread_id: ctx.message?.message_thread_id
   })
 })
@@ -515,7 +531,7 @@ bot.command('more', async (ctx) => {
   writeCommandLog(ctx as OnMessageContext).catch(logErrorHandler)
   return await ctx.reply(commandsHelpText.more, {
     parse_mode: 'Markdown',
-    disable_web_page_preview: true,
+    link_preview_options: { is_disabled: true },
     message_thread_id: ctx.message?.message_thread_id
   })
 })
@@ -524,7 +540,7 @@ bot.command('terms', async (ctx) => {
   writeCommandLog(ctx as OnMessageContext).catch(logErrorHandler)
   return await ctx.reply(TERMS.text, {
     parse_mode: 'Markdown',
-    disable_web_page_preview: true,
+    link_preview_options: { is_disabled: true },
     message_thread_id: ctx.message?.message_thread_id
   })
 })
@@ -533,7 +549,7 @@ bot.command('support', async (ctx) => {
   writeCommandLog(ctx as OnMessageContext).catch(logErrorHandler)
   return await ctx.reply(SUPPORT.text, {
     parse_mode: 'Markdown',
-    disable_web_page_preview: true,
+    link_preview_options: { is_disabled: true },
     message_thread_id: ctx.message?.message_thread_id
   })
 })
@@ -542,7 +558,7 @@ bot.command('models', async (ctx) => {
   writeCommandLog(ctx as OnMessageContext).catch(logErrorHandler)
   return await ctx.reply(MODELS.text, {
     parse_mode: 'Markdown',
-    disable_web_page_preview: true
+    link_preview_options: { is_disabled: true }
   })
 })
 
@@ -550,7 +566,7 @@ bot.command('lang', async (ctx) => {
   writeCommandLog(ctx as OnMessageContext).catch(logErrorHandler)
   return await ctx.reply(LANG.text, {
     parse_mode: 'Markdown',
-    disable_web_page_preview: true
+    link_preview_options: { is_disabled: true }
   })
 })
 
@@ -558,7 +574,7 @@ bot.command('feedback', async (ctx) => {
   writeCommandLog(ctx as OnMessageContext).catch(logErrorHandler)
   return await ctx.reply(FEEDBACK.text, {
     parse_mode: 'Markdown',
-    disable_web_page_preview: true,
+    link_preview_options: { is_disabled: true },
     message_thread_id: ctx.message?.message_thread_id
   })
 })
@@ -567,7 +583,7 @@ bot.command('love', async (ctx) => {
   writeCommandLog(ctx as OnMessageContext).catch(logErrorHandler)
   return await ctx.reply(LOVE.text, {
     parse_mode: 'Markdown',
-    disable_web_page_preview: true,
+    link_preview_options: { is_disabled: true },
     message_thread_id: ctx.message?.message_thread_id
   })
 })
@@ -575,6 +591,7 @@ bot.command('love', async (ctx) => {
 bot.command('stop', async (ctx) => {
   logger.info('/stop command')
   await openAiBot.onStop(ctx as OnMessageContext)
+  await claudeBot.onStop(ctx as OnMessageContext)
   ctx.session.translate.enable = false
   ctx.session.translate.languages = []
   ctx.session.oneCountry.lastDomain = ''
@@ -584,15 +601,24 @@ bot.command(['alias', 'aliases'], async (ctx) => {
   logger.info('/alias command')
   return await ctx.reply(ALIAS.text, {
     parse_mode: 'Markdown',
-    disable_web_page_preview: true,
+    link_preview_options: { is_disabled: true },
     message_thread_id: ctx.message?.message_thread_id
   })
 })
 
+// bot.command(['end'], async (ctx) => {
+//   logger.info('/end command')
+//   return await ctx.reply(ALIAS.text, {
+//     parse_mode: 'Markdown',
+//     link_preview_options: { is_disabled: true },
+//     message_thread_id: ctx.message?.message_thread_id
+//   })
+// })
+
 // bot.command("memo", (ctx) => {
 //   ctx.reply(MEMO.text, {
 //     parse_mode: "Markdown",
-//     disable_web_page_preview: true,
+//     link_preview_options: { is_disabled: true },
 //   });
 // });
 

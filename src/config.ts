@@ -33,7 +33,7 @@ export default {
     ? parseInt(process.env.SESSION_TIMEOUT)
     : 48, // in hours
   llms: {
-    apiEndpoint: process.env.LLMS_ENDPOINT, // 'http://127.0.0.1:5000',
+    apiEndpoint: process.env.LLMS_ENDPOINT, // // process.env.LLMS_ENDPOINT, // 'http://127.0.0.1:5000',
     wordLimit: 50,
     model: 'chat-bison',
     minimumBalance: 0,

@@ -264,7 +264,7 @@ export class OneCountryBot implements PayableBot {
           // await ctx.reply(`The Domain [${fullUrl}](${config.country.hostname}/new?domain=${lastDomain}) was registered`, {
           //   parse_mode: 'Markdown',
           //   message_thread_id: ctx.message?.message_thread_id,
-          //   disable_web_page_preview: false
+          //   link_preview_options: { is_disabled: true }
           // })
           ctx.transient.analytics.sessionState = RequestState.Success
           ctx.transient.analytics.actualResponseTime = now()

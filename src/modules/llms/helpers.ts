@@ -221,20 +221,22 @@ export const sendMessage = async (
   return await ctx.reply(msg, extras)
 }
 
-export const hasPrefix = (prompt: string): string => {
-  return (
-    hasBardPrefix(prompt) || hasLlamaPrefix(prompt) || hasClaudeOpusPrefix(prompt) || hasGeminiPrefix(prompt)
-  )
-}
+// export const hasPrefix = (prompt: string): string => {
+//   return (
+//     hasBardPrefix(prompt) || hasLlamaPrefix(prompt) || hasClaudeOpusPrefix(prompt) || hasGeminiPrefix(prompt)
+//   )
+// }
 
-export const getPromptPrice = (completion: LlmCompletion, data: ChatPayload): { price: number, promptTokens: number, completionTokens: number } => {
+export const getPromptPrice = (completion: LlmCompletion, data: ChatPayload, updateSession = true): { price: number, promptTokens: number, completionTokens: number } => {
   const { ctx, model } = data
   const modelPrice = getChatModel(model)
   const price =
     getChatModelPrice(modelPrice, true, completion.inputTokens ?? 0, completion.outputTokens ?? 0) *
     config.openAi.chatGpt.priceAdjustment
-  ctx.session.llms.usage += completion.outputTokens ?? 0
-  ctx.session.llms.price += price
+  if (updateSession) {
+    ctx.session.llms.usage += completion.outputTokens ?? 0
+    ctx.session.llms.price += price
+  }
   return {
     price,
     promptTokens: completion.inputTokens ?? 0,
@@ -269,8 +271,8 @@ export async function addUrlToCollection (ctx: OnMessageContext | OnCallBackQuer
   })
   const msgId = (await ctx.reply('...', {
     message_thread_id:
-    ctx.message?.message_thread_id ??
-    ctx.message?.reply_to_message?.message_thread_id
+      ctx.message?.message_thread_id ??
+      ctx.message?.reply_to_message?.message_thread_id
   })).message_id
 
   ctx.session.collections.collectionRequestQueue.push({
@@ -291,8 +293,8 @@ export async function addDocToCollection (ctx: OnMessageContext | OnCallBackQuer
   })
   const msgId = (await ctx.reply('...', {
     message_thread_id:
-    ctx.message?.message_thread_id ??
-    ctx.message?.reply_to_message?.message_thread_id
+      ctx.message?.message_thread_id ??
+      ctx.message?.reply_to_message?.message_thread_id
   })).message_id
   ctx.session.collections.collectionRequestQueue.push({
     collectionName,
@@ -303,4 +305,20 @@ export async function addDocToCollection (ctx: OnMessageContext | OnCallBackQuer
     msgId,
     processingTime: 0
   })
+}
+
+export const getMinBalance = async (ctx: OnMessageContext | OnCallBackQueryData,
+  model: string): Promise<number> => {
+  const minBalance = getPromptPrice({
+    inputTokens: 400,
+    outputTokens: 800,
+    completion: undefined,
+    usage: 0,
+    price: 0
+  }, {
+    ctx,
+    model: model ?? '',
+    conversation: []
+  }, false)
+  return minBalance.price
 }
