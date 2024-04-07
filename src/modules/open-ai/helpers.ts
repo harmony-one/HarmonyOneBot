@@ -3,7 +3,7 @@ import { type OnMessageContext, type OnCallBackQueryData, type MessageExtras, ty
 import { type ParseMode } from 'grammy/types'
 import { getChatModel, getChatModelPrice } from './api/openAi'
 import { type Message, type InlineKeyboardMarkup } from 'grammy/out/types'
-import { isValidUrl } from './utils/web-crawler'
+// import { isValidUrl } from './utils/web-crawler'
 import { type ChatGptCompletion } from './types'
 
 export enum SupportedCommands {
@@ -76,6 +76,12 @@ export const hasNewPrefix = (prompt: string): string => {
     }
   }
   return ''
+}
+
+export const isValidUrl = (url: string): boolean => {
+  const urlRegex =
+  /^(https?:\/\/)?([\w.-]+\.[a-zA-Z]{2,}|[\w.-]+\.[a-zA-Z]{1,3}\.[a-zA-Z]{1,3})(\/\S*)?$/
+  return urlRegex.test(url)
 }
 
 const hasUrlPrompt = (prompt: string): string => {

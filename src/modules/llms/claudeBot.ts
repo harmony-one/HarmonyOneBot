@@ -8,9 +8,9 @@ import {
   hasClaudeOpusPrefix,
   isMentioned,
   SupportedCommands
-} from './helpers'
+} from './utils/helpers'
 import { type LlmCompletion } from './api/llmApi'
-import { LlmsModelsEnum } from './types'
+import { LlmsModelsEnum } from './utils/types'
 
 import { anthropicCompletion, anthropicStreamCompletion } from './api/athropic'
 import { LlmsBase } from './llmsBase'

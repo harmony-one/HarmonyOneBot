@@ -6,7 +6,7 @@ import { pino } from 'pino'
 import config from '../../../config'
 import { type OnCallBackQueryData, type OnMessageContext, type ChatConversation } from '../../types'
 import { type LlmCompletion } from './llmApi'
-import { LlmsModelsEnum } from '../types'
+import { LlmsModelsEnum } from '../utils/types'
 
 const logger = pino({
   name: 'anthropic - llmsBot',

@@ -7,9 +7,9 @@ import {
 import {
   isMentioned,
   SupportedCommands
-} from './helpers'
+} from './utils/helpers'
 import { llmCompletion, type LlmCompletion } from './api/llmApi'
-import { LlmsModelsEnum } from './types'
+import { LlmsModelsEnum } from './utils/types'
 import { LlmsBase } from './llmsBase'
 
 export class LlmsBot extends LlmsBase {

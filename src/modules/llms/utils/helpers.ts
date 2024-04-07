@@ -3,12 +3,15 @@ import {
   type OnCallBackQueryData,
   type MessageExtras,
   type ChatPayload
-} from '../types'
-import { type ParseMode } from 'grammy/types'
+} from '../../types'
+import { type InlineKeyboardMarkup, type ParseMode } from 'grammy/types'
 import { type Message } from 'grammy/out/types'
-import { type LlmCompletion, getChatModel, llmAddUrlDocument } from './api/llmApi'
-import { getChatModelPrice } from '../open-ai/api/openAi'
-import config from '../../config'
+import { type LlmCompletion, getChatModel, llmAddUrlDocument } from '../api/llmApi'
+import { getChatModelPrice } from '../../open-ai/api/openAi'
+import config from '../../../config'
+import { childrenWords, sexWords } from '../../sd-images/words-blacklist'
+
+export const PRICE_ADJUSTMENT = config.openAi.chatGpt.priceAdjustment
 
 export enum SupportedCommands {
   bardF = 'bard',
@@ -27,7 +30,24 @@ export enum SupportedCommands {
   ctx = 'ctx',
   pdf = 'pdf',
   gemini = 'gemini',
-  gShort = 'g'
+  gShort = 'g',
+  chat = 'chat',
+  ask = 'ask',
+  vision = 'vision',
+  ask35 = 'ask35',
+  new = 'new',
+  gpt4 = 'gpt4',
+  ask32 = 'ask32',
+  gpt = 'gpt',
+  last = 'last',
+  dalle = 'dalle',
+  dalleImg = 'image',
+  dalleShort = 'img',
+  dalleShorter = 'i',
+  // genImgEn = 'genImgEn',
+  on = 'on',
+  off = 'off',
+  talk = 'talk'
 }
 
 export const MAX_TRIES = 3
@@ -35,6 +55,9 @@ const LLAMA_PREFIX_LIST = ['* ']
 const BARD_PREFIX_LIST = ['b. ', 'B. ']
 const CLAUDE_OPUS_PREFIX_LIST = ['c. ']
 const GEMINI_PREFIX_LIST = ['g. ']
+const DALLE_PREFIX_LIST = ['i. ', ', ', 'd. ']
+const CHAT_GPT_PREFIX_LIST = ['a. ', '. ']
+const NEW_PREFIX_LIST = ['n. ', '.. ']
 
 export const isMentioned = (
   ctx: OnMessageContext | OnCallBackQueryData
@@ -52,44 +75,71 @@ export const isMentioned = (
   return false
 }
 
-export const hasLlamaPrefix = (prompt: string): string => {
-  const prefixList = LLAMA_PREFIX_LIST
+export const getUrlFromText = (ctx: OnMessageContext | OnCallBackQueryData): string[] | undefined => {
+  const entities = ctx.message?.entities ? ctx.message?.entities : ctx.message?.reply_to_message?.entities
+  const text = ctx.message?.text ? ctx.message?.text : ctx.message?.reply_to_message?.text
+  if (entities && text) {
+    const urlEntity = entities.filter(e => e.type === 'url')
+    if (urlEntity.length > 0) {
+      const urls = urlEntity.map(e => text.slice(e.offset, e.offset + e.length))
+      return urls
+    }
+  }
+  return undefined
+}
+
+export const promptHasBadWords = (prompt: string): boolean => {
+  const lowerCasePrompt = prompt.toLowerCase()
+
+  const hasChildrenWords = childrenWords.some(
+    word => lowerCasePrompt.includes(word.toLowerCase())
+  )
+
+  const hasSexWords = sexWords.some(
+    word => lowerCasePrompt.includes(word.toLowerCase())
+  )
+
+  // const hasTabooWords = tabooWords.some(
+  //     word => lowerCasePrompt.includes(word.toLowerCase())
+  // );
+
+  return hasChildrenWords && hasSexWords
+}
+
+const hasCommandPrefix = (prompt: string, prefixList: string[]): string => {
   for (let i = 0; i < prefixList.length; i++) {
     if (prompt.toLocaleLowerCase().startsWith(prefixList[i])) {
       return prefixList[i]
     }
   }
   return ''
+}
+export const hasLlamaPrefix = (prompt: string): string => {
+  return hasCommandPrefix(prompt, LLAMA_PREFIX_LIST)
 }
 
 export const hasBardPrefix = (prompt: string): string => {
-  const prefixList = BARD_PREFIX_LIST
-  for (let i = 0; i < prefixList.length; i++) {
-    if (prompt.toLocaleLowerCase().startsWith(prefixList[i])) {
-      return prefixList[i]
-    }
-  }
-  return ''
+  return hasCommandPrefix(prompt, BARD_PREFIX_LIST)
 }
 
 export const hasClaudeOpusPrefix = (prompt: string): string => {
-  const prefixList = CLAUDE_OPUS_PREFIX_LIST
-  for (let i = 0; i < prefixList.length; i++) {
-    if (prompt.toLocaleLowerCase().startsWith(prefixList[i])) {
-      return prefixList[i]
-    }
-  }
-  return ''
+  return hasCommandPrefix(prompt, CLAUDE_OPUS_PREFIX_LIST)
 }
 
 export const hasGeminiPrefix = (prompt: string): string => {
-  const prefixList = GEMINI_PREFIX_LIST
-  for (let i = 0; i < prefixList.length; i++) {
-    if (prompt.toLocaleLowerCase().startsWith(prefixList[i])) {
-      return prefixList[i]
-    }
-  }
-  return ''
+  return hasCommandPrefix(prompt, GEMINI_PREFIX_LIST)
+}
+
+export const hasChatPrefix = (prompt: string): string => {
+  return hasCommandPrefix(prompt, CHAT_GPT_PREFIX_LIST)
+}
+
+export const hasDallePrefix = (prompt: string): string => {
+  return hasCommandPrefix(prompt, DALLE_PREFIX_LIST)
+}
+
+export const hasNewPrefix = (prompt: string): string => {
+  return hasCommandPrefix(prompt, NEW_PREFIX_LIST)
 }
 
 export const hasUrl = (
@@ -186,10 +236,12 @@ interface GetMessagesExtras {
   parseMode?: ParseMode | undefined
   caption?: string | undefined
   replyId?: number | undefined
+  reply_markup?: InlineKeyboardMarkup
+  link_preview_options?: { is_disabled: boolean }
 }
 
 export const getMessageExtras = (params: GetMessagesExtras): MessageExtras => {
-  const { parseMode, caption, replyId } = params
+  const { parseMode, caption, replyId, link_preview_options: disableWebPagePreview } = params
   const extras: MessageExtras = {}
   if (parseMode) {
     extras.parse_mode = parseMode
@@ -199,6 +251,12 @@ export const getMessageExtras = (params: GetMessagesExtras): MessageExtras => {
   }
   if (caption) {
     extras.caption = caption
+  }
+  if (disableWebPagePreview) {
+    extras.link_preview_options = disableWebPagePreview
+  }
+  if (params.reply_markup) {
+    extras.reply_markup = params.reply_markup
   }
   return extras
 }

@@ -11,9 +11,8 @@ import { type OnMessageContext, type OnCallBackQueryData, type PayableBot, Reque
 import { type BotPayments } from '../payment'
 import { getCommandNamePrompt, getUrl } from './utils/'
 import { isAdmin } from '../open-ai/utils/context'
-import { MAX_TRIES, sendMessage } from '../open-ai/helpers'
+import { MAX_TRIES, isValidUrl, sendMessage } from '../open-ai/helpers'
 import { sleep } from '../sd-images/utils'
-import { isValidUrl } from '../open-ai/utils/web-crawler'
 import { now } from '../../utils/perf'
 
 export enum SupportedCommands {

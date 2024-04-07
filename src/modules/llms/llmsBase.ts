@@ -1,7 +1,7 @@
 import { GrammyError } from 'grammy'
 import { type Logger, pino } from 'pino'
 
-import { getCommandNamePrompt } from '../1country/utils'
+// import { getCommandNamePrompt } from '../1country/utils'
 import { type BotPayments } from '../payment'
 import {
   type OnMessageContext,
@@ -21,16 +21,16 @@ import {
   getMinBalance,
   getPromptPrice,
   limitPrompt,
-  MAX_TRIES,
-  SupportedCommands
-} from './helpers'
+  MAX_TRIES
+  // SupportedCommands
+} from './utils/helpers'
 import { preparePrompt, sendMessage } from '../open-ai/helpers'
 import { type LlmCompletion, deleteCollection } from './api/llmApi'
 import * as Sentry from '@sentry/node'
 import { now } from '../../utils/perf'
 import { AxiosError } from 'axios'
 import OpenAI from 'openai'
-import { type LlmsModelsEnum } from './types'
+import { type LlmsModelsEnum } from './utils/types'
 
 export abstract class LlmsBase implements PayableBot {
   public module: string
@@ -81,37 +81,39 @@ export abstract class LlmsBase implements PayableBot {
     return (ctx.session[this.sessionDataKey as keyof BotSessionData] as LmmsSessionData)
   }
 
-  async onPrefix (ctx: OnMessageContext | OnCallBackQueryData, model: string, stream: boolean): Promise<void> {
-    const session = this.getSession(ctx)
-    try {
-      if (this.botSuspended) {
-        ctx.transient.analytics.sessionState = RequestState.Error
-        sendMessage(ctx, 'The bot is suspended').catch(async (e) => { await this.onError(ctx, e) })
-        ctx.transient.analytics.actualResponseTime = now()
-        return
-      }
-      const { prompt } = getCommandNamePrompt(
-        ctx,
-        SupportedCommands
-      )
-      const prefix = this.hasPrefix(prompt)
-      session.requestQueue.push({
-        content: await preparePrompt(ctx, prompt.slice(prefix.length)),
-        model
-      })
-      if (!session.isProcessingQueue) {
-        session.isProcessingQueue = true
-        await this.onChatRequestHandler(ctx, stream).then(() => {
-          session.isProcessingQueue = false
-        })
-      }
-    } catch (e) {
-      await this.onError(ctx, e)
-    }
-  }
+  // async onPrefix (ctx: OnMessageContext | OnCallBackQueryData, model: string, stream: boolean): Promise<void> {
+  //   const session = this.getSession(ctx)
+  //   try {
+  //     if (this.botSuspended) {
+  //       ctx.transient.analytics.sessionState = RequestState.Error
+  //       sendMessage(ctx, 'The bot is suspended').catch(async (e) => { await this.onError(ctx, e) })
+  //       ctx.transient.analytics.actualResponseTime = now()
+  //       return
+  //     }
+  //     const { prompt } = getCommandNamePrompt(
+  //       ctx,
+  //       SupportedCommands
+  //     )
+  //     const prefix = this.hasPrefix(prompt)
+  //     session.requestQueue.push({
+  //       content: await preparePrompt(ctx, prompt.slice(prefix.length)),
+  //       model
+  //     })
+  //     if (!session.isProcessingQueue) {
+  //       session.isProcessingQueue = true
+  //       await this.onChatRequestHandler(ctx, stream).then(() => {
+  //         session.isProcessingQueue = false
+  //       })
+  //     }
+  //   } catch (e) {
+  //     await this.onError(ctx, e)
+  //   }
+  // }
 
   async onChat (ctx: OnMessageContext | OnCallBackQueryData, model: string, stream: boolean): Promise<void> {
     const session = this.getSession(ctx)
+    console.log(ctx.session.llms.chatConversation)
+    console.log(ctx.session.chatGpt.chatConversation)
     try {
       if (this.botSuspended) {
         ctx.transient.analytics.sessionState = RequestState.Error
@@ -210,7 +212,7 @@ export abstract class LlmsBase implements PayableBot {
     session.price = 0
   }
 
-  private async hasBalance (ctx: OnMessageContext | OnCallBackQueryData, minBalance = +config.llms.minimumBalance): Promise<boolean> {
+  protected async hasBalance (ctx: OnMessageContext | OnCallBackQueryData, minBalance = +config.llms.minimumBalance): Promise<boolean> {
     const minBalanceOne = this.payments.toONE(await this.payments.getPriceInONE(minBalance), false)
     const accountId = this.payments.getAccountId(ctx)
     const addressBalance = await this.payments.getUserBalance(accountId)

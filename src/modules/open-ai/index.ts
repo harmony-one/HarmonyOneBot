@@ -30,10 +30,10 @@ import { sleep } from '../sd-images/utils'
 import {
   getMessageExtras,
   getPromptPrice,
-  getUrlFromText,
-  hasChatPrefix,
-  hasDallePrefix,
-  hasNewPrefix,
+  // getUrlFromText,
+  // hasChatPrefix,
+  // hasDallePrefix,
+  // hasNewPrefix,
   hasPrefix,
   hasUrl,
   hasCodeSnippet,
@@ -48,10 +48,10 @@ import * as Sentry from '@sentry/node'
 import { now } from '../../utils/perf'
 import { AxiosError } from 'axios'
 import { Callbacks } from '../types'
-import { LlmsBot } from '../llms'
+import { LlmsBot } from '../llms/indexOld'
 import { type PhotoSize } from 'grammy/types'
 import { responseWithVoice } from '../voice-to-voice-gpt/helpers'
-import { promptHasBadWords } from '../sd-images/helpers'
+// import { promptHasBadWords } from '../sd-images/helpers'
 
 const priceAdjustment = config.openAi.chatGpt.priceAdjustment
 export class OpenAIBot implements PayableBot {
@@ -205,205 +205,205 @@ export class OpenAIBot implements PayableBot {
     ctx.transient.analytics.sessionState = RequestState.Success
     if (this.isSupportedCallbackQuery(ctx)) {
       await this.shareImg(ctx)
-      return
+      // return
     }
 
-    if (this.isSupportedImageReply(ctx)) {
-      const photo = ctx.message?.photo ?? ctx.message?.reply_to_message?.photo
-      const prompt = ctx.message?.caption ?? ctx.message?.text ?? ''
-      const imgId = (photo?.[0].file_unique_id) ?? ''
-      if (!ctx.session.openAi.imageGen.imgInquiried.find(i => i === imgId)) {
-        ctx.session.openAi.imageGen.imgRequestQueue.push({
-          prompt,
-          photo,
-          command: !isNaN(+prompt) ? 'alter' : 'vision'
-        })
-        if (!ctx.session.openAi.imageGen.isProcessingQueue) {
-          ctx.session.openAi.imageGen.isProcessingQueue = true
-          await this.onImgRequestHandler(ctx).then(() => {
-            ctx.session.openAi.imageGen.isProcessingQueue = false
-          })
-        }
-      } else {
-        refundCallback('This image was already inquired')
-      }
-      return
-    }
+    // if (this.isSupportedImageReply(ctx)) {
+    //   const photo = ctx.message?.photo ?? ctx.message?.reply_to_message?.photo
+    //   const prompt = ctx.message?.caption ?? ctx.message?.text ?? ''
+    //   const imgId = (photo?.[0].file_unique_id) ?? ''
+    //   if (!ctx.session.openAi.imageGen.imgInquiried.find(i => i === imgId)) {
+    //     ctx.session.openAi.imageGen.imgRequestQueue.push({
+    //       prompt,
+    //       photo,
+    //       command: !isNaN(+prompt) ? 'alter' : 'vision'
+    //     })
+    //     if (!ctx.session.openAi.imageGen.isProcessingQueue) {
+    //       ctx.session.openAi.imageGen.isProcessingQueue = true
+    //       await this.onImgRequestHandler(ctx).then(() => {
+    //         ctx.session.openAi.imageGen.isProcessingQueue = false
+    //       })
+    //     }
+    //   } else {
+    //     refundCallback('This image was already inquired')
+    //   }
+    //   return
+    // }
 
-    if (
-      ctx.hasCommand(SupportedCommands.chat) ||
-      (ctx.message?.text?.startsWith('chat ') && ctx.chat?.type === 'private')
-    ) {
-      ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_4
-      await this.onChat(ctx)
-      return
-    }
+    // if (
+    //   ctx.hasCommand(SupportedCommands.chat) ||
+    //   (ctx.message?.text?.startsWith('chat ') && ctx.chat?.type === 'private')
+    // ) {
+    //   ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_4
+    //   await this.onChat(ctx)
+    //   return
+    // }
 
-    if (
-      ctx.hasCommand(SupportedCommands.new) ||
-      (ctx.message?.text?.startsWith('new ') && ctx.chat?.type === 'private')
-    ) {
-      await this.onStop(ctx)
-      await this.onChat(ctx)
-      return
-    }
+    // if (
+    //   ctx.hasCommand(SupportedCommands.new) ||
+    //   (ctx.message?.text?.startsWith('new ') && ctx.chat?.type === 'private')
+    // ) {
+    //   await this.onStop(ctx)
+    //   await this.onChat(ctx)
+    //   return
+    // }
 
-    if (
-      ctx.hasCommand(SupportedCommands.ask) ||
-      (ctx.message?.text?.startsWith('ask ') && ctx.chat?.type === 'private')
-    ) {
-      ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_4
-      await this.onChat(ctx)
-      return
-    }
+    // if (
+    //   ctx.hasCommand(SupportedCommands.ask) ||
+    //   (ctx.message?.text?.startsWith('ask ') && ctx.chat?.type === 'private')
+    // ) {
+    //   ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_4
+    //   await this.onChat(ctx)
+    //   return
+    // }
 
-    if (ctx.hasCommand(SupportedCommands.ask35)) {
-      ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_35_TURBO_16K
-      await this.onChat(ctx)
-      return
-    }
+    // if (ctx.hasCommand(SupportedCommands.ask35)) {
+    //   ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_35_TURBO_16K
+    //   await this.onChat(ctx)
+    //   return
+    // }
 
-    if (ctx.hasCommand(SupportedCommands.gpt4)) {
-      ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_4
-      await this.onChat(ctx)
-      return
-    }
+    // if (ctx.hasCommand(SupportedCommands.gpt4)) {
+    //   ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_4
+    //   await this.onChat(ctx)
+    //   return
+    // }
 
-    if (ctx.hasCommand(SupportedCommands.gpt)) {
-      ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_4
-      await this.onChat(ctx)
-      return
-    }
+    // if (ctx.hasCommand(SupportedCommands.gpt)) {
+    //   ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_4
+    //   await this.onChat(ctx)
+    //   return
+    // }
 
-    if (ctx.hasCommand(SupportedCommands.ask32)) {
-      ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_4_32K
-      await this.onChat(ctx)
-      return
-    }
+    // if (ctx.hasCommand(SupportedCommands.ask32)) {
+    //   ctx.session.openAi.chatGpt.model = ChatGPTModelsEnum.GPT_4_32K
+    //   await this.onChat(ctx)
+    //   return
+    // }
 
-    if (ctx.hasCommand(SupportedCommands.vision)) {
-      const photoUrl = getUrlFromText(ctx)
-      if (photoUrl) {
-        const prompt = ctx.match
-        ctx.session.openAi.imageGen.imgRequestQueue.push({
-          prompt,
-          photoUrl,
-          command: !isNaN(+prompt) ? 'alter' : 'vision'
-        })
-        if (!ctx.session.openAi.imageGen.isProcessingQueue) {
-          ctx.session.openAi.imageGen.isProcessingQueue = true
-          await this.onImgRequestHandler(ctx).then(() => {
-            ctx.session.openAi.imageGen.isProcessingQueue = false
-          })
-        }
-      }
-    }
+    // if (ctx.hasCommand(SupportedCommands.vision)) {
+    //   const photoUrl = getUrlFromText(ctx)
+    //   if (photoUrl) {
+    //     const prompt = ctx.match
+    //     ctx.session.openAi.imageGen.imgRequestQueue.push({
+    //       prompt,
+    //       photoUrl,
+    //       command: !isNaN(+prompt) ? 'alter' : 'vision'
+    //     })
+    //     if (!ctx.session.openAi.imageGen.isProcessingQueue) {
+    //       ctx.session.openAi.imageGen.isProcessingQueue = true
+    //       await this.onImgRequestHandler(ctx).then(() => {
+    //         ctx.session.openAi.imageGen.isProcessingQueue = false
+    //       })
+    //     }
+    //   }
+    // }
 
-    if (
-      ctx.hasCommand([SupportedCommands.dalle,
-        SupportedCommands.dalleImg,
-        SupportedCommands.dalleShort,
-        SupportedCommands.dalleShorter]) ||
-      (ctx.message?.text?.startsWith('image ') && ctx.chat?.type === 'private')
-    ) {
-      let prompt = (ctx.match ? ctx.match : ctx.message?.text) as string
-      if (!prompt || prompt.split(' ').length === 1) {
-        prompt = config.openAi.dalle.defaultPrompt
-      }
-      if (promptHasBadWords(prompt)) {
-        console.log(`### promptHasBadWords ${ctx.message?.text}`)
-        await sendMessage(
-          ctx,
-          'Your prompt has been flagged for potentially generating illegal or malicious content. If you believe there has been a mistake, please reach out to support.'
-        )
-        ctx.transient.analytics.sessionState = RequestState.Error
-        ctx.transient.analytics.actualResponseTime = now()
-        refundCallback('Prompt has bad words')
-        return
-      }
-      ctx.session.openAi.imageGen.imgRequestQueue.push({
-        command: 'dalle',
-        prompt
-      })
-      if (!ctx.session.openAi.imageGen.isProcessingQueue) {
-        ctx.session.openAi.imageGen.isProcessingQueue = true
-        await this.onImgRequestHandler(ctx).then(() => {
-          ctx.session.openAi.imageGen.isProcessingQueue = false
-        })
-      }
-      return
-    }
+    // if (
+    //   ctx.hasCommand([SupportedCommands.dalle,
+    //     SupportedCommands.dalleImg,
+    //     SupportedCommands.dalleShort,
+    //     SupportedCommands.dalleShorter]) ||
+    //   (ctx.message?.text?.startsWith('image ') && ctx.chat?.type === 'private')
+    // ) {
+    //   let prompt = (ctx.match ? ctx.match : ctx.message?.text) as string
+    //   if (!prompt || prompt.split(' ').length === 1) {
+    //     prompt = config.openAi.dalle.defaultPrompt
+    //   }
+    //   if (promptHasBadWords(prompt)) {
+    //     console.log(`### promptHasBadWords ${ctx.message?.text}`)
+    //     await sendMessage(
+    //       ctx,
+    //       'Your prompt has been flagged for potentially generating illegal or malicious content. If you believe there has been a mistake, please reach out to support.'
+    //     )
+    //     ctx.transient.analytics.sessionState = RequestState.Error
+    //     ctx.transient.analytics.actualResponseTime = now()
+    //     refundCallback('Prompt has bad words')
+    //     return
+    //   }
+    //   ctx.session.openAi.imageGen.imgRequestQueue.push({
+    //     command: 'dalle',
+    //     prompt
+    //   })
+    //   if (!ctx.session.openAi.imageGen.isProcessingQueue) {
+    //     ctx.session.openAi.imageGen.isProcessingQueue = true
+    //     await this.onImgRequestHandler(ctx).then(() => {
+    //       ctx.session.openAi.imageGen.isProcessingQueue = false
+    //     })
+    //   }
+    //   return
+    // }
 
-    if (this.llmsBot.isSupportedEvent(ctx)) {
-      await this.llmsBot.onEvent(ctx)
-      return
-    }
+    // if (this.llmsBot.isSupportedEvent(ctx)) {
+    //   await this.llmsBot.onEvent(ctx)
+    //   return
+    // }
 
-    if (ctx.hasCommand(SupportedCommands.last)) {
-      await this.onLast(ctx)
-      return
-    }
+    // if (ctx.hasCommand(SupportedCommands.last)) {
+    //   await this.onLast(ctx)
+    //   return
+    // }
 
-    const text = ctx.message?.text ?? ''
-    const newPrefix = hasNewPrefix(text)
-    if (newPrefix !== '') {
-      await this.onEnd(ctx)
-      await this.onPrefix(ctx, newPrefix)
-      return
-    }
+    // const text = ctx.message?.text ?? ''
+    // const newPrefix = hasNewPrefix(text)
+    // if (newPrefix !== '') {
+    //   await this.onEnd(ctx)
+    //   await this.onPrefix(ctx, newPrefix)
+    //   return
+    // }
 
-    if (hasDallePrefix(text) !== '') {
-      const prefix = hasDallePrefix(text)
-      let prompt = (ctx.match ? ctx.match : ctx.message?.text) as string
-      if (!prompt || prompt.split(' ').length === 1) {
-        prompt = config.openAi.dalle.defaultPrompt
-      }
-      if (promptHasBadWords(prompt)) {
-        console.log(`### promptHasBadWords ${ctx.message?.text}`)
-        await sendMessage(
-          ctx,
-          'Your prompt has been flagged for potentially generating illegal or malicious content. If you believe there has been a mistake, please reach out to support.'
-        )
-        ctx.transient.analytics.sessionState = RequestState.Error
-        ctx.transient.analytics.actualResponseTime = now()
-        refundCallback('Prompt has bad words')
-        return
-      }
-      ctx.session.openAi.imageGen.imgRequestQueue.push({
-        command: 'dalle',
-        prompt: prompt.slice(prefix.length)
-      })
-      if (!ctx.session.openAi.imageGen.isProcessingQueue) {
-        ctx.session.openAi.imageGen.isProcessingQueue = true
-        await this.onImgRequestHandler(ctx).then(() => {
-          ctx.session.openAi.imageGen.isProcessingQueue = false
-        })
-      }
-      return
-    }
-    const prefix = hasChatPrefix(text)
-    if (prefix !== '') {
-      await this.onPrefix(ctx, prefix)
-      return
-    }
+    // if (hasDallePrefix(text) !== '') {
+    //   const prefix = hasDallePrefix(text)
+    //   let prompt = (ctx.match ? ctx.match : ctx.message?.text) as string
+    //   if (!prompt || prompt.split(' ').length === 1) {
+    //     prompt = config.openAi.dalle.defaultPrompt
+    //   }
+    //   if (promptHasBadWords(prompt)) {
+    //     console.log(`### promptHasBadWords ${ctx.message?.text}`)
+    //     await sendMessage(
+    //       ctx,
+    //       'Your prompt has been flagged for potentially generating illegal or malicious content. If you believe there has been a mistake, please reach out to support.'
+    //     )
+    //     ctx.transient.analytics.sessionState = RequestState.Error
+    //     ctx.transient.analytics.actualResponseTime = now()
+    //     refundCallback('Prompt has bad words')
+    //     return
+    //   }
+    //   ctx.session.openAi.imageGen.imgRequestQueue.push({
+    //     command: 'dalle',
+    //     prompt: prompt.slice(prefix.length)
+    //   })
+    //   if (!ctx.session.openAi.imageGen.isProcessingQueue) {
+    //     ctx.session.openAi.imageGen.isProcessingQueue = true
+    //     await this.onImgRequestHandler(ctx).then(() => {
+    //       ctx.session.openAi.imageGen.isProcessingQueue = false
+    //     })
+    //   }
+    //   return
+    // }
+    // const prefix = hasChatPrefix(text)
+    // if (prefix !== '') {
+    //   await this.onPrefix(ctx, prefix)
+    //   return
+    // }
 
-    if (isMentioned(ctx)) {
-      await this.onMention(ctx)
-      return
-    }
+    // if (isMentioned(ctx)) {
+    //   await this.onMention(ctx)
+    //   return
+    // }
 
-    if (ctx.chat?.type === 'private' || ctx.session.openAi.chatGpt.isFreePromptChatGroups) {
-      await this.onPrivateChat(ctx)
-      return
-    }
+    // if (ctx.chat?.type === 'private' || ctx.session.openAi.chatGpt.isFreePromptChatGroups) {
+    //   await this.onPrivateChat(ctx)
+    //   return
+    // }
 
-    this.logger.warn('### unsupported command')
-    ctx.transient.analytics.sessionState = RequestState.Error
-    await sendMessage(ctx, '### unsupported command')
-      .catch(async (e) => {
-        await this.onError(ctx, e, MAX_TRIES, '### unsupported command')
-      })
-    ctx.transient.analytics.actualResponseTime = now()
+    // this.logger.warn('### unsupported command')
+    // ctx.transient.analytics.sessionState = RequestState.Error
+    // await sendMessage(ctx, '### unsupported command')
+    //   .catch(async (e) => {
+    //     await this.onError(ctx, e, MAX_TRIES, '### unsupported command')
+    //   })
+    // ctx.transient.analytics.actualResponseTime = now()
   }
 
   private async hasBalance (ctx: OnMessageContext | OnCallBackQueryData,

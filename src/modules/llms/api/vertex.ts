@@ -5,7 +5,7 @@ import { type LlmCompletion } from './llmApi'
 import { type Readable } from 'stream'
 import { GrammyError } from 'grammy'
 import { pino } from 'pino'
-import { LlmsModelsEnum } from '../types'
+import { LlmsModelsEnum } from '../utils/types'
 
 const API_ENDPOINT = config.llms.apiEndpoint // config.llms.apiEndpoint  // 'http://127.0.0.1:5000' // config.llms.apiEndpoint
 

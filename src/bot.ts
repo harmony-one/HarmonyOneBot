@@ -26,9 +26,9 @@ import { TranslateBot } from './modules/translate/TranslateBot'
 import { VoiceMemo } from './modules/voice-memo'
 // import { QRCodeBot } from './modules/qrcode/QRCodeBot'
 // import { SDImagesBot } from './modules/sd-images'
-import { OpenAIBot } from './modules/open-ai'
-import { ClaudeBot } from './modules/llms/claudeBot'
-import { VertexBot } from './modules/llms/vertexBot'
+// import { OpenAIBot } from './modules/open-ai'
+import { DalleBot, OpenAIBot, ClaudeBot, VertexBot } from './modules/llms'
+
 import { OneCountryBot } from './modules/1country'
 import { WalletConnect } from './modules/walletconnect'
 import { BotPayments } from './modules/payment'
@@ -55,7 +55,8 @@ import { VoiceToTextBot } from './modules/voice-to-text'
 import { now } from './utils/perf'
 import { hasPrefix } from './modules/open-ai/helpers'
 import { VoiceToVoiceGPTBot } from './modules/voice-to-voice-gpt'
-import { VoiceCommand } from './modules/voice-command'
+// import { VoiceCommand } from './modules/voice-command'
+import { createInitialSessionData } from './helpers'
 
 Events.EventEmitter.defaultMaxListeners = 30
 
@@ -183,63 +184,6 @@ bot.use(async (ctx: BotContext, next: NextFunction): Promise<void> => {
   }
 })
 
-function createInitialSessionData (): BotSessionData {
-  return {
-    openAi: {
-      imageGen: {
-        numImages: config.openAi.dalle.sessionDefault.numImages,
-        imgSize: config.openAi.dalle.sessionDefault.imgSize,
-        isEnabled: config.openAi.dalle.isEnabled,
-        imgRequestQueue: [],
-        isProcessingQueue: false,
-        imageGenerated: [],
-        isInscriptionLotteryEnabled: config.openAi.dalle.isInscriptionLotteryEnabled,
-        imgInquiried: []
-      },
-      chatGpt: {
-        model: config.openAi.chatGpt.model,
-        isEnabled: config.openAi.chatGpt.isEnabled,
-        isFreePromptChatGroups: config.openAi.chatGpt.isFreePromptChatGroups,
-        chatConversation: [],
-        price: 0,
-        usage: 0,
-        isProcessingQueue: false,
-        requestQueue: []
-      }
-    },
-    oneCountry: { lastDomain: '' },
-    translate: {
-      languages: [],
-      enable: false
-    },
-    collections: {
-      activeCollections: [],
-      collectionRequestQueue: [],
-      isProcessingQueue: false,
-      currentCollection: '',
-      collectionConversation: []
-    },
-    llms: {
-      model: config.llms.model,
-      isEnabled: config.llms.isEnabled,
-      chatConversation: [],
-      price: 0,
-      usage: 0,
-      isProcessingQueue: false,
-      requestQueue: []
-    },
-    chatGpt: {
-      model: config.llms.model,
-      isEnabled: config.llms.isEnabled,
-      chatConversation: [],
-      price: 0,
-      usage: 0,
-      isProcessingQueue: false,
-      requestQueue: []
-    }
-  }
-}
-
 bot.use(
   session({
     initial: createInitialSessionData,
@@ -258,7 +202,9 @@ const voiceMemo = new VoiceMemo()
 const walletConnect = new WalletConnect()
 const payments = new BotPayments()
 const schedule = new BotSchedule(bot)
+// const openAiBot = new OpenAIBot(payments)
 const openAiBot = new OpenAIBot(payments)
+const dalleBot = new DalleBot(payments)
 const claudeBot = new ClaudeBot(payments)
 const vertexBot = new VertexBot(payments)
 const oneCountryBot = new OneCountryBot(payments)
@@ -268,7 +214,8 @@ const voiceTranslateBot = new VoiceTranslateBot(payments)
 const textToSpeechBot = new TextToSpeechBot(payments)
 const voiceToTextBot = new VoiceToTextBot(payments)
 const voiceToVoiceGPTBot = new VoiceToVoiceGPTBot(payments)
-const voiceCommand = new VoiceCommand(openAiBot)
+
+// const voiceCommand = new VoiceCommand(openAiBot)
 
 bot.on('message:new_chat_members:me', async (ctx) => {
   try {
@@ -376,7 +323,7 @@ const writeCommandLog = async (
 }
 
 const PayableBots: Record<string, PayableBotConfig> = {
-  voiceCommand: { bot: voiceCommand },
+  // voiceCommand: { bot: voiceCommand },
   // qrCodeBot: { bot: qrCodeBot },
   // sdImagesBot: { bot: sdImagesBot },
   voiceTranslate: { bot: voiceTranslateBot },
@@ -385,6 +332,7 @@ const PayableBots: Record<string, PayableBotConfig> = {
   textToSpeech: { bot: textToSpeechBot },
   voiceToVoiceGPTBot: { bot: voiceToVoiceGPTBot },
   voiceToText: { bot: voiceToTextBot },
+  dalleBot: { bot: dalleBot },
   claudeBot: { bot: claudeBot },
   vertexBot: { bot: vertexBot },
   openAiBot: {
@@ -482,18 +430,8 @@ const onCallback = async (ctx: OnCallBackQueryData): Promise<void> => {
     //   return
     // }
 
-    if (vertexBot.isSupportedEvent(ctx)) {
-      await vertexBot.onEvent(ctx)
-      return
-    }
-
-    if (claudeBot.isSupportedEvent(ctx)) {
-      await claudeBot.onEvent(ctx)
-      return
-    }
-
-    if (openAiBot.isSupportedEvent(ctx)) {
-      await openAiBot.onEvent(ctx, (e) => {
+    if (dalleBot.isSupportedEvent(ctx)) {
+      await dalleBot.onEvent(ctx, (e) => {
         logger.error(e)
       })
     }
