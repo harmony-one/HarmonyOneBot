@@ -12,7 +12,8 @@ Adjust image size or how many images are generated`,
   notEnoughBalance:
     'Your credits: $CREDITS ONE tokens. To recharge, send ONE to `$WALLET_ADDRESS`',
   maliciousPrompt:
-    'Your prompt has been flagged for potentially generating illegal or malicious content. If you believe there has been a mistake, please reach out to support.'
+    'Your prompt has been flagged for potentially generating illegal or malicious content. If you believe there has been a mistake, please reach out to support.',
+  llamaURLContext: 'This is URL handler subagent completion: %COMPLETION%'
 }
 
 // <b>Edit an Image</b>

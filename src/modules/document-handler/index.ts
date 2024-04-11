@@ -4,7 +4,7 @@ import { now } from '../../utils/perf'
 import { llmAddUrlDocument } from '../llms/api/llmApi'
 import { type Logger, pino } from 'pino'
 import { GrammyError } from 'grammy'
-import { sendMessage } from '../open-ai/helpers'
+import { sendMessage } from '../llms/utils/helpers'
 import { sleep } from '../sd-images/utils'
 import { AxiosError } from 'axios'
 

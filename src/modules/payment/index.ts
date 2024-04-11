@@ -9,7 +9,7 @@ import { type ImageGenerated, type OnCallBackQueryData, type OnMessageContext } 
 import { LRUCache } from 'lru-cache'
 import { freeCreditsFeeCounter } from '../../metrics/prometheus'
 import { type BotPaymentLog } from '../../database/stats.service'
-import { sendMessage } from '../open-ai/helpers'
+import { sendMessage } from '../llms/utils/helpers'
 import * as Sentry from '@sentry/node'
 import { InlineKeyboard } from 'grammy'
 import { Callbacks } from '../types'

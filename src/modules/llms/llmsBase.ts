@@ -1,4 +1,3 @@
-import { GrammyError } from 'grammy'
 import { type Logger, pino } from 'pino'
 
 // import { getCommandNamePrompt } from '../1country/utils'
@@ -11,33 +10,35 @@ import {
   type PayableBot,
   RequestState,
   type BotSessionData,
-  type LmmsSessionData
+  type LmmsSessionData,
+  type SubagentResult,
+  SubagentStatus
 } from '../types'
-import { appText } from '../open-ai/utils/text'
+import { appText } from '../../utils/text'
 import { chatService } from '../../database/services'
 import config from '../../config'
-import { sleep } from '../sd-images/utils'
 import {
   getMinBalance,
   getPromptPrice,
-  limitPrompt,
-  MAX_TRIES
+  preparePrompt,
+  sendMessage
   // SupportedCommands
 } from './utils/helpers'
-import { preparePrompt, sendMessage } from '../open-ai/helpers'
 import { type LlmCompletion, deleteCollection } from './api/llmApi'
 import * as Sentry from '@sentry/node'
 import { now } from '../../utils/perf'
-import { AxiosError } from 'axios'
-import OpenAI from 'openai'
 import { type LlmsModelsEnum } from './utils/types'
+import { ErrorHandler } from '../errorhandler'
+import { AgentBase } from '../agents/agentBase'
 
 export abstract class LlmsBase implements PayableBot {
   public module: string
   protected sessionDataKey: string
   protected readonly logger: Logger
   protected readonly payments: BotPayments
+  protected agents: AgentBase[] = []
   protected botSuspended: boolean
+  errorHandler: ErrorHandler
 
   constructor (payments: BotPayments,
     module: string,
@@ -54,6 +55,7 @@ export abstract class LlmsBase implements PayableBot {
     this.sessionDataKey = sessionDataKey
     this.botSuspended = false
     this.payments = payments
+    this.errorHandler = new ErrorHandler()
   }
 
   public abstract onEvent (ctx: OnMessageContext | OnCallBackQueryData, refundCallback: (reason?: string) => void): Promise<void>
@@ -81,39 +83,26 @@ export abstract class LlmsBase implements PayableBot {
     return (ctx.session[this.sessionDataKey as keyof BotSessionData] as LmmsSessionData)
   }
 
-  // async onPrefix (ctx: OnMessageContext | OnCallBackQueryData, model: string, stream: boolean): Promise<void> {
-  //   const session = this.getSession(ctx)
-  //   try {
-  //     if (this.botSuspended) {
-  //       ctx.transient.analytics.sessionState = RequestState.Error
-  //       sendMessage(ctx, 'The bot is suspended').catch(async (e) => { await this.onError(ctx, e) })
-  //       ctx.transient.analytics.actualResponseTime = now()
-  //       return
-  //     }
-  //     const { prompt } = getCommandNamePrompt(
-  //       ctx,
-  //       SupportedCommands
-  //     )
-  //     const prefix = this.hasPrefix(prompt)
-  //     session.requestQueue.push({
-  //       content: await preparePrompt(ctx, prompt.slice(prefix.length)),
-  //       model
-  //     })
-  //     if (!session.isProcessingQueue) {
-  //       session.isProcessingQueue = true
-  //       await this.onChatRequestHandler(ctx, stream).then(() => {
-  //         session.isProcessingQueue = false
-  //       })
-  //     }
-  //   } catch (e) {
-  //     await this.onError(ctx, e)
-  //   }
-  // }
+  protected async runSubagents (ctx: OnMessageContext | OnCallBackQueryData, msg: ChatConversation): Promise<void> {
+    // const id = ctx.message?.message_id ?? ctx.message?.reply_to_message?.message_thread_id ?? 0
+    const result = await Promise.all(this.agents.map(async (agent: AgentBase) =>
+      await agent.run(ctx, msg)))
+    const agentsCompletion = result.filter(agent => agent.status === SubagentStatus.PROCESSING)
+    await this.onAgentRequestHandler(ctx, msg, agentsCompletion)
+  }
+
+  isSupportedSubagent (ctx: OnMessageContext | OnCallBackQueryData): number {
+    let supportedAgents = 0
+    for (let i = 0; this.agents.length > i; i++) {
+      if (this.agents[i].isSupportedSubagent(ctx)) {
+        supportedAgents++
+      }
+    }
+    return supportedAgents
+  }
 
   async onChat (ctx: OnMessageContext | OnCallBackQueryData, model: string, stream: boolean): Promise<void> {
     const session = this.getSession(ctx)
-    console.log(ctx.session.llms.chatConversation)
-    console.log(ctx.session.chatGpt.chatConversation)
     try {
       if (this.botSuspended) {
         ctx.transient.analytics.sessionState = RequestState.Error
@@ -122,19 +111,54 @@ export abstract class LlmsBase implements PayableBot {
         return
       }
       const prompt = ctx.match ? ctx.match : ctx.message?.text
-      session.requestQueue.push({
-        model,
-        content: await preparePrompt(ctx, prompt as string)
-      })
-      if (!session.isProcessingQueue) {
-        session.isProcessingQueue = true
-        await this.onChatRequestHandler(ctx, stream).then(() => {
-          session.isProcessingQueue = false
+      const supportedAgents = this.isSupportedSubagent(ctx)
+      console.log('JAJAJAJ', supportedAgents)
+      if (supportedAgents === 0) {
+        session.requestQueue.push({
+          id: ctx.message?.message_id,
+          model,
+          content: await preparePrompt(ctx, prompt as string),
+          numSubAgents: 0
         })
+        if (!session.isProcessingQueue) {
+          session.isProcessingQueue = true
+          await this.onChatRequestHandler(ctx, stream).then(() => {
+            session.isProcessingQueue = false
+          })
+        }
+      } else {
+        const msg = {
+          id: ctx.message?.message_id ?? ctx.message?.message_thread_id ?? 0,
+          model,
+          content: await preparePrompt(ctx, prompt as string),
+          numSubAgents: supportedAgents
+        }
+        await this.runSubagents(ctx, msg) //  prompt as string)
       }
       ctx.transient.analytics.actualResponseTime = now()
     } catch (e: any) {
       await this.onError(ctx, e)
+    }
+  }
+
+  async onAgentRequestHandler (ctx: OnMessageContext | OnCallBackQueryData, msg: ChatConversation, subagents: SubagentResult[]): Promise<void> {
+    const session = this.getSession(ctx)
+    await Promise.all(subagents.map(async (subagent: SubagentResult) => {
+      for (const agent of this.agents) {
+        if (agent.agentName === subagent.agentName) {
+          await agent.onCheckAgentStatus(ctx)
+        }
+      }
+    }))
+    const agentsCompletion = AgentBase.getAgents(ctx, msg.id ?? 0)
+    if (agentsCompletion && agentsCompletion.length > 0) {
+      session.requestQueue.push(msg)
+      if (!session.isProcessingQueue) {
+        session.isProcessingQueue = true
+        await this.onChatRequestHandler(ctx, true).then(() => {
+          session.isProcessingQueue = false
+        })
+      }
     }
   }
 
@@ -147,23 +171,35 @@ export abstract class LlmsBase implements PayableBot {
         const model = msg?.model
         const { chatConversation } = session
         const minBalance = await getMinBalance(ctx, msg?.model as LlmsModelsEnum)
+        let enhancedPrompt = ''
         if (await this.hasBalance(ctx, minBalance)) {
           if (!prompt) {
-            const msg =
+            const errorMsg =
               chatConversation.length > 0
                 ? `${appText.gptLast}\n_${
                     chatConversation[chatConversation.length - 1].content
                   }_`
                 : appText.introText
             ctx.transient.analytics.sessionState = RequestState.Success
-            await sendMessage(ctx, msg, { parseMode: 'Markdown' }).catch(async (e) => {
+            await sendMessage(ctx, errorMsg, { parseMode: 'Markdown' }).catch(async (e) => {
               await this.onError(ctx, e)
             })
             ctx.transient.analytics.actualResponseTime = now()
             return
           }
+          if (msg?.numSubAgents && msg?.numSubAgents > 0 && msg.id) {
+            const agents = AgentBase.getAgents(ctx, msg.id)
+            if (agents) {
+              const agentCompletions = agents.map((agent: SubagentResult) => agent.completion)
+              enhancedPrompt = prompt.concat(...agentCompletions)
+              console.log(enhancedPrompt)
+              AgentBase.deleteCompletion(ctx, msg.id)
+            } else {
+              continue
+            }
+          }
           const chat: ChatConversation = {
-            content: limitPrompt(prompt),
+            content: enhancedPrompt || prompt,
             role: 'user',
             model
           }
@@ -194,22 +230,6 @@ export abstract class LlmsBase implements PayableBot {
         await this.onError(ctx, e)
       }
     }
-  }
-
-  async onStop (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
-    const session = this.getSession(ctx)
-    for (const c of ctx.session.collections.activeCollections) {
-      this.logger.info(`Deleting collection ${c.collectionName}`)
-      await deleteCollection(c.collectionName)
-    }
-    ctx.session.collections.activeCollections = []
-    ctx.session.collections.collectionConversation = []
-    ctx.session.collections.collectionRequestQueue = []
-    ctx.session.collections.currentCollection = ''
-    ctx.session.collections.isProcessingQueue = false
-    session.chatConversation = []
-    session.usage = 0
-    session.price = 0
   }
 
   protected async hasBalance (ctx: OnMessageContext | OnCallBackQueryData, minBalance = +config.llms.minimumBalance): Promise<boolean> {
@@ -345,83 +365,28 @@ export abstract class LlmsBase implements PayableBot {
     ctx.transient.analytics.actualResponseTime = now()
   }
 
+  async onStop (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
+    const session = this.getSession(ctx)
+    for (const c of ctx.session.collections.activeCollections) {
+      this.logger.info(`Deleting collection ${c.collectionName}`)
+      await deleteCollection(c.collectionName)
+    }
+    ctx.session.collections.activeCollections = []
+    ctx.session.collections.collectionConversation = []
+    ctx.session.collections.collectionRequestQueue = []
+    ctx.session.collections.currentCollection = ''
+    ctx.session.collections.isProcessingQueue = false
+    session.chatConversation = []
+    session.usage = 0
+    session.price = 0
+  }
+
   async onError (
     ctx: OnMessageContext | OnCallBackQueryData,
     e: any,
-    retryCount: number = MAX_TRIES,
-    msg?: string
+    retryCount: number = this.errorHandler.maxTries,
+    msg = ''
   ): Promise<void> {
-    ctx.transient.analytics.sessionState = RequestState.Error
-    Sentry.setContext('llms', { retryCount, msg })
-    Sentry.captureException(e)
-    ctx.chatAction = null
-    if (retryCount === 0) {
-      // Retry limit reached, log an error or take alternative action
-      this.logger.error(`Retry limit reached for error: ${e}`)
-      return
-    }
-    if (e instanceof GrammyError) {
-      if (e.error_code === 400 && e.description.includes('not enough rights')) {
-        await sendMessage(
-          ctx,
-          'Error: The bot does not have permission to send photos in chat'
-        )
-        ctx.transient.analytics.actualResponseTime = now()
-      } else if (e.error_code === 429) {
-        this.botSuspended = true
-        const retryAfter = e.parameters.retry_after
-          ? e.parameters.retry_after < 60
-            ? 60
-            : e.parameters.retry_after * 2
-          : 60
-        const method = e.method
-        const errorMessage = `On method "${method}" | ${e.error_code} - ${e.description}`
-        this.logger.error(errorMessage)
-        await sendMessage(
-          ctx,
-          `${
-            ctx.from.username ? ctx.from.username : ''
-          } Bot has reached limit, wait ${retryAfter} seconds`
-        ).catch(async (e) => { await this.onError(ctx, e, retryCount - 1) })
-        ctx.transient.analytics.actualResponseTime = now()
-        if (method === 'editMessageText') {
-          ctx.session.llms.chatConversation.pop() // deletes last prompt
-        }
-        await sleep(retryAfter * 1000) // wait retryAfter seconds to enable bot
-        this.botSuspended = false
-      } else {
-        this.logger.error(
-          `On method "${e.method}" | ${e.error_code} - ${e.description}`
-        )
-        ctx.transient.analytics.actualResponseTime = now()
-        await sendMessage(ctx, 'Error handling your request').catch(async (e) => { await this.onError(ctx, e, retryCount - 1) })
-      }
-    } else if (e instanceof OpenAI.APIError) {
-      // 429 RateLimitError
-      // e.status = 400 || e.code = BadRequestError
-      this.logger.error(`OPENAI Error ${e.status}(${e.code}) - ${e.message}`)
-      if (e.code === 'context_length_exceeded') {
-        await sendMessage(ctx, e.message).catch(async (e) => { await this.onError(ctx, e, retryCount - 1) })
-        ctx.transient.analytics.actualResponseTime = now()
-        await this.onStop(ctx)
-      } else {
-        await sendMessage(
-          ctx,
-          'Error accessing OpenAI (ChatGPT). Please try later'
-        ).catch(async (e) => { await this.onError(ctx, e, retryCount - 1) })
-        ctx.transient.analytics.actualResponseTime = now()
-      }
-    } else if (e instanceof AxiosError) {
-      this.logger.error(`${e.message}`)
-      await sendMessage(ctx, 'Error handling your request').catch(async (e) => {
-        await this.onError(ctx, e, retryCount - 1)
-      })
-    } else {
-      this.logger.error(`${e.toString()}`)
-      await sendMessage(ctx, 'Error handling your request')
-        .catch(async (e) => { await this.onError(ctx, e, retryCount - 1) }
-        )
-      ctx.transient.analytics.actualResponseTime = now()
-    }
+    await this.errorHandler.onError(ctx, e, retryCount, this.logger, msg, this.onStop.bind(this))
   }
 }

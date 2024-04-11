@@ -37,6 +37,7 @@ export function createInitialSessionData (): BotSessionData {
       currentCollection: '',
       collectionConversation: []
     },
+    subagents: { running: [], subagentsRequestQueue: [], isProcessingQueue: false },
     llms: {
       model: config.llms.model,
       isEnabled: config.llms.isEnabled,

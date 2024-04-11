@@ -53,7 +53,6 @@ import { VoiceTranslateBot } from './modules/voice-translate'
 import { TextToSpeechBot } from './modules/text-to-speech'
 import { VoiceToTextBot } from './modules/voice-to-text'
 import { now } from './utils/perf'
-import { hasPrefix } from './modules/open-ai/helpers'
 import { VoiceToVoiceGPTBot } from './modules/voice-to-voice-gpt'
 // import { VoiceCommand } from './modules/voice-command'
 import { createInitialSessionData } from './helpers'
@@ -141,10 +140,7 @@ bot.use(async (ctx: BotContext, next: NextFunction): Promise<void> => {
       break
     }
   }
-  const prefix = hasPrefix(ctx.message?.text ?? '')
-  if (!command && prefix) {
-    command = prefix
-  }
+
   await next()
   transaction.finish()
 

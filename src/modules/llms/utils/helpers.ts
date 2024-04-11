@@ -1,15 +1,17 @@
+import { type InlineKeyboardMarkup, type ParseMode } from 'grammy/types'
+import { type Message } from 'grammy/out/types'
+
 import {
   type OnMessageContext,
   type OnCallBackQueryData,
   type MessageExtras,
   type ChatPayload
 } from '../../types'
-import { type InlineKeyboardMarkup, type ParseMode } from 'grammy/types'
-import { type Message } from 'grammy/out/types'
-import { type LlmCompletion, getChatModel, llmAddUrlDocument } from '../api/llmApi'
-import { getChatModelPrice } from '../../open-ai/api/openAi'
-import config from '../../../config'
+import { type LlmCompletion, getChatModel } from '../api/llmApi'
+import { getChatModelPrice } from '../api/llmApi'
 import { childrenWords, sexWords } from '../../sd-images/words-blacklist'
+
+import config from '../../../config'
 
 export const PRICE_ADJUSTMENT = config.openAi.chatGpt.priceAdjustment
 
@@ -190,6 +192,12 @@ export const hasUsernamePassword = (prompt: string): { password: string, user: s
   return { user, password }
 }
 
+export const isValidUrl = (url: string): boolean => {
+  const urlRegex =
+  /^(https?:\/\/)?([\w.-]+\.[a-zA-Z]{2,}|[\w.-]+\.[a-zA-Z]{1,3}\.[a-zA-Z]{1,3})(\/\S*)?$/
+  return urlRegex.test(url)
+}
+
 // doesn't get all the special characters like !
 export const hasUserPasswordRegex = (prompt: string): { password: string, user: string } => {
   const pattern =
@@ -302,17 +310,6 @@ export const getPromptPrice = (completion: LlmCompletion, data: ChatPayload, upd
   }
 }
 
-export const limitPrompt = (prompt: string): string => {
-  // const wordCountPattern = /(\d+)\s*word(s)?/g
-  // const match = wordCountPattern.exec(prompt)
-
-  // if (match) {
-  //   return `${prompt}`
-  // }
-  // return `${prompt} in around ${config.openAi.chatGpt.wordLimit} words`
-  return prompt
-}
-
 export function extractPdfFilename (url: string): string | null {
   const matches = url.match(/\/([^/]+\.pdf)$/)
   if (matches) {
@@ -320,49 +317,6 @@ export function extractPdfFilename (url: string): string | null {
   } else {
     return null
   }
-}
-
-export async function addUrlToCollection (ctx: OnMessageContext | OnCallBackQueryData, chatId: number, url: string, prompt: string): Promise<void> {
-  const collectionName = await llmAddUrlDocument({
-    chatId,
-    url
-  })
-  const msgId = (await ctx.reply('...', {
-    message_thread_id:
-      ctx.message?.message_thread_id ??
-      ctx.message?.reply_to_message?.message_thread_id
-  })).message_id
-
-  ctx.session.collections.collectionRequestQueue.push({
-    collectionName,
-    collectionType: 'URL',
-    url: url.toLocaleLowerCase(),
-    prompt,
-    msgId,
-    processingTime: 0
-  })
-}
-
-export async function addDocToCollection (ctx: OnMessageContext | OnCallBackQueryData, chatId: number, fileName: string, url: string, prompt: string): Promise<void> {
-  const collectionName = await llmAddUrlDocument({
-    chatId,
-    url,
-    fileName
-  })
-  const msgId = (await ctx.reply('...', {
-    message_thread_id:
-      ctx.message?.message_thread_id ??
-      ctx.message?.reply_to_message?.message_thread_id
-  })).message_id
-  ctx.session.collections.collectionRequestQueue.push({
-    collectionName,
-    collectionType: 'PDF',
-    fileName,
-    url: url.toLocaleLowerCase(),
-    prompt,
-    msgId,
-    processingTime: 0
-  })
 }
 
 export const getMinBalance = async (ctx: OnMessageContext | OnCallBackQueryData,

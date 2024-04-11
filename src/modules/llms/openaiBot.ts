@@ -10,7 +10,6 @@ import {
   hasDallePrefix,
   hasNewPrefix,
   isMentioned,
-  MAX_TRIES,
   PRICE_ADJUSTMENT,
   sendMessage,
   SupportedCommands
@@ -28,10 +27,12 @@ import {
   getDalleModelPrice,
   streamChatCompletion
 } from './api/openai'
+import { LlamaAgent } from '../agents/llamaAgent'
 
 export class OpenAIBot extends LlmsBase {
   constructor (payments: BotPayments) {
     super(payments, 'OpenAIBot', 'chatGpt')
+    this.agents.push(new LlamaAgent(payments, 'llamaAgent'))
     if (!config.openAi.dalle.isEnabled) {
       this.logger.warn('DALL·E 2 Image Bot is disabled in config')
     }
@@ -190,7 +191,7 @@ export class OpenAIBot extends LlmsBase {
 
     ctx.transient.analytics.sessionState = RequestState.Error
     await sendMessage(ctx, '### unsupported command').catch(async (e) => {
-      await this.onError(ctx, e, MAX_TRIES, '### unsupported command')
+      await this.onError(ctx, e, this.errorHandler.maxTries, '### unsupported command')
     })
     ctx.transient.analytics.actualResponseTime = now()
   }

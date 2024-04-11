@@ -15,9 +15,11 @@ import { LlmsModelsEnum } from './utils/types'
 
 import { LlmsBase } from './llmsBase'
 import { vertexCompletion, vertexStreamCompletion } from './api/vertex'
+import { LlamaAgent } from '../agents/llamaAgent'
 export class VertexBot extends LlmsBase {
   constructor (payments: BotPayments) {
     super(payments, 'VertexBot', 'llms')
+    this.agents.push(new LlamaAgent(payments, 'llamaAgent'))
   }
 
   public getEstimatedPrice (ctx: any): number {

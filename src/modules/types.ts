@@ -50,10 +50,12 @@ export interface VisionContent {
   image_url?: { url: string }
 }
 export interface ChatConversation {
+  id?: number
   role?: string
   author?: string
   content: string | VisionContent[]
   model?: string
+  numSubAgents?: number
 }
 
 export interface ImageRequest {
@@ -125,6 +127,7 @@ export interface Collection {
   prompt?: string
   msgId?: number
   processingTime?: number // milliseconds
+  agentId?: number
 }
 
 export interface FileDoc {
@@ -153,6 +156,24 @@ export interface PaymentAnalytics {
   paymentFiatCredits: number
 }
 
+export enum SubagentStatus {
+  NO_SUPPORTED_EVENT = 'NO_SUPORTED_EVENT',
+  PROCESSING = 'PROCESSING',
+  DONE = 'DONE',
+  ERROR = 'ERROR'
+}
+export interface SubagentResult {
+  id: number
+  agentName: string
+  completion: string
+  status: SubagentStatus
+}
+
+export interface SubagentSessionData {
+  running: SubagentResult[]
+  isProcessingQueue: boolean
+  subagentsRequestQueue: SubagentResult[]
+}
 export interface BotSessionData {
   oneCountry: OneCountryData
   collections: CollectionSessionData
@@ -160,6 +181,7 @@ export interface BotSessionData {
   translate: TranslateBotData
   llms: LmmsSessionData
   chatGpt: LmmsSessionData
+  subagents: SubagentSessionData
 }
 
 export interface TransientStateContext {

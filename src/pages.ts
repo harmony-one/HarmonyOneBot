@@ -1,5 +1,5 @@
 import { Menu } from '@grammyjs/menu'
-import { chatMainMenu } from './modules/open-ai/pages/chatPage'
+import { chatMainMenu } from './modules/llms/menu/openaiMenu'
 import { type BotContext } from './modules/types'
 import { sdImagesMenu } from './modules/sd-images/menu'
 import { voiceMemoMenu } from './modules/voice-memo/menu'

@@ -3,7 +3,8 @@ import config from '../../../config'
 import { type ChatConversation } from '../../types'
 import pino from 'pino'
 import { LlmsModels, LlmsModelsEnum } from '../utils/types'
-import { type ChatModel } from '../../open-ai/types'
+import { type ChatModel } from '../utils/types'
+// import { type ChatModel } from '../../open-ai/types'
 
 const API_ENDPOINT = config.llms.apiEndpoint // config.llms.apiEndpoint // 'http://localhost:8080' // http://127.0.0.1:5000' // config.llms.apiEndpoint
 
