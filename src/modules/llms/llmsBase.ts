@@ -10,7 +10,7 @@ import {
   type PayableBot,
   RequestState,
   type BotSessionData,
-  type LmmsSessionData,
+  type LlmsSessionData,
   type SubagentResult,
   SubagentStatus
 } from '../types'
@@ -29,20 +29,21 @@ import * as Sentry from '@sentry/node'
 import { now } from '../../utils/perf'
 import { type LlmsModelsEnum } from './utils/types'
 import { ErrorHandler } from '../errorhandler'
-import { AgentBase } from '../agents/agentBase'
+import { SubagentBase } from '../subagents/subagentBase'
 
 export abstract class LlmsBase implements PayableBot {
   public module: string
   protected sessionDataKey: string
   protected readonly logger: Logger
   protected readonly payments: BotPayments
-  protected agents: AgentBase[] = []
+  protected subagents: SubagentBase[]
   protected botSuspended: boolean
   errorHandler: ErrorHandler
 
   constructor (payments: BotPayments,
     module: string,
-    sessionDataKey: string
+    sessionDataKey: string,
+    subagents?: SubagentBase[]
   ) {
     this.module = module
     this.logger = pino({
@@ -55,6 +56,7 @@ export abstract class LlmsBase implements PayableBot {
     this.sessionDataKey = sessionDataKey
     this.botSuspended = false
     this.payments = payments
+    this.subagents = subagents ?? []
     this.errorHandler = new ErrorHandler()
   }
 
@@ -79,13 +81,13 @@ export abstract class LlmsBase implements PayableBot {
 
   protected abstract hasPrefix (prompt: string): string
 
-  protected getSession (ctx: OnMessageContext | OnCallBackQueryData): LmmsSessionData {
-    return (ctx.session[this.sessionDataKey as keyof BotSessionData] as LmmsSessionData)
+  protected getSession (ctx: OnMessageContext | OnCallBackQueryData): LlmsSessionData {
+    return (ctx.session[this.sessionDataKey as keyof BotSessionData] as LlmsSessionData)
   }
 
   protected async runSubagents (ctx: OnMessageContext | OnCallBackQueryData, msg: ChatConversation): Promise<void> {
     // const id = ctx.message?.message_id ?? ctx.message?.reply_to_message?.message_thread_id ?? 0
-    const result = await Promise.all(this.agents.map(async (agent: AgentBase) =>
+    const result = await Promise.all(this.subagents.map(async (agent: SubagentBase) =>
       await agent.run(ctx, msg)))
     const agentsCompletion = result.filter(agent => agent.status === SubagentStatus.PROCESSING)
     await this.onAgentRequestHandler(ctx, msg, agentsCompletion)
@@ -93,8 +95,8 @@ export abstract class LlmsBase implements PayableBot {
 
   isSupportedSubagent (ctx: OnMessageContext | OnCallBackQueryData): number {
     let supportedAgents = 0
-    for (let i = 0; this.agents.length > i; i++) {
-      if (this.agents[i].isSupportedSubagent(ctx)) {
+    for (let i = 0; this.subagents.length > i; i++) {
+      if (this.subagents[i].isSupportedSubagent(ctx)) {
         supportedAgents++
       }
     }
@@ -112,7 +114,6 @@ export abstract class LlmsBase implements PayableBot {
       }
       const prompt = ctx.match ? ctx.match : ctx.message?.text
       const supportedAgents = this.isSupportedSubagent(ctx)
-      console.log('JAJAJAJ', supportedAgents)
       if (supportedAgents === 0) {
         session.requestQueue.push({
           id: ctx.message?.message_id,
@@ -144,13 +145,13 @@ export abstract class LlmsBase implements PayableBot {
   async onAgentRequestHandler (ctx: OnMessageContext | OnCallBackQueryData, msg: ChatConversation, subagents: SubagentResult[]): Promise<void> {
     const session = this.getSession(ctx)
     await Promise.all(subagents.map(async (subagent: SubagentResult) => {
-      for (const agent of this.agents) {
-        if (agent.agentName === subagent.agentName) {
+      for (const agent of this.subagents) {
+        if (agent.name === subagent.name) {
           await agent.onCheckAgentStatus(ctx)
         }
       }
     }))
-    const agentsCompletion = AgentBase.getAgents(ctx, msg.id ?? 0)
+    const agentsCompletion = SubagentBase.getSubagents(ctx, msg.id ?? 0)
     if (agentsCompletion && agentsCompletion.length > 0) {
       session.requestQueue.push(msg)
       if (!session.isProcessingQueue) {
@@ -188,12 +189,12 @@ export abstract class LlmsBase implements PayableBot {
             return
           }
           if (msg?.numSubAgents && msg?.numSubAgents > 0 && msg.id) {
-            const agents = AgentBase.getAgents(ctx, msg.id)
+            const agents = SubagentBase.getSubagents(ctx, msg.id)
             if (agents) {
               const agentCompletions = agents.map((agent: SubagentResult) => agent.completion)
               enhancedPrompt = prompt.concat(...agentCompletions)
               console.log(enhancedPrompt)
-              AgentBase.deleteCompletion(ctx, msg.id)
+              SubagentBase.deleteCompletion(ctx, msg.id)
             } else {
               continue
             }

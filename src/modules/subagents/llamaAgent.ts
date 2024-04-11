@@ -1,23 +1,27 @@
 import { type BotPayments } from '../payment'
 import { now } from '../../utils/perf'
-import { AgentBase } from './agentBase'
+import { SubagentBase } from './subagentBase'
 import { getUrlFromText } from '../llms/utils/helpers'
 import { llmAddUrlDocument, llmCheckCollectionStatus, queryUrlDocument } from '../llms/api/llmApi'
 import { ErrorHandler } from '../errorhandler'
 import { sleep } from '../sd-images/utils'
-import { RequestState, type ChatConversation, type Collection, type OnCallBackQueryData, type OnMessageContext, SubagentStatus } from '../types'
+import {
+  RequestState,
+  type ChatConversation,
+  type Collection, type OnCallBackQueryData,
+  type OnMessageContext,
+  type SubagentResult,
+  SubagentStatus
+} from '../types'
 import config from '../../config'
-import { type SubagentResult } from '../../modules/types'
 import { appText } from '../../utils/text'
 
-export class LlamaAgent extends AgentBase {
+export class LlamaAgent extends SubagentBase {
   errorHandler: ErrorHandler
-  agentName: string
 
   constructor (payments: BotPayments, name: string) {
-    super(payments, 'PDFAgent', 'chatGpt', appText.llamaURLContext)
+    super(payments, 'PDFAgent', name, appText.llamaURLContext)
     this.errorHandler = new ErrorHandler()
-    this.agentName = name
   }
 
   public getEstimatedPrice (ctx: any): number {
@@ -37,7 +41,7 @@ export class LlamaAgent extends AgentBase {
 
   async checkStatus (ctx: OnMessageContext | OnCallBackQueryData, agent: SubagentResult): Promise<SubagentResult> {
     const session = this.getSession(ctx)
-    return session.running.filter(subagents => subagents.id === agent.id && subagents.agentName === agent.agentName)[0]
+    return session.running.filter(subagents => subagents.id === agent.id && subagents.name === agent.name)[0]
   }
 
   public async run (ctx: OnMessageContext | OnCallBackQueryData, msg: ChatConversation): Promise<SubagentResult> {
@@ -60,7 +64,7 @@ export class LlamaAgent extends AgentBase {
         }
         const agent: SubagentResult = {
           id,
-          agentName: this.agentName,
+          name: this.name,
           completion: '',
           status: SubagentStatus.PROCESSING
         }
@@ -76,7 +80,7 @@ export class LlamaAgent extends AgentBase {
     }
     return {
       id,
-      agentName: this.agentName,
+      name: this.name,
       completion: '',
       status: SubagentStatus.NO_SUPPORTED_EVENT
     }
@@ -286,7 +290,7 @@ export class LlamaAgent extends AgentBase {
                   { link_preview_options: { is_disabled: true } })
                 ctx.session.subagents.running.push({
                   id: collection.agentId ?? 0,
-                  agentName: this.agentName,
+                  name: this.name,
                   completion: '',
                   status: SubagentStatus.ERROR
                 })
@@ -336,7 +340,7 @@ export class LlamaAgent extends AgentBase {
         } else {
           session.running.push({
             id: collection.agentId ?? 0,
-            agentName: this.agentName,
+            name: this.name,
             completion: this.completionContext.replace('%COMPLETION%', response.completion),
             status: SubagentStatus.DONE
           })

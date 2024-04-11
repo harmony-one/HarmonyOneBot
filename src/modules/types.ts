@@ -90,7 +90,7 @@ export interface ChatGptSessionData {
   isProcessingQueue: boolean
 }
 
-export interface LmmsSessionData {
+export interface LlmsSessionData {
   model: string
   isEnabled: boolean
   chatConversation: ChatConversation[]
@@ -164,7 +164,7 @@ export enum SubagentStatus {
 }
 export interface SubagentResult {
   id: number
-  agentName: string
+  name: string
   completion: string
   status: SubagentStatus
 }
@@ -179,8 +179,8 @@ export interface BotSessionData {
   collections: CollectionSessionData
   openAi: OpenAiSessionData
   translate: TranslateBotData
-  llms: LmmsSessionData
-  chatGpt: LmmsSessionData
+  llms: LlmsSessionData
+  chatGpt: LlmsSessionData
   subagents: SubagentSessionData
 }
 

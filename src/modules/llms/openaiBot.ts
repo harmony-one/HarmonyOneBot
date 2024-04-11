@@ -27,12 +27,12 @@ import {
   getDalleModelPrice,
   streamChatCompletion
 } from './api/openai'
-import { LlamaAgent } from '../agents/llamaAgent'
+import { LlamaAgent } from '../subagents/llamaAgent'
 
 export class OpenAIBot extends LlmsBase {
   constructor (payments: BotPayments) {
     super(payments, 'OpenAIBot', 'chatGpt')
-    this.agents.push(new LlamaAgent(payments, 'llamaAgent'))
+    this.subagents.push(new LlamaAgent(payments, 'llamaAgent'))
     if (!config.openAi.dalle.isEnabled) {
       this.logger.warn('DALL·E 2 Image Bot is disabled in config')
     }

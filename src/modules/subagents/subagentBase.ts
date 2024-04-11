@@ -19,18 +19,19 @@ import { now } from '../../utils/perf'
 import { ErrorHandler } from '../errorhandler'
 import { sleep } from '../sd-images/utils'
 
-export abstract class AgentBase implements PayableBot {
+export abstract class SubagentBase implements PayableBot {
   private readonly sessionDataKey: string
+  private readonly session: SubagentSessionData
   protected completionContext: string
-  public agentName: string
   protected readonly logger: Logger
   protected readonly payments: BotPayments
   public module: string
+  public name: string
   errorHandler: ErrorHandler
 
   constructor (payments: BotPayments,
     module: string,
-    agentName: string,
+    name: string,
     context: string
   ) {
     this.module = module
@@ -41,7 +42,7 @@ export abstract class AgentBase implements PayableBot {
         options: { colorize: true }
       }
     })
-    this.agentName = agentName
+    this.name = name
     this.payments = payments
     this.completionContext = context
     this.sessionDataKey = 'subagents'
@@ -69,7 +70,7 @@ export abstract class AgentBase implements PayableBot {
     ctx.session.subagents.running = ctx.session.subagents.running.filter(agent => agent.id === id)
   }
 
-  public static getAgents (ctx: OnMessageContext | OnCallBackQueryData, id: number): SubagentResult[] | undefined {
+  public static getSubagents (ctx: OnMessageContext | OnCallBackQueryData, id: number): SubagentResult[] | undefined {
     return ctx.session.subagents.running.filter(agent => agent.id === id)
   }
 
