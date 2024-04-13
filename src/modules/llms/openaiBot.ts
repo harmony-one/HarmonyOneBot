@@ -10,7 +10,6 @@ import {
   hasDallePrefix,
   hasNewPrefix,
   isMentioned,
-  PRICE_ADJUSTMENT,
   sendMessage,
   SupportedCommands
 } from './utils/helpers'
@@ -23,11 +22,9 @@ import { now } from '../../utils/perf'
 import { appText } from '../../utils/text'
 import {
   chatCompletion,
-  getDalleModel,
-  getDalleModelPrice,
   streamChatCompletion
 } from './api/openai'
-import { LlamaAgent } from '../subagents/llamaAgent'
+import { LlamaAgent } from '../subagents'
 
 export class OpenAIBot extends LlmsBase {
   constructor (payments: BotPayments) {
@@ -40,31 +37,6 @@ export class OpenAIBot extends LlmsBase {
 
   public getEstimatedPrice (ctx: any): number {
     try {
-      const prompts = ctx.match
-      // if (this.isSupportedImageReply(ctx) && !isNaN(+prompts)) {
-      //   const imageNumber = ctx.message?.caption || ctx.message?.text
-      //   const imageSize = ctx.session.openAi.imageGen.imgSize
-      //   const model = getDalleModel(imageSize)
-      //   const price = getDalleModelPrice(model, true, imageNumber) // cents
-      //   return price * priceAdjustment
-      // }
-      if (!prompts) {
-        return 0
-      }
-      if (
-        ctx.hasCommand([
-          SupportedCommands.dalle,
-          SupportedCommands.dalleImg,
-          SupportedCommands.dalleShort,
-          SupportedCommands.dalleShorter
-        ])
-      ) {
-        const imageNumber = ctx.session.openAi.imageGen.numImages
-        const imageSize = ctx.session.openAi.imageGen.imgSize
-        const model = getDalleModel(imageSize)
-        const price = getDalleModelPrice(model, true, imageNumber) // cents
-        return price * PRICE_ADJUSTMENT
-      }
       return 0
     } catch (e) {
       Sentry.captureException(e)
@@ -177,6 +149,7 @@ export class OpenAIBot extends LlmsBase {
     if (ctx.hasCommand(SupportedCommands.ask32)) {
       session.model = LlmsModelsEnum.GPT_4_32K
       await this.onChat(ctx, LlmsModelsEnum.GPT_4_32K, true)
+      return
     }
 
     if (ctx.hasCommand(SupportedCommands.last)) {

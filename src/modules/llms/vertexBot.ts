@@ -15,7 +15,7 @@ import { LlmsModelsEnum } from './utils/types'
 
 import { LlmsBase } from './llmsBase'
 import { vertexCompletion, vertexStreamCompletion } from './api/vertex'
-import { LlamaAgent } from '../subagents/llamaAgent'
+import { LlamaAgent } from '../subagents'
 export class VertexBot extends LlmsBase {
   constructor (payments: BotPayments) {
     super(payments, 'VertexBot', 'llms')

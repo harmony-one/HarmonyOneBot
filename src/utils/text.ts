@@ -13,7 +13,13 @@ Adjust image size or how many images are generated`,
     'Your credits: $CREDITS ONE tokens. To recharge, send ONE to `$WALLET_ADDRESS`',
   maliciousPrompt:
     'Your prompt has been flagged for potentially generating illegal or malicious content. If you believe there has been a mistake, please reach out to support.',
-  llamaURLContext: 'This is URL handler subagent completion: %COMPLETION%'
+  llamaURLContext: 'Based on the information gathered from the URL (%URL%): %AGENT_OUTPUT%'
+  // financialContext: 'Based of the financial data from this company (%COMPANY%): %AGENT_OUTPUT%'
+  //  please provide a detailed explanation:
+
+  // %AGENT_OUTPUT%`
+  // '''
+  // 'This is the web crawler context of the given URL(https://deepmind.google/technologies/gemini/#gemini-1.0): %COMPLETION%'
 }
 
 // <b>Edit an Image</b>

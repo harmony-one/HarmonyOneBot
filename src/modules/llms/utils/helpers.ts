@@ -77,17 +77,23 @@ export const isMentioned = (
   return false
 }
 
-export const getUrlFromText = (ctx: OnMessageContext | OnCallBackQueryData): string[] | undefined => {
-  const entities = ctx.message?.entities ? ctx.message?.entities : ctx.message?.reply_to_message?.entities
-  const text = ctx.message?.text ? ctx.message?.text : ctx.message?.reply_to_message?.text
-  if (entities && text) {
-    const urlEntity = entities.filter(e => e.type === 'url')
-    if (urlEntity.length > 0) {
-      const urls = urlEntity.map(e => text.slice(e.offset, e.offset + e.length))
-      return urls
-    }
+export const getMsgEntities = (ctx: OnMessageContext | OnCallBackQueryData, filter: string): string[] | undefined => {
+  const msgEntities = ctx.message?.entities?.filter(e => e.type === filter)
+  const msg = ctx.message?.text
+  if (msgEntities && msgEntities?.length > 0 && msg) {
+    return msgEntities.map(e => msg.slice(e.offset, e.offset + e.length))
+  }
+  const replyEntities = ctx.update.message?.reply_to_message?.entities?.filter(e => e.type === filter)
+  const reply = ctx.message?.reply_to_message?.text
+  if (replyEntities && replyEntities?.length > 0 && reply) {
+    return replyEntities.map(e => reply.slice(e.offset, e.offset + e.length))
   }
   return undefined
+}
+
+export const getUrlFromText = (ctx: OnMessageContext | OnCallBackQueryData): string[] | undefined => {
+  const entities = getMsgEntities(ctx, 'url')
+  return entities
 }
 
 export const promptHasBadWords = (prompt: string): boolean => {
@@ -333,4 +339,9 @@ export const getMinBalance = async (ctx: OnMessageContext | OnCallBackQueryData,
     conversation: []
   }, false)
   return minBalance.price
+}
+
+export const hasCodeSnippet = (ctx: OnMessageContext | OnCallBackQueryData): boolean => {
+  const entities = ctx.entities('pre') // pre => code snippets
+  return entities.length > 0
 }

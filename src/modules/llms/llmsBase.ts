@@ -86,7 +86,6 @@ export abstract class LlmsBase implements PayableBot {
   }
 
   protected async runSubagents (ctx: OnMessageContext | OnCallBackQueryData, msg: ChatConversation): Promise<void> {
-    // const id = ctx.message?.message_id ?? ctx.message?.reply_to_message?.message_thread_id ?? 0
     const result = await Promise.all(this.subagents.map(async (agent: SubagentBase) =>
       await agent.run(ctx, msg)))
     const agentsCompletion = result.filter(agent => agent.status === SubagentStatus.PROCESSING)
@@ -131,7 +130,7 @@ export abstract class LlmsBase implements PayableBot {
         const msg = {
           id: ctx.message?.message_id ?? ctx.message?.message_thread_id ?? 0,
           model,
-          content: await preparePrompt(ctx, prompt as string),
+          content: prompt as string ?? '', // await preparePrompt(ctx, prompt as string),
           numSubAgents: supportedAgents
         }
         await this.runSubagents(ctx, msg) //  prompt as string)
@@ -151,7 +150,7 @@ export abstract class LlmsBase implements PayableBot {
         }
       }
     }))
-    const agentsCompletion = SubagentBase.getSubagents(ctx, msg.id ?? 0)
+    const agentsCompletion = SubagentBase.getRunningSubagents(ctx, msg.id ?? 0)
     if (agentsCompletion && agentsCompletion.length > 0) {
       session.requestQueue.push(msg)
       if (!session.isProcessingQueue) {
@@ -170,6 +169,7 @@ export abstract class LlmsBase implements PayableBot {
         const msg = session.requestQueue.shift()
         const prompt = msg?.content as string
         const model = msg?.model
+        let agentCompletions: string[] = []
         const { chatConversation } = session
         const minBalance = await getMinBalance(ctx, msg?.model as LlmsModelsEnum)
         let enhancedPrompt = ''
@@ -189,16 +189,24 @@ export abstract class LlmsBase implements PayableBot {
             return
           }
           if (msg?.numSubAgents && msg?.numSubAgents > 0 && msg.id) {
-            const agents = SubagentBase.getSubagents(ctx, msg.id)
+            const agents = SubagentBase.getRunningSubagents(ctx, msg.id)
             if (agents) {
-              const agentCompletions = agents.map((agent: SubagentResult) => agent.completion)
-              enhancedPrompt = prompt.concat(...agentCompletions)
-              console.log(enhancedPrompt)
-              SubagentBase.deleteCompletion(ctx, msg.id)
+              agentCompletions = agents.map((agent: SubagentResult) => agent.completion + `${'\n'}`)
+              enhancedPrompt = ''.concat(...agentCompletions)
+              enhancedPrompt += prompt
+              this.logger.info(`Enhanced prompt: ${enhancedPrompt}`)
+              SubagentBase.deleteRunningSubagents(ctx, msg.id)
             } else {
               continue
             }
           }
+          if (chatConversation.length === 0) {
+            chatConversation.push({
+              role: 'system',
+              content: config.openAi.chatGpt.chatCompletionContext
+            })
+          }
+          // const hasCode = hasCodeSnippet(ctx)
           const chat: ChatConversation = {
             content: enhancedPrompt || prompt,
             role: 'user',

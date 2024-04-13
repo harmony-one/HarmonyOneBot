@@ -9,7 +9,6 @@ import {
   type BotSessionData,
   type SubagentSessionData,
   type SubagentResult,
-  SubagentStatus,
   type ChatConversation
 } from '../types'
 import { appText } from '../../utils/text'
@@ -66,11 +65,11 @@ export abstract class SubagentBase implements PayableBot {
     return (ctx.session[this.sessionDataKey as keyof BotSessionData] as SubagentSessionData)
   }
 
-  public static deleteCompletion (ctx: OnMessageContext | OnCallBackQueryData, id: number): void {
-    ctx.session.subagents.running = ctx.session.subagents.running.filter(agent => agent.id === id)
+  public static deleteRunningSubagents (ctx: OnMessageContext | OnCallBackQueryData, id: number): void {
+    ctx.session.subagents.running = ctx.session.subagents.running.filter(agent => agent.id !== id)
   }
 
-  public static getSubagents (ctx: OnMessageContext | OnCallBackQueryData, id: number): SubagentResult[] | undefined {
+  public static getRunningSubagents (ctx: OnMessageContext | OnCallBackQueryData, id: number): SubagentResult[] | undefined {
     return ctx.session.subagents.running.filter(agent => agent.id === id)
   }
 
@@ -81,12 +80,14 @@ export abstract class SubagentBase implements PayableBot {
         const agent = session.subagentsRequestQueue.shift()
         if (agent) {
           const result = await this.checkStatus(ctx, agent)
-          if (!result || result.status === SubagentStatus.PROCESSING) {
+          if (!result) { // || result.status === SubagentStatus.PROCESSING) {
             session.subagentsRequestQueue.push(agent)
             await sleep(3000)
-          } else {
-            session.running.push(agent)
           }
+          // else {
+          //   console.log('onCheckAgentStatus', agent)
+          //   session.running.push(agent)
+          // }
         }
         ctx.transient.analytics.actualResponseTime = now()
       } catch (e: any) {

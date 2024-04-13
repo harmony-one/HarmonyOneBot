@@ -1,7 +1,7 @@
 import { type BotPayments } from '../payment'
 import { now } from '../../utils/perf'
 import { SubagentBase } from './subagentBase'
-import { getUrlFromText } from '../llms/utils/helpers'
+import { getMsgEntities } from '../llms/utils/helpers'
 import { llmAddUrlDocument, llmCheckCollectionStatus, queryUrlDocument } from '../llms/api/llmApi'
 import { ErrorHandler } from '../errorhandler'
 import { sleep } from '../sd-images/utils'
@@ -60,6 +60,7 @@ export class LlamaAgent extends SubagentBase {
             })
           }
         } else {
+          collection.agentId = id
           await this.queryUrlCollection(ctx, urls[0], msg.content as string)
         }
         const agent: SubagentResult = {
@@ -117,7 +118,10 @@ export class LlamaAgent extends SubagentBase {
   }
 
   public isSupportedUrl (ctx: OnMessageContext | OnCallBackQueryData): string[] | undefined {
-    return getUrlFromText(ctx)
+    if (ctx.chat?.type === 'private') {
+      return getMsgEntities(ctx, 'url')
+    }
+    return undefined
   }
 
   private async addUrlToCollection (ctx: OnMessageContext | OnCallBackQueryData, chatId: number, url: string, prompt: string): Promise<void> {
@@ -167,22 +171,22 @@ export class LlamaAgent extends SubagentBase {
     })
   }
 
-  public async onPdfReplyHandler (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
-    try {
-      const fileName = this.isSupportedPdfReply(ctx)
-      const prompt = ctx.message?.text ?? 'Summarize this context'
-      if (fileName !== '') {
-        const collection = ctx.session.collections.activeCollections.find(c => c.fileName === fileName)
-        if (collection) {
-          await this.queryUrlCollection(ctx, collection.url, prompt)
-        }
-      }
-      ctx.transient.analytics.actualResponseTime = now()
-    } catch (e: any) {
-      this.logger.error(`onPdfReplyHandler error: ${e}`)
-      throw e
-    }
-  }
+  // public async onPdfReplyHandler (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
+  //   try {
+  //     const fileName = this.isSupportedPdfReply(ctx)
+  //     const prompt = ctx.message?.text ?? 'Summarize this context'
+  //     if (fileName !== '') {
+  //       const collection = ctx.session.collections.activeCollections.find(c => c.fileName === fileName)
+  //       if (collection) {
+  //         await this.queryUrlCollection(ctx, collection.url, prompt)
+  //       }
+  //     }
+  //     ctx.transient.analytics.actualResponseTime = now()
+  //   } catch (e: any) {
+  //     this.logger.error(`onPdfReplyHandler error: ${e}`)
+  //     throw e
+  //   }
+  // }
 
   private getCollectionConversation (ctx: OnMessageContext | OnCallBackQueryData, collection: Collection): ChatConversation[] {
     if (ctx.session.collections.currentCollection === collection.collectionName) {
@@ -217,26 +221,27 @@ export class LlamaAgent extends SubagentBase {
     }
   }
 
-  async onUrlReplyHandler (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
-    try {
-      const url = getUrlFromText(ctx)
-      if (url) {
-        const prompt = ctx.message?.text ?? 'summarize'
-        const collection = ctx.session.collections.activeCollections.find(c => c.url === url[0])
-        const newPrompt = `${prompt}` // ${url}
-        if (collection) {
-          await this.queryUrlCollection(ctx, url[0], newPrompt)
-        }
-        ctx.transient.analytics.actualResponseTime = now()
-      }
-    } catch (e: any) {
-      this.logger.error(`onUrlReplyHandler: ${e.toString()}`)
-      throw e
-    }
-  }
+  // async onUrlReplyHandler (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
+  //   try {
+  //     const url = getUrlFromText(ctx)
+  //     if (url) {
+  //       const prompt = ctx.message?.text ?? 'summarize'
+  //       const collection = ctx.session.collections.activeCollections.find(c => c.url === url[0])
+  //       const newPrompt = `${prompt}` // ${url}
+  //       if (collection) {
+  //         await this.queryUrlCollection(ctx, url[0], newPrompt)
+  //       }
+  //       ctx.transient.analytics.actualResponseTime = now()
+  //     }
+  //   } catch (e: any) {
+  //     this.logger.error(`onUrlReplyHandler: ${e.toString()}`)
+  //     throw e
+  //   }
+  // }
 
   async onCheckCollectionStatus (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
     const processingTime = config.llms.processingTime
+    const session = this.getSession(ctx)
     while (ctx.session.collections.collectionRequestQueue.length > 0) {
       try {
         const collection = ctx.session.collections.collectionRequestQueue.shift()
@@ -288,7 +293,7 @@ export class LlamaAgent extends SubagentBase {
                 }
                 await ctx.api.editMessageText(ctx.chat?.id ?? '', collection.msgId, statusMsg,
                   { link_preview_options: { is_disabled: true } })
-                ctx.session.subagents.running.push({
+                session.running.push({
                   id: collection.agentId ?? 0,
                   name: this.name,
                   completion: '',
@@ -341,7 +346,7 @@ export class LlamaAgent extends SubagentBase {
           session.running.push({
             id: collection.agentId ?? 0,
             name: this.name,
-            completion: this.completionContext.replace('%COMPLETION%', response.completion),
+            completion: this.completionContext.replace('%AGENT_OUTPUT%', response.completion).replace('%URL%', collection.url),
             status: SubagentStatus.DONE
           })
         }
