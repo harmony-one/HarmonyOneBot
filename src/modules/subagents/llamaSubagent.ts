@@ -45,12 +45,11 @@ export class LlamaAgent extends SubagentBase {
   }
 
   public async run (ctx: OnMessageContext | OnCallBackQueryData, msg: ChatConversation): Promise<SubagentResult> {
-    const session = this.getSession(ctx)
     const urls = this.isSupportedUrl(ctx)
     const id = msg.id ?? 0
     if (ctx.chat?.id) {
       if (urls && urls?.length > 0) {
-        const collection = ctx.session.collections.activeCollections.find(c => c.url === urls[0])
+        let collection = ctx.session.collections.activeCollections.find(c => c.url === urls[0])
         if (!collection) {
           await this.addUrlToCollection(ctx, ctx.chat?.id, urls[0], msg.content as string)
           if (!ctx.session.collections.isProcessingQueue) {
@@ -59,24 +58,12 @@ export class LlamaAgent extends SubagentBase {
               ctx.session.collections.isProcessingQueue = false
             })
           }
-        } else {
+          collection = ctx.session.collections.activeCollections.find(c => c.url === urls[0])
+        }
+        if (collection) {
           collection.agentId = id
           await this.queryUrlCollection(ctx, urls[0], msg.content as string)
         }
-        const agent: SubagentResult = {
-          id,
-          name: this.name,
-          completion: '',
-          status: SubagentStatus.PROCESSING
-        }
-        session.subagentsRequestQueue.push(agent)
-        if (!session.isProcessingQueue) {
-          session.isProcessingQueue = true
-          await this.onCheckAgentStatus(ctx).then(() => {
-            session.isProcessingQueue = false
-          })
-        }
-        return agent
       }
     }
     return {
@@ -267,9 +254,6 @@ export class LlamaAgent extends SubagentBase {
                   { link_preview_options: { is_disabled: true } })
                   .catch(async (e) => { await this.onError(ctx, e) })
               }
-              await this.queryUrlCollection(ctx, collection.url, collection.prompt ?? '')
-              // await this.queryUrlCollection(ctx, collection.url ?? '',
-              //   collection.prompt ?? 'summary')
             }
           } else if (result.price < 0) {
             if (collection.msgId) {

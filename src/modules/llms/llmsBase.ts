@@ -11,8 +11,7 @@ import {
   RequestState,
   type BotSessionData,
   type LlmsSessionData,
-  type SubagentResult,
-  SubagentStatus
+  type SubagentResult
 } from '../types'
 import { appText } from '../../utils/text'
 import { chatService } from '../../database/services'
@@ -86,10 +85,19 @@ export abstract class LlmsBase implements PayableBot {
   }
 
   protected async runSubagents (ctx: OnMessageContext | OnCallBackQueryData, msg: ChatConversation): Promise<void> {
-    const result = await Promise.all(this.subagents.map(async (agent: SubagentBase) =>
+    const session = this.getSession(ctx)
+    await Promise.all(this.subagents.map(async (agent: SubagentBase) =>
       await agent.run(ctx, msg)))
-    const agentsCompletion = result.filter(agent => agent.status === SubagentStatus.PROCESSING)
-    await this.onAgentRequestHandler(ctx, msg, agentsCompletion)
+    const agentsCompletion = SubagentBase.getRunningSubagents(ctx, msg.id ?? 0)
+    if (agentsCompletion && agentsCompletion.length > 0) {
+      session.requestQueue.push(msg)
+      if (!session.isProcessingQueue) {
+        session.isProcessingQueue = true
+        await this.onChatRequestHandler(ctx, true).then(() => {
+          session.isProcessingQueue = false
+        })
+      }
+    }
   }
 
   isSupportedSubagent (ctx: OnMessageContext | OnCallBackQueryData): number {
@@ -138,27 +146,6 @@ export abstract class LlmsBase implements PayableBot {
       ctx.transient.analytics.actualResponseTime = now()
     } catch (e: any) {
       await this.onError(ctx, e)
-    }
-  }
-
-  async onAgentRequestHandler (ctx: OnMessageContext | OnCallBackQueryData, msg: ChatConversation, subagents: SubagentResult[]): Promise<void> {
-    const session = this.getSession(ctx)
-    await Promise.all(subagents.map(async (subagent: SubagentResult) => {
-      for (const agent of this.subagents) {
-        if (agent.name === subagent.name) {
-          await agent.onCheckAgentStatus(ctx)
-        }
-      }
-    }))
-    const agentsCompletion = SubagentBase.getRunningSubagents(ctx, msg.id ?? 0)
-    if (agentsCompletion && agentsCompletion.length > 0) {
-      session.requestQueue.push(msg)
-      if (!session.isProcessingQueue) {
-        session.isProcessingQueue = true
-        await this.onChatRequestHandler(ctx, true).then(() => {
-          session.isProcessingQueue = false
-        })
-      }
     }
   }
 
