@@ -24,12 +24,11 @@ import {
   chatCompletion,
   streamChatCompletion
 } from './api/openai'
-import { LlamaAgent } from '../subagents'
+import { type SubagentBase } from '../subagents'
 
 export class OpenAIBot extends LlmsBase {
-  constructor (payments: BotPayments) {
-    super(payments, 'OpenAIBot', 'chatGpt')
-    this.subagents.push(new LlamaAgent(payments, 'llamaAgent'))
+  constructor (payments: BotPayments, subagents?: SubagentBase[]) {
+    super(payments, 'OpenAIBot', 'chatGpt', subagents)
     if (!config.openAi.dalle.isEnabled) {
       this.logger.warn('DALL·E 2 Image Bot is disabled in config')
     }

@@ -56,6 +56,7 @@ import { now } from './utils/perf'
 import { VoiceToVoiceGPTBot } from './modules/voice-to-voice-gpt'
 // import { VoiceCommand } from './modules/voice-command'
 import { createInitialSessionData } from './helpers'
+import { LlamaAgent } from './modules/subagents'
 
 Events.EventEmitter.defaultMaxListeners = 30
 
@@ -198,11 +199,11 @@ const voiceMemo = new VoiceMemo()
 const walletConnect = new WalletConnect()
 const payments = new BotPayments()
 const schedule = new BotSchedule(bot)
-// const openAiBot = new OpenAIBot(payments)
-const openAiBot = new OpenAIBot(payments)
+const llamaAgent = new LlamaAgent(payments, 'llamaService')
+const openAiBot = new OpenAIBot(payments, [llamaAgent])
 const dalleBot = new DalleBot(payments)
 const claudeBot = new ClaudeBot(payments)
-const vertexBot = new VertexBot(payments)
+const vertexBot = new VertexBot(payments, [llamaAgent])
 const oneCountryBot = new OneCountryBot(payments)
 const translateBot = new TranslateBot()
 const telegramPayments = new TelegramPayments(payments)
@@ -357,6 +358,11 @@ const onMessage = async (ctx: OnMessageContext): Promise<void> => {
     // bot doesn't handle forwarded messages
     if (!ctx.message.forward_origin) {
       await assignFreeCredits(ctx)
+
+      if (llamaAgent.isSupportedEvent(ctx)) {
+        await llamaAgent.onEvent(ctx)
+        return
+      }
 
       if (telegramPayments.isSupportedEvent(ctx)) {
         await telegramPayments.onEvent(ctx)

@@ -80,6 +80,10 @@ export abstract class LlmsBase implements PayableBot {
 
   protected abstract hasPrefix (prompt: string): string
 
+  addSubagents (subagents: SubagentBase[]): void {
+    this.subagents = subagents
+  }
+
   protected getSession (ctx: OnMessageContext | OnCallBackQueryData): LlmsSessionData {
     return (ctx.session[this.sessionDataKey as keyof BotSessionData] as LlmsSessionData)
   }

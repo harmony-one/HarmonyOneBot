@@ -31,8 +31,7 @@ export class LlamaAgent extends SubagentBase {
   public isSupportedEvent (
     ctx: OnMessageContext | OnCallBackQueryData
   ): boolean {
-    const hasPdf = this.isSupportedPdfReply(ctx)
-    return !!hasPdf || this.isSupportedPdfFile(ctx)
+    return this.isSupportedPdfFile(ctx)
   }
 
   public isSupportedSubagent (ctx: OnMessageContext | OnCallBackQueryData): boolean {
@@ -46,6 +45,7 @@ export class LlamaAgent extends SubagentBase {
 
   public async run (ctx: OnMessageContext | OnCallBackQueryData, msg: ChatConversation): Promise<SubagentResult> {
     const urls = this.isSupportedUrl(ctx)
+    const fileName = this.isSupportedPdfReply(ctx)
     const id = msg.id ?? 0
     if (ctx.chat?.id) {
       if (urls && urls?.length > 0) {
@@ -63,6 +63,19 @@ export class LlamaAgent extends SubagentBase {
         if (collection) {
           collection.agentId = id
           await this.queryUrlCollection(ctx, urls[0], msg.content as string)
+        }
+      } else if (fileName !== '') {
+        const collection = ctx.session.collections.activeCollections.find(c => c.fileName === fileName)
+        if (!collection) {
+          if (!ctx.session.collections.isProcessingQueue) {
+            ctx.session.collections.isProcessingQueue = true
+            await this.onCheckCollectionStatus(ctx).then(() => {
+              ctx.session.collections.isProcessingQueue = false
+            })
+          }
+        } else {
+          collection.agentId = id
+          await this.queryUrlCollection(ctx, collection.url, msg.content as string)
         }
       }
     }
@@ -327,10 +340,15 @@ export class LlamaAgent extends SubagentBase {
         ) {
           await this.onNotBalanceMessage(ctx)
         } else {
+          const context = collection.collectionType === 'URL'
+            ? this.completionContext.replace('%AGENT_OUTPUT%', response.completion)
+              .replace('%URL%', collection.url)
+            : appText.llamaPDFContext.replace('%AGENT_OUTPUT%', response.completion)
+              .replace('%FILE%', collection.fileName ?? '')
           session.running.push({
             id: collection.agentId ?? 0,
             name: this.name,
-            completion: this.completionContext.replace('%AGENT_OUTPUT%', response.completion).replace('%URL%', collection.url),
+            completion: context,
             status: SubagentStatus.DONE
           })
         }
