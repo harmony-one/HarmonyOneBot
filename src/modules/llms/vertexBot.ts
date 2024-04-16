@@ -32,7 +32,9 @@ export class VertexBot extends LlmsBase {
       SupportedCommands.bard,
       SupportedCommands.bardF,
       SupportedCommands.gemini,
-      SupportedCommands.gShort])
+      SupportedCommands.gShort,
+      SupportedCommands.g15short,
+      SupportedCommands.gemini15])
     if (isMentioned(ctx)) {
       return true
     }
@@ -83,6 +85,10 @@ export class VertexBot extends LlmsBase {
     }
     if (ctx.hasCommand([SupportedCommands.gemini, SupportedCommands.gShort]) || (hasGeminiPrefix(ctx.message?.text ?? '') !== '')) {
       await this.onChat(ctx, LlmsModelsEnum.GEMINI, true)
+      return
+    }
+    if (ctx.hasCommand([SupportedCommands.gemini15, SupportedCommands.g15short])) {
+      await this.onChat(ctx, LlmsModelsEnum.GEMINI_15, true)
     }
   }
 }

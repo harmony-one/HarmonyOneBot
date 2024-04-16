@@ -33,6 +33,8 @@ export enum SupportedCommands {
   pdf = 'pdf',
   gemini = 'gemini',
   gShort = 'g',
+  gemini15 = 'gemini15',
+  g15short = 'g15',
   chat = 'chat',
   ask = 'ask',
   vision = 'vision',

@@ -22,7 +22,7 @@ export const vertexCompletion = async (
   model = config.llms.model
 ): Promise<LlmCompletion> => {
   const data = {
-    model, // chat-bison@001 'chat-bison', //'gpt-3.5-turbo',
+    model,
     stream: false,
     messages: conversation.filter(c => c.model === model)
       .map((msg) => {
