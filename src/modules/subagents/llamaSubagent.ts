@@ -49,21 +49,22 @@ export class LlamaAgent extends SubagentBase {
     const id = msg.id ?? 0
     if (ctx.chat?.id) {
       if (urls && urls?.length > 0) {
-        let collection = ctx.session.collections.activeCollections.find(c => c.url === urls[0])
-        if (!collection) {
-          await this.addUrlToCollection(ctx, ctx.chat?.id, urls[0], msg.content as string)
-          if (!ctx.session.collections.isProcessingQueue) {
-            ctx.session.collections.isProcessingQueue = true
-            await this.onCheckCollectionStatus(ctx).then(() => {
+        await Promise.all(urls.map(async url => {
+          let collection = ctx.session.collections.activeCollections.find(c => c.url === url)
+          if (!collection) {
+            await this.addUrlToCollection(ctx, ctx.chat?.id, url, msg.content as string)
+            if (!ctx.session.collections.isProcessingQueue) {
+              ctx.session.collections.isProcessingQueue = true
+              await this.onCheckCollectionStatus(ctx)
               ctx.session.collections.isProcessingQueue = false
-            })
+            }
+            collection = ctx.session.collections.activeCollections.find(c => c.url === url)
           }
-          collection = ctx.session.collections.activeCollections.find(c => c.url === urls[0])
-        }
-        if (collection) {
-          collection.agentId = id
-          await this.queryUrlCollection(ctx, urls[0], msg.content as string)
-        }
+          if (collection) {
+            collection.agentId = id
+            await this.queryUrlCollection(ctx, url, msg.content as string)
+          }
+        }))
       } else if (fileName !== '') {
         const collection = ctx.session.collections.activeCollections.find(c => c.fileName === fileName)
         if (!collection) {
