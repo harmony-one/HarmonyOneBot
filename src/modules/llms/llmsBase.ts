@@ -11,7 +11,8 @@ import {
   RequestState,
   type BotSessionData,
   type LlmsSessionData,
-  type SubagentResult
+  type SubagentResult,
+  type ImageGenSessionData
 } from '../types'
 import { appText } from '../../utils/text'
 import { chatService } from '../../database/services'
@@ -84,8 +85,8 @@ export abstract class LlmsBase implements PayableBot {
     this.subagents = subagents
   }
 
-  protected getSession (ctx: OnMessageContext | OnCallBackQueryData): LlmsSessionData {
-    return (ctx.session[this.sessionDataKey as keyof BotSessionData] as LlmsSessionData)
+  protected getSession (ctx: OnMessageContext | OnCallBackQueryData): LlmsSessionData & ImageGenSessionData {
+    return (ctx.session[this.sessionDataKey as keyof BotSessionData] as LlmsSessionData & ImageGenSessionData)
   }
 
   protected async runSubagents (ctx: OnMessageContext | OnCallBackQueryData, msg: ChatConversation): Promise<void> {

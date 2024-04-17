@@ -172,23 +172,6 @@ export class LlamaAgent extends SubagentBase {
     })
   }
 
-  // public async onPdfReplyHandler (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
-  //   try {
-  //     const fileName = this.isSupportedPdfReply(ctx)
-  //     const prompt = ctx.message?.text ?? 'Summarize this context'
-  //     if (fileName !== '') {
-  //       const collection = ctx.session.collections.activeCollections.find(c => c.fileName === fileName)
-  //       if (collection) {
-  //         await this.queryUrlCollection(ctx, collection.url, prompt)
-  //       }
-  //     }
-  //     ctx.transient.analytics.actualResponseTime = now()
-  //   } catch (e: any) {
-  //     this.logger.error(`onPdfReplyHandler error: ${e}`)
-  //     throw e
-  //   }
-  // }
-
   private getCollectionConversation (ctx: OnMessageContext | OnCallBackQueryData, collection: Collection): ChatConversation[] {
     if (ctx.session.collections.currentCollection === collection.collectionName) {
       return ctx.session.collections.collectionConversation
@@ -221,24 +204,6 @@ export class LlamaAgent extends SubagentBase {
       ctx.transient.analytics.actualResponseTime = now()
     }
   }
-
-  // async onUrlReplyHandler (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
-  //   try {
-  //     const url = getUrlFromText(ctx)
-  //     if (url) {
-  //       const prompt = ctx.message?.text ?? 'summarize'
-  //       const collection = ctx.session.collections.activeCollections.find(c => c.url === url[0])
-  //       const newPrompt = `${prompt}` // ${url}
-  //       if (collection) {
-  //         await this.queryUrlCollection(ctx, url[0], newPrompt)
-  //       }
-  //       ctx.transient.analytics.actualResponseTime = now()
-  //     }
-  //   } catch (e: any) {
-  //     this.logger.error(`onUrlReplyHandler: ${e.toString()}`)
-  //     throw e
-  //   }
-  // }
 
   async onCheckCollectionStatus (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
     const processingTime = config.llms.processingTime

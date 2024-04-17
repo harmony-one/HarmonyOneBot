@@ -37,7 +37,7 @@ import { InlineKeyboard } from 'grammy'
 
 export class DalleBot extends LlmsBase {
   constructor (payments: BotPayments) {
-    super(payments, 'DalleBot', 'chatGpt')
+    super(payments, 'DalleBot', 'dalle')
     if (!config.openAi.dalle.isEnabled) {
       this.logger.warn('DALL·E 2 Image Bot is disabled in config')
     }
@@ -45,13 +45,7 @@ export class DalleBot extends LlmsBase {
 
   public getEstimatedPrice (ctx: any): number {
     try {
-      // if (this.isSupportedImageReply(ctx) && !isNaN(+prompts)) {
-      //   const imageNumber = ctx.message?.caption || ctx.message?.text
-      //   const imageSize = ctx.session.openAi.imageGen.imgSize
-      //   const model = getDalleModel(imageSize)
-      //   const price = getDalleModelPrice(model, true, imageNumber) // cents
-      //   return price * priceAdjustment
-      // }
+      const session = this.getSession(ctx)
       if (
         ctx.hasCommand([
           SupportedCommands.dalle,
@@ -60,8 +54,8 @@ export class DalleBot extends LlmsBase {
           SupportedCommands.dalleShorter
         ])
       ) {
-        const imageNumber = ctx.session.openAi.imageGen.numImages
-        const imageSize = ctx.session.openAi.imageGen.imgSize
+        const imageNumber = session.numImages
+        const imageSize = session.imgSize
         const model = getDalleModel(imageSize)
         const price = getDalleModelPrice(model, true, imageNumber) // cents
         return price * PRICE_ADJUSTMENT
@@ -83,11 +77,11 @@ export class DalleBot extends LlmsBase {
       SupportedCommands.dalleShort,
       SupportedCommands.dalleShorter
     ])
-
+    const session = this.getSession(ctx)
     const photo = ctx.message?.reply_to_message?.photo
     if (photo) {
       const imgId = photo?.[0].file_unique_id ?? ''
-      if (ctx.session.openAi.imageGen.imgInquiried.find((i) => i === imgId)) {
+      if (session.imgInquiried.find((i) => i === imgId)) {
         return false
       }
     }
@@ -112,8 +106,9 @@ export class DalleBot extends LlmsBase {
   }
 
   isSupportedImageReply (ctx: OnMessageContext | OnCallBackQueryData): boolean {
+    const session = this.getSession(ctx)
     const photo = ctx.message?.photo ?? ctx.message?.reply_to_message?.photo
-    if (photo && ctx.session.openAi.imageGen.isEnabled) {
+    if (photo && session.isEnabled) {
       const prompt = ctx.message?.caption ?? ctx.message?.text
       if (
         prompt &&
@@ -165,6 +160,7 @@ export class DalleBot extends LlmsBase {
     refundCallback: (reason?: string) => void
   ): Promise<void> {
     ctx.transient.analytics.module = this.module
+    const session = this.getSession(ctx)
     const isSupportedEvent = this.isSupportedEvent(ctx)
     if (!isSupportedEvent && ctx.chat?.type !== 'private') {
       this.logger.warn(`### unsupported command ${ctx.message?.text}`)
@@ -175,16 +171,16 @@ export class DalleBot extends LlmsBase {
       const photo = ctx.message?.photo ?? ctx.message?.reply_to_message?.photo
       const prompt = ctx.message?.caption ?? ctx.message?.text ?? ''
       const imgId = photo?.[0].file_unique_id ?? ''
-      if (!ctx.session.openAi.imageGen.imgInquiried.find((i) => i === imgId)) {
-        ctx.session.openAi.imageGen.imgRequestQueue.push({
+      if (!session.imgInquiried.find((i) => i === imgId)) {
+        session.imgRequestQueue.push({
           prompt,
           photo,
           command: 'vision' // !isNaN(+prompt) ? 'alter' : 'vision'
         })
-        if (!ctx.session.openAi.imageGen.isProcessingQueue) {
-          ctx.session.openAi.imageGen.isProcessingQueue = true
+        if (!session.isProcessingQueue) {
+          session.isProcessingQueue = true
           await this.onImgRequestHandler(ctx).then(() => {
-            ctx.session.openAi.imageGen.isProcessingQueue = false
+            session.isProcessingQueue = false
           })
         }
       } else {
@@ -197,15 +193,15 @@ export class DalleBot extends LlmsBase {
       const photoUrl = getUrlFromText(ctx)
       if (photoUrl) {
         const prompt = ctx.match
-        ctx.session.openAi.imageGen.imgRequestQueue.push({
+        session.imgRequestQueue.push({
           prompt,
           photoUrl,
           command: 'vision' // !isNaN(+prompt) ? 'alter' : 'vision'
         })
-        if (!ctx.session.openAi.imageGen.isProcessingQueue) {
-          ctx.session.openAi.imageGen.isProcessingQueue = true
+        if (!session.isProcessingQueue) {
+          session.isProcessingQueue = true
           await this.onImgRequestHandler(ctx).then(() => {
-            ctx.session.openAi.imageGen.isProcessingQueue = false
+            session.isProcessingQueue = false
           })
         }
       }
@@ -240,14 +236,14 @@ export class DalleBot extends LlmsBase {
         refundCallback('Prompt has bad words')
         return
       }
-      ctx.session.openAi.imageGen.imgRequestQueue.push({
+      session.imgRequestQueue.push({
         command: 'dalle',
         prompt
       })
-      if (!ctx.session.openAi.imageGen.isProcessingQueue) {
-        ctx.session.openAi.imageGen.isProcessingQueue = true
+      if (!session.isProcessingQueue) {
+        session.isProcessingQueue = true
         await this.onImgRequestHandler(ctx).then(() => {
-          ctx.session.openAi.imageGen.isProcessingQueue = false
+          session.isProcessingQueue = false
         })
       }
       return
@@ -261,17 +257,18 @@ export class DalleBot extends LlmsBase {
   }
 
   async onImgRequestHandler (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
-    while (ctx.session.openAi.imageGen.imgRequestQueue.length > 0) {
+    const session = this.getSession(ctx)
+    while (session.imgRequestQueue.length > 0) {
       try {
-        const img = ctx.session.openAi.imageGen.imgRequestQueue.shift()
-        const minBalance = await getMinBalance(ctx, ctx.session.openAi.chatGpt.model)
+        const img = session.imgRequestQueue.shift()
+        const minBalance = await getMinBalance(ctx, ctx.session.chatGpt.model)
         if (await this.hasBalance(ctx, minBalance)) {
           if (img?.command === 'dalle') {
             await this.onGenImgCmd(img?.prompt, ctx)
           } else {
             await this.onInquiryImage(img?.photo, img?.photoUrl, img?.prompt, ctx)
             if (img?.photo?.[0].file_unique_id) {
-              ctx.session.openAi.imageGen.imgInquiried.push(img?.photo?.[0].file_unique_id)
+              session.imgInquiried.push(img?.photo?.[0].file_unique_id)
             }
           }
           ctx.chatAction = null
@@ -286,19 +283,20 @@ export class DalleBot extends LlmsBase {
 
   async onGenImgCmd (prompt: string | undefined, ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
     try {
-      if (ctx.session.openAi.imageGen.isEnabled && ctx.chat?.id) {
+      const session = this.getSession(ctx)
+      if (session.isEnabled && ctx.chat?.id) {
         ctx.chatAction = 'upload_photo'
         // eslint-disable-next-line @typescript-eslint/naming-convention
         const { message_id } = await ctx.reply(
           'Generating image via OpenAI\'s DALL·E 3...', { message_thread_id: ctx.message?.message_thread_id }
         )
-        const numImages = ctx.session.openAi.imageGen.numImages
-        const imgSize = ctx.session.openAi.imageGen.imgSize
+        const numImages = session.numImages
+        const imgSize = session.imgSize
         const imgs = await postGenerateImg(prompt ?? '', numImages, imgSize)
         if (imgs.length > 0) {
           await Promise.all(imgs.map(async (img: any) => {
-            if (ctx.session.openAi.imageGen.isInscriptionLotteryEnabled) {
-              const inlineKeyboard = new InlineKeyboard().text('Share to enter lottery', `share-payload|${ctx.session.openAi.imageGen.imageGenerated.length}`) // ${imgs[0].url}
+            if (session.isInscriptionLotteryEnabled) {
+              const inlineKeyboard = new InlineKeyboard().text('Share to enter lottery', `share-payload|${session.imageGenerated.length}`) // ${imgs[0].url}
               const msgExtras = getMessageExtras({
                 caption: `/dalle ${prompt}\n\n Check [q.country](https://q.country) for general lottery information`,
                 reply_markup: inlineKeyboard,
@@ -308,7 +306,7 @@ export class DalleBot extends LlmsBase {
               const msg = await ctx.replyWithPhoto(img.url, msgExtras)
               const genImg = msg.photo
               const fileId = genImg?.pop()?.file_id
-              ctx.session.openAi.imageGen.imageGenerated.push({ prompt, photoUrl: img.url, photoId: fileId })
+              session.imageGenerated.push({ prompt, photoUrl: img.url, photoId: fileId })
             } else {
               const msgExtras = getMessageExtras({ caption: `/dalle ${prompt}` })
               await ctx.replyWithPhoto(img.url, msgExtras)
@@ -340,7 +338,8 @@ export class DalleBot extends LlmsBase {
     prompt: string | undefined,
     ctx: OnMessageContext | OnCallBackQueryData): Promise<void> => {
     try {
-      if (ctx.session.openAi.imageGen.isEnabled) {
+      const session = this.getSession(ctx)
+      if (session.isEnabled) {
         // let filePath = ''
         let imgList = []
         if (photo) {

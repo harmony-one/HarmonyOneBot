@@ -164,7 +164,7 @@ export const streamChatCompletion = async (
     }
   }
   completion = completion.replaceAll('...', '')
-  const inputTokens = getTokenNumber(conversation[conversation.length - 1].content as string) + ctx.session.openAi.chatGpt.usage
+  const inputTokens = getTokenNumber(conversation[conversation.length - 1].content as string) + ctx.session.chatGpt.usage
   const outputTokens = getTokenNumber(completion)
   await ctx.api
     .editMessageText(ctx.chat?.id, msgId, completion)
@@ -257,7 +257,7 @@ export const streamChatVisionCompletion = async (
     }
   }
   completion = completion.replaceAll('...', '')
-  const inputTokens = getTokenNumber(prompt) + ctx.session.openAi.chatGpt.usage
+  const inputTokens = getTokenNumber(prompt) + ctx.session.chatGpt.usage
   const outputTokens = getTokenNumber(completion)
   await ctx.api
     .editMessageText(ctx.chat?.id, msgId, completion)

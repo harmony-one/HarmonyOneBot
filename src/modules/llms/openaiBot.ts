@@ -156,7 +156,7 @@ export class OpenAIBot extends LlmsBase {
       return
     }
 
-    if (ctx.chat?.type === 'private' || ctx.session.openAi.chatGpt.isFreePromptChatGroups) {
+    if (ctx.chat?.type === 'private' || session.isFreePromptChatGroups) {
       await this.onChat(ctx, LlmsModelsEnum.GPT_4, true)
       return
     }

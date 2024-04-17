@@ -51,18 +51,18 @@ const chatGPTimageDefaultOptions = new Menu<BotContext>(MenuIds.CHAT_GPT_MODEL)
 function getLabel (m: string, ctx: any): string {
   let label = m
   console.log(
-    ctx.session.openAi.chatGpt.model,
+    ctx.session.chatGpt.model,
     m,
-    ctx.session.openAi.chatGpt.model === m
+    ctx.session.chatGpt.model === m
   )
-  if (ctx.session.openAi.chatGpt.model === m) {
+  if (ctx.session.chatGpt.model === m) {
     label += ' ✅'
   }
   return label
 }
 
 function setModel (m: string, ctx: any): void {
-  ctx.session.openAi.chatGpt.model = m
+  ctx.session.chatGpt.model = m
   ctx.menu.back()
 }
 

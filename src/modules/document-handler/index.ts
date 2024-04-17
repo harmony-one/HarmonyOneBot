@@ -116,7 +116,7 @@ export class DocumentHandler implements PayableBot {
         ).catch(async (e) => { await this.onError(ctx, e, retryCount - 1) })
         ctx.transient.analytics.actualResponseTime = now()
         if (method === 'editMessageText') {
-          ctx.session.openAi.chatGpt.chatConversation.pop() // deletes last prompt
+          ctx.session.chatGpt.chatConversation.pop() // deletes last prompt
         }
         await sleep(retryAfter * 1000) // wait retryAfter seconds to enable bot
       } else {

@@ -333,7 +333,7 @@ const PayableBots: Record<string, PayableBotConfig> = {
   claudeBot: { bot: claudeBot },
   vertexBot: { bot: vertexBot },
   openAiBot: {
-    enabled: (ctx: OnMessageContext) => ctx.session.openAi.imageGen.isEnabled,
+    enabled: (ctx: OnMessageContext) => ctx.session.dalle.isEnabled,
     bot: openAiBot
   },
   oneCountryBot: { bot: oneCountryBot }
@@ -394,7 +394,7 @@ const onMessage = async (ctx: OnMessageContext): Promise<void> => {
         return
       }
       // Any message interacts with ChatGPT (only for private chats or /ask on enabled on group chats)
-      if (ctx.update.message.chat && (ctx.chat.type === 'private' || ctx.session.openAi.chatGpt.isFreePromptChatGroups)) {
+      if (ctx.update.message.chat && (ctx.chat.type === 'private' || ctx.session.chatGpt.isFreePromptChatGroups)) {
         await openAiBot.onEvent(ctx, (e) => {
           logger.error(e)
         })

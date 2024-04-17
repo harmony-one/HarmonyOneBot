@@ -79,29 +79,16 @@ export interface promptRequest {
   outputFormat?: 'text' | 'voice'
   commandPrefix?: string
 }
-export interface ChatGptSessionData {
-  model: string
-  isEnabled: boolean
-  isFreePromptChatGroups: boolean
-  chatConversation: ChatConversation[]
-  usage: number
-  price: number
-  requestQueue: promptRequest[]
-  isProcessingQueue: boolean
-}
 
 export interface LlmsSessionData {
   model: string
   isEnabled: boolean
+  isFreePromptChatGroups?: boolean
   chatConversation: ChatConversation[]
   usage: number
   price: number
   requestQueue: ChatConversation[]
   isProcessingQueue: boolean
-}
-export interface OpenAiSessionData {
-  imageGen: ImageGenSessionData
-  chatGpt: ChatGptSessionData
 }
 
 export interface OneCountryData {
@@ -177,11 +164,11 @@ export interface SubagentSessionData {
 export interface BotSessionData {
   oneCountry: OneCountryData
   collections: CollectionSessionData
-  openAi: OpenAiSessionData
   translate: TranslateBotData
   llms: LlmsSessionData
   chatGpt: LlmsSessionData
   subagents: SubagentSessionData
+  dalle: ImageGenSessionData
 }
 
 export interface TransientStateContext {
