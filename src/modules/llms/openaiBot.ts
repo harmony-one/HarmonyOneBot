@@ -26,9 +26,17 @@ import {
 } from './api/openai'
 import { type SubagentBase } from '../subagents'
 
+const models = [
+  LlmsModelsEnum.GPT_35_TURBO,
+  LlmsModelsEnum.GPT_35_TURBO_16K,
+  LlmsModelsEnum.GPT_4,
+  LlmsModelsEnum.GPT_4_32K,
+  LlmsModelsEnum.GPT_4_VISION_PREVIEW
+]
+
 export class OpenAIBot extends LlmsBase {
   constructor (payments: BotPayments, subagents?: SubagentBase[]) {
-    super(payments, 'OpenAIBot', 'chatGpt', subagents)
+    super(payments, 'OpenAIBot', 'chatGpt', models, subagents)
     if (!config.openAi.dalle.isEnabled) {
       this.logger.warn('DALL·E 2 Image Bot is disabled in config')
     }
@@ -124,8 +132,13 @@ export class OpenAIBot extends LlmsBase {
         ctx.message?.text?.startsWith('ask ')) &&
         ctx.chat?.type === 'private')
     ) {
-      session.model = LlmsModelsEnum.GPT_4
+      this.updateSessionModel(ctx, LlmsModelsEnum.GPT_4)
       await this.onChat(ctx, LlmsModelsEnum.GPT_4, true)
+      return
+    }
+
+    if (ctx.hasCommand([SupportedCommands.pdf, SupportedCommands.ctx]) && this.checkModel(ctx)) {
+      await this.onChat(ctx, ctx.session.currentModel, true)
       return
     }
 
@@ -135,18 +148,19 @@ export class OpenAIBot extends LlmsBase {
       (ctx.message?.text?.startsWith('new ') && ctx.chat?.type === 'private')
     ) {
       await this.onStop(ctx)
+      this.updateSessionModel(ctx, LlmsModelsEnum.GPT_4)
       await this.onChat(ctx, LlmsModelsEnum.GPT_4, true)
       return
     }
 
     if (ctx.hasCommand(SupportedCommands.ask35)) {
-      session.model = LlmsModelsEnum.GPT_35_TURBO_16K
+      this.updateSessionModel(ctx, LlmsModelsEnum.GPT_35_TURBO_16K)
       await this.onChat(ctx, LlmsModelsEnum.GPT_35_TURBO_16K, true)
       return
     }
 
     if (ctx.hasCommand(SupportedCommands.ask32)) {
-      session.model = LlmsModelsEnum.GPT_4_32K
+      this.updateSessionModel(ctx, LlmsModelsEnum.GPT_4_32K)
       await this.onChat(ctx, LlmsModelsEnum.GPT_4_32K, true)
       return
     }
@@ -157,6 +171,7 @@ export class OpenAIBot extends LlmsBase {
     }
 
     if (ctx.chat?.type === 'private' || session.isFreePromptChatGroups) {
+      this.updateSessionModel(ctx, LlmsModelsEnum.GPT_4)
       await this.onChat(ctx, LlmsModelsEnum.GPT_4, true)
       return
     }

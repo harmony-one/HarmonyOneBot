@@ -38,11 +38,13 @@ export abstract class LlmsBase implements PayableBot {
   protected readonly payments: BotPayments
   protected subagents: SubagentBase[]
   protected botSuspended: boolean
+  protected supportedModels: LlmsModelsEnum[]
   errorHandler: ErrorHandler
 
   constructor (payments: BotPayments,
     module: string,
     sessionDataKey: string,
+    models?: LlmsModelsEnum[],
     subagents?: SubagentBase[]
   ) {
     this.module = module
@@ -57,6 +59,7 @@ export abstract class LlmsBase implements PayableBot {
     this.botSuspended = false
     this.payments = payments
     this.subagents = subagents ?? []
+    this.supportedModels = models ?? []
     this.errorHandler = new ErrorHandler()
   }
 
@@ -87,6 +90,14 @@ export abstract class LlmsBase implements PayableBot {
 
   protected getSession (ctx: OnMessageContext | OnCallBackQueryData): LlmsSessionData & ImageGenSessionData {
     return (ctx.session[this.sessionDataKey as keyof BotSessionData] as LlmsSessionData & ImageGenSessionData)
+  }
+
+  protected updateSessionModel (ctx: OnMessageContext | OnCallBackQueryData, model: LlmsModelsEnum): void {
+    ctx.session.currentModel = model
+  }
+
+  protected checkModel (ctx: OnMessageContext | OnCallBackQueryData): boolean {
+    return !!this.supportedModels.find(model => model === ctx.session.currentModel)
   }
 
   protected async runSubagents (ctx: OnMessageContext | OnCallBackQueryData, msg: ChatConversation): Promise<void> {

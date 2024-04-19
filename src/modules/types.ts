@@ -12,6 +12,7 @@ import { type AutoChatActionFlavor } from '@grammyjs/auto-chat-action'
 import { type PhotoSize, type ParseMode } from 'grammy/types'
 import { type InlineKeyboardMarkup } from 'grammy/out/types'
 import type { FileFlavor } from '@grammyjs/files'
+import { type LlmsModelsEnum } from './llms/utils/types'
 
 export interface ImageGenSessionData {
   numImages: number
@@ -169,6 +170,7 @@ export interface BotSessionData {
   chatGpt: LlmsSessionData
   subagents: SubagentSessionData
   dalle: ImageGenSessionData
+  currentModel: LlmsModelsEnum
 }
 
 export interface TransientStateContext {

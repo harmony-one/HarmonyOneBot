@@ -1,7 +1,7 @@
 import { type BotPayments } from '../payment'
 import { now } from '../../utils/perf'
 import { SubagentBase } from './subagentBase'
-import { getMsgEntities } from '../llms/utils/helpers'
+import { SupportedCommands, getMsgEntities, sendMessage } from '../llms/utils/helpers'
 import { llmAddUrlDocument, llmCheckCollectionStatus, queryUrlDocument } from '../llms/api/llmApi'
 import { ErrorHandler } from '../errorhandler'
 import { sleep } from '../sd-images/utils'
@@ -34,8 +34,20 @@ export class LlamaAgent extends SubagentBase {
     return this.isSupportedPdfFile(ctx)
   }
 
+  public async onEvent (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
+    ctx.transient.analytics.module = this.module
+    const isSupportedEvent = this.isSupportedEvent(ctx)
+    if (!isSupportedEvent && ctx.chat?.type !== 'private') {
+      this.logger.warn(`### unsupported command ${ctx.message?.text}`)
+      return
+    }
+    if (this.isSupportedPdfFile(ctx)) {
+      await this.onPdfFileReceived(ctx)
+    }
+  }
+
   public isSupportedSubagent (ctx: OnMessageContext | OnCallBackQueryData): boolean {
-    return !!this.isSupportedPdfReply(ctx) || !!this.isSupportedUrl(ctx)
+    return !!this.isSupportedPdfReply(ctx) || !!this.isSupportedUrl(ctx) || !!ctx.hasCommand(SupportedCommands.ctx)
   }
 
   async checkStatus (ctx: OnMessageContext | OnCallBackQueryData, agent: SubagentResult): Promise<SubagentResult> {
@@ -45,7 +57,8 @@ export class LlamaAgent extends SubagentBase {
 
   public async run (ctx: OnMessageContext | OnCallBackQueryData, msg: ChatConversation): Promise<SubagentResult> {
     const urls = this.isSupportedUrl(ctx)
-    const fileName = this.isSupportedPdfReply(ctx)
+    const fileName = this.isSupportedPdfReply(ctx) // ?? this.isValidSupportedPdfCommand(ctx)
+    const hasCtxCommand = ctx.hasCommand(SupportedCommands.ctx)
     const id = msg.id ?? 0
     if (ctx.chat?.id) {
       if (urls && urls?.length > 0) {
@@ -65,7 +78,7 @@ export class LlamaAgent extends SubagentBase {
             await this.queryUrlCollection(ctx, url, msg.content as string)
           }
         }))
-      } else if (fileName !== '') {
+      } else if (fileName !== undefined) {
         const collection = ctx.session.collections.activeCollections.find(c => c.fileName === fileName)
         if (!collection) {
           if (!ctx.session.collections.isProcessingQueue) {
@@ -78,6 +91,15 @@ export class LlamaAgent extends SubagentBase {
           collection.agentId = id
           await this.queryUrlCollection(ctx, collection.url, msg.content as string)
         }
+      } else if (hasCtxCommand) {
+        const collectionName = ctx.session.collections.currentCollection
+        const collection = ctx.session.collections.activeCollections.find(c => c.collectionName === collectionName)
+        if (collection && collectionName) {
+          collection.agentId = id
+          await this.queryUrlCollection(ctx, collection.url, msg.content as string)
+        } else {
+          await sendMessage(ctx, 'There is no active collection (url/pdf file)')
+        }
       }
     }
     return {
@@ -88,25 +110,12 @@ export class LlamaAgent extends SubagentBase {
     }
   }
 
-  public async onEvent (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
-    ctx.transient.analytics.module = this.module
-    const isSupportedEvent = this.isSupportedEvent(ctx)
-    if (!isSupportedEvent && ctx.chat?.type !== 'private') {
-      this.logger.warn(`### unsupported command ${ctx.message?.text}`)
-      return
-    }
-    if (this.isSupportedPdfFile(ctx)) {
-      await this.onPdfFileReceived(ctx)
-    }
-  }
-
   isSupportedPdfFile (ctx: OnMessageContext | OnCallBackQueryData): boolean {
     const documentType = ctx.message?.document?.mime_type
     const SupportedDocuments = { PDF: 'application/pdf' }
-    if (documentType !== undefined && ctx.chat?.type === 'private') {
+    if (documentType !== undefined && ctx.chat?.id && ctx.chat.type === 'private') {
       return Object.values(SupportedDocuments).includes(documentType)
     }
-
     return false
   }
 
@@ -184,7 +193,7 @@ export class LlamaAgent extends SubagentBase {
     try {
       const file = await ctx.getFile()
       const documentType = ctx.message?.document?.mime_type
-      if (documentType === 'application/pdf' && ctx.chat?.id && ctx.chat.type === 'private') {
+      if (documentType === 'application/pdf' && ctx.chat?.id && (ctx.hasCommand(SupportedCommands.pdf) || ctx.chat.type === 'private')) {
         const url = file.getUrl()
         const fileName = ctx.message?.document?.file_name ?? file.file_id
         const prompt = ctx.message?.caption ?? 'Summarize this context' //  from the PDF file
@@ -279,6 +288,14 @@ export class LlamaAgent extends SubagentBase {
         await this.onError(ctx, e)
       }
     }
+  }
+
+  public isValidSupportedPdfCommand (ctx: OnMessageContext | OnCallBackQueryData): string | undefined {
+    const documentType = ctx.message?.reply_to_message?.document?.mime_type
+    if (documentType !== 'application/pdf' && ctx.chat?.type === 'private') {
+      return undefined
+    }
+    return ctx.message?.reply_to_message?.document?.file_name
   }
 
   private async queryUrlCollection (ctx: OnMessageContext | OnCallBackQueryData,

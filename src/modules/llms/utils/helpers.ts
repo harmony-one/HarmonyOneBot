@@ -331,7 +331,7 @@ export const getMinBalance = async (ctx: OnMessageContext | OnCallBackQueryData,
   model: string): Promise<number> => {
   const minBalance = getPromptPrice({
     inputTokens: 400,
-    outputTokens: 800,
+    outputTokens: 400,
     completion: undefined,
     usage: 0,
     price: 0

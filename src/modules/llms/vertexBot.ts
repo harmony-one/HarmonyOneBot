@@ -16,9 +16,11 @@ import { LlmsModelsEnum } from './utils/types'
 import { LlmsBase } from './llmsBase'
 import { vertexCompletion, vertexStreamCompletion } from './api/vertex'
 import { type SubagentBase } from '../subagents'
+
+const models = [LlmsModelsEnum.BISON, LlmsModelsEnum.GEMINI, LlmsModelsEnum.GEMINI_15]
 export class VertexBot extends LlmsBase {
   constructor (payments: BotPayments, subagents?: SubagentBase[]) {
-    super(payments, 'VertexBot', 'llms', subagents)
+    super(payments, 'VertexBot', 'llms', models, subagents)
   }
 
   public getEstimatedPrice (ctx: any): number {
@@ -80,15 +82,23 @@ export class VertexBot extends LlmsBase {
       return
     }
     if (ctx.hasCommand([SupportedCommands.bard, SupportedCommands.bardF]) || hasBardPrefix(ctx.message?.text ?? '')) {
+      this.updateSessionModel(ctx, LlmsModelsEnum.BISON)
       await this.onChat(ctx, LlmsModelsEnum.BISON, false)
       return
     }
     if (ctx.hasCommand([SupportedCommands.gemini, SupportedCommands.gShort]) || (hasGeminiPrefix(ctx.message?.text ?? '') !== '')) {
+      this.updateSessionModel(ctx, LlmsModelsEnum.GEMINI)
       await this.onChat(ctx, LlmsModelsEnum.GEMINI, true)
       return
     }
     if (ctx.hasCommand([SupportedCommands.gemini15, SupportedCommands.g15short])) {
+      this.updateSessionModel(ctx, LlmsModelsEnum.GEMINI_15)
       await this.onChat(ctx, LlmsModelsEnum.GEMINI_15, true)
+      // return
+    }
+
+    if (ctx.hasCommand([SupportedCommands.pdf, SupportedCommands.ctx]) && this.checkModel(ctx)) {
+      await this.onChat(ctx, ctx.session.currentModel, true)
     }
   }
 }

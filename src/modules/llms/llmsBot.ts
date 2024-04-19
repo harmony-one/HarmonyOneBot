@@ -12,9 +12,12 @@ import { llmCompletion, type LlmCompletion } from './api/llmApi'
 import { LlmsModelsEnum } from './utils/types'
 import { LlmsBase } from './llmsBase'
 
+const models = [LlmsModelsEnum.J2_ULTRA]
+
 export class LlmsBot extends LlmsBase {
   constructor (payments: BotPayments) {
-    super(payments, 'LlmsBot', 'llms')
+    super(payments, 'LlmsBot', 'llms', models)
+    // this.supportedModels = models
   }
 
   public getEstimatedPrice (ctx: any): number {
@@ -71,6 +74,7 @@ export class LlmsBot extends LlmsBase {
       return
     }
     if (ctx.hasCommand(SupportedCommands.j2Ultra)) {
+      this.updateSessionModel(ctx, LlmsModelsEnum.J2_ULTRA)
       await this.onChat(ctx, LlmsModelsEnum.J2_ULTRA, false)
     }
   }

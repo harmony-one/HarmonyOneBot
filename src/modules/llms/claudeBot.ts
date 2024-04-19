@@ -14,9 +14,16 @@ import { LlmsModelsEnum } from './utils/types'
 
 import { anthropicCompletion, anthropicStreamCompletion } from './api/athropic'
 import { LlmsBase } from './llmsBase'
+
+const models = [
+  LlmsModelsEnum.CLAUDE_HAIKU,
+  LlmsModelsEnum.CLAUDE_OPUS,
+  LlmsModelsEnum.CLAUDE_SONNET
+]
+
 export class ClaudeBot extends LlmsBase {
   constructor (payments: BotPayments) {
-    super(payments, 'ClaudeBot', 'llms')
+    super(payments, 'ClaudeBot', 'llms', models)
   }
 
   public getEstimatedPrice (ctx: any): number {

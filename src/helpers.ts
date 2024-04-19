@@ -1,30 +1,9 @@
 import config from './config'
+import { LlmsModelsEnum } from './modules/llms/utils/types'
 import { type BotSessionData } from './modules/types'
 
 export function createInitialSessionData (): BotSessionData {
   return {
-    // openAi: {
-    //   imageGen: {
-    //     numImages: config.openAi.dalle.sessionDefault.numImages,
-    //     imgSize: config.openAi.dalle.sessionDefault.imgSize,
-    //     isEnabled: config.openAi.dalle.isEnabled,
-    //     imgRequestQueue: [],
-    //     isProcessingQueue: false,
-    //     imageGenerated: [],
-    //     isInscriptionLotteryEnabled: config.openAi.dalle.isInscriptionLotteryEnabled,
-    //     imgInquiried: []
-    //   },
-    //   chatGpt: {
-    //     model: config.openAi.chatGpt.model,
-    //     isEnabled: config.openAi.chatGpt.isEnabled,
-    //     isFreePromptChatGroups: config.openAi.chatGpt.isFreePromptChatGroups,
-    //     chatConversation: [],
-    //     price: 0,
-    //     usage: 0,
-    //     isProcessingQueue: false,
-    //     requestQueue: []
-    //   }
-    // },
     oneCountry: { lastDomain: '' },
     translate: {
       languages: [],
@@ -66,6 +45,7 @@ export function createInitialSessionData (): BotSessionData {
       imageGenerated: [],
       isInscriptionLotteryEnabled: config.openAi.dalle.isInscriptionLotteryEnabled,
       imgInquiried: []
-    }
+    },
+    currentModel: LlmsModelsEnum.GPT_4
   }
 }
