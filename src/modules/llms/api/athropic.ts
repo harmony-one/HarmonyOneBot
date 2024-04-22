@@ -20,6 +20,7 @@ const API_ENDPOINT = config.llms.apiEndpoint // 'http://127.0.0.1:5000' // confi
 
 export const anthropicCompletion = async (
   conversation: ChatConversation[],
+  hastools: boolean,
   model = LlmsModelsEnum.CLAUDE_OPUS
 ): Promise<LlmCompletion> => {
   logger.info(`Handling ${model} completion`)
@@ -31,7 +32,7 @@ export const anthropicCompletion = async (
     messages: conversation.filter(c => c.model === model)
       .map(m => { return { content: m.content, role: m.role } })
   }
-  const url = `${API_ENDPOINT}/anthropic/completions`
+  const url = `${API_ENDPOINT}/anthropic/completions${hastools ? '/tools' : ''}`
   const response = await axios.post(url, data)
   const respJson = JSON.parse(response.data)
   if (response) {

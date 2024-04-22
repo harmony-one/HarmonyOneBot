@@ -37,6 +37,7 @@ export class ClaudeBot extends LlmsBase {
       SupportedCommands.opus,
       SupportedCommands.opusShort,
       SupportedCommands.claudeShort,
+      SupportedCommands.claudeShortTools,
       SupportedCommands.claudeSonnet,
       SupportedCommands.sonnet,
       SupportedCommands.sonnetShort,
@@ -75,9 +76,10 @@ export class ClaudeBot extends LlmsBase {
 
   async chatCompletion (
     conversation: ChatConversation[],
-    model: LlmsModelsEnum
+    model: LlmsModelsEnum,
+    hasTools: boolean
   ): Promise<LlmCompletion> {
-    return await anthropicCompletion(conversation, model)
+    return await anthropicCompletion(conversation, hasTools, model)
   }
 
   public async onEvent (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
@@ -87,7 +89,10 @@ export class ClaudeBot extends LlmsBase {
       this.logger.warn(`### unsupported command ${ctx.message?.text}`)
       return
     }
-
+    if (ctx.hasCommand([SupportedCommands.claudeShortTools])) {
+      await this.onChat(ctx, LlmsModelsEnum.CLAUDE_OPUS, false, true)
+      return
+    }
     if (ctx.hasCommand([
       SupportedCommands.claudeOpus,
       SupportedCommands.opus,
@@ -95,15 +100,15 @@ export class ClaudeBot extends LlmsBase {
       SupportedCommands.claudeShort]) ||
       (hasClaudeOpusPrefix(ctx.message?.text ?? '') !== '')
     ) {
-      await this.onChat(ctx, LlmsModelsEnum.CLAUDE_OPUS, true)
+      await this.onChat(ctx, LlmsModelsEnum.CLAUDE_OPUS, false, false) // true)
       return
     }
     if (ctx.hasCommand([SupportedCommands.claudeSonnet, SupportedCommands.sonnet, SupportedCommands.sonnetShort])) {
-      await this.onChat(ctx, LlmsModelsEnum.CLAUDE_SONNET, true)
+      await this.onChat(ctx, LlmsModelsEnum.CLAUDE_SONNET, true, false)
       return
     }
     if (ctx.hasCommand([SupportedCommands.claudeHaiku, SupportedCommands.haikuShort])) {
-      await this.onChat(ctx, LlmsModelsEnum.CLAUDE_HAIKU, false)
+      await this.onChat(ctx, LlmsModelsEnum.CLAUDE_HAIKU, false, false)
     }
   }
 }

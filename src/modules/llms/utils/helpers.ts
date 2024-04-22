@@ -21,6 +21,7 @@ export enum SupportedCommands {
   opus = 'opus',
   opusShort = 'o',
   claudeSonnet = 'claudes',
+  claudeShortTools = 'ct',
   claudeShort = 'c',
   sonnet = 'sonnet',
   sonnetShort = 's',

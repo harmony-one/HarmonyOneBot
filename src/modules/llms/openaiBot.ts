@@ -133,12 +133,12 @@ export class OpenAIBot extends LlmsBase {
         ctx.chat?.type === 'private')
     ) {
       this.updateSessionModel(ctx, LlmsModelsEnum.GPT_4)
-      await this.onChat(ctx, LlmsModelsEnum.GPT_4, true)
+      await this.onChat(ctx, LlmsModelsEnum.GPT_4, true, false)
       return
     }
 
     if (ctx.hasCommand([SupportedCommands.pdf, SupportedCommands.ctx]) && this.checkModel(ctx)) {
-      await this.onChat(ctx, ctx.session.currentModel, true)
+      await this.onChat(ctx, ctx.session.currentModel, true, false)
       return
     }
 
@@ -149,19 +149,19 @@ export class OpenAIBot extends LlmsBase {
     ) {
       await this.onStop(ctx)
       this.updateSessionModel(ctx, LlmsModelsEnum.GPT_4)
-      await this.onChat(ctx, LlmsModelsEnum.GPT_4, true)
+      await this.onChat(ctx, LlmsModelsEnum.GPT_4, true, false)
       return
     }
 
     if (ctx.hasCommand(SupportedCommands.ask35)) {
       this.updateSessionModel(ctx, LlmsModelsEnum.GPT_35_TURBO_16K)
-      await this.onChat(ctx, LlmsModelsEnum.GPT_35_TURBO_16K, true)
+      await this.onChat(ctx, LlmsModelsEnum.GPT_35_TURBO_16K, true, false)
       return
     }
 
     if (ctx.hasCommand(SupportedCommands.ask32)) {
       this.updateSessionModel(ctx, LlmsModelsEnum.GPT_4_32K)
-      await this.onChat(ctx, LlmsModelsEnum.GPT_4_32K, true)
+      await this.onChat(ctx, LlmsModelsEnum.GPT_4_32K, true, false)
       return
     }
 
@@ -172,7 +172,7 @@ export class OpenAIBot extends LlmsBase {
 
     if (ctx.chat?.type === 'private' || session.isFreePromptChatGroups) {
       this.updateSessionModel(ctx, LlmsModelsEnum.GPT_4)
-      await this.onChat(ctx, LlmsModelsEnum.GPT_4, true)
+      await this.onChat(ctx, LlmsModelsEnum.GPT_4, true, false)
       return
     }
 

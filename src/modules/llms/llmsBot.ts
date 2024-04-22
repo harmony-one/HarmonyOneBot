@@ -75,7 +75,7 @@ export class LlmsBot extends LlmsBase {
     }
     if (ctx.hasCommand(SupportedCommands.j2Ultra)) {
       this.updateSessionModel(ctx, LlmsModelsEnum.J2_ULTRA)
-      await this.onChat(ctx, LlmsModelsEnum.J2_ULTRA, false)
+      await this.onChat(ctx, LlmsModelsEnum.J2_ULTRA, false, false)
     }
   }
 }

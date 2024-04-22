@@ -79,7 +79,8 @@ export abstract class LlmsBase implements PayableBot {
 
   protected abstract chatCompletion (
     conversation: ChatConversation[],
-    model: LlmsModelsEnum
+    model: LlmsModelsEnum,
+    usesTools: boolean
   ): Promise<LlmCompletion>
 
   protected abstract hasPrefix (prompt: string): string
@@ -109,7 +110,7 @@ export abstract class LlmsBase implements PayableBot {
       session.requestQueue.push(msg)
       if (!session.isProcessingQueue) {
         session.isProcessingQueue = true
-        await this.onChatRequestHandler(ctx, true).then(() => {
+        await this.onChatRequestHandler(ctx, true, false).then(() => {
           session.isProcessingQueue = false
         })
       }
@@ -126,7 +127,7 @@ export abstract class LlmsBase implements PayableBot {
     return supportedAgents
   }
 
-  async onChat (ctx: OnMessageContext | OnCallBackQueryData, model: string, stream: boolean): Promise<void> {
+  async onChat (ctx: OnMessageContext | OnCallBackQueryData, model: string, stream: boolean, usesTools: boolean): Promise<void> {
     const session = this.getSession(ctx)
     try {
       if (this.botSuspended) {
@@ -146,7 +147,7 @@ export abstract class LlmsBase implements PayableBot {
         })
         if (!session.isProcessingQueue) {
           session.isProcessingQueue = true
-          await this.onChatRequestHandler(ctx, stream).then(() => {
+          await this.onChatRequestHandler(ctx, stream, usesTools).then(() => {
             session.isProcessingQueue = false
           })
         }
@@ -165,7 +166,7 @@ export abstract class LlmsBase implements PayableBot {
     }
   }
 
-  async onChatRequestHandler (ctx: OnMessageContext | OnCallBackQueryData, stream: boolean): Promise<void> {
+  async onChatRequestHandler (ctx: OnMessageContext | OnCallBackQueryData, stream: boolean, usesTools: boolean): Promise<void> {
     const session = this.getSession(ctx)
     while (session.requestQueue.length > 0) {
       try {
@@ -223,9 +224,9 @@ export abstract class LlmsBase implements PayableBot {
           }
           let result: { price: number, chat: ChatConversation[] } = { price: 0, chat: [] }
           if (stream) {
-            result = await this.completionGen(payload)
+            result = await this.completionGen(payload, usesTools)
           } else {
-            result = await this.promptGen(payload)
+            result = await this.promptGen(payload, usesTools)
           }
           session.chatConversation = [...result.chat]
           if (
@@ -259,7 +260,7 @@ export abstract class LlmsBase implements PayableBot {
     )
   }
 
-  private async completionGen (data: ChatPayload, msgId?: number, outputFormat = 'text'): Promise< { price: number, chat: ChatConversation[] }> {
+  private async completionGen (data: ChatPayload, usesTools: boolean, msgId?: number, outputFormat = 'text'): Promise< { price: number, chat: ChatConversation[] }> {
     const { conversation, ctx, model } = data
     try {
       if (!msgId) {
@@ -304,7 +305,7 @@ export abstract class LlmsBase implements PayableBot {
           }
         }
       } else {
-        const response = await this.chatCompletion(conversation, model as LlmsModelsEnum)
+        const response = await this.chatCompletion(conversation, model as LlmsModelsEnum, usesTools)
         conversation.push({
           role: 'assistant',
           content: response.completion?.content ?? '',
@@ -326,7 +327,7 @@ export abstract class LlmsBase implements PayableBot {
     }
   }
 
-  private async promptGen (data: ChatPayload): Promise<{ price: number, chat: ChatConversation[] }> {
+  private async promptGen (data: ChatPayload, usesTools: boolean): Promise<{ price: number, chat: ChatConversation[] }> {
     const { conversation, ctx, model } = data
     if (!ctx.chat?.id) {
       throw new Error('internal error')
@@ -335,7 +336,7 @@ export abstract class LlmsBase implements PayableBot {
       await ctx.reply('...', { message_thread_id: ctx.message?.message_thread_id })
     ).message_id
     ctx.chatAction = 'typing'
-    const response = await this.chatCompletion(conversation, model as LlmsModelsEnum)
+    const response = await this.chatCompletion(conversation, model as LlmsModelsEnum, usesTools)
     if (response.completion) {
       await ctx.api.editMessageText(
         ctx.chat.id,

@@ -83,22 +83,22 @@ export class VertexBot extends LlmsBase {
     }
     if (ctx.hasCommand([SupportedCommands.bard, SupportedCommands.bardF]) || hasBardPrefix(ctx.message?.text ?? '')) {
       this.updateSessionModel(ctx, LlmsModelsEnum.BISON)
-      await this.onChat(ctx, LlmsModelsEnum.BISON, false)
+      await this.onChat(ctx, LlmsModelsEnum.BISON, false, false)
       return
     }
     if (ctx.hasCommand([SupportedCommands.gemini, SupportedCommands.gShort]) || (hasGeminiPrefix(ctx.message?.text ?? '') !== '')) {
       this.updateSessionModel(ctx, LlmsModelsEnum.GEMINI)
-      await this.onChat(ctx, LlmsModelsEnum.GEMINI, true)
+      await this.onChat(ctx, LlmsModelsEnum.GEMINI, true, false)
       return
     }
     if (ctx.hasCommand([SupportedCommands.gemini15, SupportedCommands.g15short])) {
       this.updateSessionModel(ctx, LlmsModelsEnum.GEMINI_15)
-      await this.onChat(ctx, LlmsModelsEnum.GEMINI_15, true)
+      await this.onChat(ctx, LlmsModelsEnum.GEMINI_15, true, false)
       // return
     }
 
     if (ctx.hasCommand([SupportedCommands.pdf, SupportedCommands.ctx]) && this.checkModel(ctx)) {
-      await this.onChat(ctx, ctx.session.currentModel, true)
+      await this.onChat(ctx, ctx.session.currentModel, true, false)
     }
   }
 }
