@@ -62,14 +62,14 @@ export class OpenAIBot extends LlmsBase {
       SupportedCommands.gpt,
       SupportedCommands.ask32,
       SupportedCommands.ask35,
-      SupportedCommands.new,
       SupportedCommands.last
     ])
-
+    if (ctx.hasCommand(SupportedCommands.new) && this.checkModel(ctx)) {
+      return true
+    }
     if (isMentioned(ctx)) {
       return true
     }
-
     const chatPrefix = this.hasPrefix(ctx.message?.text ?? '')
     if (chatPrefix !== '') {
       return true
@@ -143,9 +143,9 @@ export class OpenAIBot extends LlmsBase {
     }
 
     if (
-      ctx.hasCommand(SupportedCommands.new) ||
+      (ctx.hasCommand(SupportedCommands.new) ||
       hasNewPrefix(ctx.message?.text ?? '') ||
-      (ctx.message?.text?.startsWith('new ') && ctx.chat?.type === 'private')
+      (ctx.message?.text?.startsWith('new ') && ctx.chat?.type === 'private') && this.checkModel(ctx))
     ) {
       await this.onStop(ctx)
       this.updateSessionModel(ctx, LlmsModelsEnum.GPT_4)

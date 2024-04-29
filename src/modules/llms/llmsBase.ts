@@ -344,14 +344,12 @@ export abstract class LlmsBase implements PayableBot {
         response.completion.content as string
       )
       conversation.push(response.completion)
-      // const price = getPromptPrice(completion, data);
-      // this.logger.info(
-      //   `streamChatCompletion result = tokens: ${
-      //     price.promptTokens + price.completionTokens
-      //   } | ${model} | price: ${price}¢`
-      // );
+      const price = getPromptPrice(response, data)
+      this.logger.info(
+        `chatCompletion result = tokens: ${price.promptTokens + price.completionTokens} | ${model} | price: ${price.price}¢` //   }
+      )
       return {
-        price: 0,
+        price: price.price,
         chat: conversation
       }
     }
@@ -380,6 +378,7 @@ export abstract class LlmsBase implements PayableBot {
 
   async onStop (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
     const session = this.getSession(ctx)
+    console.log('SESSION', session)
     for (const c of ctx.session.collections.activeCollections) {
       this.logger.info(`Deleting collection ${c.collectionName}`)
       await deleteCollection(c.collectionName)

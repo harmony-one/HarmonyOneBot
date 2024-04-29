@@ -6,13 +6,12 @@ import {
 } from '../types'
 import {
   hasClaudeOpusPrefix,
-  isMentioned,
   SupportedCommands
 } from './utils/helpers'
 import { type LlmCompletion } from './api/llmApi'
 import { LlmsModelsEnum } from './utils/types'
 
-import { anthropicCompletion, anthropicStreamCompletion } from './api/athropic'
+import { anthropicCompletion, anthropicStreamCompletion, toolsChatCompletion } from './api/athropic'
 import { LlmsBase } from './llmsBase'
 
 const models = [
@@ -33,17 +32,21 @@ export class ClaudeBot extends LlmsBase {
   public isSupportedEvent (
     ctx: OnMessageContext | OnCallBackQueryData
   ): boolean {
-    const hasCommand = ctx.hasCommand([SupportedCommands.claudeOpus,
+    const hasCommand = ctx.hasCommand([
+      SupportedCommands.claudeOpus,
       SupportedCommands.opus,
       SupportedCommands.opusShort,
       SupportedCommands.claudeShort,
       SupportedCommands.claudeShortTools,
+      SupportedCommands.sonnetShorTools,
+      SupportedCommands.sonnetTools,
       SupportedCommands.claudeSonnet,
       SupportedCommands.sonnet,
       SupportedCommands.sonnetShort,
       SupportedCommands.claudeHaiku,
       SupportedCommands.haikuShort])
-    if (isMentioned(ctx)) {
+
+    if (ctx.hasCommand(SupportedCommands.new) && this.checkModel(ctx)) {
       return true
     }
     const chatPrefix = this.hasPrefix(ctx.message?.text ?? '')
@@ -79,7 +82,10 @@ export class ClaudeBot extends LlmsBase {
     model: LlmsModelsEnum,
     hasTools: boolean
   ): Promise<LlmCompletion> {
-    return await anthropicCompletion(conversation, hasTools, model)
+    if (hasTools) {
+      return await toolsChatCompletion(conversation, model)
+    }
+    return await anthropicCompletion(conversation, model)
   }
 
   public async onEvent (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
@@ -90,7 +96,20 @@ export class ClaudeBot extends LlmsBase {
       return
     }
     if (ctx.hasCommand([SupportedCommands.claudeShortTools])) {
+      this.updateSessionModel(ctx, LlmsModelsEnum.CLAUDE_OPUS)
       await this.onChat(ctx, LlmsModelsEnum.CLAUDE_OPUS, false, true)
+      return
+    }
+    if (ctx.hasCommand([SupportedCommands.sonnetTools, SupportedCommands.sonnetShorTools])) {
+      this.updateSessionModel(ctx, LlmsModelsEnum.CLAUDE_SONNET)
+      await this.onChat(ctx, LlmsModelsEnum.CLAUDE_SONNET, false, true)
+      return
+    }
+    if (
+      (ctx.hasCommand(SupportedCommands.new) && this.checkModel(ctx))
+    ) {
+      await this.onStop(ctx)
+      await this.onChat(ctx, LlmsModelsEnum.CLAUDE_OPUS, true, false)
       return
     }
     if (ctx.hasCommand([
@@ -100,14 +119,17 @@ export class ClaudeBot extends LlmsBase {
       SupportedCommands.claudeShort]) ||
       (hasClaudeOpusPrefix(ctx.message?.text ?? '') !== '')
     ) {
+      this.updateSessionModel(ctx, LlmsModelsEnum.CLAUDE_OPUS)
       await this.onChat(ctx, LlmsModelsEnum.CLAUDE_OPUS, false, false) // true)
       return
     }
     if (ctx.hasCommand([SupportedCommands.claudeSonnet, SupportedCommands.sonnet, SupportedCommands.sonnetShort])) {
+      this.updateSessionModel(ctx, LlmsModelsEnum.CLAUDE_SONNET)
       await this.onChat(ctx, LlmsModelsEnum.CLAUDE_SONNET, true, false)
       return
     }
     if (ctx.hasCommand([SupportedCommands.claudeHaiku, SupportedCommands.haikuShort])) {
+      this.updateSessionModel(ctx, LlmsModelsEnum.CLAUDE_HAIKU)
       await this.onChat(ctx, LlmsModelsEnum.CLAUDE_HAIKU, false, false)
     }
   }

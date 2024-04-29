@@ -7,6 +7,7 @@ import config from '../../../config'
 import { type OnCallBackQueryData, type OnMessageContext, type ChatConversation } from '../../types'
 import { type LlmCompletion } from './llmApi'
 import { LlmsModelsEnum } from '../utils/types'
+import { sleep } from '../../sd-images/utils'
 
 const logger = pino({
   name: 'anthropic - llmsBot',
@@ -20,7 +21,6 @@ const API_ENDPOINT = config.llms.apiEndpoint // 'http://127.0.0.1:5000' // confi
 
 export const anthropicCompletion = async (
   conversation: ChatConversation[],
-  hastools: boolean,
   model = LlmsModelsEnum.CLAUDE_OPUS
 ): Promise<LlmCompletion> => {
   logger.info(`Handling ${model} completion`)
@@ -32,14 +32,13 @@ export const anthropicCompletion = async (
     messages: conversation.filter(c => c.model === model)
       .map(m => { return { content: m.content, role: m.role } })
   }
-  const url = `${API_ENDPOINT}/anthropic/completions${hastools ? '/tools' : ''}`
+  const url = `${API_ENDPOINT}/anthropic/completions`
   const response = await axios.post(url, data)
   const respJson = JSON.parse(response.data)
   if (response) {
     const totalInputTokens = respJson.usage.input_tokens
     const totalOutputTokens = respJson.usage.output_tokens
     const completion = respJson.content
-
     return {
       completion: {
         content: completion[0].text,
@@ -160,5 +159,69 @@ export const anthropicStreamCompletion = async (
     price: 0,
     inputTokens: parseInt(totalInputTokens, 10),
     outputTokens: parseInt(totalOutputTokens, 10)
+  }
+}
+
+export const toolsChatCompletion = async (
+  conversation: ChatConversation[],
+  model = LlmsModelsEnum.CLAUDE_OPUS
+): Promise<LlmCompletion> => {
+  logger.info(`Handling ${model} completion`)
+  const input = {
+    model,
+    stream: false,
+    system: config.openAi.chatGpt.chatCompletionContext,
+    max_tokens: +config.openAi.chatGpt.maxTokens,
+    messages: conversation.filter(c => c.model === model)
+      .map(m => { return { content: m.content, role: m.role } })
+  }
+  const url = `${API_ENDPOINT}/anthropic/completions/tools`
+  const response = await axios.post(url, input)
+  const respJson = response.data
+  if (respJson) {
+    const toolId = respJson.id
+    let data
+    let counter = 1
+    while (true) {
+      const resp = await axios.get(`${API_ENDPOINT}/anthropic/completions/tools/${toolId}`)
+      data = resp.data
+      if (data.status === 'DONE' || counter > 20) {
+        break
+      }
+      counter++
+      await sleep(3000)
+    }
+    console.log('here', data.status, counter)
+    if (data.status === 'DONE' && !data.error && counter < 20) {
+      const totalInputTokens = data.data.usage.input_tokens
+      const totalOutputTokens = data.data.usage.output_tokens
+      const completion = data.data.content
+      return {
+        completion: {
+          content: completion[0].text,
+          role: 'assistant',
+          model
+        },
+        usage: totalOutputTokens + totalInputTokens,
+        price: 0,
+        inputTokens: totalInputTokens,
+        outputTokens: totalOutputTokens
+      }
+    } else {
+      return {
+        completion: {
+          content: 'Timeout error',
+          role: 'assistant',
+          model
+        },
+        usage: 0,
+        price: 0
+      }
+    }
+  }
+  return {
+    completion: undefined,
+    usage: 0,
+    price: 0
   }
 }
