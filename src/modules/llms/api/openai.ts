@@ -45,7 +45,6 @@ export async function postGenerateImg (
   const response = await openai.images.generate(
     payload as OpenAI.Images.ImageGenerateParams
   )
-  console.log(response)
   return response.data
 }
 

@@ -6,6 +6,7 @@ import { type Readable } from 'stream'
 import { GrammyError } from 'grammy'
 import { pino } from 'pino'
 import { LlmsModelsEnum } from '../utils/types'
+import { headers, headersStream } from './helper'
 
 const API_ENDPOINT = config.llms.apiEndpoint // config.llms.apiEndpoint  // 'http://127.0.0.1:5000' // config.llms.apiEndpoint
 
@@ -37,7 +38,7 @@ export const vertexCompletion = async (
   }
 
   const url = `${API_ENDPOINT}/vertex/completions`
-  const response = await axios.post(url, data)
+  const response = await axios.post(url, data, headers)
   if (response) {
     const totalInputTokens = 4 // response.data.usage.prompt_tokens;
     const totalOutputTokens = 5 // response.data.usage.completion_tokens;
@@ -77,7 +78,7 @@ export const vertexStreamCompletion = async (
   if (!ctx.chat?.id) {
     throw new Error('Context chat id should not be empty after openAI streaming')
   }
-  const response: AxiosResponse = await axios.post(url, data, { responseType: 'stream' })
+  const response: AxiosResponse = await axios.post(url, data, headersStream)
   // Create a Readable stream from the response
   const completionStream: Readable = response.data
   // Read and process the stream

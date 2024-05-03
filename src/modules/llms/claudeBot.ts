@@ -120,7 +120,7 @@ export class ClaudeBot extends LlmsBase {
       (hasClaudeOpusPrefix(ctx.message?.text ?? '') !== '')
     ) {
       this.updateSessionModel(ctx, LlmsModelsEnum.CLAUDE_OPUS)
-      await this.onChat(ctx, LlmsModelsEnum.CLAUDE_OPUS, false, false) // true)
+      await this.onChat(ctx, LlmsModelsEnum.CLAUDE_OPUS, true, false)
       return
     }
     if (ctx.hasCommand([SupportedCommands.claudeSonnet, SupportedCommands.sonnet, SupportedCommands.sonnetShort])) {

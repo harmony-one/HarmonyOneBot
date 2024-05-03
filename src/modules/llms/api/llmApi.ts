@@ -4,6 +4,8 @@ import { type ChatConversation } from '../../types'
 import pino from 'pino'
 import { LlmsModels, LlmsModelsEnum } from '../utils/types'
 import { type ChatModel } from '../utils/types'
+import { headers } from './helper'
+
 // import { type ChatModel } from '../../open-ai/types'
 
 const API_ENDPOINT = config.llms.apiEndpoint // config.llms.apiEndpoint // 'http://localhost:8080' // http://127.0.0.1:5000' // config.llms.apiEndpoint
@@ -58,7 +60,7 @@ export const getChatModelPrice = (
 export const llmAddUrlDocument = async (args: LlmAddUrlDocument): Promise<string> => {
   const data = { ...args }
   const endpointUrl = `${API_ENDPOINT}/collections/document`
-  const response = await axios.post(endpointUrl, data)
+  const response = await axios.post(endpointUrl, data, headers)
   if (response) {
     return response.data.collectionName
   }
@@ -72,7 +74,7 @@ interface LlmCheckCollectionStatusOutput {
 }
 export const llmCheckCollectionStatus = async (name: string): Promise<LlmCheckCollectionStatusOutput> => {
   const endpointUrl = `${API_ENDPOINT}/collections/document/${name}` // ?collectionName=${collectionName}`
-  const response = await axios.get(endpointUrl)
+  const response = await axios.get(endpointUrl, headers)
   if (response) {
     return response.data
   }
@@ -91,7 +93,7 @@ interface QueryUrlDocumentOutput {
 export const queryUrlDocument = async (args: QueryUrlDocument): Promise<QueryUrlDocumentOutput> => {
   const data = { collectionName: args.collectioName, prompt: args.prompt, conversation: args.conversation }
   const endpointUrl = `${API_ENDPOINT}/collections/query`
-  const response = await axios.post(endpointUrl, data)
+  const response = await axios.post(endpointUrl, data, headers)
   if (response) {
     return response.data
   }
@@ -117,7 +119,7 @@ export const llmCompletion = async (
     messages: conversation.filter(c => c.model === model)
   }
   const url = `${API_ENDPOINT}/llms/completions`
-  const response = await axios.post(url, data)
+  const response = await axios.post(url, data, headers)
 
   if (response) {
     const totalInputTokens = response.data.usage.prompt_tokens

@@ -8,6 +8,7 @@ import { type OnCallBackQueryData, type OnMessageContext, type ChatConversation 
 import { type LlmCompletion } from './llmApi'
 import { LlmsModelsEnum } from '../utils/types'
 import { sleep } from '../../sd-images/utils'
+import { headers, headersStream } from './helper'
 
 const logger = pino({
   name: 'anthropic - llmsBot',
@@ -33,7 +34,7 @@ export const anthropicCompletion = async (
       .map(m => { return { content: m.content, role: m.role } })
   }
   const url = `${API_ENDPOINT}/anthropic/completions`
-  const response = await axios.post(url, data)
+  const response = await axios.post(url, data, headers)
   const respJson = JSON.parse(response.data)
   if (response) {
     const totalInputTokens = respJson.usage.input_tokens
@@ -66,7 +67,7 @@ export const anthropicStreamCompletion = async (
   logger.info(`Handling ${model} stream completion`)
   const data = {
     model,
-    stream: true, // Set stream to true to receive the completion as a stream
+    stream: true,
     system: config.openAi.chatGpt.chatCompletionContext,
     max_tokens: limitTokens ? +config.openAi.chatGpt.maxTokens : undefined,
     messages: conversation.filter(c => c.model === model).map(m => { return { content: m.content, role: m.role } })
@@ -77,17 +78,17 @@ export const anthropicStreamCompletion = async (
   if (!ctx.chat?.id) {
     throw new Error('Context chat id should not be empty after openAI streaming')
   }
-  const response: AxiosResponse = await axios.post(url, data, { responseType: 'stream' })
-  // Create a Readable stream from the response
+
+  const response: AxiosResponse = await axios.post(url, data, headersStream)
+
   const completionStream: Readable = response.data
-  // Read and process the stream
   let completion = ''
   let outputTokens = ''
   let inputTokens = ''
   for await (const chunk of completionStream) {
     const msg = chunk.toString()
     if (msg) {
-      if (msg.startsWith('Input Token')) {
+      if (msg.includes('Input Token:')) {
         const regex = /Input Token: (\d+)(.*)/
         // Execute the regular expression
         const match = regex.exec(msg)
@@ -176,14 +177,14 @@ export const toolsChatCompletion = async (
       .map(m => { return { content: m.content, role: m.role } })
   }
   const url = `${API_ENDPOINT}/anthropic/completions/tools`
-  const response = await axios.post(url, input)
+  const response = await axios.post(url, input, headers)
   const respJson = response.data
   if (respJson) {
     const toolId = respJson.id
     let data
     let counter = 1
     while (true) {
-      const resp = await axios.get(`${API_ENDPOINT}/anthropic/completions/tools/${toolId}`)
+      const resp = await axios.get(`${API_ENDPOINT}/anthropic/completions/tools/${toolId}`, headers)
       data = resp.data
       if (data.status === 'DONE' || counter > 20) {
         break
@@ -191,7 +192,6 @@ export const toolsChatCompletion = async (
       counter++
       await sleep(3000)
     }
-    console.log('here', data.status, counter)
     if (data.status === 'DONE' && !data.error && counter < 20) {
       const totalInputTokens = data.data.usage.input_tokens
       const totalOutputTokens = data.data.usage.output_tokens
