@@ -129,6 +129,7 @@ export abstract class LlmsBase implements PayableBot {
 
   async onChat (ctx: OnMessageContext | OnCallBackQueryData, model: string, stream: boolean, usesTools: boolean): Promise<void> {
     const session = this.getSession(ctx)
+    // console.log('onChat ::::::', this.constructor.name, ctx.message?.text, ':::', model, 'ID:', ctx.message?.message_id)
     try {
       if (this.botSuspended) {
         ctx.transient.analytics.sessionState = RequestState.Error
@@ -168,6 +169,7 @@ export abstract class LlmsBase implements PayableBot {
 
   async onChatRequestHandler (ctx: OnMessageContext | OnCallBackQueryData, stream: boolean, usesTools: boolean): Promise<void> {
     const session = this.getSession(ctx)
+    // console.log('onChatRequestHandler ::::::', this.constructor.name, ctx.message?.text, 'ID:', ctx.message?.message_id)
     while (session.requestQueue.length > 0) {
       try {
         const msg = session.requestQueue.shift()
@@ -262,6 +264,7 @@ export abstract class LlmsBase implements PayableBot {
 
   private async completionGen (data: ChatPayload, usesTools: boolean, msgId?: number, outputFormat = 'text'): Promise< { price: number, chat: ChatConversation[] }> {
     const { conversation, ctx, model } = data
+    this.logger.info(`handling completion ${this.constructor.name} ${ctx.message?.message_id}`)
     try {
       if (!msgId) {
         ctx.transient.analytics.firstResponseTime = now()
@@ -378,7 +381,6 @@ export abstract class LlmsBase implements PayableBot {
 
   async onStop (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
     const session = this.getSession(ctx)
-    console.log('SESSION', session)
     for (const c of ctx.session.collections.activeCollections) {
       this.logger.info(`Deleting collection ${c.collectionName}`)
       await deleteCollection(c.collectionName)

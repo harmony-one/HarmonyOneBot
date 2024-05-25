@@ -25,7 +25,7 @@ export enum SupportedCommands {
   claudeShort = 'c',
   sonnet = 'sonnet',
   sonnetTools = 'sonnett',
-  sonnetShorTools = 'stool',
+  sonnetShortTools = 'stool',
   sonnetShort = 's',
   claudeHaiku = 'haiku',
   haikuShort = 'h',

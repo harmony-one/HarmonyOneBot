@@ -345,9 +345,9 @@ const UtilityBots: Record<string, UtilityBot> = {
   schedule
 }
 
-const executeOrRefund = (ctx: OnMessageContext, price: number, bot: PayableBot): void => {
+const executeOrRefund = async (ctx: OnMessageContext, price: number, bot: PayableBot): Promise<void> => {
   const refund = (reason?: string): void => {}
-  bot.onEvent(ctx, refund).catch((ex: any) => {
+  await bot.onEvent(ctx, refund).catch((ex: any) => {
     Sentry.captureException(ex)
     logger.error(ex?.message ?? 'Unknown error')
   })
@@ -381,7 +381,7 @@ const onMessage = async (ctx: OnMessageContext): Promise<void> => {
         const isPaid = await payments.pay(ctx, price)
         if (isPaid) {
           logger.info(`command controller: ${bot.constructor.name}`)
-          executeOrRefund(ctx, price, bot)
+          await executeOrRefund(ctx, price, bot)
         }
         return
       }

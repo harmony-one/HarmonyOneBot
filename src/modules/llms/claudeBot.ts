@@ -38,7 +38,7 @@ export class ClaudeBot extends LlmsBase {
       SupportedCommands.opusShort,
       SupportedCommands.claudeShort,
       SupportedCommands.claudeShortTools,
-      SupportedCommands.sonnetShorTools,
+      SupportedCommands.sonnetShortTools,
       SupportedCommands.sonnetTools,
       SupportedCommands.claudeSonnet,
       SupportedCommands.sonnet,
@@ -100,7 +100,7 @@ export class ClaudeBot extends LlmsBase {
       await this.onChat(ctx, LlmsModelsEnum.CLAUDE_OPUS, false, true)
       return
     }
-    if (ctx.hasCommand([SupportedCommands.sonnetTools, SupportedCommands.sonnetShorTools])) {
+    if (ctx.hasCommand([SupportedCommands.sonnetTools, SupportedCommands.sonnetShortTools])) {
       this.updateSessionModel(ctx, LlmsModelsEnum.CLAUDE_SONNET)
       await this.onChat(ctx, LlmsModelsEnum.CLAUDE_SONNET, false, true)
       return
