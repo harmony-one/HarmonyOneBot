@@ -10,7 +10,8 @@ export enum LlmsModelsEnum {
   GPT_4 = 'gpt-4',
   GPT_35_TURBO = 'gpt-3.5-turbo',
   GPT_35_TURBO_16K = 'gpt-3.5-turbo-16k',
-  GPT_4_VISION_PREVIEW = 'gpt-4-vision-preview'
+  GPT_4_VISION_PREVIEW = 'gpt-4-vision-preview',
+  GPT_4O = 'gpt-4o-2024-05-13'
 }
 
 export interface DalleGPTModel {
@@ -109,6 +110,13 @@ export const LlmsModels: Record<string, ChatModel> = {
     inputPrice: 0.03, // 3
     outputPrice: 0.06, // 6
     maxContextTokens: 16000,
+    chargeType: 'TOKEN'
+  },
+  'gpt-4o-2024-05-13': {
+    name: 'gpt-4o-2024-05-13',
+    inputPrice: 0.005, // 3
+    outputPrice: 0.0015, // 6
+    maxContextTokens: 128000,
     chargeType: 'TOKEN'
   }
 }

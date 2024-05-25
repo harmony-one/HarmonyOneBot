@@ -45,6 +45,7 @@ export enum SupportedCommands {
   new = 'new',
   gpt4 = 'gpt4',
   ask32 = 'ask32',
+  gpto = 'gpto',
   gpt = 'gpt',
   last = 'last',
   dalle = 'dalle',

@@ -137,6 +137,13 @@ export class OpenAIBot extends LlmsBase {
       return
     }
 
+    if (
+      ctx.hasCommand([SupportedCommands.gpto])) {
+      this.updateSessionModel(ctx, LlmsModelsEnum.GPT_4O)
+      await this.onChat(ctx, LlmsModelsEnum.GPT_4O, true, false)
+      return
+    }
+
     if (ctx.hasCommand([SupportedCommands.pdf, SupportedCommands.ctx]) && this.checkModel(ctx)) {
       await this.onChat(ctx, ctx.session.currentModel, true, false)
       return
