@@ -85,6 +85,7 @@ export const anthropicStreamCompletion = async (
   let completion = ''
   let outputTokens = ''
   let inputTokens = ''
+  let message = ''
   for await (const chunk of completionStream) {
     const msg = chunk.toString()
     if (msg) {
@@ -115,7 +116,8 @@ export const anthropicStreamCompletion = async (
           completion = completion.replaceAll('...', '')
           completion += '...'
           wordCount = 0
-          if (ctx.chat?.id) {
+          if (ctx.chat?.id && message !== completion) {
+            message = completion
             await ctx.api
               .editMessageText(ctx.chat?.id, msgId, completion)
               .catch(async (e: any) => {

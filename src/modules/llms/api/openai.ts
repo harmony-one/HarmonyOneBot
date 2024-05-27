@@ -131,6 +131,7 @@ export const streamChatCompletion = async (
     throw new Error('Context chat id should not be empty after openAI streaming')
   }
   // let wordCountMinimumCounter = 1;
+  let message = ''
   for await (const part of stream) {
     wordCount++
     const chunck = part.choices[0]?.delta?.content
@@ -147,19 +148,22 @@ export const streamChatCompletion = async (
       completion = completion.replaceAll('...', '')
       completion += '...'
       wordCount = 0
-      await ctx.api
-        .editMessageText(ctx.chat?.id, msgId, completion)
-        .catch(async (e: any) => {
-          if (e instanceof GrammyError) {
-            if (e.error_code !== 400) {
-              throw e
+      if (message !== completion) {
+        message = completion
+        await ctx.api
+          .editMessageText(ctx.chat?.id, msgId, completion)
+          .catch(async (e: any) => {
+            if (e instanceof GrammyError) {
+              if (e.error_code !== 400) {
+                throw e
+              } else {
+                logger.error(e)
+              }
             } else {
-              logger.error(e)
+              throw e
             }
-          } else {
-            throw e
-          }
-        })
+          })
+      }
     }
   }
   completion = completion.replaceAll('...', '')

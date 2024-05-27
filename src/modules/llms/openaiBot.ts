@@ -124,7 +124,8 @@ export class OpenAIBot extends LlmsBase {
         SupportedCommands.chat,
         SupportedCommands.ask,
         SupportedCommands.gpt4,
-        SupportedCommands.gpt
+        SupportedCommands.gpt,
+        SupportedCommands.gpto
       ]) ||
       hasChatPrefix(ctx.message?.text ?? '') ||
       isMentioned(ctx) ||
@@ -132,13 +133,6 @@ export class OpenAIBot extends LlmsBase {
         ctx.message?.text?.startsWith('ask ')) &&
         ctx.chat?.type === 'private')
     ) {
-      this.updateSessionModel(ctx, LlmsModelsEnum.GPT_4)
-      await this.onChat(ctx, LlmsModelsEnum.GPT_4, true, false)
-      return
-    }
-
-    if (
-      ctx.hasCommand([SupportedCommands.gpto])) {
       this.updateSessionModel(ctx, LlmsModelsEnum.GPT_4O)
       await this.onChat(ctx, LlmsModelsEnum.GPT_4O, true, false)
       return

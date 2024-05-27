@@ -85,6 +85,7 @@ export const vertexStreamCompletion = async (
   let completion = ''
   let outputTokens = ''
   let inputTokens = ''
+  let message = ''
   for await (const chunk of completionStream) {
     const msg = chunk.toString()
     if (msg) {
@@ -97,7 +98,8 @@ export const vertexStreamCompletion = async (
       }
       completion = completion.replaceAll('...', '')
       completion += '...'
-      if (ctx.chat?.id) {
+      if (ctx.chat?.id && message !== completion) {
+        message = completion
         await ctx.api
           .editMessageText(ctx.chat?.id, msgId, completion)
           .catch(async (e: any) => {
@@ -105,7 +107,7 @@ export const vertexStreamCompletion = async (
               if (e.error_code !== 400) {
                 throw e
               } else {
-                logger.error(e)
+                logger.error(e.message)
               }
             } else {
               throw e
