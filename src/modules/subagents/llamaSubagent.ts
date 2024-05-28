@@ -65,7 +65,7 @@ export class LlamaAgent extends SubagentBase {
         await Promise.all(urls.map(async url => {
           let collection = ctx.session.collections.activeCollections.find(c => c.url === url)
           if (!collection) {
-            await this.addUrlToCollection(ctx, ctx.chat?.id, url, msg.content as string)
+            await this.addUrlToCollection(ctx, ctx.chat?.id ?? 0, url, msg.content as string)
             if (!ctx.session.collections.isProcessingQueue) {
               ctx.session.collections.isProcessingQueue = true
               await this.onCheckCollectionStatus(ctx)
