@@ -70,11 +70,11 @@ export const anthropicStreamCompletion = async (
     stream: true,
     system: config.openAi.chatGpt.chatCompletionContext,
     max_tokens: limitTokens ? +config.openAi.chatGpt.maxTokens : undefined,
-    messages: conversation.filter(c => c.model === model).map(m => { return { content: m.content, role: m.role } })
+    messages: conversation.filter(c => c.model === model) // .map(m => { return { content: m.content, role: m.role } })
   }
   let wordCount = 0
   let wordCountMinimum = 2
-  const url = `${API_ENDPOINT}/anthropic/completions`
+  const url = `${API_ENDPOINT}/llms/completions` // `${API_ENDPOINT}/anthropic/completions`
   if (!ctx.chat?.id) {
     throw new Error('Context chat id should not be empty after openAI streaming')
   }
@@ -90,26 +90,17 @@ export const anthropicStreamCompletion = async (
     const msg = chunk.toString()
     if (msg) {
       if (msg.includes('Input Token:')) {
-        const regex = /Input Token: (\d+)(.*)/
-        // Execute the regular expression
-        const match = regex.exec(msg)
-        if (match) {
-          inputTokens = match[1].trim() // Extract the integer part
-          if (match.length >= 3) {
-            completion += match[2]
-          }
-        }
-      } else if (msg.startsWith('Output Tokens')) {
-        outputTokens = msg.split('Output Tokens: ')[1].trim()
+        const tokenMsg = msg.split('Input Token: ')[1]
+        inputTokens = tokenMsg.split('Output Tokens: ')[0]
+        outputTokens = tokenMsg.split('Output Tokens: ')[1]
+        completion = completion.split('Input Token: ')[0]
+      } else if (msg.includes('Output Tokens: ')) {
+        outputTokens = msg.split('Output Tokens: ')[1]
+        completion = completion.split('Output Tokens: ')[0]
       } else {
         wordCount++
         completion += msg
-        if (msg.includes('Output Tokens:')) {
-          outputTokens = msg.split('Output Tokens: ')[1].trim()
-          // outputTokens = tokenMsg.split('Output Tokens: ')[1].trim()
-          completion = completion.split('Output Tokens: ')[0]
-        }
-        if (wordCount > wordCountMinimum) { // if (chunck === '.' && wordCount > wordCountMinimum) {
+        if (wordCount > wordCountMinimum) {
           if (wordCountMinimum < 64) {
             wordCountMinimum *= 2
           }
@@ -125,7 +116,7 @@ export const anthropicStreamCompletion = async (
                   if (e.error_code !== 400) {
                     throw e
                   } else {
-                    logger.error(e)
+                    logger.error(e.message)
                   }
                 } else {
                   throw e

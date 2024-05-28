@@ -72,9 +72,9 @@ export const vertexStreamCompletion = async (
     system: config.openAi.chatGpt.chatCompletionContext,
     max_tokens: limitTokens ? +config.openAi.chatGpt.maxTokens : undefined,
     messages: conversation.filter(c => c.model === model)
-      .map(m => { return { parts: { text: m.content }, role: m.role !== 'user' ? 'model' : 'user' } })
+    // .map(m => { return { parts: { text: m.content }, role: m.role !== 'user' ? 'model' : 'user' } })
   }
-  const url = `${API_ENDPOINT}/vertex/completions/gemini`
+  const url = `${API_ENDPOINT}/llms/completions` // `${API_ENDPOINT}/vertex/completions/gemini`
   if (!ctx.chat?.id) {
     throw new Error('Context chat id should not be empty after openAI streaming')
   }
