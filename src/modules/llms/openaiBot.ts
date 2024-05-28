@@ -123,7 +123,6 @@ export class OpenAIBot extends LlmsBase {
       ctx.hasCommand([
         SupportedCommands.chat,
         SupportedCommands.ask,
-        SupportedCommands.gpt4,
         SupportedCommands.gpt,
         SupportedCommands.gpto
       ]) ||
@@ -149,14 +148,20 @@ export class OpenAIBot extends LlmsBase {
       (ctx.message?.text?.startsWith('new ') && ctx.chat?.type === 'private') && this.checkModel(ctx))
     ) {
       await this.onStop(ctx)
-      this.updateSessionModel(ctx, LlmsModelsEnum.GPT_4)
-      await this.onChat(ctx, LlmsModelsEnum.GPT_4, true, false)
+      this.updateSessionModel(ctx, LlmsModelsEnum.GPT_4O)
+      await this.onChat(ctx, LlmsModelsEnum.GPT_4O, true, false)
       return
     }
 
     if (ctx.hasCommand(SupportedCommands.ask35)) {
       this.updateSessionModel(ctx, LlmsModelsEnum.GPT_35_TURBO_16K)
       await this.onChat(ctx, LlmsModelsEnum.GPT_35_TURBO_16K, true, false)
+      return
+    }
+
+    if (ctx.hasCommand(SupportedCommands.gpt4)) {
+      this.updateSessionModel(ctx, LlmsModelsEnum.GPT_4)
+      await this.onChat(ctx, LlmsModelsEnum.GPT_4, true, false)
       return
     }
 
