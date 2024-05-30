@@ -71,7 +71,7 @@ export const vertexStreamCompletion = async (
     stream: true, // Set stream to true to receive the completion as a stream
     system: config.openAi.chatGpt.chatCompletionContext,
     max_tokens: limitTokens ? +config.openAi.chatGpt.maxTokens : undefined,
-    messages: conversation.filter(c => c.model === model)
+    messages: conversation.filter(c => c.model === model && c.role !== 'system')
     // .map(m => { return { parts: { text: m.content }, role: m.role !== 'user' ? 'model' : 'user' } })
   }
   const url = `${API_ENDPOINT}/llms/completions` // `${API_ENDPOINT}/vertex/completions/gemini`

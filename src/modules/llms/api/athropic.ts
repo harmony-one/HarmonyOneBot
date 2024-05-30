@@ -70,7 +70,7 @@ export const anthropicStreamCompletion = async (
     stream: true,
     system: config.openAi.chatGpt.chatCompletionContext,
     max_tokens: limitTokens ? +config.openAi.chatGpt.maxTokens : undefined,
-    messages: conversation.filter(c => c.model === model) // .map(m => { return { content: m.content, role: m.role } })
+    messages: conversation.filter(c => c.model === model && c.role !== 'system') // .map(m => { return { content: m.content, role: m.role } })
   }
   let wordCount = 0
   let wordCountMinimum = 2
@@ -166,7 +166,7 @@ export const toolsChatCompletion = async (
     stream: false,
     system: config.openAi.chatGpt.chatCompletionContext,
     max_tokens: +config.openAi.chatGpt.maxTokens,
-    messages: conversation.filter(c => c.model === model)
+    messages: conversation.filter(c => c.model === model && c.role !== 'system')
       .map(m => { return { content: m.content, role: m.role } })
   }
   const url = `${API_ENDPOINT}/anthropic/completions/tools`
