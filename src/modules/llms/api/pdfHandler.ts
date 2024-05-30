@@ -1,6 +1,7 @@
 import axios, { AxiosError } from 'axios'
 import config from '../../../config'
 import { type ChatConversation } from '../../types'
+import { headers } from './helper'
 
 export interface PdfCompletion {
   completion: ChatConversation | undefined
@@ -12,7 +13,7 @@ export const handlePdf = async (prompt: string): Promise<PdfCompletion> => {
   try {
     const data = { question: prompt }
     const url = `${config.llms.pdfUrl}/ask`
-    const response = await axios.post(url, data)
+    const response = await axios.post(url, data, headers)
     if (response) {
       console.log(response.data)
       return {

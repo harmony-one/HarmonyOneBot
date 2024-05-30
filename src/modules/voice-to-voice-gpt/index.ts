@@ -3,9 +3,9 @@ import pino from 'pino'
 import { InputFile } from 'grammy'
 import type { Logger } from 'pino'
 import type { BotPayments } from '../payment'
-import { chatCompletion, speechToText } from '../open-ai/api/openAi'
+import { speechToText, chatCompletion } from '../llms/api/openai'
 import type { OnMessageContext, PayableBot } from '../types'
-import { ChatGPTModelsEnum } from '../open-ai/types'
+import { LlmsModelsEnum } from '../llms/utils/types'
 import { generateVoiceFromText } from './helpers'
 
 export class VoiceToVoiceGPTBot implements PayableBot {
@@ -64,9 +64,9 @@ export class VoiceToVoiceGPTBot implements PayableBot {
     fs.rmSync(filename)
 
     const conversation = [{ role: 'user', content: resultText }]
-    const response = await chatCompletion(conversation, ChatGPTModelsEnum.GPT_35_TURBO_16K)
+    const response = await chatCompletion(conversation, LlmsModelsEnum.GPT_35_TURBO_16K)
 
-    const voiceResult = await generateVoiceFromText(response.completion)
+    const voiceResult = await generateVoiceFromText(response.completion?.content as string)
     // const voiceResult = await gcTextToSpeedClient.ssmlTextToSpeech({ text: response.completion, ssmlGender: 'MALE', languageCode: 'en-US' })
 
     if (!voiceResult) {

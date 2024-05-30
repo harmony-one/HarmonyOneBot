@@ -23,7 +23,7 @@ export const walletMenu = new Menu<BotContext>(MenuIds.WALLET_MAIN)
     return await ctx
       .editMessageText(helpText, {
         parse_mode: 'Markdown',
-        disable_web_page_preview: true
+        link_preview_options: { is_disabled: true }
       })
       .catch((ex) => {
         console.log('### ex', ex)

@@ -48,11 +48,11 @@ export class TranslateBot implements PayableBot {
       return true
     }
 
-    const hasShortcut = this.isCtxHasLangShortcut(ctx)
+    // const hasShortcut = this.isCtxHasLangShortcut(ctx)
     const hasLangCommand = this.isCtxHasLangCommand(ctx)
 
     // en. de. ru. ||  /en /de /ru
-    if (hasShortcut || hasLangCommand) {
+    if (hasLangCommand) {
       return true
     }
 
@@ -120,18 +120,18 @@ export class TranslateBot implements PayableBot {
       return
     }
 
-    if (this.isCtxHasLangShortcut(ctx)) {
-      const langCode = ctx.message.text.split('.')[0] || null
+    // if (this.isCtxHasLangShortcut(ctx)) {
+    //   const langCode = ctx.message.text.split('.')[0] || null
 
-      if (!langCode) {
-        await ctx.reply('Unexpected error')
-        return
-      }
+    //   if (!langCode) {
+    //     await ctx.reply('Unexpected error')
+    //     return
+    //   }
 
-      const message = ctx.message.reply_to_message?.text ?? ctx.message.text.slice(langCode.length + 1, ctx.message.text.length).trim()
-      await this.translateMessage(ctx, message, langCode)
-      return
-    }
+    //   const message = ctx.message.reply_to_message?.text ?? ctx.message.text.slice(langCode.length + 1, ctx.message.text.length).trim()
+    //   await this.translateMessage(ctx, message, langCode)
+    //   return
+    // }
 
     const isPlainText = !this.isCtxHasAnyCommand(ctx)
 

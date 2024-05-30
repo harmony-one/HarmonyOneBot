@@ -17,7 +17,7 @@ export const voiceMemoMenu = new Menu<BotContext>(MenuIds.VOICE_MEMO_MAIN)
     const text = await getStartMenuText(ctx) || ''
     ctx.editMessageText(text, {
       parse_mode: 'Markdown',
-      disable_web_page_preview: true
+      link_preview_options: { is_disabled: true }
     }).catch((ex) => {
       console.log('### ex', ex)
     })

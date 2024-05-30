@@ -10,10 +10,9 @@ import { appText } from './utils/text'
 import { type OnMessageContext, type OnCallBackQueryData, type PayableBot, RequestState } from '../types'
 import { type BotPayments } from '../payment'
 import { getCommandNamePrompt, getUrl } from './utils/'
-import { isAdmin } from '../open-ai/utils/context'
-import { MAX_TRIES, sendMessage } from '../open-ai/helpers'
+import { isAdmin } from '../llms/utils/context'
+import { sendMessage, isValidUrl, MAX_TRIES } from '../llms/utils/helpers'
 import { sleep } from '../sd-images/utils'
-import { isValidUrl } from '../open-ai/utils/web-crawler'
 import { now } from '../../utils/perf'
 
 export enum SupportedCommands {
@@ -264,7 +263,7 @@ export class OneCountryBot implements PayableBot {
           // await ctx.reply(`The Domain [${fullUrl}](${config.country.hostname}/new?domain=${lastDomain}) was registered`, {
           //   parse_mode: 'Markdown',
           //   message_thread_id: ctx.message?.message_thread_id,
-          //   disable_web_page_preview: false
+          //   link_preview_options: { is_disabled: true }
           // })
           ctx.transient.analytics.sessionState = RequestState.Success
           ctx.transient.analytics.actualResponseTime = now()
@@ -555,7 +554,7 @@ export class OneCountryBot implements PayableBot {
         ).catch(async (e) => { await this.onError(ctx, e, retryCount - 1) })
         ctx.transient.analytics.actualResponseTime = now()
         if (method === 'editMessageText') {
-          ctx.session.openAi.chatGpt.chatConversation.pop() // deletes last prompt
+          ctx.session.chatGpt.chatConversation.pop() // deletes last prompt
         }
         await sleep(retryAfter * 1000) // wait retryAfter seconds to enable bot
         this.botSuspended = false
