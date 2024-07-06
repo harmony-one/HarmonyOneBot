@@ -2,6 +2,15 @@ import axios from 'axios'
 import moment from 'moment'
 import { abbreviateNumber, getPercentDiff } from './utils'
 import { BigNumber } from 'bignumber.js'
+import pino from 'pino'
+
+const logger = pino({
+  name: 'BridgeAPI',
+  transport: {
+    target: 'pino-pretty',
+    options: { colorize: true }
+  }
+})
 
 const bridgeUrl = 'https://hmy-lz-api-token.fly.dev'
 const stakeApiUrl = 'https://api.stake.hmny.io'
@@ -144,8 +153,13 @@ export const getBridgeStats = async (): Promise<{ change: string, value: string 
 }
 
 export const getTVL = async (): Promise<number> => {
-  const tokens = await getTokensList()
-  return tokens.reduce((acc, item) => acc + +item.totalLockedUSD, 0)
+  try {
+    const tokens = await getTokensList()
+    return tokens.reduce((acc, item) => acc + +item.totalLockedUSD, 0)
+  } catch (e) {
+    logger.error(e)
+    return 0
+  }
 }
 
 export const getTotalStakes = async (): Promise<number> => {
@@ -154,17 +168,20 @@ export const getTotalStakes = async (): Promise<number> => {
 }
 
 export const getAvgStakes = async (): Promise<number> => {
-  const { history } = await getStakingStats()
-  const sortedHistory = Object.values(history).sort((a, b) => b.current_epoch - a.current_epoch)
-
-  const epochCount = 30
-  const values = []
-  for (let i = 0; i < sortedHistory.length || i < epochCount; i++) {
-    values.push(sortedHistory[i]['total-staking'])
+  try {
+    const { history } = await getStakingStats()
+    const sortedHistory = Object.values(history).sort((a, b) => b.current_epoch - a.current_epoch)
+    const epochCount = 30
+    const values = []
+    for (let i = 0; i < sortedHistory.length || i < epochCount; i++) {
+      values.push(sortedHistory[i]['total-staking'])
+    }
+    // calc avg total / values.length
+    return values.reduce((acc, item) => {
+      return acc.plus(item)
+    }, BigNumber(0)).div(values.length).div(10 ** 18).toNumber()
+  } catch (e) {
+    logger.error(e)
+    return 0
   }
-
-  // calc avg total / values.length
-  return values.reduce((acc, item) => {
-    return acc.plus(item)
-  }, BigNumber(0)).div(values.length).div(10 ** 18).toNumber()
 }

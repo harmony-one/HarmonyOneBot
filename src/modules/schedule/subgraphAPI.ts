@@ -1,5 +1,14 @@
 import axios from 'axios'
 import config from '../../config'
+import pino from 'pino'
+
+const logger = pino({
+  name: 'SubgraphAPI',
+  transport: {
+    target: 'pino-pretty',
+    options: { colorize: true }
+  }
+})
 
 export interface TradingVolume {
   id: string
@@ -26,9 +35,14 @@ const generateTradingVolumeQuery = (first = 30): string => {
 }
 
 export const getTradingVolume = async (daysCount = 30): Promise<TradingVolume[]> => {
-  const { data } = await axios.post<SubgraphResponse>(
-    config.schedule.swapSubgraphApiUrl,
-    { query: generateTradingVolumeQuery(daysCount) }
-  )
-  return data.data.uniswapDayDatas
+  try {
+    const { data } = await axios.post<SubgraphResponse>(
+      config.schedule.swapSubgraphApiUrl,
+      { query: generateTradingVolumeQuery(daysCount) }
+    )
+    return data.data.uniswapDayDatas
+  } catch (e) {
+    logger.error(e)
+    return []
+  }
 }
