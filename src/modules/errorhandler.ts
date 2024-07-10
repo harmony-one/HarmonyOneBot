@@ -72,6 +72,10 @@ class ErrorHandler {
         await sendMessage(ctx, e.message).catch(async (e) => { await this.onError(ctx, e, retryCount - 1, logger) })
         ctx.transient.analytics.actualResponseTime = now()
         onStop && await onStop(ctx)
+      } else if (e.code === 'content_policy_violation') {
+        await sendMessage(ctx, e.message).catch(async (e) => { await this.onError(ctx, e, retryCount - 1, logger) })
+        ctx.transient.analytics.actualResponseTime = now()
+        onStop && await onStop(ctx)
       } else {
         await sendMessage(
           ctx,
