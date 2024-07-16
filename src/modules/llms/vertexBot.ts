@@ -31,8 +31,8 @@ export class VertexBot extends LlmsBase {
     ctx: OnMessageContext | OnCallBackQueryData
   ): boolean {
     const hasCommand = ctx.hasCommand([
-      SupportedCommands.bard,
-      SupportedCommands.bardF,
+      // SupportedCommands.bard,
+      // SupportedCommands.bardF,
       SupportedCommands.gemini,
       SupportedCommands.gShort,
       SupportedCommands.g15short,
@@ -81,11 +81,11 @@ export class VertexBot extends LlmsBase {
       this.logger.warn(`### unsupported command ${ctx.message?.text}`)
       return
     }
-    if (ctx.hasCommand([SupportedCommands.bard, SupportedCommands.bardF]) || hasBardPrefix(ctx.message?.text ?? '')) {
-      this.updateSessionModel(ctx, LlmsModelsEnum.BISON)
-      await this.onChat(ctx, LlmsModelsEnum.BISON, false, false)
-      return
-    }
+    // if (ctx.hasCommand([SupportedCommands.bard, SupportedCommands.bardF]) || hasBardPrefix(ctx.message?.text ?? '')) {
+    //   this.updateSessionModel(ctx, LlmsModelsEnum.BISON)
+    //   await this.onChat(ctx, LlmsModelsEnum.BISON, false, false)
+    //   return
+    // }
     if (ctx.hasCommand([SupportedCommands.gemini, SupportedCommands.gShort]) || (hasGeminiPrefix(ctx.message?.text ?? '') !== '')) {
       this.updateSessionModel(ctx, LlmsModelsEnum.GEMINI)
       await this.onChat(ctx, LlmsModelsEnum.GEMINI, true, false)
