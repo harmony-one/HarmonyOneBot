@@ -13,6 +13,12 @@ import OpenAI from 'openai'
 class ErrorHandler {
   public maxTries = 3
 
+  private writeLog (ctx: OnMessageContext | OnCallBackQueryData, errorMessage: string, logger: Logger): void {
+    const user = ctx.from.username ? ctx.from.username : ''
+    const msg = ctx.message?.text
+    logger.error(`Error msg:: ${errorMessage} | from user ${user} | msg::${msg}`)
+  }
+
   async onError (
     ctx: OnMessageContext | OnCallBackQueryData,
     e: any,
@@ -32,10 +38,9 @@ class ErrorHandler {
     }
     if (e instanceof GrammyError) {
       if (e.error_code === 400 && e.description.includes('not enough rights')) {
-        await sendMessage(
-          ctx,
-          'Error: The bot does not have permission to send photos in chat'
-        )
+        const errorMsg = 'Error: The bot does not have permission to send photos in chat'
+        this.writeLog(ctx, errorMsg, logger)
+        await sendMessage(ctx, errorMsg)
         ctx.transient.analytics.actualResponseTime = now()
       } else if (e.error_code === 429) {
         const retryAfter = e.parameters.retry_after
@@ -45,6 +50,7 @@ class ErrorHandler {
           : 60
         const method = e.method
         const errorMessage = `On method "${method}" | ${e.error_code} - ${e.description}`
+        this.writeLog(ctx, errorMessage, logger)
         logger.error(errorMessage)
         await sendMessage(
           ctx,
@@ -58,16 +64,16 @@ class ErrorHandler {
         }
         await sleep(retryAfter * 1000) // wait retryAfter seconds to enable bot
       } else {
-        logger.error(
-          `On method "${e.method}" | ${e.error_code} - ${e.description}`
-        )
+        const errorMsg = `On method "${e.method}" | ${e.error_code} - ${e.description}`
+        this.writeLog(ctx, errorMsg, logger)
         ctx.transient.analytics.actualResponseTime = now()
         await sendMessage(ctx, 'Error handling your request').catch(async (e) => { await this.onError(ctx, e, retryCount - 1, logger) })
       }
     } else if (e instanceof OpenAI.APIError) {
       // 429 RateLimitError
       // e.status = 400 || e.code = BadRequestError
-      logger.error(`OPENAI Error ${e.status}(${e.code}) - ${e.message}`)
+      const errorMsg = `OPENAI Error ${e.status}(${e.code}) - ${e.message}`
+      this.writeLog(ctx, errorMsg, logger)
       if (e.code === 'context_length_exceeded') {
         await sendMessage(ctx, e.message).catch(async (e) => { await this.onError(ctx, e, retryCount - 1, logger) })
         ctx.transient.analytics.actualResponseTime = now()
@@ -84,12 +90,15 @@ class ErrorHandler {
         ctx.transient.analytics.actualResponseTime = now()
       }
     } else if (e instanceof AxiosError) {
-      logger.error(`${e.message}`)
+      const errorMsg = `${e.message}`
+      this.writeLog(ctx, errorMsg, logger)
       await sendMessage(ctx, 'Error handling your request').catch(async (e) => {
         await this.onError(ctx, e, retryCount - 1, logger)
       })
     } else {
-      logger.error(`${e.toString()}`)
+      const errorMsg = `${e.toString()}`
+      this.writeLog(ctx, errorMsg, logger)
+      logger.error(e)
       await sendMessage(ctx, 'Error handling your request')
         .catch(async (e) => { await this.onError(ctx, e, retryCount - 1, logger) }
         )

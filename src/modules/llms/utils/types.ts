@@ -3,7 +3,7 @@ export enum LlmsModelsEnum {
   BISON = 'chat-bison',
   J2_ULTRA = 'j2-ultra',
   CLAUDE_OPUS = 'claude-3-opus-20240229',
-  CLAUDE_SONNET = 'claude-3-sonnet-20240229',
+  CLAUDE_SONNET = 'claude-3-5-sonnet-20240620',
   CLAUDE_HAIKU = 'claude-3-haiku-20240307',
   GEMINI_15 = 'gemini-1.5-pro-latest',
   GEMINI = 'gemini-1.0-pro',
@@ -63,11 +63,11 @@ export const LlmsModels: Record<string, ChatModel> = {
     maxContextTokens: 4096,
     chargeType: 'TOKEN'
   },
-  'claude-3-sonnet-20240229': {
-    name: 'claude-3-sonnet-20240229',
+  'claude-3-5-sonnet-20240620': {
+    name: 'claude-3-5-sonnet-20240620',
     inputPrice: 0.003, // 3.00 (1M Tokens) =>  0.003 (1K tokens)
     outputPrice: 0.015,
-    maxContextTokens: 4096,
+    maxContextTokens: 8192,
     chargeType: 'TOKEN'
   },
   'claude-3-haiku-20240307': {
