@@ -26,7 +26,9 @@ import { TranslateBot } from './modules/translate/TranslateBot'
 import { VoiceMemo } from './modules/voice-memo'
 // import { QRCodeBot } from './modules/qrcode/QRCodeBot'
 // import { SDImagesBot } from './modules/sd-images'
-import { OpenAIBot } from './modules/open-ai'
+// import { OpenAIBot } from './modules/open-ai'
+import { DalleBot, OpenAIBot, ClaudeBot, VertexBot } from './modules/llms'
+
 import { OneCountryBot } from './modules/1country'
 import { WalletConnect } from './modules/walletconnect'
 import { BotPayments } from './modules/payment'
@@ -51,9 +53,10 @@ import { VoiceTranslateBot } from './modules/voice-translate'
 import { TextToSpeechBot } from './modules/text-to-speech'
 import { VoiceToTextBot } from './modules/voice-to-text'
 import { now } from './utils/perf'
-import { hasPrefix } from './modules/open-ai/helpers'
 import { VoiceToVoiceGPTBot } from './modules/voice-to-voice-gpt'
-import { VoiceCommand } from './modules/voice-command'
+// import { VoiceCommand } from './modules/voice-command'
+import { createInitialSessionData } from './helpers'
+import { LlamaAgent } from './modules/subagents'
 
 Events.EventEmitter.defaultMaxListeners = 30
 
@@ -138,10 +141,7 @@ bot.use(async (ctx: BotContext, next: NextFunction): Promise<void> => {
       break
     }
   }
-  const prefix = hasPrefix(ctx.message?.text ?? '')
-  if (!command && prefix) {
-    command = prefix
-  }
+
   await next()
   transaction.finish()
 
@@ -181,54 +181,6 @@ bot.use(async (ctx: BotContext, next: NextFunction): Promise<void> => {
   }
 })
 
-function createInitialSessionData (): BotSessionData {
-  return {
-    openAi: {
-      imageGen: {
-        numImages: config.openAi.dalle.sessionDefault.numImages,
-        imgSize: config.openAi.dalle.sessionDefault.imgSize,
-        isEnabled: config.openAi.dalle.isEnabled,
-        imgRequestQueue: [],
-        isProcessingQueue: false,
-        imageGenerated: [],
-        isInscriptionLotteryEnabled: config.openAi.dalle.isInscriptionLotteryEnabled,
-        imgInquiried: []
-      },
-      chatGpt: {
-        model: config.openAi.chatGpt.model,
-        isEnabled: config.openAi.chatGpt.isEnabled,
-        isFreePromptChatGroups: config.openAi.chatGpt.isFreePromptChatGroups,
-        chatConversation: [],
-        price: 0,
-        usage: 0,
-        isProcessingQueue: false,
-        requestQueue: []
-      }
-    },
-    oneCountry: { lastDomain: '' },
-    translate: {
-      languages: [],
-      enable: false
-    },
-    collections: {
-      activeCollections: [],
-      collectionRequestQueue: [],
-      isProcessingQueue: false,
-      currentCollection: '',
-      collectionConversation: []
-    },
-    llms: {
-      model: config.llms.model,
-      isEnabled: config.llms.isEnabled,
-      chatConversation: [],
-      price: 0,
-      usage: 0,
-      isProcessingQueue: false,
-      requestQueue: []
-    }
-  }
-}
-
 bot.use(
   session({
     initial: createInitialSessionData,
@@ -247,7 +199,11 @@ const voiceMemo = new VoiceMemo()
 const walletConnect = new WalletConnect()
 const payments = new BotPayments()
 const schedule = new BotSchedule(bot)
-const openAiBot = new OpenAIBot(payments)
+const llamaAgent = new LlamaAgent(payments, 'llamaService')
+const openAiBot = new OpenAIBot(payments, [llamaAgent])
+const dalleBot = new DalleBot(payments)
+const claudeBot = new ClaudeBot(payments)
+const vertexBot = new VertexBot(payments, [llamaAgent])
 const oneCountryBot = new OneCountryBot(payments)
 const translateBot = new TranslateBot()
 const telegramPayments = new TelegramPayments(payments)
@@ -255,7 +211,8 @@ const voiceTranslateBot = new VoiceTranslateBot(payments)
 const textToSpeechBot = new TextToSpeechBot(payments)
 const voiceToTextBot = new VoiceToTextBot(payments)
 const voiceToVoiceGPTBot = new VoiceToVoiceGPTBot(payments)
-const voiceCommand = new VoiceCommand(openAiBot)
+
+// const voiceCommand = new VoiceCommand(openAiBot)
 
 bot.on('message:new_chat_members:me', async (ctx) => {
   try {
@@ -363,7 +320,7 @@ const writeCommandLog = async (
 }
 
 const PayableBots: Record<string, PayableBotConfig> = {
-  voiceCommand: { bot: voiceCommand },
+  // voiceCommand: { bot: voiceCommand },
   // qrCodeBot: { bot: qrCodeBot },
   // sdImagesBot: { bot: sdImagesBot },
   voiceTranslate: { bot: voiceTranslateBot },
@@ -372,8 +329,11 @@ const PayableBots: Record<string, PayableBotConfig> = {
   textToSpeech: { bot: textToSpeechBot },
   voiceToVoiceGPTBot: { bot: voiceToVoiceGPTBot },
   voiceToText: { bot: voiceToTextBot },
+  dalleBot: { bot: dalleBot },
+  claudeBot: { bot: claudeBot },
+  vertexBot: { bot: vertexBot },
   openAiBot: {
-    enabled: (ctx: OnMessageContext) => ctx.session.openAi.imageGen.isEnabled,
+    enabled: (ctx: OnMessageContext) => ctx.session.dalle.isEnabled,
     bot: openAiBot
   },
   oneCountryBot: { bot: oneCountryBot }
@@ -385,9 +345,9 @@ const UtilityBots: Record<string, UtilityBot> = {
   schedule
 }
 
-const executeOrRefund = (ctx: OnMessageContext, price: number, bot: PayableBot): void => {
+const executeOrRefund = async (ctx: OnMessageContext, price: number, bot: PayableBot): Promise<void> => {
   const refund = (reason?: string): void => {}
-  bot.onEvent(ctx, refund).catch((ex: any) => {
+  await bot.onEvent(ctx, refund).catch((ex: any) => {
     Sentry.captureException(ex)
     logger.error(ex?.message ?? 'Unknown error')
   })
@@ -396,8 +356,13 @@ const executeOrRefund = (ctx: OnMessageContext, price: number, bot: PayableBot):
 const onMessage = async (ctx: OnMessageContext): Promise<void> => {
   try {
     // bot doesn't handle forwarded messages
-    if (!ctx.message.forward_from) {
+    if (!ctx.message.forward_origin) {
       await assignFreeCredits(ctx)
+
+      if (llamaAgent.isSupportedEvent(ctx)) {
+        await llamaAgent.onEvent(ctx)
+        return
+      }
 
       if (telegramPayments.isSupportedEvent(ctx)) {
         await telegramPayments.onEvent(ctx)
@@ -416,7 +381,7 @@ const onMessage = async (ctx: OnMessageContext): Promise<void> => {
         const isPaid = await payments.pay(ctx, price)
         if (isPaid) {
           logger.info(`command controller: ${bot.constructor.name}`)
-          executeOrRefund(ctx, price, bot)
+          await executeOrRefund(ctx, price, bot)
         }
         return
       }
@@ -429,7 +394,7 @@ const onMessage = async (ctx: OnMessageContext): Promise<void> => {
         return
       }
       // Any message interacts with ChatGPT (only for private chats or /ask on enabled on group chats)
-      if (ctx.update.message.chat && (ctx.chat.type === 'private' || ctx.session.openAi.chatGpt.isFreePromptChatGroups)) {
+      if (ctx.update.message.chat && (ctx.chat.type === 'private' || ctx.session.chatGpt.isFreePromptChatGroups)) {
         await openAiBot.onEvent(ctx, (e) => {
           logger.error(e)
         })
@@ -467,8 +432,8 @@ const onCallback = async (ctx: OnCallBackQueryData): Promise<void> => {
     //   return
     // }
 
-    if (openAiBot.isSupportedEvent(ctx)) {
-      await openAiBot.onEvent(ctx, (e) => {
+    if (dalleBot.isSupportedEvent(ctx)) {
+      await dalleBot.onEvent(ctx, (e) => {
         logger.error(e)
       })
     }
@@ -501,7 +466,7 @@ bot.command(['start', 'help', 'menu'], async (ctx) => {
   await ctx.reply(startText, {
     parse_mode: 'Markdown',
     reply_markup: mainMenu,
-    disable_web_page_preview: true,
+    link_preview_options: { is_disabled: true },
     message_thread_id: ctx.message?.message_thread_id
   })
 })
@@ -515,7 +480,7 @@ bot.command('more', async (ctx) => {
   writeCommandLog(ctx as OnMessageContext).catch(logErrorHandler)
   return await ctx.reply(commandsHelpText.more, {
     parse_mode: 'Markdown',
-    disable_web_page_preview: true,
+    link_preview_options: { is_disabled: true },
     message_thread_id: ctx.message?.message_thread_id
   })
 })
@@ -524,7 +489,7 @@ bot.command('terms', async (ctx) => {
   writeCommandLog(ctx as OnMessageContext).catch(logErrorHandler)
   return await ctx.reply(TERMS.text, {
     parse_mode: 'Markdown',
-    disable_web_page_preview: true,
+    link_preview_options: { is_disabled: true },
     message_thread_id: ctx.message?.message_thread_id
   })
 })
@@ -533,7 +498,7 @@ bot.command('support', async (ctx) => {
   writeCommandLog(ctx as OnMessageContext).catch(logErrorHandler)
   return await ctx.reply(SUPPORT.text, {
     parse_mode: 'Markdown',
-    disable_web_page_preview: true,
+    link_preview_options: { is_disabled: true },
     message_thread_id: ctx.message?.message_thread_id
   })
 })
@@ -542,7 +507,7 @@ bot.command('models', async (ctx) => {
   writeCommandLog(ctx as OnMessageContext).catch(logErrorHandler)
   return await ctx.reply(MODELS.text, {
     parse_mode: 'Markdown',
-    disable_web_page_preview: true
+    link_preview_options: { is_disabled: true }
   })
 })
 
@@ -550,7 +515,7 @@ bot.command('lang', async (ctx) => {
   writeCommandLog(ctx as OnMessageContext).catch(logErrorHandler)
   return await ctx.reply(LANG.text, {
     parse_mode: 'Markdown',
-    disable_web_page_preview: true
+    link_preview_options: { is_disabled: true }
   })
 })
 
@@ -558,7 +523,7 @@ bot.command('feedback', async (ctx) => {
   writeCommandLog(ctx as OnMessageContext).catch(logErrorHandler)
   return await ctx.reply(FEEDBACK.text, {
     parse_mode: 'Markdown',
-    disable_web_page_preview: true,
+    link_preview_options: { is_disabled: true },
     message_thread_id: ctx.message?.message_thread_id
   })
 })
@@ -567,7 +532,7 @@ bot.command('love', async (ctx) => {
   writeCommandLog(ctx as OnMessageContext).catch(logErrorHandler)
   return await ctx.reply(LOVE.text, {
     parse_mode: 'Markdown',
-    disable_web_page_preview: true,
+    link_preview_options: { is_disabled: true },
     message_thread_id: ctx.message?.message_thread_id
   })
 })
@@ -575,6 +540,7 @@ bot.command('love', async (ctx) => {
 bot.command('stop', async (ctx) => {
   logger.info('/stop command')
   await openAiBot.onStop(ctx as OnMessageContext)
+  await claudeBot.onStop(ctx as OnMessageContext)
   ctx.session.translate.enable = false
   ctx.session.translate.languages = []
   ctx.session.oneCountry.lastDomain = ''
@@ -584,15 +550,24 @@ bot.command(['alias', 'aliases'], async (ctx) => {
   logger.info('/alias command')
   return await ctx.reply(ALIAS.text, {
     parse_mode: 'Markdown',
-    disable_web_page_preview: true,
+    link_preview_options: { is_disabled: true },
     message_thread_id: ctx.message?.message_thread_id
   })
 })
 
+// bot.command(['end'], async (ctx) => {
+//   logger.info('/end command')
+//   return await ctx.reply(ALIAS.text, {
+//     parse_mode: 'Markdown',
+//     link_preview_options: { is_disabled: true },
+//     message_thread_id: ctx.message?.message_thread_id
+//   })
+// })
+
 // bot.command("memo", (ctx) => {
 //   ctx.reply(MEMO.text, {
 //     parse_mode: "Markdown",
-//     disable_web_page_preview: true,
+//     link_preview_options: { is_disabled: true },
 //   });
 // });
 

@@ -1,5 +1,5 @@
 import { Menu } from '@grammyjs/menu'
-import { chatMainMenu } from './modules/open-ai/pages/chatPage'
+import { chatMainMenu } from './modules/llms/menu/openaiMenu'
 import { type BotContext } from './modules/types'
 import { sdImagesMenu } from './modules/sd-images/menu'
 import { voiceMemoMenu } from './modules/voice-memo/menu'
@@ -31,7 +31,7 @@ export const mainMenu = new Menu<BotContext>(MenuIds.MAIN_MENU)
     ctx
       .editMessageText(menuText.askMenu.helpText, {
         parse_mode: 'Markdown',
-        disable_web_page_preview: true
+        link_preview_options: { is_disabled: true }
       })
       .catch((ex: any) => {
         console.log('### ex', ex)
@@ -41,7 +41,7 @@ export const mainMenu = new Menu<BotContext>(MenuIds.MAIN_MENU)
     ctx
       .editMessageText(menuText.imageMenu.helpText, {
         parse_mode: 'Markdown',
-        disable_web_page_preview: true
+        link_preview_options: { is_disabled: true }
       })
       .catch((ex: any) => {
         console.log('### ex', ex)
@@ -51,7 +51,7 @@ export const mainMenu = new Menu<BotContext>(MenuIds.MAIN_MENU)
     ctx
       .editMessageText(menuText.voiceMemoMenu.helpText, {
         parse_mode: 'Markdown',
-        disable_web_page_preview: true
+        link_preview_options: { is_disabled: true }
       })
       .catch((ex: any) => {
         console.log('### ex', ex)

@@ -1,6 +1,15 @@
 import axios from 'axios'
 import config from '../../config'
 import { abbreviateNumber, getPercentDiff } from './utils'
+import pino from 'pino'
+
+const logger = pino({
+  name: 'ExplorerAPI',
+  transport: {
+    target: 'pino-pretty',
+    options: { colorize: true }
+  }
+})
 
 export interface MetricsDaily {
   date: string
@@ -18,9 +27,14 @@ export enum MetricsDailyType {
 }
 
 export const getDailyMetrics = async (type: MetricsDailyType, limit: number): Promise<MetricsDaily[]> => {
-  const feesUrl = `${apiUrl}/v0/metrics?type=${type}&limit=${limit}`
-  const { data } = await axios.get<MetricsDaily[]>(feesUrl, { headers: { 'X-API-KEY': apiKey } })
-  return data
+  try {
+    const feesUrl = `${apiUrl}/v0/metrics?type=${type}&limit=${limit}`
+    const { data } = await axios.get<MetricsDaily[]>(feesUrl, { headers: { 'X-API-KEY': apiKey } })
+    return data
+  } catch (e) {
+    logger.error('ERROR', e)
+    return []
+  }
 }
 
 export const getFeeStats = async (): Promise<{ change: string, value: string }> => {

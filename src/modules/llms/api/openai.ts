@@ -4,22 +4,21 @@ import { GrammyError } from 'grammy'
 import config from '../../../config'
 import { deleteFile, getImage } from '../utils/file'
 import {
-  type ChatCompletion,
   type ChatConversation,
   type OnCallBackQueryData,
   type OnMessageContext
 } from '../../types'
 import { pino } from 'pino'
 import {
-  type ChatModel,
-  ChatGPTModels,
   type DalleGPTModel,
   DalleGPTModels,
-  ChatGPTModelsEnum
-} from '../types'
+  LlmsModelsEnum,
+  type ChatModel
+} from '../utils/types'
 import type fs from 'fs'
 import { type ChatCompletionMessageParam } from 'openai/resources/chat/completions'
 import { type Stream } from 'openai/streaming'
+import { getChatModel, getChatModelPrice, type LlmCompletion } from './llmApi'
 
 const openai = new OpenAI({ apiKey: config.openAiKey })
 
@@ -46,7 +45,6 @@ export async function postGenerateImg (
   const response = await openai.images.generate(
     payload as OpenAI.Images.ImageGenerateParams
   )
-  console.log(response)
   return response.data
 }
 
@@ -84,7 +82,7 @@ export async function chatCompletion (
   conversation: ChatConversation[],
   model = config.openAi.chatGpt.model,
   limitTokens = true
-): Promise<ChatCompletion> {
+): Promise<LlmCompletion> {
   const response = await openai.chat.completions.create({
     model,
     max_tokens: limitTokens ? config.openAi.chatGpt.maxTokens : undefined,
@@ -102,7 +100,10 @@ export async function chatCompletion (
     response.usage?.completion_tokens
   )
   return {
-    completion: response.choices[0].message?.content ?? 'Error - no completion available',
+    completion: {
+      content: response.choices[0].message?.content ?? 'Error - no completion available',
+      role: 'assistant'
+    },
     usage: response.usage?.total_tokens,
     price: price * config.openAi.chatGpt.priceAdjustment
   }
@@ -111,15 +112,16 @@ export async function chatCompletion (
 export const streamChatCompletion = async (
   conversation: ChatConversation[],
   ctx: OnMessageContext | OnCallBackQueryData,
-  model = config.openAi.chatGpt.model,
+  model = LlmsModelsEnum.GPT_4,
   msgId: number,
   limitTokens = true
-): Promise<string> => {
+): Promise<LlmCompletion> => {
   let completion = ''
   let wordCountMinimum = 2
+  const messages = conversation.filter(c => c.model === model).map(m => { return { content: m.content, role: m.role } })
   const stream = await openai.chat.completions.create({
     model,
-    messages: conversation as ChatCompletionMessageParam[], // OpenAI.Chat.Completions.CreateChatCompletionRequestMessage[],
+    messages: messages as ChatCompletionMessageParam[], // OpenAI.Chat.Completions.CreateChatCompletionRequestMessage[],
     stream: true,
     max_tokens: limitTokens ? config.openAi.chatGpt.maxTokens : undefined,
     temperature: config.openAi.dalle.completions.temperature || 0.8
@@ -129,6 +131,7 @@ export const streamChatCompletion = async (
     throw new Error('Context chat id should not be empty after openAI streaming')
   }
   // let wordCountMinimumCounter = 1;
+  let message = ''
   for await (const part of stream) {
     wordCount++
     const chunck = part.choices[0]?.delta?.content
@@ -145,23 +148,27 @@ export const streamChatCompletion = async (
       completion = completion.replaceAll('...', '')
       completion += '...'
       wordCount = 0
-      await ctx.api
-        .editMessageText(ctx.chat?.id, msgId, completion)
-        .catch(async (e: any) => {
-          if (e instanceof GrammyError) {
-            if (e.error_code !== 400) {
-              throw e
+      if (message !== completion) {
+        message = completion
+        await ctx.api
+          .editMessageText(ctx.chat?.id, msgId, completion)
+          .catch(async (e: any) => {
+            if (e instanceof GrammyError) {
+              if (e.error_code !== 400) {
+                throw e
+              } else {
+                logger.error(e)
+              }
             } else {
-              logger.error(e)
+              throw e
             }
-          } else {
-            throw e
-          }
-        })
+          })
+      }
     }
   }
   completion = completion.replaceAll('...', '')
-
+  const inputTokens = getTokenNumber(conversation[conversation.length - 1].content as string) + ctx.session.chatGpt.usage
+  const outputTokens = getTokenNumber(completion)
   await ctx.api
     .editMessageText(ctx.chat?.id, msgId, completion)
     .catch((e: any) => {
@@ -175,17 +182,26 @@ export const streamChatCompletion = async (
         throw e
       }
     })
-  return completion
+  return {
+    completion: {
+      content: completion,
+      role: 'assistant'
+    },
+    usage: outputTokens + inputTokens,
+    price: 0,
+    inputTokens,
+    outputTokens
+  }
 }
 
 export const streamChatVisionCompletion = async (
   ctx: OnMessageContext | OnCallBackQueryData,
-  model = ChatGPTModelsEnum.GPT_4_VISION_PREVIEW,
+  model = LlmsModelsEnum.GPT_4_VISION_PREVIEW,
   prompt: string,
   imgUrls: string[],
   msgId: number,
   limitTokens = true
-): Promise<string> => {
+): Promise<LlmCompletion> => {
   let completion = ''
   let wordCountMinimum = 2
   const payload: any = {
@@ -244,7 +260,8 @@ export const streamChatVisionCompletion = async (
     }
   }
   completion = completion.replaceAll('...', '')
-
+  const inputTokens = getTokenNumber(prompt) + ctx.session.chatGpt.usage
+  const outputTokens = getTokenNumber(completion)
   await ctx.api
     .editMessageText(ctx.chat?.id, msgId, completion)
     .catch((e: any) => {
@@ -258,37 +275,27 @@ export const streamChatVisionCompletion = async (
         throw e
       }
     })
-  return completion
+  return {
+    completion: {
+      content: completion,
+      role: 'assistant'
+    },
+    usage: outputTokens + inputTokens,
+    price: 0,
+    inputTokens,
+    outputTokens
+  }
 }
 
 export async function improvePrompt (promptText: string, model: string): Promise<string> {
   const prompt = `Improve this picture description using max 100 words and don't add additional text to the image: ${promptText} `
-
   const conversation = [{ role: 'user', content: prompt }]
   const response = await chatCompletion(conversation, model)
-  return response.completion
+  return response.completion?.content as string ?? ''
 }
 
 export const getTokenNumber = (prompt: string): number => {
   return encode(prompt).length
-}
-
-export const getChatModel = (modelName: string): ChatModel => {
-  return ChatGPTModels[modelName]
-}
-
-export const getChatModelPrice = (
-  model: ChatModel,
-  inCents = true,
-  inputTokens: number,
-  outputTokens?: number
-): number => {
-  let price = model.inputPrice * inputTokens
-  price += outputTokens
-    ? outputTokens * model.outputPrice
-    : model.maxContextTokens * model.outputPrice
-  price = inCents ? price * 100 : price
-  return price / 1000
 }
 
 export const getDalleModel = (modelName: string): DalleGPTModel => {

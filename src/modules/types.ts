@@ -12,6 +12,7 @@ import { type AutoChatActionFlavor } from '@grammyjs/auto-chat-action'
 import { type PhotoSize, type ParseMode } from 'grammy/types'
 import { type InlineKeyboardMarkup } from 'grammy/out/types'
 import type { FileFlavor } from '@grammyjs/files'
+import { type LlmsModelsEnum } from './llms/utils/types'
 
 export interface ImageGenSessionData {
   numImages: number
@@ -23,14 +24,14 @@ export interface ImageGenSessionData {
   imageGenerated: ImageGenerated[]
   imgInquiried: string[] // to avoid multiple vision and dalle 2 img alter request
 }
-
 export interface MessageExtras {
   caption?: string
   message_thread_id?: number
   parse_mode?: ParseMode
   reply_to_message_id?: number
-  disable_web_page_preview?: boolean
+  // disable_web_page_preview?: boolean
   reply_markup?: InlineKeyboardMarkup
+  link_preview_options?: { is_disabled: boolean }
 }
 export interface ChatCompletion {
   completion: string
@@ -50,10 +51,12 @@ export interface VisionContent {
   image_url?: { url: string }
 }
 export interface ChatConversation {
+  id?: number
   role?: string
   author?: string
   content: string | VisionContent[]
   model?: string
+  numSubAgents?: number
 }
 
 export interface ImageRequest {
@@ -77,29 +80,16 @@ export interface promptRequest {
   outputFormat?: 'text' | 'voice'
   commandPrefix?: string
 }
-export interface ChatGptSessionData {
-  model: string
-  isEnabled: boolean
-  isFreePromptChatGroups: boolean
-  chatConversation: ChatConversation[]
-  usage: number
-  price: number
-  requestQueue: promptRequest[]
-  isProcessingQueue: boolean
-}
 
-export interface LmmsSessionData {
+export interface LlmsSessionData {
   model: string
   isEnabled: boolean
+  isFreePromptChatGroups?: boolean
   chatConversation: ChatConversation[]
   usage: number
   price: number
   requestQueue: ChatConversation[]
   isProcessingQueue: boolean
-}
-export interface OpenAiSessionData {
-  imageGen: ImageGenSessionData
-  chatGpt: ChatGptSessionData
 }
 
 export interface OneCountryData {
@@ -125,6 +115,7 @@ export interface Collection {
   prompt?: string
   msgId?: number
   processingTime?: number // milliseconds
+  agentId?: number
 }
 
 export interface FileDoc {
@@ -153,12 +144,33 @@ export interface PaymentAnalytics {
   paymentFiatCredits: number
 }
 
+export enum SubagentStatus {
+  NO_SUPPORTED_EVENT = 'NO_SUPORTED_EVENT',
+  PROCESSING = 'PROCESSING',
+  DONE = 'DONE',
+  ERROR = 'ERROR'
+}
+export interface SubagentResult {
+  id: number
+  name: string
+  completion: string
+  status: SubagentStatus
+}
+
+export interface SubagentSessionData {
+  running: SubagentResult[]
+  isProcessingQueue: boolean
+  subagentsRequestQueue: SubagentResult[]
+}
 export interface BotSessionData {
   oneCountry: OneCountryData
   collections: CollectionSessionData
-  openAi: OpenAiSessionData
   translate: TranslateBotData
-  llms: LmmsSessionData
+  llms: LlmsSessionData
+  chatGpt: LlmsSessionData
+  subagents: SubagentSessionData
+  dalle: ImageGenSessionData
+  currentModel: LlmsModelsEnum
 }
 
 export interface TransientStateContext {

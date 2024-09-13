@@ -1,12 +1,12 @@
 import fs from 'fs'
 import pino from 'pino'
 import type { Logger } from 'pino'
-import { speechToText } from '../open-ai/api/openAi'
+import { speechToText } from '../llms/api/openai'
 import { RequestState, type OnMessageContext, type PayableBot } from '../types'
 import { download } from '../../utils/files'
 import config from '../../config'
-import { type OpenAIBot } from '../open-ai'
-import { SupportedCommands as OpenAISupportedCommands, sendMessage } from '../open-ai/helpers'
+import { type OpenAIBot } from '../llms'
+import { sendMessage, SupportedCommands as OpenAISupportedCommands } from '../llms/utils/helpers'
 import { promptHasBadWords } from '../sd-images/helpers'
 import { now } from '../../utils/perf'
 
@@ -112,7 +112,7 @@ export class VoiceCommand implements PayableBot {
     if (command) {
       this.lastCommand = command
       await ctx.api.editMessageText(ctx.chat.id, progressMessage.message_id, this.getRandomEmoji(), { parse_mode: 'Markdown' })
-      await this.openAIBot.voiceCommand(ctx, command, resultText)
+      // await this.openAIBot.voiceCommand(ctx, command, resultText)
       await ctx.api.deleteMessage(ctx.chat.id, progressMessage.message_id)
     } else {
       await ctx.api.editMessageText(ctx.chat.id, progressMessage.message_id, `No command detected. This is what I heard: _${resultText}_`, { parse_mode: 'Markdown' })

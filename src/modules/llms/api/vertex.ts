@@ -5,7 +5,8 @@ import { type LlmCompletion } from './llmApi'
 import { type Readable } from 'stream'
 import { GrammyError } from 'grammy'
 import { pino } from 'pino'
-import { LlmsModelsEnum } from '../types'
+import { LlmsModelsEnum } from '../utils/types'
+import { headers, headersStream } from './helper'
 
 const API_ENDPOINT = config.llms.apiEndpoint // config.llms.apiEndpoint  // 'http://127.0.0.1:5000' // config.llms.apiEndpoint
 
@@ -22,7 +23,7 @@ export const vertexCompletion = async (
   model = config.llms.model
 ): Promise<LlmCompletion> => {
   const data = {
-    model, // chat-bison@001 'chat-bison', //'gpt-3.5-turbo',
+    model,
     stream: false,
     messages: conversation.filter(c => c.model === model)
       .map((msg) => {
@@ -37,7 +38,7 @@ export const vertexCompletion = async (
   }
 
   const url = `${API_ENDPOINT}/vertex/completions`
-  const response = await axios.post(url, data)
+  const response = await axios.post(url, data, headers)
   if (response) {
     const totalInputTokens = 4 // response.data.usage.prompt_tokens;
     const totalOutputTokens = 5 // response.data.usage.completion_tokens;
@@ -70,20 +71,21 @@ export const vertexStreamCompletion = async (
     stream: true, // Set stream to true to receive the completion as a stream
     system: config.openAi.chatGpt.chatCompletionContext,
     max_tokens: limitTokens ? +config.openAi.chatGpt.maxTokens : undefined,
-    messages: conversation.filter(c => c.model === model)
-      .map(m => { return { parts: { text: m.content }, role: m.role !== 'user' ? 'model' : 'user' } })
+    messages: conversation.filter(c => c.model === model && c.role !== 'system')
+    // .map(m => { return { parts: { text: m.content }, role: m.role !== 'user' ? 'model' : 'user' } })
   }
-  const url = `${API_ENDPOINT}/vertex/completions/gemini`
+  const url = `${API_ENDPOINT}/llms/completions` // `${API_ENDPOINT}/vertex/completions/gemini`
   if (!ctx.chat?.id) {
     throw new Error('Context chat id should not be empty after openAI streaming')
   }
-  const response: AxiosResponse = await axios.post(url, data, { responseType: 'stream' })
+  const response: AxiosResponse = await axios.post(url, data, headersStream)
   // Create a Readable stream from the response
   const completionStream: Readable = response.data
   // Read and process the stream
   let completion = ''
   let outputTokens = ''
   let inputTokens = ''
+  let message = ''
   for await (const chunk of completionStream) {
     const msg = chunk.toString()
     if (msg) {
@@ -96,7 +98,8 @@ export const vertexStreamCompletion = async (
       }
       completion = completion.replaceAll('...', '')
       completion += '...'
-      if (ctx.chat?.id) {
+      if (ctx.chat?.id && message !== completion) {
+        message = completion
         await ctx.api
           .editMessageText(ctx.chat?.id, msgId, completion)
           .catch(async (e: any) => {
@@ -104,7 +107,7 @@ export const vertexStreamCompletion = async (
               if (e.error_code !== 400) {
                 throw e
               } else {
-                logger.error(e)
+                logger.error(e.message)
               }
             } else {
               throw e

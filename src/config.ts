@@ -33,7 +33,8 @@ export default {
     ? parseInt(process.env.SESSION_TIMEOUT)
     : 48, // in hours
   llms: {
-    apiEndpoint: process.env.LLMS_ENDPOINT, // 'http://127.0.0.1:5000',
+    apiEndpoint: process.env.LLMS_ENDPOINT, // // process.env.LLMS_ENDPOINT, // 'http://127.0.0.1:5000',
+    apiKey: process.env.LLMS_API_KEY ?? '',
     wordLimit: 50,
     model: 'chat-bison',
     minimumBalance: 0,
@@ -61,9 +62,9 @@ export default {
       }
     },
     chatGpt: {
-      chatCompletionContext: `You are an AI Bot powered by Harmony. Your strengths are ai api aggregation for chat, 
-        image, and voice interactions using OpenAI’s chatgpt, Stable Diffusion, and more. 
-        Respond flexibly, but try to stay within 100 words in your response.`,
+      chatCompletionContext:
+        'You are an AI Bot powered by Harmony. Your strengths are ai api aggregation for chat, image, and voice interactions. Leveraging a suite of sophisticated subagents, you have the capability to perform tasks such as internet browsing and accessing various services. Your responses should be adaptable to the conversation while maintaining brevity, ideally not exceeding 100 words.',
+      // 'You are an AI Bot powered  dby Harmony. Your strengths are ai api aggregation for chat, image, and voice interactions, and more. You have subagents that helps you with task like browsing the internet, and other services. Respond flexibly, but try to stay within 100 words in all of your responses.',
       webCrawlerContext: 'You will receive a web crawling text. Please get keys concepts, but try to stay within 4000 words in your response.',
       visionCompletionContext: `You are a concise AI Bot powered by Harmony, capable of providing complete responses within a 100-word limit.
         For each additional image, extend your response by 30 words. Your responses should be informative and comprehensive, 
@@ -142,7 +143,7 @@ export default {
     explorerRestApiKey: process.env.EXPLORER_REST_API_KEY ?? '',
     swapSubgraphApiUrl:
       process.env.SWAP_SUBGRAPH_API_URL ??
-      'https://api.thegraph.com/subgraphs/name/nick8319/uniswap-v3-harmony'
+      'https://api.thegraph.com/subgraphs/name/nick8319/uniswap-v3-harmony' // 'https://api.thegraph.com/subgraphs/name/potvik/uniswap-v3-harmony'
   },
   walletConnect: { projectId: process.env.WALLET_CONNECT_PROJECT_ID ?? '' },
   voiceTranslate: { isEnabled: Boolean(parseInt(process.env.BOT_VOICE_TRANSLATE_ENABLE ?? '0')) },
