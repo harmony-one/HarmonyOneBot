@@ -1,4 +1,4 @@
-import axios from 'axios'
+import axios, { AxiosError } from 'axios'
 
 import config from '../../../config'
 
@@ -8,7 +8,7 @@ const base = axios.create({
 })
 
 export const relayApi = (): {
-  enableSubdomains: (domainName: string) => Promise<void>
+  enableSubdomains: (domainName: string) => Promise<boolean>
   checkDomain: ({ sld }: { sld: string }) => Promise<{ isAvailable: any, renewPrice: any, responseText: any, isReserved: any, isRegistered: any, error: string, regPrice: any, restorePrice: any, transferPrice: any } | { error: string }>
   createCert: ({
     domain,
@@ -18,9 +18,26 @@ export const relayApi = (): {
   genNFT: ({ domain }: { domain: string }) => Promise<{ metadata: any, generated: any }>
 } => {
   return {
-    enableSubdomains: async (domainName: string) => {
-      const { data } = await base.post('/enable-subdomains', { domain: `${domainName}${config.country.tld}` })
-      console.log('enableSubdomains', data)
+    enableSubdomains: async (domainName: string): Promise<boolean> => {
+      try {
+        const { data } = await base.post('dns/enable-subdomains', { domain: `${domainName}${config.country.tld}` })
+        console.log('enableSubdomains', data)
+        return true
+      } catch (e) {
+        if (e instanceof AxiosError) {
+          if (e.code === AxiosError.ERR_BAD_REQUEST) {
+            const data = e.response?.data
+            if (data && data.error === 'already enabled') {
+              console.log('Axios response:', data.error)
+              return true
+            }
+          }
+          console.log('Axios Error:', e.message)
+          return false
+        }
+        console.log(e)
+        return false
+      }
     },
     checkDomain: async ({ sld }: { sld: string }) => {
       try {

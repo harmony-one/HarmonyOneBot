@@ -21,7 +21,8 @@ export enum SupportedCommands {
   check = 'check',
   cert = 'cert',
   nft = 'nft',
-  set = 'set'
+  set = 'set',
+  subdomain = 'subdomain'
 }
 
 const COUNTRY_PREFIX_LIST = ['+', '%']
@@ -110,6 +111,11 @@ export class OneCountryBot implements PayableBot {
 
     if (ctx.hasCommand(SupportedCommands.set)) {
       await this.onSet(ctx)
+      return
+    }
+
+    if (ctx.hasCommand(SupportedCommands.subdomain)) {
+      await this.onEnableSubdomain(ctx)
       return
     }
 
@@ -382,6 +388,54 @@ export class OneCountryBot implements PayableBot {
         parse_mode: 'Markdown',
         message_thread_id: ctx.message?.message_thread_id
       })
+    }
+  }
+
+  onEnableSubdomain = async (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> => {
+    try {
+      if (this.botSuspended) {
+        ctx.transient.analytics.sessionState = RequestState.Error
+        await sendMessage(ctx, 'The bot is suspended').catch(async (e) => {
+          await this.onError(ctx, e)
+        })
+        ctx.transient.analytics.actualResponseTime = now()
+        return
+      }
+      if (!ctx.match) {
+        await ctx.reply(appText.setParameterError, {
+          message_thread_id: ctx.message?.message_thread_id,
+          parse_mode: 'Markdown'
+        }).catch(async (e) => {
+          await this.onError(ctx, e)
+        })
+        return
+      }
+      const params = (ctx.match as string).split(' ')
+      const [domain] = params
+      const isDomain = await isDomainAvailable(domain)
+      if (isDomain.isAvailable) {
+        await ctx.reply(`The domain ${domain} doesn't exist`, {
+          message_thread_id: ctx.message?.message_thread_id,
+          parse_mode: 'Markdown'
+        }).catch(async (e) => {
+          await this.onError(ctx, e)
+        })
+        ctx.transient.analytics.actualResponseTime = now()
+        ctx.transient.analytics.sessionState = RequestState.Error
+        return
+      }
+      const response = await relayApi().enableSubdomains(domain)
+      if (response) {
+        await ctx.reply('Subdomain feature enabled')
+      } else {
+        await ctx.reply('Failed to enable subdomain feature')
+      }
+      ctx.transient.analytics.actualResponseTime = now()
+      ctx.transient.analytics.sessionState = RequestState.Success
+    } catch (e) {
+      ctx.transient.analytics.sessionState = RequestState.Error
+      ctx.transient.analytics.actualResponseTime = now()
+      await this.onError(ctx, e)
     }
   }
 
