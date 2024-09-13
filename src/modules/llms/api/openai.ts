@@ -83,29 +83,37 @@ export async function chatCompletion (
   model = config.openAi.chatGpt.model,
   limitTokens = true
 ): Promise<LlmCompletion> {
+  const messages = conversation.filter(c => c.model === model).map(m => { return { content: m.content, role: m.role } })
   const response = await openai.chat.completions.create({
     model,
-    max_tokens: limitTokens ? config.openAi.chatGpt.maxTokens : undefined,
-    temperature: config.openAi.dalle.completions.temperature,
-    messages: conversation as ChatCompletionMessageParam[]
+    max_completion_tokens: limitTokens ? config.openAi.chatGpt.maxTokens : undefined,
+    temperature: model === LlmsModelsEnum.GPT_O1 ? 1 : config.openAi.dalle.completions.temperature,
+    messages: messages as ChatCompletionMessageParam[]
   })
   const chatModel = getChatModel(model)
   if (response.usage?.prompt_tokens === undefined) {
     throw new Error('Unknown number of prompt tokens used')
   }
+  console.log({ chatModel })
+  console.log('FCO::::: response', { response })
   const price = getChatModelPrice(
     chatModel,
     true,
     response.usage?.prompt_tokens,
     response.usage?.completion_tokens
   )
+  const inputTokens = response.usage?.prompt_tokens
+  const outputTokens = response.usage?.completion_tokens
+  console.log('FCO:::::: ', response.choices[0].message?.content)
   return {
     completion: {
       content: response.choices[0].message?.content ?? 'Error - no completion available',
       role: 'assistant'
     },
     usage: response.usage?.total_tokens,
-    price: price * config.openAi.chatGpt.priceAdjustment
+    price: price * config.openAi.chatGpt.priceAdjustment,
+    inputTokens,
+    outputTokens
   }
 }
 

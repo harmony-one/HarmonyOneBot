@@ -101,7 +101,7 @@ export const vertexStreamCompletion = async (
       if (ctx.chat?.id && message !== completion) {
         message = completion
         await ctx.api
-          .editMessageText(ctx.chat?.id, msgId, completion)
+          .editMessageText(ctx.chat?.id, msgId, completion, { parse_mode: 'Markdown' })
           .catch(async (e: any) => {
             if (e instanceof GrammyError) {
               if (e.error_code !== 400) {
@@ -118,7 +118,7 @@ export const vertexStreamCompletion = async (
   }
   completion = completion.replaceAll('...', '')
   await ctx.api
-    .editMessageText(ctx.chat?.id, msgId, completion)
+    .editMessageText(ctx.chat?.id, msgId, completion, { parse_mode: 'Markdown' })
     .catch((e: any) => {
       if (e instanceof GrammyError) {
         if (e.error_code !== 400) {

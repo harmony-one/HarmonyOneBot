@@ -98,7 +98,7 @@ export class OpenAIBot extends LlmsBase {
     conversation: ChatConversation[],
     model: LlmsModelsEnum
   ): Promise<LlmCompletion> {
-    return await chatCompletion(conversation, model)
+    return await chatCompletion(conversation, model, model !== LlmsModelsEnum.GPT_O1) // limitTokens doesn't apply for o1-preview
   }
 
   hasPrefix (prompt: string): string {
@@ -168,6 +168,12 @@ export class OpenAIBot extends LlmsBase {
     if (ctx.hasCommand(SupportedCommands.ask32)) {
       this.updateSessionModel(ctx, LlmsModelsEnum.GPT_4_32K)
       await this.onChat(ctx, LlmsModelsEnum.GPT_4_32K, true, false)
+      return
+    }
+
+    if (ctx.hasCommand([SupportedCommands.o1, SupportedCommands.ask1])) {
+      this.updateSessionModel(ctx, LlmsModelsEnum.GPT_O1)
+      await this.onChat(ctx, LlmsModelsEnum.GPT_O1, false, false)
       return
     }
 

@@ -40,6 +40,9 @@ export enum SupportedCommands {
   g15short = 'g15',
   chat = 'chat',
   ask = 'ask',
+  ask1 = 'ask1',
+  o1 = 'o1',
+  omini = 'omini',
   vision = 'vision',
   ask35 = 'ask35',
   new = 'new',
@@ -115,7 +118,7 @@ export const promptHasBadWords = (prompt: string): boolean => {
 
   // const hasTabooWords = tabooWords.some(
   //     word => lowerCasePrompt.includes(word.toLowerCase())
-  // );
+  // )
 
   return hasChildrenWords && hasSexWords
 }
@@ -350,4 +353,65 @@ export const getMinBalance = async (ctx: OnMessageContext | OnCallBackQueryData,
 export const hasCodeSnippet = (ctx: OnMessageContext | OnCallBackQueryData): boolean => {
   const entities = ctx.entities('pre') // pre => code snippets
   return entities.length > 0
+}
+
+const escapeMarkdownV2 = (text: string): string => {
+  // Characters that need to be escaped in MarkdownV2
+  const specialChars = ['_', '*', '[', ']', '(', ')', '~', '`', '>', '#', '+', '-', '=', '|', '{', '}', '.', '!']
+  let escapedText = text
+  for (const char of specialChars) {
+    escapedText = escapedText.replace(new RegExp(`\\${char}`, 'g'), `\\${char}`)
+  }
+  return escapedText
+}
+
+export const splitTelegramMessage = (
+  text: string,
+  isCaption: boolean = false,
+  parseMode: 'MarkdownV2' | 'HTML' | 'Markdown' = 'MarkdownV2'
+): string[] => {
+  const maxLength = isCaption ? 1024 : 4096
+  const result: string[] = []
+
+  // Regular expression to match Markdown entities
+  const markdownRegex = /(\*\*|__|\[.*?\]\(.*?\)|```[\s\S]*?```|`[^`\n]+`)/g
+
+  let startIndex = 0
+  while (startIndex < text.length) {
+    let endIndex = startIndex + maxLength
+    let chunk = text.slice(startIndex, endIndex)
+
+    // Check if we're in the middle of a Markdown entity
+    const matches = [...chunk.matchAll(markdownRegex)]
+    const lastMatch = matches[matches.length - 1]
+
+    if (lastMatch?.index !== undefined) {
+      const lastMatchEnd = lastMatch.index + lastMatch[0].length
+      // If the last Markdown entity is not closed in this chunk,
+      // move the endIndex to the start of this entity
+      if (lastMatchEnd > chunk.length) {
+        endIndex = startIndex + lastMatch.index
+        chunk = text.slice(startIndex, endIndex)
+      }
+    }
+
+    // If we're not at the end of the text, try to find a natural break point
+    if (endIndex < text.length) {
+      const lastSpaceIndex = chunk.lastIndexOf(' ')
+      if (lastSpaceIndex > 0) {
+        endIndex = startIndex + lastSpaceIndex
+        chunk = text.slice(startIndex, endIndex)
+      }
+    }
+
+    // Escape special characters if using MarkdownV2
+    if (parseMode === 'MarkdownV2') {
+      chunk = escapeMarkdownV2(chunk)
+    }
+
+    result.push(chunk.trim())
+    startIndex = endIndex + 1 // +1 to skip the space we split on
+  }
+
+  return result
 }

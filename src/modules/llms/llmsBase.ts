@@ -21,13 +21,14 @@ import {
   getMinBalance,
   getPromptPrice,
   preparePrompt,
-  sendMessage
+  sendMessage,
+  splitTelegramMessage
   // SupportedCommands
 } from './utils/helpers'
 import { type LlmCompletion, deleteCollection } from './api/llmApi'
 import * as Sentry from '@sentry/node'
 import { now } from '../../utils/perf'
-import { type LlmsModelsEnum } from './utils/types'
+import { LlmsModelsEnum } from './utils/types'
 import { ErrorHandler } from '../errorhandler'
 import { SubagentBase } from '../subagents/subagentBase'
 
@@ -206,7 +207,7 @@ export abstract class LlmsBase implements PayableBot {
               continue
             }
           }
-          if (chatConversation.length === 0) {
+          if (chatConversation.length === 0 && model !== LlmsModelsEnum.GPT_O1) {
             chatConversation.push({
               role: 'system',
               content: config.openAi.chatGpt.chatCompletionContext,
@@ -342,11 +343,26 @@ export abstract class LlmsBase implements PayableBot {
     ctx.chatAction = 'typing'
     const response = await this.chatCompletion(conversation, model as LlmsModelsEnum, usesTools)
     if (response.completion) {
-      await ctx.api.editMessageText(
-        ctx.chat.id,
-        msgId,
-        response.completion.content as string
-      )
+      if (model === LlmsModelsEnum.GPT_O1) {
+        const msgs = splitTelegramMessage(response.completion.content as string)
+        await ctx.api.editMessageText(
+          ctx.chat.id,
+          msgId,
+          msgs[0],
+          { parse_mode: 'Markdown' }
+        )
+        if (msgs.length > 1) {
+          for (let i = 1; i < msgs.length; i++) {
+            await ctx.api.sendMessage(ctx.chat.id, msgs[i], { parse_mode: 'Markdown' })
+          }
+        }
+      } else {
+        await ctx.api.editMessageText(
+          ctx.chat.id,
+          msgId,
+          response.completion.content as string
+        )
+      }
       conversation.push(response.completion)
       const price = getPromptPrice(response, data)
       this.logger.info(
