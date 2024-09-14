@@ -183,8 +183,8 @@ export class OpenAIBot extends LlmsBase {
     }
 
     if (ctx.chat?.type === 'private' || session.isFreePromptChatGroups) {
-      this.updateSessionModel(ctx, LlmsModelsEnum.GPT_4)
-      await this.onChat(ctx, LlmsModelsEnum.GPT_4, true, false)
+      this.updateSessionModel(ctx, LlmsModelsEnum.GPT_4O)
+      await this.onChat(ctx, LlmsModelsEnum.GPT_4O, true, false)
       return
     }
 

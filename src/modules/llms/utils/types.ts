@@ -11,7 +11,7 @@ export enum LlmsModelsEnum {
   GPT_35_TURBO = 'gpt-3.5-turbo',
   GPT_35_TURBO_16K = 'gpt-3.5-turbo-16k',
   GPT_4_VISION_PREVIEW = 'gpt-4-vision-preview',
-  GPT_4O = 'gpt-4o-2024-05-13',
+  GPT_4O = 'gpt-4o',
   GPT_O1 = 'o1-preview',
   GPT_O1MINI = 'o1-mini-2024-09-12'
 }
@@ -114,8 +114,8 @@ export const LlmsModels: Record<string, ChatModel> = {
     maxContextTokens: 16000,
     chargeType: 'TOKEN'
   },
-  'gpt-4o-2024-05-13': {
-    name: 'gpt-4o-2024-05-13',
+  'gpt-4o': {
+    name: 'gpt-4o',
     inputPrice: 0.005, // 3
     outputPrice: 0.0015, // 6
     maxContextTokens: 128000,

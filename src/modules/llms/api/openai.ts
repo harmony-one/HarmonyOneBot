@@ -95,7 +95,6 @@ export async function chatCompletion (
     throw new Error('Unknown number of prompt tokens used')
   }
   console.log({ chatModel })
-  console.log('FCO::::: response', { response })
   const price = getChatModelPrice(
     chatModel,
     true,
@@ -104,13 +103,12 @@ export async function chatCompletion (
   )
   const inputTokens = response.usage?.prompt_tokens
   const outputTokens = response.usage?.completion_tokens
-  console.log('FCO:::::: ', response.choices[0].message?.content)
   return {
     completion: {
       content: response.choices[0].message?.content ?? 'Error - no completion available',
       role: 'assistant'
     },
-    usage: response.usage?.total_tokens,
+    usage: 2010, // response.usage?.total_tokens,
     price: price * config.openAi.chatGpt.priceAdjustment,
     inputTokens,
     outputTokens
@@ -346,3 +344,188 @@ export async function speechToText (readStream: fs.ReadStream): Promise<string> 
   })
   return result.text
 }
+
+// const testText = `
+// Yes, according to theoretical physics, black holes are predicted to produce thermal radiation due to quantum effects near their event horizons. This phenomenon is known as **Hawking radiation**, named after physicist Stephen Hawking, who first proposed it in 1974.
+// ### **Hawking Radiation and Black Hole Thermodynamics**
+
+// While classical general relativity suggests that nothing can escape a black hole, quantum mechanics introduces a different perspective. In quantum field theory, the uncertainty principle allows for particle-antiparticle pairs to spontaneously appear near the event horizon of a black hole. One of these particles can fall into the black hole while the other escapes, leading to a net loss of mass-energy from the black hole. This process makes the black hole appear as if it is emitting radiation.
+
+// ### **Mathematical Description Using Functions**
+
+// #### **Black Hole Temperature**
+
+// The temperature \( T \) of a non-rotating, non-charged (Schwarzschild) black hole is given by the Hawking temperature formula:
+
+// \[
+// T = \frac{\hbar c^3}{8\pi G M k_B}
+// \]
+
+// Where:
+
+// - \( \hbar \) is the reduced Planck constant (\( \hbar = \frac{h}{2\pi} \approx 1.055 \times 10^{-34} \ \text{J} \cdot \text{s} \))
+// - \( c \) is the speed of light in a vacuum (\( c \approx 3.00 \times 10^8 \ \text{m/s} \))
+// - \( G \) is the gravitational constant (\( G \approx 6.674 \times 10^{-11} \ \text{N} \cdot \text{m}^2/\text{kg}^2 \))
+// - \( M \) is the mass of the black hole
+// - \( k_B \) is the Boltzmann constant (\( k_B \approx 1.381 \times 10^{-23} \ \text{J/K} \))
+
+// This equation shows that the black hole's temperature is **inversely proportional** to its mass:
+
+// \[
+// T \propto \frac{1}{M}
+// \]
+
+// #### **Black Hole Luminosity**
+
+// The power \( P \) radiated by the black hole can be approximated using the Stefan-Boltzmann law for blackbody radiation:
+
+// \[
+// P = A \sigma T^4
+// \]
+
+// Where:
+
+// - \( A \) is the surface area of the black hole's event horizon
+// - \( \sigma \) is the Stefan-Boltzmann constant (\( \sigma \approx 5.670 \times 10^{-8} \ \text{W}/\text{m}^2\text{K}^4 \))
+// - \( T \) is the Hawking temperature
+
+// The surface area \( A \) of the black hole is:
+
+// \[
+// A = 4\pi r_s^2
+// \]
+
+// The Schwarzschild radius \( r_s \) is given by:
+
+// \[
+// r_s = \frac{2GM}{c^2}
+// \]
+
+// Combining these equations:
+
+// \[
+// A = 4\pi \left( \frac{2GM}{c^2} \right)^2
+// \]
+
+// Substitute \( A \) and \( T \) back into the power equation to find \( P \) as a function of the black hole mass \( M \):
+
+// \[
+// P = 4\pi \left( \frac{2GM}{c^2} \right)^2 \sigma \left( \frac{\hbar c^3}{8\pi G M k_B} \right)^4
+// \]
+
+// Simplify the equation to show how power depends on mass:
+
+// \[
+// P \propto \frac{1}{M^2}
+// \]
+
+// This inverse square relationship indicates that as the black hole loses mass (through Hawking radiation), it becomes hotter and emits radiation more rapidly.
+
+// ### **Implications and Observational Challenges**
+
+// - **Black Hole Evaporation:** Over astronomical timescales, Hawking radiation leads to the gradual loss of mass from a black hole, potentially resulting in complete evaporation.
+
+// - **Temperature Estimates:** For stellar-mass black holes (about the mass of our Sun), the Hawking temperature is extremely low, around \( 10^{-8} \) Kelvin, making the emitted radiation virtually undetectable.
+
+// - **Micro Black Holes:** Hypothetical tiny black holes (with masses much smaller than a stellar mass) would have higher temperatures and could emit significant amounts of radiation before evaporating completely.
+
+// ### **Current Status**
+
+// - **Experimental Evidence:** As of the knowledge cutoff in 2023, Hawking radiation has not been observed directly due to its incredibly weak signal compared to cosmic background radiation and other sources.
+
+// - **Theoretical Significance:** Hawking radiation is a crucial concept in theoretical physics because it links quantum mechanics, general relativity, and thermodynamics, providing insights into the fundamental nature of gravity and spacetime.
+
+// ### **Conclusion**
+
+// Black holes are theoretically predicted to produce thermal radiation as a result of quantum effects near their event horizons. This radiation, characterized by the Hawking temperature, implies that black holes are not entirely black but emit energy over time. While direct detection remains a challenge, Hawking radiation is a significant prediction that continues to influence research in quantum gravity and cosmology.
+// Yes, according to theoretical physics, black holes are predicted to produce thermal radiation due to quantum effects near their event horizons. This phenomenon is known as **Hawking radiation**, named after physicist Stephen Hawking, who first proposed it in 1974.
+// ### **Hawking Radiation and Black Hole Thermodynamics**
+
+// While classical general relativity suggests that nothing can escape a black hole, quantum mechanics introduces a different perspective. In quantum field theory, the uncertainty principle allows for particle-antiparticle pairs to spontaneously appear near the event horizon of a black hole. One of these particles can fall into the black hole while the other escapes, leading to a net loss of mass-energy from the black hole. This process makes the black hole appear as if it is emitting radiation.
+
+// ### **Mathematical Description Using Functions**
+
+// #### **Black Hole Temperature**
+
+// The temperature \( T \) of a non-rotating, non-charged (Schwarzschild) black hole is given by the Hawking temperature formula:
+
+// \[
+// T = \frac{\hbar c^3}{8\pi G M k_B}
+// \]
+
+// Where:
+
+// - \( \hbar \) is the reduced Planck constant (\( \hbar = \frac{h}{2\pi} \approx 1.055 \times 10^{-34} \ \text{J} \cdot \text{s} \))
+// - \( c \) is the speed of light in a vacuum (\( c \approx 3.00 \times 10^8 \ \text{m/s} \))
+// - \( G \) is the gravitational constant (\( G \approx 6.674 \times 10^{-11} \ \text{N} \cdot \text{m}^2/\text{kg}^2 \))
+// - \( M \) is the mass of the black hole
+// - \( k_B \) is the Boltzmann constant (\( k_B \approx 1.381 \times 10^{-23} \ \text{J/K} \))
+
+// This equation shows that the black hole's temperature is **inversely proportional** to its mass:
+
+// \[
+// T \propto \frac{1}{M}
+// \]
+
+// #### **Black Hole Luminosity**
+
+// The power \( P \) radiated by the black hole can be approximated using the Stefan-Boltzmann law for blackbody radiation:
+
+// \[
+// P = A \sigma T^4
+// \]
+
+// Where:
+
+// - \( A \) is the surface area of the black hole's event horizon
+// - \( \sigma \) is the Stefan-Boltzmann constant (\( \sigma \approx 5.670 \times 10^{-8} \ \text{W}/\text{m}^2\text{K}^4 \))
+// - \( T \) is the Hawking temperature
+
+// The surface area \( A \) of the black hole is:
+
+// \[
+// A = 4\pi r_s^2
+// \]
+
+// The Schwarzschild radius \( r_s \) is given by:
+
+// \[
+// r_s = \frac{2GM}{c^2}
+// \]
+
+// Combining these equations:
+
+// \[
+// A = 4\pi \left( \frac{2GM}{c^2} \right)^2
+// \]
+
+// Substitute \( A \) and \( T \) back into the power equation to find \( P \) as a function of the black hole mass \( M \):
+
+// \[
+// P = 4\pi \left( \frac{2GM}{c^2} \right)^2 \sigma \left( \frac{\hbar c^3}{8\pi G M k_B} \right)^4
+// \]
+
+// Simplify the equation to show how power depends on mass:
+
+// \[
+// P \propto \frac{1}{M^2}
+// \]
+
+// This inverse square relationship indicates that as the black hole loses mass (through Hawking radiation), it becomes hotter and emits radiation more rapidly.
+
+// ### **Implications and Observational Challenges**
+
+// - **Black Hole Evaporation:** Over astronomical timescales, Hawking radiation leads to the gradual loss of mass from a black hole, potentially resulting in complete evaporation.
+
+// - **Temperature Estimates:** For stellar-mass black holes (about the mass of our Sun), the Hawking temperature is extremely low, around \( 10^{-8} \) Kelvin, making the emitted radiation virtually undetectable.
+
+// - **Micro Black Holes:** Hypothetical tiny black holes (with masses much smaller than a stellar mass) would have higher temperatures and could emit significant amounts of radiation before evaporating completely.
+
+// ### **Current Status**
+
+// - **Experimental Evidence:** As of the knowledge cutoff in 2023, Hawking radiation has not been observed directly due to its incredibly weak signal compared to cosmic background radiation and other sources.
+
+// - **Theoretical Significance:** Hawking radiation is a crucial concept in theoretical physics because it links quantum mechanics, general relativity, and thermodynamics, providing insights into the fundamental nature of gravity and spacetime.
+
+// ### **Conclusion**
+// `
