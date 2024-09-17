@@ -130,7 +130,7 @@ export class OpenAIBot extends LlmsBase {
     }
 
     if (
-      (ctx.hasCommand(this.commandsEnum.NEW) ||
+      (ctx.hasCommand(SupportedCommands.new) ||
       hasNewPrefix(ctx.message?.text ?? '') ||
       (ctx.message?.text?.startsWith('new ') && ctx.chat?.type === 'private') && this.checkModel(ctx))
     ) {
