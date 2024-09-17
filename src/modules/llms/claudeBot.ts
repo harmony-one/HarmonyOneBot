@@ -4,25 +4,18 @@ import {
   type OnCallBackQueryData,
   type ChatConversation
 } from '../types'
-import {
-  hasClaudeOpusPrefix,
-  SupportedCommands
-} from './utils/helpers'
+import { hasCommandPrefix, SupportedCommands } from './utils/helpers'
 import { type LlmCompletion } from './api/llmApi'
-import { LlmsModelsEnum } from './utils/types'
-
 import { anthropicCompletion, anthropicStreamCompletion, toolsChatCompletion } from './api/athropic'
 import { LlmsBase } from './llmsBase'
-
-const models = [
-  LlmsModelsEnum.CLAUDE_HAIKU,
-  LlmsModelsEnum.CLAUDE_OPUS,
-  LlmsModelsEnum.CLAUDE_SONNET
-]
+import { type ModelVersion } from './utils/llmModelsManager'
 
 export class ClaudeBot extends LlmsBase {
+  private readonly opusPrefix: string[]
+
   constructor (payments: BotPayments) {
-    super(payments, 'ClaudeBot', 'llms', models)
+    super(payments, 'ClaudeBot', 'llms')
+    this.opusPrefix = this.modelManager.getPrefixByModel(this.modelsEnum.CLAUDE_3_OPUS) ?? []
   }
 
   public getEstimatedPrice (ctx: any): number {
@@ -33,18 +26,17 @@ export class ClaudeBot extends LlmsBase {
     ctx: OnMessageContext | OnCallBackQueryData
   ): boolean {
     const hasCommand = ctx.hasCommand([
-      SupportedCommands.claudeOpus,
-      SupportedCommands.opus,
-      SupportedCommands.opusShort,
-      SupportedCommands.claudeShort,
-      SupportedCommands.claudeShortTools,
-      SupportedCommands.sonnetShortTools,
-      SupportedCommands.sonnetTools,
-      SupportedCommands.claudeSonnet,
-      SupportedCommands.sonnet,
-      SupportedCommands.sonnetShort,
-      SupportedCommands.claudeHaiku,
-      SupportedCommands.haikuShort])
+      this.commandsEnum.CLAUDE,
+      this.commandsEnum.OPUS,
+      this.commandsEnum.O,
+      this.commandsEnum.C,
+      this.commandsEnum.CTOOL,
+      this.commandsEnum.STOOL,
+      this.commandsEnum.CLAUDES,
+      this.commandsEnum.SONNET,
+      this.commandsEnum.S,
+      this.commandsEnum.HAIKU,
+      this.commandsEnum.H])
 
     if (ctx.hasCommand(SupportedCommands.new) && this.checkModel(ctx)) {
       return true
@@ -58,19 +50,19 @@ export class ClaudeBot extends LlmsBase {
 
   hasPrefix (prompt: string): string {
     return (
-      hasClaudeOpusPrefix(prompt)
+      hasCommandPrefix(prompt, this.opusPrefix)
     )
   }
 
   async chatStreamCompletion (
     conversation: ChatConversation[],
-    model: LlmsModelsEnum,
+    model: ModelVersion,
     ctx: OnMessageContext | OnCallBackQueryData,
     msgId: number,
     limitTokens: boolean): Promise<LlmCompletion> {
     return await anthropicStreamCompletion(
       conversation,
-      model as LlmsModelsEnum,
+      model,
       ctx,
       msgId,
       true // telegram messages has a character limit
@@ -79,7 +71,7 @@ export class ClaudeBot extends LlmsBase {
 
   async chatCompletion (
     conversation: ChatConversation[],
-    model: LlmsModelsEnum,
+    model: ModelVersion,
     hasTools: boolean
   ): Promise<LlmCompletion> {
     if (hasTools) {
@@ -95,42 +87,42 @@ export class ClaudeBot extends LlmsBase {
       this.logger.warn(`### unsupported command ${ctx.message?.text}`)
       return
     }
-    if (ctx.hasCommand([SupportedCommands.claudeShortTools])) {
-      this.updateSessionModel(ctx, LlmsModelsEnum.CLAUDE_OPUS)
-      await this.onChat(ctx, LlmsModelsEnum.CLAUDE_OPUS, false, true)
+    if (ctx.hasCommand([this.commandsEnum.CTOOL])) {
+      this.updateSessionModel(ctx, this.modelsEnum.CLAUDE_3_OPUS)
+      await this.onChat(ctx, this.modelsEnum.CLAUDE_3_OPUS, false, true)
       return
     }
-    if (ctx.hasCommand([SupportedCommands.sonnetTools, SupportedCommands.sonnetShortTools])) {
-      this.updateSessionModel(ctx, LlmsModelsEnum.CLAUDE_SONNET)
-      await this.onChat(ctx, LlmsModelsEnum.CLAUDE_SONNET, false, true)
+    if (ctx.hasCommand([this.commandsEnum.STOOL])) {
+      this.updateSessionModel(ctx, this.modelsEnum.CLAUDE_35_SONNET)
+      await this.onChat(ctx, this.modelsEnum.CLAUDE_35_SONNET, false, true)
       return
     }
     if (
       (ctx.hasCommand(SupportedCommands.new) && this.checkModel(ctx))
     ) {
       await this.onStop(ctx)
-      await this.onChat(ctx, LlmsModelsEnum.CLAUDE_OPUS, true, false)
+      await this.onChat(ctx, this.modelsEnum.CLAUDE_3_OPUS, true, false)
       return
     }
     if (ctx.hasCommand([
-      SupportedCommands.claudeOpus,
-      SupportedCommands.opus,
-      SupportedCommands.opusShort,
-      SupportedCommands.claudeShort]) ||
-      (hasClaudeOpusPrefix(ctx.message?.text ?? '') !== '')
+      this.commandsEnum.CLAUDE,
+      this.commandsEnum.OPUS,
+      this.commandsEnum.O,
+      this.commandsEnum.C]) ||
+      (hasCommandPrefix(ctx.message?.text ?? '', this.opusPrefix) !== '')
     ) {
-      this.updateSessionModel(ctx, LlmsModelsEnum.CLAUDE_OPUS)
-      await this.onChat(ctx, LlmsModelsEnum.CLAUDE_OPUS, true, false)
+      this.updateSessionModel(ctx, this.modelsEnum.CLAUDE_3_OPUS)
+      await this.onChat(ctx, this.modelsEnum.CLAUDE_3_OPUS, true, false)
       return
     }
-    if (ctx.hasCommand([SupportedCommands.claudeSonnet, SupportedCommands.sonnet, SupportedCommands.sonnetShort])) {
-      this.updateSessionModel(ctx, LlmsModelsEnum.CLAUDE_SONNET)
-      await this.onChat(ctx, LlmsModelsEnum.CLAUDE_SONNET, true, false)
+    if (ctx.hasCommand([this.commandsEnum.CLAUDES, this.commandsEnum.SONNET, this.commandsEnum.S])) {
+      this.updateSessionModel(ctx, this.modelsEnum.CLAUDE_35_SONNET)
+      await this.onChat(ctx, this.modelsEnum.CLAUDE_35_SONNET, true, false)
       return
     }
-    if (ctx.hasCommand([SupportedCommands.claudeHaiku, SupportedCommands.haikuShort])) {
-      this.updateSessionModel(ctx, LlmsModelsEnum.CLAUDE_HAIKU)
-      await this.onChat(ctx, LlmsModelsEnum.CLAUDE_HAIKU, false, false)
+    if (ctx.hasCommand([this.commandsEnum.HAIKU, this.commandsEnum.H])) {
+      this.updateSessionModel(ctx, this.modelsEnum.CLAUDE_3_HAIKU)
+      await this.onChat(ctx, this.modelsEnum.CLAUDE_3_HAIKU, false, false)
     }
   }
 }

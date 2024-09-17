@@ -2,9 +2,9 @@ import axios from 'axios'
 import config from '../../../config'
 import { type ChatConversation } from '../../types'
 import pino from 'pino'
-import { LlmsModels, LlmsModelsEnum } from '../utils/types'
 import { type ChatModel } from '../utils/types'
 import { headers } from './helper'
+import { llmModelManager, LlmModelsEnum } from '../utils/llmModelsManager'
 
 // import { type ChatModel } from '../../open-ai/types'
 
@@ -39,8 +39,8 @@ interface QueryUrlDocument {
   conversation?: ChatConversation[]
 }
 
-export const getChatModel = (modelName: string): ChatModel => {
-  return LlmsModels[modelName]
+export const getChatModel = (modelName: string): ChatModel | undefined => {
+  return llmModelManager.getModel(modelName) as ChatModel//  LlmsModels[modelName]
 }
 
 export const getChatModelPrice = (
@@ -111,7 +111,7 @@ export const deleteCollection = async (collectionName: string): Promise<void> =>
 
 export const llmCompletion = async (
   conversation: ChatConversation[],
-  model = LlmsModelsEnum.BISON
+  model = LlmModelsEnum.CHAT_BISON
 ): Promise<LlmCompletion> => {
   const data = {
     model, // chat-bison@001 'chat-bison', //'gpt-3.5-turbo',

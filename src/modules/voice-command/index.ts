@@ -2,21 +2,29 @@ import fs from 'fs'
 import pino from 'pino'
 import type { Logger } from 'pino'
 import { speechToText } from '../llms/api/openai'
-import { RequestState, type OnMessageContext, type PayableBot } from '../types'
+import {
+  RequestState,
+  type OnMessageContext,
+  type PayableBot
+} from '../types'
 import { download } from '../../utils/files'
 import config from '../../config'
 import { type OpenAIBot } from '../llms'
-import { sendMessage, SupportedCommands as OpenAISupportedCommands } from '../llms/utils/helpers'
+import {
+  sendMessage,
+  SupportedCommands as OpenAISupportedCommands
+} from '../llms/utils/helpers'
 import { promptHasBadWords } from '../sd-images/helpers'
 import { now } from '../../utils/perf'
+import {
+  LlmCommandsEnum,
+  LlmModelsEnum
+} from '../llms/utils/llmModelsManager'
 
-const VOICE_COMMAND_LIST = [
-  OpenAISupportedCommands.vision,
-  OpenAISupportedCommands.ask,
-  OpenAISupportedCommands.dalleImg,
-  OpenAISupportedCommands.talk
-]
 export class VoiceCommand implements PayableBot {
+  private readonly voiceCommandList: string[]
+  protected modelsEnum = LlmModelsEnum
+  protected commandsEnum = LlmCommandsEnum
   public readonly module = 'VoiceCommand'
   private readonly logger: Logger
   private readonly openAIBot: OpenAIBot
@@ -30,6 +38,12 @@ export class VoiceCommand implements PayableBot {
         options: { colorize: true }
       }
     })
+    this.voiceCommandList = [
+      this.commandsEnum.VISION,
+      this.commandsEnum.ASK,
+      this.commandsEnum.DALLE,
+      OpenAISupportedCommands.talk
+    ]
     this.openAIBot = openAIBot
   }
 
@@ -49,10 +63,9 @@ export class VoiceCommand implements PayableBot {
   }
 
   getCommand (transcribedText: string): string {
-    const prefixList = VOICE_COMMAND_LIST
-    for (let i = 0; i < prefixList.length; i++) {
-      if (transcribedText.toLocaleLowerCase().startsWith(prefixList[i])) {
-        return prefixList[i]
+    for (let i = 0; i < this.voiceCommandList.length; i++) {
+      if (transcribedText.toLocaleLowerCase().startsWith(this.voiceCommandList[i])) {
+        return this.voiceCommandList[i]
       }
     }
     return ''

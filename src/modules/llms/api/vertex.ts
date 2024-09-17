@@ -5,8 +5,8 @@ import { type LlmCompletion } from './llmApi'
 import { type Readable } from 'stream'
 import { GrammyError } from 'grammy'
 import { pino } from 'pino'
-import { LlmsModelsEnum } from '../utils/types'
 import { headers, headersStream } from './helper'
+import { LlmModelsEnum } from '../utils/llmModelsManager'
 
 const API_ENDPOINT = config.llms.apiEndpoint // config.llms.apiEndpoint  // 'http://127.0.0.1:5000' // config.llms.apiEndpoint
 
@@ -28,7 +28,7 @@ export const vertexCompletion = async (
     messages: conversation.filter(c => c.model === model)
       .map((msg) => {
         const msgFiltered: ChatConversation = { content: msg.content, model: msg.model }
-        if (model === LlmsModelsEnum.BISON) {
+        if (model === LlmModelsEnum.CHAT_BISON) {
           msgFiltered.author = msg.role
         } else {
           msgFiltered.role = msg.role
@@ -61,7 +61,7 @@ export const vertexCompletion = async (
 
 export const vertexStreamCompletion = async (
   conversation: ChatConversation[],
-  model = LlmsModelsEnum.CLAUDE_OPUS,
+  model = LlmModelsEnum.CLAUDE_3_OPUS,
   ctx: OnMessageContext | OnCallBackQueryData,
   msgId: number,
   limitTokens = true
@@ -101,7 +101,7 @@ export const vertexStreamCompletion = async (
       if (ctx.chat?.id && message !== completion) {
         message = completion
         await ctx.api
-          .editMessageText(ctx.chat?.id, msgId, completion, { parse_mode: 'Markdown' })
+          .editMessageText(ctx.chat?.id, msgId, completion)
           .catch(async (e: any) => {
             if (e instanceof GrammyError) {
               if (e.error_code !== 400) {
@@ -118,7 +118,7 @@ export const vertexStreamCompletion = async (
   }
   completion = completion.replaceAll('...', '')
   await ctx.api
-    .editMessageText(ctx.chat?.id, msgId, completion, { parse_mode: 'Markdown' })
+    .editMessageText(ctx.chat?.id, msgId, completion)
     .catch((e: any) => {
       if (e instanceof GrammyError) {
         if (e.error_code !== 400) {

@@ -1,5 +1,6 @@
 import config from './config'
-import { LlmsModelsEnum } from './modules/llms/utils/types'
+import { LlmModelsEnum } from './modules/llms/utils/llmModelsManager'
+import { type DalleImageSize } from './modules/llms/utils/types'
 import { type BotSessionData } from './modules/types'
 
 export function createInitialSessionData (): BotSessionData {
@@ -38,7 +39,7 @@ export function createInitialSessionData (): BotSessionData {
     },
     dalle: {
       numImages: config.openAi.dalle.sessionDefault.numImages,
-      imgSize: config.openAi.dalle.sessionDefault.imgSize,
+      imgSize: config.openAi.dalle.sessionDefault.imgSize as DalleImageSize,
       isEnabled: config.openAi.dalle.isEnabled,
       imgRequestQueue: [],
       isProcessingQueue: false,
@@ -46,6 +47,6 @@ export function createInitialSessionData (): BotSessionData {
       isInscriptionLotteryEnabled: config.openAi.dalle.isInscriptionLotteryEnabled,
       imgInquiried: []
     },
-    currentModel: LlmsModelsEnum.GPT_4
+    currentModel: LlmModelsEnum.GPT_4O
   }
 }

@@ -23,29 +23,37 @@ import {
   preparePrompt,
   sendMessage,
   splitTelegramMessage
-  // SupportedCommands
 } from './utils/helpers'
 import { type LlmCompletion, deleteCollection } from './api/llmApi'
 import * as Sentry from '@sentry/node'
 import { now } from '../../utils/perf'
-import { LlmsModelsEnum } from './utils/types'
+import { type LLMModel } from './utils/types'
 import { ErrorHandler } from '../errorhandler'
 import { SubagentBase } from '../subagents/subagentBase'
+import {
+  LlmCommandsEnum,
+  llmModelManager,
+  LlmModelsEnum,
+  type LLMModelsManager,
+  type ModelVersion
+} from './utils/llmModelsManager'
 
 export abstract class LlmsBase implements PayableBot {
   public module: string
   protected sessionDataKey: string
   protected readonly logger: Logger
   protected readonly payments: BotPayments
+  protected modelManager: LLMModelsManager
+  protected modelsEnum = LlmModelsEnum
+  protected commandsEnum = LlmCommandsEnum
   protected subagents: SubagentBase[]
   protected botSuspended: boolean
-  protected supportedModels: LlmsModelsEnum[]
+  protected supportedModels: LLMModel[] //  LlmsModelsEnum[]
   errorHandler: ErrorHandler
 
   constructor (payments: BotPayments,
     module: string,
     sessionDataKey: string,
-    models?: LlmsModelsEnum[],
     subagents?: SubagentBase[]
   ) {
     this.module = module
@@ -56,11 +64,11 @@ export abstract class LlmsBase implements PayableBot {
         options: { colorize: true }
       }
     })
+    this.modelManager = llmModelManager
     this.sessionDataKey = sessionDataKey
     this.botSuspended = false
     this.payments = payments
     this.subagents = subagents ?? []
-    this.supportedModels = models ?? []
     this.errorHandler = new ErrorHandler()
   }
 
@@ -73,14 +81,14 @@ export abstract class LlmsBase implements PayableBot {
 
   protected abstract chatStreamCompletion (
     conversation: ChatConversation[],
-    model: LlmsModelsEnum,
+    model: ModelVersion,
     ctx: OnMessageContext | OnCallBackQueryData,
     msgId: number,
     limitTokens: boolean): Promise<LlmCompletion>
 
   protected abstract chatCompletion (
     conversation: ChatConversation[],
-    model: LlmsModelsEnum,
+    model: ModelVersion,
     usesTools: boolean
   ): Promise<LlmCompletion>
 
@@ -94,12 +102,12 @@ export abstract class LlmsBase implements PayableBot {
     return (ctx.session[this.sessionDataKey as keyof BotSessionData] as LlmsSessionData & ImageGenSessionData)
   }
 
-  protected updateSessionModel (ctx: OnMessageContext | OnCallBackQueryData, model: LlmsModelsEnum): void {
+  protected updateSessionModel (ctx: OnMessageContext | OnCallBackQueryData, model: ModelVersion): void {
     ctx.session.currentModel = model
   }
 
   protected checkModel (ctx: OnMessageContext | OnCallBackQueryData): boolean {
-    return !!this.supportedModels.find(model => model === ctx.session.currentModel)
+    return !!this.supportedModels.find(model => model.version === ctx.session.currentModel)
   }
 
   protected async runSubagents (ctx: OnMessageContext | OnCallBackQueryData, msg: ChatConversation): Promise<void> {
@@ -130,7 +138,6 @@ export abstract class LlmsBase implements PayableBot {
 
   async onChat (ctx: OnMessageContext | OnCallBackQueryData, model: string, stream: boolean, usesTools: boolean): Promise<void> {
     const session = this.getSession(ctx)
-    // console.log('onChat ::::::', this.constructor.name, ctx.message?.text, ':::', model, 'ID:', ctx.message?.message_id)
     try {
       if (this.botSuspended) {
         ctx.transient.analytics.sessionState = RequestState.Error
@@ -170,7 +177,6 @@ export abstract class LlmsBase implements PayableBot {
 
   async onChatRequestHandler (ctx: OnMessageContext | OnCallBackQueryData, stream: boolean, usesTools: boolean): Promise<void> {
     const session = this.getSession(ctx)
-    // console.log('onChatRequestHandler ::::::', this.constructor.name, ctx.message?.text, 'ID:', ctx.message?.message_id)
     while (session.requestQueue.length > 0) {
       try {
         const msg = session.requestQueue.shift()
@@ -178,7 +184,7 @@ export abstract class LlmsBase implements PayableBot {
         const model = msg?.model
         let agentCompletions: string[] = []
         const { chatConversation } = session
-        const minBalance = await getMinBalance(ctx, msg?.model as LlmsModelsEnum)
+        const minBalance = await getMinBalance(ctx, msg?.model as string)
         let enhancedPrompt = ''
         if (await this.hasBalance(ctx, minBalance)) {
           if (!prompt) {
@@ -207,7 +213,7 @@ export abstract class LlmsBase implements PayableBot {
               continue
             }
           }
-          if (chatConversation.length === 0 && model !== LlmsModelsEnum.GPT_O1) {
+          if (chatConversation.length === 0 && model !== LlmModelsEnum.O1) {
             chatConversation.push({
               role: 'system',
               content: config.openAi.chatGpt.chatCompletionContext,
@@ -284,7 +290,7 @@ export abstract class LlmsBase implements PayableBot {
           ctx.chatAction = 'typing'
         }
         const completion = await this.chatStreamCompletion(conversation,
-          model as LlmsModelsEnum,
+          model,
           ctx,
           msgId,
           true // telegram messages has a character limit
@@ -310,7 +316,7 @@ export abstract class LlmsBase implements PayableBot {
           }
         }
       } else {
-        const response = await this.chatCompletion(conversation, model as LlmsModelsEnum, usesTools)
+        const response = await this.chatCompletion(conversation, model, usesTools)
         conversation.push({
           role: 'assistant',
           content: response.completion?.content ?? '',
@@ -341,9 +347,9 @@ export abstract class LlmsBase implements PayableBot {
       await ctx.reply('...', { message_thread_id: ctx.message?.message_thread_id })
     ).message_id
     ctx.chatAction = 'typing'
-    const response = await this.chatCompletion(conversation, model as LlmsModelsEnum, usesTools)
+    const response = await this.chatCompletion(conversation, model, usesTools)
     if (response.completion) {
-      if (model === LlmsModelsEnum.GPT_O1) {
+      if (model === LlmModelsEnum.o1) {
         const msgs = splitTelegramMessage(response.completion.content as string)
         await ctx.api.editMessageText(
           ctx.chat.id,

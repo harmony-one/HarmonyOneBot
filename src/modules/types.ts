@@ -12,11 +12,12 @@ import { type AutoChatActionFlavor } from '@grammyjs/auto-chat-action'
 import { type PhotoSize, type ParseMode } from 'grammy/types'
 import { type InlineKeyboardMarkup } from 'grammy/out/types'
 import type { FileFlavor } from '@grammyjs/files'
-import { type LlmsModelsEnum } from './llms/utils/types'
+import { type ModelVersion } from './llms/utils/llmModelsManager'
+import { type DalleImageSize } from './llms/utils/types'
 
 export interface ImageGenSessionData {
   numImages: number
-  imgSize: string
+  imgSize: DalleImageSize
   isEnabled: boolean
   isInscriptionLotteryEnabled: boolean
   imgRequestQueue: ImageRequest[]
@@ -170,7 +171,7 @@ export interface BotSessionData {
   chatGpt: LlmsSessionData
   subagents: SubagentSessionData
   dalle: ImageGenSessionData
-  currentModel: LlmsModelsEnum
+  currentModel: ModelVersion
 }
 
 export interface TransientStateContext {

@@ -5,22 +5,25 @@ import {
   type ChatConversation
 } from '../types'
 import {
-  hasBardPrefix,
-  hasGeminiPrefix,
+  hasCommandPrefix,
   isMentioned,
   SupportedCommands
 } from './utils/helpers'
 import { type LlmCompletion } from './api/llmApi'
-import { LlmsModelsEnum } from './utils/types'
 
 import { LlmsBase } from './llmsBase'
 import { vertexCompletion, vertexStreamCompletion } from './api/vertex'
 import { type SubagentBase } from '../subagents'
+import {
+  LlmModelsEnum,
+  type ModelVersion
+} from './utils/llmModelsManager'
 
-const models = [LlmsModelsEnum.BISON, LlmsModelsEnum.GEMINI, LlmsModelsEnum.GEMINI_15]
 export class VertexBot extends LlmsBase {
+  private readonly geminiPrefix: string[]
   constructor (payments: BotPayments, subagents?: SubagentBase[]) {
-    super(payments, 'VertexBot', 'llms', models, subagents)
+    super(payments, 'VertexBot', 'llms', subagents)
+    this.geminiPrefix = this.modelManager.getPrefixByModel(LlmModelsEnum.GEMINI_10) ?? []
   }
 
   public getEstimatedPrice (ctx: any): number {
@@ -31,12 +34,10 @@ export class VertexBot extends LlmsBase {
     ctx: OnMessageContext | OnCallBackQueryData
   ): boolean {
     const hasCommand = ctx.hasCommand([
-      // SupportedCommands.bard,
-      // SupportedCommands.bardF,
-      SupportedCommands.gemini,
-      SupportedCommands.gShort,
-      SupportedCommands.g15short,
-      SupportedCommands.gemini15])
+      this.commandsEnum.GEMINI,
+      this.commandsEnum.G,
+      this.commandsEnum.G15,
+      this.commandsEnum.GEMINI15])
     if (isMentioned(ctx)) {
       return true
     }
@@ -49,12 +50,12 @@ export class VertexBot extends LlmsBase {
 
   async chatStreamCompletion (
     conversation: ChatConversation[],
-    model: LlmsModelsEnum,
+    model: ModelVersion,
     ctx: OnMessageContext | OnCallBackQueryData,
     msgId: number,
     limitTokens: boolean): Promise<LlmCompletion> {
     return await vertexStreamCompletion(conversation,
-      model as LlmsModelsEnum,
+      model,
       ctx,
       msgId,
       true // telegram messages has a character limit
@@ -63,14 +64,14 @@ export class VertexBot extends LlmsBase {
 
   async chatCompletion (
     conversation: ChatConversation[],
-    model: LlmsModelsEnum
+    model: ModelVersion
   ): Promise<LlmCompletion> {
     return await vertexCompletion(conversation, model)
   }
 
   hasPrefix (prompt: string): string {
     return (
-      hasGeminiPrefix(prompt) || hasBardPrefix(prompt)
+      hasCommandPrefix(prompt, this.geminiPrefix)
     )
   }
 
@@ -86,14 +87,14 @@ export class VertexBot extends LlmsBase {
     //   await this.onChat(ctx, LlmsModelsEnum.BISON, false, false)
     //   return
     // }
-    if (ctx.hasCommand([SupportedCommands.gemini, SupportedCommands.gShort]) || (hasGeminiPrefix(ctx.message?.text ?? '') !== '')) {
-      this.updateSessionModel(ctx, LlmsModelsEnum.GEMINI)
-      await this.onChat(ctx, LlmsModelsEnum.GEMINI, true, false)
+    if (ctx.hasCommand([this.commandsEnum.GEMINI, this.commandsEnum.G]) || (hasCommandPrefix(ctx.message?.text ?? '', this.geminiPrefix))) {
+      this.updateSessionModel(ctx, LlmModelsEnum.GEMINI_10)
+      await this.onChat(ctx, LlmModelsEnum.GEMINI_10, true, false)
       return
     }
-    if (ctx.hasCommand([SupportedCommands.gemini15, SupportedCommands.g15short])) {
-      this.updateSessionModel(ctx, LlmsModelsEnum.GEMINI_15)
-      await this.onChat(ctx, LlmsModelsEnum.GEMINI_15, true, false)
+    if (ctx.hasCommand([this.commandsEnum.GEMINI15, this.commandsEnum.G15])) {
+      this.updateSessionModel(ctx, LlmModelsEnum.GEMINI_15)
+      await this.onChat(ctx, LlmModelsEnum.GEMINI_15, true, false)
       // return
     }
 

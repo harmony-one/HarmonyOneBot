@@ -4,19 +4,14 @@ import {
   type OnCallBackQueryData,
   type ChatConversation
 } from '../types'
-import {
-  isMentioned,
-  SupportedCommands
-} from './utils/helpers'
+import { isMentioned } from './utils/helpers'
 import { llmCompletion, type LlmCompletion } from './api/llmApi'
-import { LlmsModelsEnum } from './utils/types'
 import { LlmsBase } from './llmsBase'
-
-const models = [LlmsModelsEnum.J2_ULTRA]
+import { type ModelVersion } from './utils/llmModelsManager'
 
 export class LlmsBot extends LlmsBase {
   constructor (payments: BotPayments) {
-    super(payments, 'LlmsBot', 'llms', models)
+    super(payments, 'LlmsBot', 'llms')
     // this.supportedModels = models
   }
 
@@ -27,9 +22,10 @@ export class LlmsBot extends LlmsBase {
   public isSupportedEvent (
     ctx: OnMessageContext | OnCallBackQueryData
   ): boolean {
-    const hasCommand = ctx.hasCommand([
-      SupportedCommands.j2Ultra
-    ])
+    const hasCommand = false
+    // ctx.hasCommand([
+    //   SupportedCommands.j2Ultra
+    // ])
     if (isMentioned(ctx)) {
       return true
     }
@@ -42,7 +38,7 @@ export class LlmsBot extends LlmsBase {
 
   async chatStreamCompletion (
     conversation: ChatConversation[],
-    model: LlmsModelsEnum,
+    model: ModelVersion,
     ctx: OnMessageContext | OnCallBackQueryData,
     msgId: number,
     limitTokens: boolean): Promise<LlmCompletion> {
@@ -57,7 +53,7 @@ export class LlmsBot extends LlmsBase {
 
   async chatCompletion (
     conversation: ChatConversation[],
-    model: LlmsModelsEnum
+    model: ModelVersion
   ): Promise<LlmCompletion> {
     return await llmCompletion(conversation, model)
   }
@@ -71,11 +67,11 @@ export class LlmsBot extends LlmsBase {
     const isSupportedEvent = this.isSupportedEvent(ctx)
     if (!isSupportedEvent && ctx.chat?.type !== 'private') {
       this.logger.warn(`### unsupported command ${ctx.message?.text}`)
-      return
+      // return
     }
-    if (ctx.hasCommand(SupportedCommands.j2Ultra)) {
-      this.updateSessionModel(ctx, LlmsModelsEnum.J2_ULTRA)
-      await this.onChat(ctx, LlmsModelsEnum.J2_ULTRA, false, false)
-    }
+    // if (ctx.hasCommand(SupportedCommands.j2Ultra)) {
+    //   this.updateSessionModel(ctx, this.modelsEnum.J2_ULTRA)
+    //   await this.onChat(ctx, this.modelsEnum.J2_ULTRA, false, false)
+    // }
   }
 }

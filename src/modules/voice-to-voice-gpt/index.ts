@@ -5,8 +5,8 @@ import type { Logger } from 'pino'
 import type { BotPayments } from '../payment'
 import { speechToText, chatCompletion } from '../llms/api/openai'
 import type { OnMessageContext, PayableBot } from '../types'
-import { LlmsModelsEnum } from '../llms/utils/types'
 import { generateVoiceFromText } from './helpers'
+import { LlmModelsEnum } from '../llms/utils/llmModelsManager'
 
 export class VoiceToVoiceGPTBot implements PayableBot {
   private readonly payments: BotPayments
@@ -64,7 +64,7 @@ export class VoiceToVoiceGPTBot implements PayableBot {
     fs.rmSync(filename)
 
     const conversation = [{ role: 'user', content: resultText }]
-    const response = await chatCompletion(conversation, LlmsModelsEnum.GPT_35_TURBO_16K)
+    const response = await chatCompletion(conversation, LlmModelsEnum.GPT_35_TURBO)
 
     const voiceResult = await generateVoiceFromText(response.completion?.content as string)
     // const voiceResult = await gcTextToSpeedClient.ssmlTextToSpeech({ text: response.completion, ssmlGender: 'MALE', languageCode: 'en-US' })

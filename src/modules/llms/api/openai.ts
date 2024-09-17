@@ -10,15 +10,15 @@ import {
 } from '../../types'
 import { pino } from 'pino'
 import {
-  type DalleGPTModel,
-  DalleGPTModels,
-  LlmsModelsEnum,
-  type ChatModel
+  type ImageModel,
+  type ChatModel,
+  type DalleImageSize
 } from '../utils/types'
 import type fs from 'fs'
 import { type ChatCompletionMessageParam } from 'openai/resources/chat/completions'
 import { type Stream } from 'openai/streaming'
 import { getChatModel, getChatModelPrice, type LlmCompletion } from './llmApi'
+import { LlmModelsEnum } from '../utils/llmModelsManager'
 
 const openai = new OpenAI({ apiKey: config.openAiKey })
 
@@ -87,20 +87,21 @@ export async function chatCompletion (
   const response = await openai.chat.completions.create({
     model,
     max_completion_tokens: limitTokens ? config.openAi.chatGpt.maxTokens : undefined,
-    temperature: model === LlmsModelsEnum.GPT_O1 ? 1 : config.openAi.dalle.completions.temperature,
+    temperature: model === LlmModelsEnum.O1 ? 1 : config.openAi.dalle.completions.temperature,
     messages: messages as ChatCompletionMessageParam[]
   })
   const chatModel = getChatModel(model)
   if (response.usage?.prompt_tokens === undefined) {
     throw new Error('Unknown number of prompt tokens used')
   }
-  console.log({ chatModel })
-  const price = getChatModelPrice(
-    chatModel,
-    true,
-    response.usage?.prompt_tokens,
-    response.usage?.completion_tokens
-  )
+  const price = chatModel
+    ? getChatModelPrice(
+      chatModel,
+      true,
+      response.usage?.prompt_tokens,
+      response.usage?.completion_tokens
+    )
+    : 0
   const inputTokens = response.usage?.prompt_tokens
   const outputTokens = response.usage?.completion_tokens
   return {
@@ -118,7 +119,7 @@ export async function chatCompletion (
 export const streamChatCompletion = async (
   conversation: ChatConversation[],
   ctx: OnMessageContext | OnCallBackQueryData,
-  model = LlmsModelsEnum.GPT_4,
+  model = LlmModelsEnum.GPT_4,
   msgId: number,
   limitTokens = true
 ): Promise<LlmCompletion> => {
@@ -202,7 +203,7 @@ export const streamChatCompletion = async (
 
 export const streamChatVisionCompletion = async (
   ctx: OnMessageContext | OnCallBackQueryData,
-  model = LlmsModelsEnum.GPT_4_VISION_PREVIEW,
+  model = LlmModelsEnum.GPT_4_VISION,
   prompt: string,
   imgUrls: string[],
   msgId: number,
@@ -304,19 +305,16 @@ export const getTokenNumber = (prompt: string): number => {
   return encode(prompt).length
 }
 
-export const getDalleModel = (modelName: string): DalleGPTModel => {
-  logger.info(modelName)
-  return DalleGPTModels[modelName]
-}
-
 export const getDalleModelPrice = (
-  model: DalleGPTModel,
+  model: ImageModel,
+  size: DalleImageSize,
   inCents = true,
   numImages = 1,
   hasEnhacedPrompt = false,
   chatModel?: ChatModel
 ): number => {
-  let price = model.price * numImages || 0
+  const modelPrice = model.price[size]
+  let price = modelPrice * numImages || 0
   if (hasEnhacedPrompt && chatModel) {
     const averageToken = 250 // for 100 words
     price += getChatModelPrice(chatModel, inCents, averageToken, averageToken)
