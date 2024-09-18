@@ -213,7 +213,7 @@ export abstract class LlmsBase implements PayableBot {
               continue
             }
           }
-          if (chatConversation.length === 0 && model !== LlmModelsEnum.O1) {
+          if (chatConversation.length === 0 && model !== this.modelsEnum.O1) {
             chatConversation.push({
               role: 'system',
               content: config.openAi.chatGpt.chatCompletionContext,
@@ -349,7 +349,7 @@ export abstract class LlmsBase implements PayableBot {
     ctx.chatAction = 'typing'
     const response = await this.chatCompletion(conversation, model, usesTools)
     if (response.completion) {
-      if (model === LlmModelsEnum.o1) {
+      if (model === this.modelsEnum.O1) {
         const msgs = splitTelegramMessage(response.completion.content as string)
         await ctx.api.editMessageText(
           ctx.chat.id,

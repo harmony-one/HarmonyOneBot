@@ -174,6 +174,7 @@ export type ModelCommand = (typeof LlmCommandsEnum)[keyof typeof LlmCommandsEnum
 export const isValidModel = llmModelManager.isValidModel.bind(llmModelManager)
 export const isValidCommand = llmModelManager.isValidCommand.bind(llmModelManager)
 
-console.log(LlmCommandsEnum)
+// console.log(LlmModelsEnum)
+// console.log(LlmCommandsEnum)
 // Helper type for IntelliSense
 export type LlmModelsEnumType = typeof LlmModelsEnum
