@@ -16,55 +16,18 @@ import config from '../../../config'
 export const PRICE_ADJUSTMENT = config.openAi.chatGpt.priceAdjustment
 
 export enum SupportedCommands {
-  bardF = 'bard',
-  claudeOpus = 'claude',
-  opus = 'opus',
-  opusShort = 'o',
-  claudeSonnet = 'claudes',
-  claudeShortTools = 'ctool',
-  claudeShort = 'c',
-  sonnet = 'sonnet',
-  sonnetTools = 'sonnett',
-  sonnetShortTools = 'stool',
-  sonnetShort = 's',
-  claudeHaiku = 'haiku',
-  haikuShort = 'h',
-  bard = 'b',
-  j2Ultra = 'j2-ultra',
   sum = 'sum',
   ctx = 'ctx',
   pdf = 'pdf',
-  gemini = 'gemini',
-  gShort = 'g',
-  gemini15 = 'gemini15',
-  g15short = 'g15',
-  chat = 'chat',
-  ask = 'ask',
-  vision = 'vision',
-  ask35 = 'ask35',
   new = 'new',
-  gpt4 = 'gpt4',
-  ask32 = 'ask32',
-  gpto = 'gpto',
-  gpt = 'gpt',
   last = 'last',
-  dalle = 'dalle',
-  dalleImg = 'image',
-  dalleShort = 'img',
-  dalleShorter = 'i',
-  // genImgEn = 'genImgEn',
   on = 'on',
   off = 'off',
   talk = 'talk'
 }
 
 export const MAX_TRIES = 3
-const LLAMA_PREFIX_LIST = ['* ']
-const BARD_PREFIX_LIST = ['b. ', 'B. ']
-const CLAUDE_OPUS_PREFIX_LIST = ['c. ']
-const GEMINI_PREFIX_LIST = ['g. ']
-const DALLE_PREFIX_LIST = ['i. ', ', ', 'd. ']
-const CHAT_GPT_PREFIX_LIST = ['a. ', '. ']
+
 const NEW_PREFIX_LIST = ['n. ', '.. ']
 
 export const isMentioned = (
@@ -115,41 +78,18 @@ export const promptHasBadWords = (prompt: string): boolean => {
 
   // const hasTabooWords = tabooWords.some(
   //     word => lowerCasePrompt.includes(word.toLowerCase())
-  // );
+  // )
 
   return hasChildrenWords && hasSexWords
 }
 
-const hasCommandPrefix = (prompt: string, prefixList: string[]): string => {
+export const hasCommandPrefix = (prompt: string, prefixList: string[]): string => {
   for (let i = 0; i < prefixList.length; i++) {
     if (prompt.toLocaleLowerCase().startsWith(prefixList[i])) {
       return prefixList[i]
     }
   }
   return ''
-}
-export const hasLlamaPrefix = (prompt: string): string => {
-  return hasCommandPrefix(prompt, LLAMA_PREFIX_LIST)
-}
-
-export const hasBardPrefix = (prompt: string): string => {
-  return hasCommandPrefix(prompt, BARD_PREFIX_LIST)
-}
-
-export const hasClaudeOpusPrefix = (prompt: string): string => {
-  return hasCommandPrefix(prompt, CLAUDE_OPUS_PREFIX_LIST)
-}
-
-export const hasGeminiPrefix = (prompt: string): string => {
-  return hasCommandPrefix(prompt, GEMINI_PREFIX_LIST)
-}
-
-export const hasChatPrefix = (prompt: string): string => {
-  return hasCommandPrefix(prompt, CHAT_GPT_PREFIX_LIST)
-}
-
-export const hasDallePrefix = (prompt: string): string => {
-  return hasCommandPrefix(prompt, DALLE_PREFIX_LIST)
 }
 
 export const hasNewPrefix = (prompt: string): string => {
@@ -308,9 +248,10 @@ export const sendMessage = async (
 export const getPromptPrice = (completion: LlmCompletion, data: ChatPayload, updateSession = true): { price: number, promptTokens: number, completionTokens: number } => {
   const { ctx, model } = data
   const modelPrice = getChatModel(model)
-  const price =
-    getChatModelPrice(modelPrice, true, completion.inputTokens ?? 0, completion.outputTokens ?? 0) *
+  const price = modelPrice
+    ? getChatModelPrice(modelPrice, true, completion.inputTokens ?? 0, completion.outputTokens ?? 0) *
     config.openAi.chatGpt.priceAdjustment
+    : 0
   if (updateSession) {
     ctx.session.llms.usage += completion.outputTokens ?? 0
     ctx.session.llms.price += price
@@ -350,4 +291,46 @@ export const getMinBalance = async (ctx: OnMessageContext | OnCallBackQueryData,
 export const hasCodeSnippet = (ctx: OnMessageContext | OnCallBackQueryData): boolean => {
   const entities = ctx.entities('pre') // pre => code snippets
   return entities.length > 0
+}
+
+export const splitTelegramMessage = (text: string): string[] => {
+  const maxLength = 4096
+  const result: string[] = []
+
+  // Regular expression to match Markdown entities
+  const markdownRegex = /(\*\*|__|\[.*?\]\(.*?\)|```[\s\S]*?```|`[^`\n]+`)/g
+
+  // Function to find the end index that avoids splitting Markdown entities
+  const findEndIndex = (startIndex: number, chunk: string): number => {
+    const matches = [...chunk.matchAll(markdownRegex)]
+    if (matches.length === 0) return startIndex + maxLength
+
+    const lastMatch = matches[matches.length - 1]
+    const lastMatchEnd = lastMatch.index + lastMatch[0].length
+    return lastMatchEnd > chunk.length ? startIndex + lastMatch.index : startIndex + maxLength
+  }
+
+  let startIndex = 0
+  while (startIndex < text.length) {
+    let endIndex = findEndIndex(startIndex, text.slice(startIndex, startIndex + maxLength))
+    endIndex = Math.min(endIndex, text.length) // Ensure endIndex is within bounds
+
+    // Find a natural break point if necessary
+    if (endIndex < text.length) {
+      const lastSpaceIndex = text.slice(startIndex, endIndex).lastIndexOf(' ')
+      if (lastSpaceIndex > 0) {
+        endIndex = startIndex + lastSpaceIndex
+      }
+    }
+
+    result.push(text.slice(startIndex, endIndex).trim())
+    startIndex = endIndex
+
+    // Move past any spaces or special characters that might cause issues
+    while (startIndex < text.length && /\s/.test(text[startIndex])) {
+      startIndex++
+    }
+  }
+
+  return result
 }

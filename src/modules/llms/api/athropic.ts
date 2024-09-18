@@ -6,9 +6,9 @@ import { pino } from 'pino'
 import config from '../../../config'
 import { type OnCallBackQueryData, type OnMessageContext, type ChatConversation } from '../../types'
 import { type LlmCompletion } from './llmApi'
-import { LlmsModelsEnum } from '../utils/types'
 import { sleep } from '../../sd-images/utils'
 import { headers, headersStream } from './helper'
+import { LlmModelsEnum } from '../utils/llmModelsManager'
 
 const logger = pino({
   name: 'anthropic - llmsBot',
@@ -22,7 +22,7 @@ const API_ENDPOINT = config.llms.apiEndpoint // 'http://127.0.0.1:5000' // confi
 
 export const anthropicCompletion = async (
   conversation: ChatConversation[],
-  model = LlmsModelsEnum.CLAUDE_OPUS
+  model = LlmModelsEnum.CLAUDE_3_OPUS
 ): Promise<LlmCompletion> => {
   logger.info(`Handling ${model} completion`)
   const data = {
@@ -59,7 +59,7 @@ export const anthropicCompletion = async (
 
 export const anthropicStreamCompletion = async (
   conversation: ChatConversation[],
-  model = LlmsModelsEnum.CLAUDE_OPUS,
+  model = LlmModelsEnum.CLAUDE_3_OPUS,
   ctx: OnMessageContext | OnCallBackQueryData,
   msgId: number,
   limitTokens = true
@@ -158,7 +158,7 @@ export const anthropicStreamCompletion = async (
 
 export const toolsChatCompletion = async (
   conversation: ChatConversation[],
-  model = LlmsModelsEnum.CLAUDE_OPUS
+  model = LlmModelsEnum.CLAUDE_3_OPUS
 ): Promise<LlmCompletion> => {
   logger.info(`Handling ${model} completion`)
   const input = {

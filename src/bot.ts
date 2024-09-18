@@ -34,7 +34,7 @@ import { WalletConnect } from './modules/walletconnect'
 import { BotPayments } from './modules/payment'
 import { BotSchedule } from './modules/schedule'
 import config from './config'
-import { commandsHelpText, FEEDBACK, LOVE, MODELS, SUPPORT, TERMS, LANG, ALIAS } from './constants'
+import { commandsHelpText, FEEDBACK, LOVE, SUPPORT, TERMS, LANG, ALIAS } from './constants'
 import prometheusRegister, { PrometheusMetrics } from './metrics/prometheus'
 
 import { chatService, statsService } from './database/services'
@@ -57,6 +57,7 @@ import { VoiceToVoiceGPTBot } from './modules/voice-to-voice-gpt'
 // import { VoiceCommand } from './modules/voice-command'
 import { createInitialSessionData } from './helpers'
 import { LlamaAgent } from './modules/subagents'
+import { llmModelManager } from './modules/llms/utils/llmModelsManager'
 
 Events.EventEmitter.defaultMaxListeners = 30
 
@@ -504,10 +505,13 @@ bot.command('support', async (ctx) => {
 })
 
 bot.command('models', async (ctx) => {
+  const models = llmModelManager.generateTelegramOutput()
+  console.log(models)
   writeCommandLog(ctx as OnMessageContext).catch(logErrorHandler)
-  return await ctx.reply(MODELS.text, {
+  return await ctx.reply(models, {
     parse_mode: 'Markdown',
-    link_preview_options: { is_disabled: true }
+    link_preview_options: { is_disabled: true },
+    message_thread_id: ctx.message?.message_thread_id
   })
 })
 

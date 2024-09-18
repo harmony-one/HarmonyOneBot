@@ -2,8 +2,8 @@ import { Menu } from '@grammyjs/menu'
 
 import { type BotContext } from '../../types'
 import { MenuIds, menuText } from '../../../constants'
-import { LlmsModelsEnum } from '../utils/types'
 import { getStartMenuText } from '../../../pages'
+import { LlmModelsEnum } from '../utils/llmModelsManager'
 
 export const chatGptMenuText = {
   helpText: `*🖌️ ChatGPT*
@@ -29,21 +29,17 @@ export const chatMainMenu = new Menu<BotContext>(MenuIds.CHAT_GPT_MAIN)
 const chatGPTimageDefaultOptions = new Menu<BotContext>(MenuIds.CHAT_GPT_MODEL)
   // gpt-4, gpt-4-0613, gpt-4-32k, gpt-4-32k-0613, gpt-3.5-turbo, gpt-3.5-turbo-0613, gpt-3.5-turbo-16k, gpt-3.5-turbo-16k-0613
   .text(
-    (ctx) => `${getLabel(LlmsModelsEnum.GPT_4, ctx)}`,
-    (ctx) => { setModel(LlmsModelsEnum.GPT_4, ctx) }
+    (ctx) => `${getLabel(LlmModelsEnum.GPT_4, ctx)}`,
+    (ctx) => { setModel(LlmModelsEnum.GPT_4, ctx) }
   )
   .text(
-    (ctx) => `${getLabel(LlmsModelsEnum.GPT_4_32K, ctx)}`,
-    (ctx) => { setModel(LlmsModelsEnum.GPT_4_32K, ctx) }
+    (ctx) => `${getLabel(LlmModelsEnum.GPT_4_32K, ctx)}`,
+    (ctx) => { setModel(LlmModelsEnum.GPT_4_32K, ctx) }
   )
   .row()
   .text(
-    (ctx) => `${getLabel(LlmsModelsEnum.GPT_35_TURBO, ctx)}`,
-    (ctx) => { setModel(LlmsModelsEnum.GPT_35_TURBO, ctx) }
-  )
-  .text(
-    (ctx) => `${getLabel(LlmsModelsEnum.GPT_35_TURBO_16K, ctx)}`,
-    (ctx) => { setModel(LlmsModelsEnum.GPT_35_TURBO_16K, ctx) }
+    (ctx) => `${getLabel(LlmModelsEnum.GPT_35_TURBO, ctx)}`,
+    (ctx) => { setModel(LlmModelsEnum.GPT_35_TURBO, ctx) }
   )
   .row()
   .back('Back')

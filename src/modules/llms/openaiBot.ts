@@ -6,15 +6,13 @@ import {
   RequestState
 } from '../types'
 import {
-  hasChatPrefix,
-  hasDallePrefix,
+  hasCommandPrefix,
   hasNewPrefix,
   isMentioned,
   sendMessage,
   SupportedCommands
 } from './utils/helpers'
 import { type LlmCompletion } from './api/llmApi'
-import { LlmsModelsEnum } from './utils/types'
 import * as Sentry from '@sentry/node'
 import { LlmsBase } from './llmsBase'
 import config from '../../config'
@@ -25,18 +23,14 @@ import {
   streamChatCompletion
 } from './api/openai'
 import { type SubagentBase } from '../subagents'
-
-const models = [
-  LlmsModelsEnum.GPT_35_TURBO,
-  LlmsModelsEnum.GPT_35_TURBO_16K,
-  LlmsModelsEnum.GPT_4,
-  LlmsModelsEnum.GPT_4_32K,
-  LlmsModelsEnum.GPT_4_VISION_PREVIEW
-]
+import { type ModelVersion } from './utils/llmModelsManager'
 
 export class OpenAIBot extends LlmsBase {
+  private readonly gpt4oPrefix: string[]
+
   constructor (payments: BotPayments, subagents?: SubagentBase[]) {
-    super(payments, 'OpenAIBot', 'chatGpt', models, subagents)
+    super(payments, 'OpenAIBot', 'chatGpt', subagents)
+    this.gpt4oPrefix = this.modelManager.getPrefixByModel(this.modelsEnum.GPT_4O) ?? []
     if (!config.openAi.dalle.isEnabled) {
       this.logger.warn('DALL·E 2 Image Bot is disabled in config')
     }
@@ -55,15 +49,8 @@ export class OpenAIBot extends LlmsBase {
   public isSupportedEvent (
     ctx: OnMessageContext | OnCallBackQueryData
   ): boolean {
-    const hasCommand = ctx.hasCommand([
-      SupportedCommands.chat,
-      SupportedCommands.ask,
-      SupportedCommands.gpt4,
-      SupportedCommands.gpt,
-      SupportedCommands.ask32,
-      SupportedCommands.ask35,
-      SupportedCommands.last
-    ])
+    const commands = ['last', ...this.modelManager.getCommandsByProvider('openai')]
+    const hasCommand = ctx.hasCommand(commands)
     if (ctx.hasCommand(SupportedCommands.new) && this.checkModel(ctx)) {
       return true
     }
@@ -80,7 +67,7 @@ export class OpenAIBot extends LlmsBase {
 
   async chatStreamCompletion (
     conversation: ChatConversation[],
-    model: LlmsModelsEnum,
+    model: ModelVersion,
     ctx: OnMessageContext | OnCallBackQueryData,
     msgId: number,
     limitTokens: boolean
@@ -88,7 +75,7 @@ export class OpenAIBot extends LlmsBase {
     return await streamChatCompletion(
       conversation,
       ctx,
-      model as LlmsModelsEnum,
+      model,
       msgId,
       true // telegram messages has a character limit
     )
@@ -96,14 +83,14 @@ export class OpenAIBot extends LlmsBase {
 
   async chatCompletion (
     conversation: ChatConversation[],
-    model: LlmsModelsEnum
+    model: ModelVersion
   ): Promise<LlmCompletion> {
-    return await chatCompletion(conversation, model)
+    return await chatCompletion(conversation, model, model !== this.modelsEnum.O1) // limitTokens doesn't apply for o1-preview
   }
 
   hasPrefix (prompt: string): string {
     return (
-      hasChatPrefix(prompt) || hasDallePrefix(prompt) || hasNewPrefix(prompt)
+      hasCommandPrefix(prompt, this.gpt4oPrefix) || hasNewPrefix(prompt) // hasDallePrefix(prompt)
     )
   }
 
@@ -121,19 +108,19 @@ export class OpenAIBot extends LlmsBase {
 
     if (
       ctx.hasCommand([
-        SupportedCommands.chat,
-        SupportedCommands.ask,
-        SupportedCommands.gpt,
-        SupportedCommands.gpto
+        this.commandsEnum.CHAT,
+        this.commandsEnum.ASK,
+        this.commandsEnum.GPT,
+        this.commandsEnum.GPTO
       ]) ||
-      hasChatPrefix(ctx.message?.text ?? '') ||
+      hasCommandPrefix(ctx.message?.text ?? '', this.gpt4oPrefix) ||
       isMentioned(ctx) ||
       ((ctx.message?.text?.startsWith('chat ') ??
         ctx.message?.text?.startsWith('ask ')) &&
         ctx.chat?.type === 'private')
     ) {
-      this.updateSessionModel(ctx, LlmsModelsEnum.GPT_4O)
-      await this.onChat(ctx, LlmsModelsEnum.GPT_4O, true, false)
+      this.updateSessionModel(ctx, this.modelsEnum.GPT_4O)
+      await this.onChat(ctx, this.modelsEnum.GPT_4O, true, false)
       return
     }
 
@@ -148,26 +135,32 @@ export class OpenAIBot extends LlmsBase {
       (ctx.message?.text?.startsWith('new ') && ctx.chat?.type === 'private') && this.checkModel(ctx))
     ) {
       await this.onStop(ctx)
-      this.updateSessionModel(ctx, LlmsModelsEnum.GPT_4O)
-      await this.onChat(ctx, LlmsModelsEnum.GPT_4O, true, false)
+      this.updateSessionModel(ctx, this.modelsEnum.GPT_4O)
+      await this.onChat(ctx, this.modelsEnum.GPT_4O, true, false)
       return
     }
 
-    if (ctx.hasCommand(SupportedCommands.ask35)) {
-      this.updateSessionModel(ctx, LlmsModelsEnum.GPT_35_TURBO_16K)
-      await this.onChat(ctx, LlmsModelsEnum.GPT_35_TURBO_16K, true, false)
+    if (ctx.hasCommand(this.commandsEnum.ASK35)) {
+      this.updateSessionModel(ctx, this.modelsEnum.GPT_35_TURBO)
+      await this.onChat(ctx, this.modelsEnum.GPT_35_TURBO, true, false)
       return
     }
 
-    if (ctx.hasCommand(SupportedCommands.gpt4)) {
-      this.updateSessionModel(ctx, LlmsModelsEnum.GPT_4)
-      await this.onChat(ctx, LlmsModelsEnum.GPT_4, true, false)
+    if (ctx.hasCommand(this.commandsEnum.GPT4)) {
+      this.updateSessionModel(ctx, this.modelsEnum.GPT_4)
+      await this.onChat(ctx, this.modelsEnum.GPT_4, true, false)
       return
     }
 
-    if (ctx.hasCommand(SupportedCommands.ask32)) {
-      this.updateSessionModel(ctx, LlmsModelsEnum.GPT_4_32K)
-      await this.onChat(ctx, LlmsModelsEnum.GPT_4_32K, true, false)
+    // if (ctx.hasCommand(this.commandsEnum.ASK32)) {
+    //   this.updateSessionModel(ctx, this.modelsEnum.GPT_4_32K)
+    //   await this.onChat(ctx, this.modelsEnum.GPT_4_32K, true, false)
+    //   return
+    // }
+
+    if (ctx.hasCommand([this.commandsEnum.O1, this.commandsEnum.ASK1])) {
+      this.updateSessionModel(ctx, this.modelsEnum.O1)
+      await this.onChat(ctx, this.modelsEnum.O1, false, false)
       return
     }
 
@@ -177,8 +170,8 @@ export class OpenAIBot extends LlmsBase {
     }
 
     if (ctx.chat?.type === 'private' || session.isFreePromptChatGroups) {
-      this.updateSessionModel(ctx, LlmsModelsEnum.GPT_4)
-      await this.onChat(ctx, LlmsModelsEnum.GPT_4, true, false)
+      this.updateSessionModel(ctx, this.modelsEnum.GPT_4O)
+      await this.onChat(ctx, this.modelsEnum.GPT_4O, true, false)
       return
     }
 

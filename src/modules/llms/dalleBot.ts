@@ -10,15 +10,13 @@ import {
   getMinBalance,
   getPromptPrice,
   getUrlFromText,
-  hasDallePrefix,
+  hasCommandPrefix,
   MAX_TRIES,
   PRICE_ADJUSTMENT,
   promptHasBadWords,
-  sendMessage,
-  SupportedCommands
+  sendMessage
 } from './utils/helpers'
 import { type LlmCompletion } from './api/llmApi'
-import { LlmsModelsEnum } from './utils/types'
 import * as Sentry from '@sentry/node'
 import { LlmsBase } from './llmsBase'
 import config from '../../config'
@@ -26,7 +24,6 @@ import { now } from '../../utils/perf'
 import { appText } from '../../utils/text'
 import {
   chatCompletion,
-  getDalleModel,
   getDalleModelPrice,
   postGenerateImg,
   streamChatCompletion,
@@ -34,10 +31,19 @@ import {
 } from './api/openai'
 import { type PhotoSize } from 'grammy/types'
 import { InlineKeyboard } from 'grammy'
+import { type ModelVersion } from './utils/llmModelsManager'
+import { type ImageModel } from './utils/types'
 
 export class DalleBot extends LlmsBase {
+  private readonly model: ImageModel
+  private readonly commands: string[]
+  private readonly prefix: string[]
+
   constructor (payments: BotPayments) {
     super(payments, 'DalleBot', 'dalle')
+    this.model = this.modelManager.getModelsByBot('DalleBot')[0] as ImageModel
+    this.commands = this.modelManager.getCommandsByBot('DalleBot')
+    this.prefix = this.modelManager.getPrefixByModel(this.modelsEnum.DALLE_3) ?? []
     if (!config.openAi.dalle.isEnabled) {
       this.logger.warn('DALL·E 2 Image Bot is disabled in config')
     }
@@ -46,18 +52,15 @@ export class DalleBot extends LlmsBase {
   public getEstimatedPrice (ctx: any): number {
     try {
       const session = this.getSession(ctx)
+      if (!this.commands) {
+        throw new Error('Not command list found')
+      }
       if (
-        ctx.hasCommand([
-          SupportedCommands.dalle,
-          SupportedCommands.dalleImg,
-          SupportedCommands.dalleShort,
-          SupportedCommands.dalleShorter
-        ])
+        ctx.hasCommand(this.commands)
       ) {
         const imageNumber = session.numImages
         const imageSize = session.imgSize
-        const model = getDalleModel(imageSize)
-        const price = getDalleModelPrice(model, true, imageNumber) // cents
+        const price = getDalleModelPrice(this.model, imageSize, true, imageNumber) // cents
         return price * PRICE_ADJUSTMENT
       }
       return 0
@@ -71,12 +74,7 @@ export class DalleBot extends LlmsBase {
   public isSupportedEvent (
     ctx: OnMessageContext | OnCallBackQueryData
   ): boolean {
-    const hasCommand = ctx.hasCommand([
-      SupportedCommands.dalle,
-      SupportedCommands.dalleImg,
-      SupportedCommands.dalleShort,
-      SupportedCommands.dalleShorter
-    ])
+    const hasCommand = ctx.hasCommand(this.commands)
     const session = this.getSession(ctx)
     const photo = ctx.message?.reply_to_message?.photo
     if (photo) {
@@ -113,7 +111,7 @@ export class DalleBot extends LlmsBase {
       if (
         prompt &&
         (ctx.chat?.type === 'private' ||
-          ctx.hasCommand(SupportedCommands.vision))
+          ctx.hasCommand(this.commandsEnum.VISION))
       ) {
         // && !isNaN(+prompt)
         return true
@@ -128,7 +126,7 @@ export class DalleBot extends LlmsBase {
 
   async chatStreamCompletion (
     conversation: ChatConversation[],
-    model: LlmsModelsEnum,
+    model: ModelVersion,
     ctx: OnMessageContext | OnCallBackQueryData,
     msgId: number,
     limitTokens: boolean
@@ -136,7 +134,7 @@ export class DalleBot extends LlmsBase {
     return await streamChatCompletion(
       conversation,
       ctx,
-      model as LlmsModelsEnum,
+      model,
       msgId,
       true // telegram messages has a character limit
     )
@@ -144,14 +142,14 @@ export class DalleBot extends LlmsBase {
 
   async chatCompletion (
     conversation: ChatConversation[],
-    model: LlmsModelsEnum
+    model: ModelVersion
   ): Promise<LlmCompletion> {
     return await chatCompletion(conversation, model)
   }
 
   hasPrefix (prompt: string): string {
     return (
-      hasDallePrefix(prompt)
+      hasCommandPrefix(prompt, this.prefix)
     )
   }
 
@@ -189,7 +187,7 @@ export class DalleBot extends LlmsBase {
       return
     }
 
-    if (ctx.hasCommand(SupportedCommands.vision)) {
+    if (ctx.hasCommand(this.commandsEnum.VISION)) {
       const photoUrl = getUrlFromText(ctx)
       if (photoUrl) {
         const prompt = ctx.match
@@ -208,17 +206,12 @@ export class DalleBot extends LlmsBase {
     }
 
     if (
-      ctx.hasCommand([
-        SupportedCommands.dalle,
-        SupportedCommands.dalleImg,
-        SupportedCommands.dalleShort,
-        SupportedCommands.dalleShorter
-      ]) ||
-      hasDallePrefix(ctx.message?.text ?? '') !== '' ||
+      ctx.hasCommand(this.commands) ||
+      hasCommandPrefix(ctx.message?.text ?? '', this.prefix) !== '' ||
       (ctx.message?.text?.startsWith('image ') && ctx.chat?.type === 'private')
     ) {
       let prompt = (ctx.match ? ctx.match : ctx.message?.text) as string
-      const prefix = hasDallePrefix(prompt)
+      const prefix = hasCommandPrefix(prompt, this.prefix)
       if (prefix) {
         prompt = prompt.slice(prefix.length)
       }
@@ -361,7 +354,7 @@ export class DalleBot extends LlmsBase {
               ctx.message?.reply_to_message?.message_thread_id
           })
         ).message_id
-        const model = LlmsModelsEnum.GPT_4_VISION_PREVIEW
+        const model = this.modelsEnum.GPT_4_VISION
         const completion = await streamChatVisionCompletion(ctx, model, prompt ?? '', imgList, msgId, true)
         if (completion) {
           ctx.transient.analytics.sessionState = RequestState.Success
