@@ -105,6 +105,7 @@ export default {
   },
   voiceMemo: {
     isEnabled: Boolean(parseInt(process.env.VOICE_MEMO_ENABLED ?? '1')),
+    isVoiceForwardingEnabled: Boolean(parseInt(process.env.VOICE_MEMO_FORWARDING_ENABLED ?? '0')),
     telegramApiId: parseInt(process.env.TELEGRAM_API_ID ?? ''),
     telegramApiHash: process.env.TELEGRAM_API_HASH ?? '',
     speechmaticsApiKey: process.env.SPEECHMATICS_API_KEY ?? '',

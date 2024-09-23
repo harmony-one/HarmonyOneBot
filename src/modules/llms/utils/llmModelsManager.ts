@@ -13,7 +13,6 @@ export class LLMModelsManager {
 
   constructor (llmData: LLMData) {
     this.loadModels(llmData)
-    console.log(this.models)
     this.modelsEnum = this.createModelsEnum()
     this.commandsEnum = this.createCommandsEnum()
   }

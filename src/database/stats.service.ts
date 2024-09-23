@@ -239,4 +239,11 @@ export class StatsService {
 
     return await queryBuilder.execute()
   }
+
+  public async getAllChatId (): Promise<number[]> {
+    const queryBuilder = logRepository.createQueryBuilder('logs')
+      .select('distinct("groupId")')
+
+    return await queryBuilder.execute()
+  }
 }

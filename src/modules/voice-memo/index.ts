@@ -14,10 +14,16 @@ import { InputFile } from 'grammy'
 import { bot } from '../../bot'
 import * as Sentry from '@sentry/node'
 import { now } from '../../utils/perf'
+import { isAdmin } from '../llms/utils/context'
+import { VOICE_MEMO_FORWARDING } from '../../constants'
 
 interface TranslationJob {
   filePath: string
   publicFileUrl: string
+}
+
+enum SupportedCommands {
+  FORWARD = 'forward'
 }
 
 export class VoiceMemo implements PayableBot {
@@ -141,8 +147,7 @@ export class VoiceMemo implements PayableBot {
 
   public isSupportedEvent (ctx: OnMessageContext): boolean {
     const { voice, audio } = ctx.update.message
-
-    return config.voiceMemo.isEnabled && (!!voice || !!audio)
+    return ctx.hasCommand(Object.values(SupportedCommands)) || config.voiceMemo.isEnabled && (!!voice || !!audio)
   }
 
   public getEstimatedPrice (ctx: OnMessageContext): number {
@@ -159,9 +164,30 @@ export class VoiceMemo implements PayableBot {
     const fileSize = (voice ?? audio)?.file_size
     const requestKey = `${from.id}_${fileSize}`
 
+    if (ctx.hasCommand(SupportedCommands.FORWARD)) {
+      if (await isAdmin(ctx)) {
+        ctx.session.voiceMemo.isOneTimeForwardingVoiceEnabled = true
+        this.logger.info('/forward command')
+        await ctx.reply(VOICE_MEMO_FORWARDING.enabled, {
+          link_preview_options: { is_disabled: true },
+          message_thread_id: ctx.message?.message_thread_id
+        })
+        return
+      }
+      await ctx.reply(VOICE_MEMO_FORWARDING.restricted, {
+        link_preview_options: { is_disabled: true },
+        message_thread_id: ctx.message?.message_thread_id
+      })
+      return
+    }
+
     this.requestsQueue.set(requestKey, Date.now())
 
     this.logger.info(`onEvent message @${from.username} (${from.id}): ${requestKey}`)
+
+    if (ctx.session.voiceMemo.isOneTimeForwardingVoiceEnabled) {
+      ctx.session.voiceMemo.isOneTimeForwardingVoiceEnabled = false
+    }
 
     let translationJob
 

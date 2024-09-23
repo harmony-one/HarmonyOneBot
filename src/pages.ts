@@ -3,7 +3,7 @@ import { chatMainMenu } from './modules/llms/menu/openaiMenu'
 import { type BotContext } from './modules/types'
 import { sdImagesMenu } from './modules/sd-images/menu'
 import { voiceMemoMenu } from './modules/voice-memo/menu'
-import { MenuIds, commandsHelpText, menuText } from './constants'
+import { MENU_URL_BUTTONS, MenuIds, commandsHelpText, menuText } from './constants'
 import { BotPayments } from './modules/payment'
 import { TelegramPayments } from './modules/telegram_payment'
 
@@ -21,6 +21,21 @@ export const getStartMenuText = async (ctx: BotContext): Promise<string> => {
     .replaceAll('$CREDITS', balanceOne + '')
     .replaceAll('$WALLET_ADDRESS', userWalletAddress)
   return startText
+}
+
+export const privateChatMainMenu = new Menu<BotContext>(MenuIds.PRIVATE_MAIN_MENU)
+  .text('💳 /buy', async (ctx) => {
+    await telegramPayments.createPaymentInvoice(ctx)
+  })
+
+export const groupsMainMenu = new Menu<BotContext>(MenuIds.MAIN_MENU)
+  .text('💳 /buy', async (ctx) => {
+    await telegramPayments.createPaymentInvoice(ctx)
+  })
+
+for (const button of MENU_URL_BUTTONS) {
+  privateChatMainMenu.webApp(button.text, button.url)
+  groupsMainMenu.url(button.text, button.url)
 }
 
 export const mainMenu = new Menu<BotContext>(MenuIds.MAIN_MENU)
