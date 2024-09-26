@@ -16,7 +16,8 @@ import { type BroadcastError } from './types'
 // import { docsMenu, docsMenuLabel } from './helpers'
 
 export enum SupportedCommands {
-  broadcast = 'broadcast'
+  broadcast = 'broadcast',
+  preview = 'preview'
   // docs = 'docs'
 }
 
@@ -67,6 +68,11 @@ export class HmnyBot implements PayableBot {
     //   return
     // }
 
+    if (ctx.hasCommand(SupportedCommands.preview)) {
+      await this.onBroadcast(ctx, true)
+      return
+    }
+
     if (ctx.hasCommand(SupportedCommands.broadcast)) {
       await this.onBroadcast(ctx)
       return
@@ -103,7 +109,7 @@ export class HmnyBot implements PayableBot {
   //   ctx.transient.analytics.sessionState = RequestState.Success
   // }
 
-  onBroadcast = async (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> => {
+  onBroadcast = async (ctx: OnMessageContext | OnCallBackQueryData, isPreview = false): Promise<void> => {
     const chatErrors: BroadcastError[] = []
     let errorMessage = ''
     if (await isAdmin(ctx, false, true) && ctx.chat?.type === 'private') {
@@ -111,6 +117,17 @@ export class HmnyBot implements PayableBot {
         await ctx.reply('Missing broadcast message', { message_thread_id: ctx.message?.message_thread_id })
         ctx.transient.analytics.sessionState = RequestState.Error
         ctx.transient.analytics.actualResponseTime = now()
+        return
+      }
+      const urls = ctx.entities('url')
+      const linksPreview = urls.length > 1
+      if (isPreview) {
+        await ctx.reply(
+          ctx.match as string,
+          {
+            parse_mode: 'Markdown',
+            link_preview_options: { is_disabled: linksPreview }
+          })
         return
       }
       const chatsArray = await statsService.getAllChatId()
@@ -136,12 +153,9 @@ export class HmnyBot implements PayableBot {
       //   361, 362, 363, 364, 365, 366, 367, 368, 369, 370, 371, 372, 373, 374, 375, 376, 377, 378, 379, 380,
       //   381, 382, 383, 384, 385, 386, 387, 388, 389, 390, 391, 392, 393, 394, 395, 396, 397, 398, 399, 400
       // ]
-      const urls = ctx.entities('url')
-      const linksPreview = urls.length > 1
       let counter = 0
       const batchSize = 29
       const delayMs = 2000
-
       for (let i = 0; i < chatsArray.length; i += batchSize) {
         const batch = chatsArray.slice(i, i + batchSize)
 
