@@ -20,6 +20,7 @@ export interface ChatModel extends BaseModel {
   outputPrice: number
   maxContextTokens: number
   chargeType: ChargeType
+  stream: boolean
 }
 
 export interface ImageModel extends BaseModel {
@@ -33,3 +34,18 @@ export interface LLMData {
   chatModels: Record<string, ChatModel>
   imageModels: Record<string, ImageModel>
 }
+
+interface ModelCommandConfig {
+  model: string
+  useTools: boolean
+  stream: boolean
+}
+
+export interface ModelCommandMap extends Record<string, ModelCommandConfig> {}
+
+interface ModelPrefixConfig {
+  model: string
+  stream: boolean
+}
+
+export interface ModelPrefixMap extends Record<string, ModelPrefixConfig> {}

@@ -3,23 +3,66 @@ import {
   type Provider,
   type LLMData,
   type LLMModel,
-  type ImageModel
+  type ImageModel,
+  type ModelCommandMap,
+  type ModelPrefixMap
 } from './types'
 
 export class LLMModelsManager {
   private readonly models = new Map<string, LLMModel>()
   private readonly modelsEnum: Record<string, string>
   private readonly commandsEnum: Record<string, string>
+  private readonly commandMap: ModelCommandMap
+  private readonly prefixMap: ModelPrefixMap
 
   constructor (llmData: LLMData) {
     this.loadModels(llmData)
     this.modelsEnum = this.createModelsEnum()
     this.commandsEnum = this.createCommandsEnum()
+    this.commandMap = this.buildCommandMap()
+    this.prefixMap = this.buildPrefixMap()
   }
 
   private loadModels (data: LLMData): void {
     Object.values(data.chatModels).forEach(model => { this.addModel(model) })
     Object.values(data.imageModels).forEach(model => { this.addModel(model) })
+  }
+
+  private buildCommandMap (): ModelCommandMap {
+    const commandMap: ModelCommandMap = {}
+    this.models.forEach((model, version) => {
+      model.commands.forEach(command => {
+        commandMap[command] = {
+          model: version,
+          useTools: command === 'ctool' || command === 'stool',
+          stream: 'stream' in model ? model.stream : true
+        }
+      })
+    })
+    return commandMap
+  }
+
+  private buildPrefixMap (): ModelPrefixMap {
+    const prefixMap: ModelPrefixMap = {}
+    this.models.forEach((model, version) => {
+      if (model.prefix) {
+        model.prefix.forEach(prefix => {
+          prefixMap[prefix] = {
+            model: version,
+            stream: 'stream' in model ? model.stream : true
+          }
+        })
+      }
+    })
+    return prefixMap
+  }
+
+  getCommandMap (): ModelCommandMap {
+    return this.commandMap
+  }
+
+  getPrefixMap (): ModelPrefixMap {
+    return this.prefixMap
   }
 
   addModel (model: LLMModel): void {
@@ -44,6 +87,16 @@ export class LLMModelsManager {
       })
     })
     return commandsEnum
+  }
+
+  getModelByCommand (command: string): LLMModel | undefined {
+    const modelInfo = this.commandMap[command]
+    return modelInfo ? this.getModel(modelInfo.model) : undefined
+  }
+
+  getModelByPrefix (prefix: string): LLMModel | undefined {
+    const modelInfo = this.prefixMap[prefix]
+    return modelInfo ? this.getModel(modelInfo.model) : undefined
   }
 
   getModel (version: string): LLMModel | undefined {
@@ -127,12 +180,6 @@ export class LLMModelsManager {
 
   getPrefixByModel (version: string): string[] | undefined {
     return this.models.get(version)?.prefix
-  }
-
-  getModelByCommand (command: string): LLMModel | undefined {
-    return Array.from(this.models.values()).find(model =>
-      model.commands.includes(command)
-    )
   }
 
   generateTelegramOutput (): string {

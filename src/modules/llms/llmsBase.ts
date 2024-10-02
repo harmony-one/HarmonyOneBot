@@ -27,7 +27,7 @@ import {
 import { type LlmCompletion, deleteCollection } from './api/llmApi'
 import * as Sentry from '@sentry/node'
 import { now } from '../../utils/perf'
-import { type LLMModel } from './utils/types'
+import { type ChatModel, type LLMModel } from './utils/types'
 import { ErrorHandler } from '../errorhandler'
 import { SubagentBase } from '../subagents/subagentBase'
 import {
@@ -48,7 +48,11 @@ export abstract class LlmsBase implements PayableBot {
   protected commandsEnum = LlmCommandsEnum
   protected subagents: SubagentBase[]
   protected botSuspended: boolean
-  protected supportedModels: LLMModel[] //  LlmsModelsEnum[]
+  protected supportedModels: LLMModel[]
+  protected supportedCommands: string[]
+  protected supportedPrefixes: string[]
+  protected botName: string
+
   errorHandler: ErrorHandler
 
   constructor (payments: BotPayments,
@@ -57,6 +61,7 @@ export abstract class LlmsBase implements PayableBot {
     subagents?: SubagentBase[]
   ) {
     this.module = module
+    this.botName = module
     this.logger = pino({
       name: this.module,
       transport: {
@@ -70,9 +75,29 @@ export abstract class LlmsBase implements PayableBot {
     this.payments = payments
     this.subagents = subagents ?? []
     this.errorHandler = new ErrorHandler()
+    this.supportedModels = this.initSupportedModels()
+    this.supportedCommands = this.initSupportedCommands()
+    this.supportedPrefixes = this.initSupportedPrefixes()
+  }
+
+  private initSupportedModels (): LLMModel[] {
+    return this.modelManager.getModelsByBot(this.botName)
+  }
+
+  private initSupportedCommands (): string[] {
+    return this.supportedModels
+      .filter(model => model.botName === this.botName)
+      .flatMap(model => model.commands)
+  }
+
+  private initSupportedPrefixes (): string[] {
+    return this.supportedModels
+      .filter(model => model.botName === this.botName)
+      .flatMap(model => this.modelManager.getPrefixByModel(model.version) ?? [])
   }
 
   public abstract onEvent (ctx: OnMessageContext | OnCallBackQueryData, refundCallback: (reason?: string) => void): Promise<void>
+
   public abstract isSupportedEvent (
     ctx: OnMessageContext | OnCallBackQueryData
   ): boolean
@@ -92,7 +117,29 @@ export abstract class LlmsBase implements PayableBot {
     usesTools: boolean
   ): Promise<LlmCompletion>
 
-  protected abstract hasPrefix (prompt: string): string
+  // protected abstract hasPrefix (prompt: string): string
+  protected hasPrefix (prompt: string): string {
+    return this.supportedPrefixes.find(prefix => prompt.toLocaleLowerCase().startsWith(prefix)) ?? ''
+  }
+
+  protected getStreamOption (model: ModelVersion): boolean {
+    const foundModel = this.supportedModels.find(m => m.version === model) as ChatModel | undefined
+    return foundModel?.stream ?? false
+  }
+
+  protected getModelFromContext (ctx: OnMessageContext | OnCallBackQueryData): LLMModel | undefined {
+    for (const model of this.supportedModels) {
+      if (model.botName !== this.botName) continue
+      if (ctx.hasCommand(model.commands)) {
+        return model
+      }
+      const prefix = this.modelManager.getPrefixByModel(model.version)
+      if (prefix && prefix.some(p => (ctx.message?.text ?? '').startsWith(p))) {
+        return model
+      }
+    }
+    return undefined
+  }
 
   addSubagents (subagents: SubagentBase[]): void {
     this.subagents = subagents
@@ -110,7 +157,7 @@ export abstract class LlmsBase implements PayableBot {
     return !!this.supportedModels.find(model => model.version === ctx.session.currentModel)
   }
 
-  protected async runSubagents (ctx: OnMessageContext | OnCallBackQueryData, msg: ChatConversation): Promise<void> {
+  protected async runSubagents (ctx: OnMessageContext | OnCallBackQueryData, msg: ChatConversation, stream: boolean, usesTools: boolean): Promise<void> {
     const session = this.getSession(ctx)
     await Promise.all(this.subagents.map(async (agent: SubagentBase) =>
       await agent.run(ctx, msg)))
@@ -119,7 +166,7 @@ export abstract class LlmsBase implements PayableBot {
       session.requestQueue.push(msg)
       if (!session.isProcessingQueue) {
         session.isProcessingQueue = true
-        await this.onChatRequestHandler(ctx, true, false).then(() => {
+        await this.onChatRequestHandler(ctx, stream, usesTools).then(() => {
           session.isProcessingQueue = false
         })
       }
@@ -167,7 +214,7 @@ export abstract class LlmsBase implements PayableBot {
           content: prompt as string ?? '', // await preparePrompt(ctx, prompt as string),
           numSubAgents: supportedAgents
         }
-        await this.runSubagents(ctx, msg) //  prompt as string)
+        await this.runSubagents(ctx, msg, stream, usesTools) //  prompt as string)
       }
       ctx.transient.analytics.actualResponseTime = now()
     } catch (e: any) {

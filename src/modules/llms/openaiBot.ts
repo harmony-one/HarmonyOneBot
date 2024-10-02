@@ -6,7 +6,6 @@ import {
   RequestState
 } from '../types'
 import {
-  hasCommandPrefix,
   hasNewPrefix,
   isMentioned,
   sendMessage,
@@ -30,7 +29,7 @@ export class OpenAIBot extends LlmsBase {
 
   constructor (payments: BotPayments, subagents?: SubagentBase[]) {
     super(payments, 'OpenAIBot', 'chatGpt', subagents)
-    this.gpt4oPrefix = this.modelManager.getPrefixByModel(this.modelsEnum.GPT_4O) ?? []
+    // this.gpt4oPrefix = this.modelManager.getPrefixByModel(this.modelsEnum.GPT_4O) ?? []
     if (!config.openAi.dalle.isEnabled) {
       this.logger.warn('DALL·E 2 Image Bot is disabled in config')
     }
@@ -49,7 +48,7 @@ export class OpenAIBot extends LlmsBase {
   public isSupportedEvent (
     ctx: OnMessageContext | OnCallBackQueryData
   ): boolean {
-    const commands = ['last', ...this.modelManager.getCommandsByProvider('openai')]
+    const commands = ['last', ...this.supportedCommands]
     const hasCommand = ctx.hasCommand(commands)
     if (ctx.hasCommand(SupportedCommands.new) && this.checkModel(ctx)) {
       return true
@@ -90,7 +89,8 @@ export class OpenAIBot extends LlmsBase {
 
   hasPrefix (prompt: string): string {
     return (
-      hasCommandPrefix(prompt, this.gpt4oPrefix) || hasNewPrefix(prompt) // hasDallePrefix(prompt)
+      this.supportedPrefixes.find(prefix => prompt.toLocaleLowerCase().startsWith(prefix)) ??
+      hasNewPrefix(prompt) // hasDallePrefix(prompt)
     )
   }
 
@@ -106,19 +106,9 @@ export class OpenAIBot extends LlmsBase {
       return
     }
 
-    if (
-      ctx.hasCommand([
-        this.commandsEnum.CHAT,
-        this.commandsEnum.ASK,
-        this.commandsEnum.GPT,
-        this.commandsEnum.GPTO
-      ]) ||
-      hasCommandPrefix(ctx.message?.text ?? '', this.gpt4oPrefix) ||
-      isMentioned(ctx) ||
-      ((ctx.message?.text?.startsWith('chat ') ??
+    if ((ctx.message?.text?.startsWith('chat ') ??
         ctx.message?.text?.startsWith('ask ')) &&
-        ctx.chat?.type === 'private')
-    ) {
+        ctx.chat?.type === 'private') {
       this.updateSessionModel(ctx, this.modelsEnum.GPT_4O)
       await this.onChat(ctx, this.modelsEnum.GPT_4O, true, false)
       return
@@ -140,29 +130,35 @@ export class OpenAIBot extends LlmsBase {
       return
     }
 
-    if (ctx.hasCommand(this.commandsEnum.ASK35)) {
-      this.updateSessionModel(ctx, this.modelsEnum.GPT_35_TURBO)
-      await this.onChat(ctx, this.modelsEnum.GPT_35_TURBO, true, false)
+    // if (ctx.hasCommand(this.commandsEnum.ASK35)) {
+    //   this.updateSessionModel(ctx, this.modelsEnum.GPT_35_TURBO)
+    //   await this.onChat(ctx, this.modelsEnum.GPT_35_TURBO, true, false)
+    //   return
+    // }
+
+    // if (ctx.hasCommand(this.commandsEnum.GPT4)) {
+    //   this.updateSessionModel(ctx, this.modelsEnum.GPT_4)
+    //   await this.onChat(ctx, this.modelsEnum.GPT_4, true, false)
+    //   return
+    // }
+
+    // if (ctx.hasCommand([this.commandsEnum.O1, this.commandsEnum.ASK1])) {
+    //   this.updateSessionModel(ctx, this.modelsEnum.O1)
+    //   await this.onChat(ctx, this.modelsEnum.O1, false, false)
+    //   return
+    // }
+
+    const model = this.getModelFromContext(ctx)
+    if (model) {
+      this.updateSessionModel(ctx, model.version)
+      await this.onChat(ctx, model.version, this.getStreamOption(model.version), false)
       return
     }
-
-    if (ctx.hasCommand(this.commandsEnum.GPT4)) {
-      this.updateSessionModel(ctx, this.modelsEnum.GPT_4)
-      await this.onChat(ctx, this.modelsEnum.GPT_4, true, false)
-      return
-    }
-
     // if (ctx.hasCommand(this.commandsEnum.ASK32)) {
     //   this.updateSessionModel(ctx, this.modelsEnum.GPT_4_32K)
     //   await this.onChat(ctx, this.modelsEnum.GPT_4_32K, true, false)
     //   return
     // }
-
-    if (ctx.hasCommand([this.commandsEnum.O1, this.commandsEnum.ASK1])) {
-      this.updateSessionModel(ctx, this.modelsEnum.O1)
-      await this.onChat(ctx, this.modelsEnum.O1, false, false)
-      return
-    }
 
     if (ctx.hasCommand(SupportedCommands.last)) {
       await this.onLast(ctx)
