@@ -179,6 +179,21 @@ export const llmData: LLMData = {
         '1024x1792': 0.12,
         '1792x1024': 0.12
       }
+    },
+    lumaai: {
+      provider: 'luma',
+      name: 'Luma AI',
+      fullName: 'Luma AI',
+      botName: 'LumaBot',
+      version: 'lumaai-1-0-2',
+      commands: ['luma', 'l'],
+      prefix: ['l. '],
+      apiSpec: 'https://docs.lumalabs.ai/docs/welcome',
+      price: {
+        '1024x1024': 0.8,
+        '1024x1792': 0.12,
+        '1792x1024': 0.12
+      }
     }
   }
 }

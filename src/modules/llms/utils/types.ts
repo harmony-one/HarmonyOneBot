@@ -1,4 +1,4 @@
-export type Provider = 'openai' | 'claude' | 'vertex' | 'palm' | 'jurassic'
+export type Provider = 'openai' | 'claude' | 'vertex' | 'palm' | 'jurassic' | 'luma'
 export type ChargeType = 'TOKEN' | 'CHAR'
 
 export type DalleImageSize = '1024x1024' | '1024x1792' | '1792x1024'
@@ -24,7 +24,6 @@ export interface ChatModel extends BaseModel {
 }
 
 export interface ImageModel extends BaseModel {
-  apiSpec: string
   price: ImagePrice
 }
 
@@ -33,4 +32,8 @@ export type LLMModel = ChatModel | ImageModel
 export interface LLMData {
   chatModels: Record<string, ChatModel>
   imageModels: Record<string, ImageModel>
+}
+
+export enum Callbacks {
+  LumaDownloadVideo = 'luma_dl'
 }
