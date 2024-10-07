@@ -160,6 +160,7 @@ export class DalleBot extends LlmsBase {
     ctx.transient.analytics.module = this.module
     const session = this.getSession(ctx)
     const isSupportedEvent = this.isSupportedEvent(ctx)
+
     if (!isSupportedEvent && ctx.chat?.type !== 'private') {
       this.logger.warn(`### unsupported command ${ctx.message?.text}`)
       return

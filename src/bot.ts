@@ -527,7 +527,6 @@ bot.command('support', async (ctx) => {
 
 bot.command('models', async (ctx) => {
   const models = llmModelManager.generateTelegramOutput()
-  console.log(models)
   writeCommandLog(ctx as OnMessageContext).catch(logErrorHandler)
   return await ctx.reply(models, {
     parse_mode: 'Markdown',

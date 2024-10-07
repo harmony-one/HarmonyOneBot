@@ -110,7 +110,7 @@ export const llmData: LLMData = {
       fullName: 'GPT-4 Vision',
       botName: 'OpenAIBot',
       version: 'gpt-4-vision-preview',
-      commands: ['vision, v'],
+      commands: ['vision', 'v'],
       prefix: ['v. '],
       apiSpec: 'https://platform.openai.com/docs/guides/vision',
       inputPrice: 0.03,
