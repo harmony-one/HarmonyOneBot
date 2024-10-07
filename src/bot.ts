@@ -59,6 +59,7 @@ import { createInitialSessionData, addQuotePrefix, markdownToTelegramHtml } from
 import { LlamaAgent } from './modules/subagents'
 import { llmModelManager } from './modules/llms/utils/llmModelsManager'
 import { HmnyBot } from './modules/hmny'
+import { LumaBot } from './modules/llms/lumaBot'
 
 Events.EventEmitter.defaultMaxListeners = 30
 
@@ -209,6 +210,7 @@ const schedule = new BotSchedule(bot)
 const llamaAgent = new LlamaAgent(payments, 'llamaService')
 const openAiBot = new OpenAIBot(payments, [llamaAgent])
 const dalleBot = new DalleBot(payments)
+const lumaBot = new LumaBot(payments)
 const claudeBot = new ClaudeBot(payments)
 const vertexBot = new VertexBot(payments, [llamaAgent])
 const oneCountryBot = new OneCountryBot(payments)
@@ -340,6 +342,7 @@ const PayableBots: Record<string, PayableBotConfig> = {
   dalleBot: { bot: dalleBot },
   claudeBot: { bot: claudeBot },
   vertexBot: { bot: vertexBot },
+  lumaBot: { bot: lumaBot },
   openAiBot: {
     enabled: (ctx: OnMessageContext) => ctx.session.dalle.isEnabled,
     bot: openAiBot
@@ -446,6 +449,12 @@ const onCallback = async (ctx: OnCallBackQueryData): Promise<void> => {
     //   return
     // }
 
+    if (lumaBot.isSupportedEvent(ctx)) {
+      await lumaBot.onEvent(ctx, (e) => {
+        logger.error(e)
+      })
+    }
+
     if (dalleBot.isSupportedEvent(ctx)) {
       await dalleBot.onEvent(ctx, (e) => {
         logger.error(e)
@@ -456,6 +465,8 @@ const onCallback = async (ctx: OnCallBackQueryData): Promise<void> => {
     logger.error({ errorMsg: ex.message }, 'onCallback error')
   }
 }
+
+bot.on('callback_query:data', onCallback)
 
 bot.command(['start', 'help', 'menu'], async (ctx) => {
   const accountId = payments.getAccountId(ctx as OnMessageContext)
