@@ -13,7 +13,6 @@ export class LLMModelsManager {
 
   constructor (llmData: LLMData) {
     this.loadModels(llmData)
-    console.log(this.models)
     this.modelsEnum = this.createModelsEnum()
     this.commandsEnum = this.createCommandsEnum()
   }
@@ -128,12 +127,6 @@ export class LLMModelsManager {
 
   getPrefixByModel (version: string): string[] | undefined {
     return this.models.get(version)?.prefix
-  }
-
-  getModelByCommand (command: string): LLMModel | undefined {
-    return Array.from(this.models.values()).find(model =>
-      model.commands.includes(command)
-    )
   }
 
   generateTelegramOutput (): string {

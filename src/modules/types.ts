@@ -163,6 +163,12 @@ export interface SubagentSessionData {
   isProcessingQueue: boolean
   subagentsRequestQueue: SubagentResult[]
 }
+
+interface VoiceMemoSessionData {
+  isOneTimeForwardingVoiceEnabled: boolean
+  isVoiceForwardingEnabled: boolean
+}
+
 export interface BotSessionData {
   oneCountry: OneCountryData
   collections: CollectionSessionData
@@ -172,6 +178,8 @@ export interface BotSessionData {
   subagents: SubagentSessionData
   dalle: ImageGenSessionData
   currentModel: ModelVersion
+  lastBroadcast: string
+  voiceMemo: VoiceMemoSessionData
 }
 
 export interface TransientStateContext {

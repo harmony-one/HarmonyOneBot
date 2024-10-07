@@ -4,18 +4,17 @@ import {
   type OnCallBackQueryData,
   type ChatConversation
 } from '../types'
-import { hasCommandPrefix, SupportedCommands } from './utils/helpers'
+import { SupportedCommands } from './utils/helpers'
 import { type LlmCompletion } from './api/llmApi'
 import { anthropicCompletion, anthropicStreamCompletion, toolsChatCompletion } from './api/athropic'
 import { LlmsBase } from './llmsBase'
 import { type ModelVersion } from './utils/llmModelsManager'
 
 export class ClaudeBot extends LlmsBase {
-  private readonly opusPrefix: string[]
+  private readonly claudeModels: ModelVersion[]
 
   constructor (payments: BotPayments) {
     super(payments, 'ClaudeBot', 'llms')
-    this.opusPrefix = this.modelManager.getPrefixByModel(this.modelsEnum.CLAUDE_3_OPUS) ?? []
   }
 
   public getEstimatedPrice (ctx: any): number {
@@ -25,18 +24,7 @@ export class ClaudeBot extends LlmsBase {
   public isSupportedEvent (
     ctx: OnMessageContext | OnCallBackQueryData
   ): boolean {
-    const hasCommand = ctx.hasCommand([
-      this.commandsEnum.CLAUDE,
-      this.commandsEnum.OPUS,
-      this.commandsEnum.O,
-      this.commandsEnum.C,
-      this.commandsEnum.CTOOL,
-      this.commandsEnum.STOOL,
-      this.commandsEnum.CLAUDES,
-      this.commandsEnum.SONNET,
-      this.commandsEnum.S,
-      this.commandsEnum.HAIKU,
-      this.commandsEnum.H])
+    const hasCommand = ctx.hasCommand(this.supportedCommands)
 
     if (ctx.hasCommand(SupportedCommands.new) && this.checkModel(ctx)) {
       return true
@@ -46,12 +34,6 @@ export class ClaudeBot extends LlmsBase {
       return true
     }
     return hasCommand
-  }
-
-  hasPrefix (prompt: string): string {
-    return (
-      hasCommandPrefix(prompt, this.opusPrefix)
-    )
   }
 
   async chatStreamCompletion (
@@ -87,16 +69,7 @@ export class ClaudeBot extends LlmsBase {
       this.logger.warn(`### unsupported command ${ctx.message?.text}`)
       return
     }
-    if (ctx.hasCommand([this.commandsEnum.CTOOL])) {
-      this.updateSessionModel(ctx, this.modelsEnum.CLAUDE_3_OPUS)
-      await this.onChat(ctx, this.modelsEnum.CLAUDE_3_OPUS, false, true)
-      return
-    }
-    if (ctx.hasCommand([this.commandsEnum.STOOL])) {
-      this.updateSessionModel(ctx, this.modelsEnum.CLAUDE_35_SONNET)
-      await this.onChat(ctx, this.modelsEnum.CLAUDE_35_SONNET, false, true)
-      return
-    }
+
     if (
       (ctx.hasCommand(SupportedCommands.new) && this.checkModel(ctx))
     ) {
@@ -104,25 +77,15 @@ export class ClaudeBot extends LlmsBase {
       await this.onChat(ctx, this.modelsEnum.CLAUDE_3_OPUS, true, false)
       return
     }
-    if (ctx.hasCommand([
-      this.commandsEnum.CLAUDE,
-      this.commandsEnum.OPUS,
-      this.commandsEnum.O,
-      this.commandsEnum.C]) ||
-      (hasCommandPrefix(ctx.message?.text ?? '', this.opusPrefix) !== '')
-    ) {
-      this.updateSessionModel(ctx, this.modelsEnum.CLAUDE_3_OPUS)
-      await this.onChat(ctx, this.modelsEnum.CLAUDE_3_OPUS, true, false)
+
+    const model = this.getModelFromContext(ctx)
+    if (!model) {
+      this.logger.warn(`### unsupported model for command ${ctx.message?.text}`)
       return
     }
-    if (ctx.hasCommand([this.commandsEnum.CLAUDES, this.commandsEnum.SONNET, this.commandsEnum.S])) {
-      this.updateSessionModel(ctx, this.modelsEnum.CLAUDE_35_SONNET)
-      await this.onChat(ctx, this.modelsEnum.CLAUDE_35_SONNET, true, false)
-      return
-    }
-    if (ctx.hasCommand([this.commandsEnum.HAIKU, this.commandsEnum.H])) {
-      this.updateSessionModel(ctx, this.modelsEnum.CLAUDE_3_HAIKU)
-      await this.onChat(ctx, this.modelsEnum.CLAUDE_3_HAIKU, false, false)
-    }
+    this.updateSessionModel(ctx, model.version)
+
+    const usesTools = ctx.hasCommand([this.commandsEnum.CTOOL, this.commandsEnum.STOOL])
+    await this.onChat(ctx, model.version, usesTools ? false : this.getStreamOption(model.version), usesTools)
   }
 }

@@ -62,14 +62,15 @@ export default {
       }
     },
     chatGpt: {
-      chatCompletionContext:
-        'You are an AI Bot powered by Harmony. Your strengths are ai api aggregation for chat, image, and voice interactions. Leveraging a suite of sophisticated subagents, you have the capability to perform tasks such as internet browsing and accessing various services. Your responses should be adaptable to the conversation while maintaining brevity, ideally not exceeding 100 words.',
+      chatCompletionContext: 'Reply ideally not exceeding 100 words',
+      //  'You are an AI Bot powered by Harmony. Your strengths are ai api aggregation for chat, image, and voice interactions. Leveraging a suite of sophisticated subagents, you have the capability to perform tasks such as internet browsing and accessing various services. Your responses should be adaptable to the conversation while maintaining brevity, ideally not exceeding 100 words.',
       // 'You are an AI Bot powered  dby Harmony. Your strengths are ai api aggregation for chat, image, and voice interactions, and more. You have subagents that helps you with task like browsing the internet, and other services. Respond flexibly, but try to stay within 100 words in all of your responses.',
       webCrawlerContext: 'You will receive a web crawling text. Please get keys concepts, but try to stay within 4000 words in your response.',
-      visionCompletionContext: `You are a concise AI Bot powered by Harmony, capable of providing complete responses within a 100-word limit.
-        For each additional image, extend your response by 30 words. Your responses should be informative and comprehensive, 
-        wrapping up all details without leaving them hanging. Use your flexibility to adapt to any topic, and deliver engaging and fulfilling 
-        conversations in a succinct manner.`,
+      visionCompletionContext: 'Response within a 100-word limit',
+      // `You are a concise AI Bot powered by Harmony, capable of providing complete responses within a 100-word limit.
+      //   For each additional image, extend your response by 30 words. Your responses should be informative and comprehensive,
+      //   wrapping up all details without leaving them hanging. Use your flexibility to adapt to any topic, and deliver engaging and fulfilling
+      //   conversations in a succinct manner.`,
       maxTokens: parseInt(process.env.OPENAI_MAX_TOKENS ?? '800'), // telegram messages has a char limit
       wordLimit: 30,
       wordCountBetween: 10,
@@ -105,6 +106,7 @@ export default {
   },
   voiceMemo: {
     isEnabled: Boolean(parseInt(process.env.VOICE_MEMO_ENABLED ?? '1')),
+    isVoiceForwardingEnabled: Boolean(parseInt(process.env.VOICE_MEMO_FORWARDING_ENABLED ?? '0')),
     telegramApiId: parseInt(process.env.TELEGRAM_API_ID ?? ''),
     telegramApiHash: process.env.TELEGRAM_API_HASH ?? '',
     speechmaticsApiKey: process.env.SPEECHMATICS_API_KEY ?? '',

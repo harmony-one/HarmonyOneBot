@@ -21,7 +21,7 @@ import {
   type OnMessageContext, type PayableBot, type PayableBotConfig,
   RequestState, type UtilityBot
 } from './modules/types'
-import { mainMenu } from './pages'
+import { groupsMainMenu, mainMenu, privateChatMainMenu } from './pages'
 import { TranslateBot } from './modules/translate/TranslateBot'
 import { VoiceMemo } from './modules/voice-memo'
 // import { QRCodeBot } from './modules/qrcode/QRCodeBot'
@@ -55,9 +55,10 @@ import { VoiceToTextBot } from './modules/voice-to-text'
 import { now } from './utils/perf'
 import { VoiceToVoiceGPTBot } from './modules/voice-to-voice-gpt'
 // import { VoiceCommand } from './modules/voice-command'
-import { createInitialSessionData } from './helpers'
+import { createInitialSessionData, addQuotePrefix, markdownToTelegramHtml } from './helpers'
 import { LlamaAgent } from './modules/subagents'
 import { llmModelManager } from './modules/llms/utils/llmModelsManager'
+import { HmnyBot } from './modules/hmny'
 
 Events.EventEmitter.defaultMaxListeners = 30
 
@@ -184,7 +185,10 @@ bot.use(async (ctx: BotContext, next: NextFunction): Promise<void> => {
 
 bot.use(
   session({
-    initial: createInitialSessionData,
+    initial: () => {
+      logger.info('Creating new session')
+      return createInitialSessionData()
+    },
     storage: enhanceStorage<BotSessionData>({
       storage: new MemorySessionStorage<Enhance<BotSessionData>>(),
       millisecondsToLive: config.sessionTimeout * 60 * 60 * 1000 // 48 hours
@@ -193,6 +197,8 @@ bot.use(
 )
 bot.use(autoChatAction())
 bot.use(mainMenu)
+bot.use(privateChatMainMenu)
+bot.use(groupsMainMenu)
 
 const voiceMemo = new VoiceMemo()
 // const qrCodeBot = new QRCodeBot()
@@ -212,7 +218,7 @@ const voiceTranslateBot = new VoiceTranslateBot(payments)
 const textToSpeechBot = new TextToSpeechBot(payments)
 const voiceToTextBot = new VoiceToTextBot(payments)
 const voiceToVoiceGPTBot = new VoiceToVoiceGPTBot(payments)
-
+const hmnyBot = new HmnyBot()
 // const voiceCommand = new VoiceCommand(openAiBot)
 
 bot.on('message:new_chat_members:me', async (ctx) => {
@@ -324,6 +330,7 @@ const PayableBots: Record<string, PayableBotConfig> = {
   // voiceCommand: { bot: voiceCommand },
   // qrCodeBot: { bot: qrCodeBot },
   // sdImagesBot: { bot: sdImagesBot },
+  hmny: { bot: hmnyBot },
   voiceTranslate: { bot: voiceTranslateBot },
   voiceMemo: { bot: voiceMemo },
   translateBot: { bot: translateBot },
@@ -356,8 +363,14 @@ const executeOrRefund = async (ctx: OnMessageContext, price: number, bot: Payabl
 
 const onMessage = async (ctx: OnMessageContext): Promise<void> => {
   try {
-    // bot doesn't handle forwarded messages
-    if (!ctx.message.forward_origin) {
+    const { voice, audio } = ctx.update.message
+    const isVoiceForwardingEnabled = ctx.session.voiceMemo.isVoiceForwardingEnabled ||
+      ctx.session.voiceMemo.isOneTimeForwardingVoiceEnabled
+    // bot doesn't handle forwarded messages unless is audio/voice message and is isVoiceForwardingEnabled is true
+    if (!ctx.message.forward_origin ||
+      (isVoiceForwardingEnabled &&
+        ctx.message.forward_origin &&
+        (!!voice || !!audio))) {
       await assignFreeCredits(ctx)
 
       if (llamaAgent.isSupportedEvent(ctx)) {
@@ -460,16 +473,24 @@ bot.command(['start', 'help', 'menu'], async (ctx) => {
   const { totalCreditsAmount } = await chatService.getUserCredits(accountId)
   const balance = addressBalance.plus(totalCreditsAmount)
   const balanceOne = payments.toONE(balance, false).toFixed(2)
+
+  const broadcastMessage = ctx.session.lastBroadcast
+    ? `\n<b></b>\n<b>Latest from the team</b>\n${await addQuotePrefix(ctx.session.lastBroadcast)}`
+    : ''
+
   const startText = commandsHelpText.start
+    .replaceAll('$BROADCAST', broadcastMessage)
     .replaceAll('$CREDITS', balanceOne + '')
     .replaceAll('$WALLET_ADDRESS', account.address)
 
-  await ctx.reply(startText, {
-    parse_mode: 'Markdown',
-    reply_markup: mainMenu,
+  const htmlStartText = await markdownToTelegramHtml(startText)
+
+  await ctx.reply(htmlStartText, {
+    parse_mode: 'HTML',
+    reply_markup: ctx.chat.type === 'private' ? privateChatMainMenu : groupsMainMenu,
     link_preview_options: { is_disabled: true },
     message_thread_id: ctx.message?.message_thread_id
-  })
+  }).catch(e => { console.log(e) })
 })
 
 const logErrorHandler = (ex: any): void => {
@@ -506,7 +527,6 @@ bot.command('support', async (ctx) => {
 
 bot.command('models', async (ctx) => {
   const models = llmModelManager.generateTelegramOutput()
-  console.log(models)
   writeCommandLog(ctx as OnMessageContext).catch(logErrorHandler)
   return await ctx.reply(models, {
     parse_mode: 'Markdown',

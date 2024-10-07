@@ -20,6 +20,7 @@ export interface ChatModel extends BaseModel {
   outputPrice: number
   maxContextTokens: number
   chargeType: ChargeType
+  stream: boolean
 }
 
 export interface ImageModel extends BaseModel {

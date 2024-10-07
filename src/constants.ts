@@ -1,5 +1,6 @@
 export enum MenuIds {
   MAIN_MENU = 'main-menu',
+  PRIVATE_MAIN_MENU = 'private-main-menu',
   IMAGE_MENU = 'image-menu-main',
   QR_BOT_MAIN = 'qrbot-menu-main',
   QR_BOT_CHANGE_OPTIONS = 'qrbot-menu-change-options',
@@ -16,6 +17,20 @@ export enum MenuIds {
   CHAT_GPT_MODEL = 'chat-gpt-model',
 }
 
+export const MENU_URL_BUTTONS = [
+  {
+    text: '🛠 Build on Harmony',
+    url: 'https://docs.harmony.one/home'
+  },
+  {
+    text: '🏠 Harmony',
+    url: 'https://harmony.one'
+  }
+]
+
+export const docsMenuLabel = 'A fast and open platform for decentralized applications of AI ∩ Crypto. To scale trust, create a radically fair economy, and push humanity into becoming deus.'
+
+const DOUBLE_NEW_LINE = '\n<b></b>\n'
 // const balance = await payments.getAddressBalance(userWalletAddress);
 //   const balanceOne = payments.toONE(balance, false).toFixed(2);
 //   const startText = commandsHelpText.start
@@ -23,23 +38,16 @@ export enum MenuIds {
 //     .replace("$WALLET_ADDRESS", userWalletAddress);
 
 // Your credits: $CREDITS ONE tokens. Send to $WALLET_ADDRESS for recharge.
+let startText = "Hello, I'm ONE Bot on Telegram from Harmony – for ALL your AI wishes 🧚‍♀️.$BROADCAST"
+startText += `${DOUBLE_NEW_LINE}/ask how to add harmony to metamask`
+startText += `${DOUBLE_NEW_LINE}/image glimpses of a herd of wild elephants crossing a savanna`
+startText += `${DOUBLE_NEW_LINE}/more Summarize voice messages, artistic QR code, ChatGPT 32K, DALL-E, Wallet Connect, send tokens, sign transactions...`
+startText += `${DOUBLE_NEW_LINE}/help Show this message. Join user group @onebotlove or read docs at harmony.one/bot.`
+startText += `${DOUBLE_NEW_LINE}Your credits in 1Bot Credits: $CREDITS`
+startText += `${DOUBLE_NEW_LINE}Send ONE to: \`$WALLET_ADDRESS\``
 
 export const commandsHelpText = {
-  start: `Hello, I'm ONE Bot on Telegram from Harmony – for ALL your AI wishes 🧚‍♀️.
-
-/ask act like elon musk, expand our [q4 roadmap](https://xn--qv9h.s.country/p/generating-roadmap-as-ceo-vs-cto) "telegram ai bot"
-/ask act like mark zuckerberg instead
-
-/image glimpses of a herd of wild elephants crossing a savanna
-
-/more Summarize voice messages, artistic QR code, ChatGPT 32K, DALL-E, Wallet Connect, send tokens, sign transactions...
-
-/help Show this message. Join user group @onebotlove or read docs at harmony.one/bot.
-  
-Your credits in 1Bot Credits: $CREDITS
-
-Send ONE to: \`$WALLET_ADDRESS\`
-`,
+  start: startText,
   // more: `/ explain like i am 5, what is a superconductor?
   // . explain like i have a phd, what is category theory?
 
@@ -276,6 +284,11 @@ export const BANNED = { text: 'underage,minor,child,loli,children,kid,young,girl
 export const PROMPTS = {
   qrNegativePrompt:
     '(KHFB, AuroraNegative),(Worst Quality, Low Quality:1.4), ugly, tiling, poorly drawn hands, poorly drawn feet, poorly drawn face, out of frame, extra limbs, disfigured, deformed, body out of frame, bad anatomy, watermark, signature, cut off, low contrast, underexposed, overexposed, bad art, beginner, amateur, distorted face, blurry, draft, grainy'
+}
+
+export const VOICE_MEMO_FORWARDING = {
+  enabled: 'Voice note forwarding is now active. The next voice note you send will be forwarded automatically. This setting will deactivate after forwarding one voice note.',
+  restricted: 'Sorry, voice note forwarding can only be enabled by admin users. If you need this feature, please contact an admin for assistance.'
 }
 
 export const ALIAS = {
