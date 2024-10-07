@@ -34,7 +34,6 @@ export default {
     : 48, // in hours
   luma: {
     isEnabled: true,
-    videoUrl: '',
     apiKey: process.env.LUMAAI_API_KEY
   },
   llms: {
