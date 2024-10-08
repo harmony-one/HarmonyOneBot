@@ -135,7 +135,6 @@ export class LLMModelsManager {
     for (const provider of providers) {
       output += `*${provider.toUpperCase()} models:*\n`
       this.getModelsByProvider(provider).forEach(model => {
-        console.log(model.name, model.provider, model.botName)
         if (model.commands.length > 0) {
           output += `${model.fullName}: [${model.version}](${model.apiSpec})\n`
           output += `Commands: _/${model.commands.join(' /')}_\n`
