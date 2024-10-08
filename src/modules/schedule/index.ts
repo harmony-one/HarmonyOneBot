@@ -3,7 +3,7 @@ import { type Bot } from 'grammy'
 import cron from 'node-cron'
 import config from '../../config'
 import { type BotContext, type OnMessageContext } from '../types'
-import { getDailyMetrics, MetricsDailyType } from './explorerApi'
+import { getActiveAccounts, getFees } from './explorerApi'
 import { getAddressBalance, getBotFee, getBotFeeStats } from './harmonyApi'
 import { getAvgStakes, getTVL } from './bridgeAPI'
 import { statsService } from '../../database/services'
@@ -99,8 +99,8 @@ export class BotSchedule {
       newUsers,
       weeklyRevenue
     ] = await Promise.all([
-      getDailyMetrics(MetricsDailyType.totalFee, 7),
-      getDailyMetrics(MetricsDailyType.walletsCount, 7),
+      getFees(7),
+      getActiveAccounts(7),
       getOneRate(),
 
       getTVL(),
@@ -118,7 +118,9 @@ export class BotSchedule {
 
     const networkFeesSum = networkFeesWeekly.reduce((sum, item) => sum + +item.value, 0)
     const walletsCountSum = walletsCountWeekly.reduce((sum, item) => sum + +item.value, 0)
-    const walletsCountAvg = Math.round(walletsCountSum / walletsCountWeekly.length)
+    const walletsCountAvg = walletsCountWeekly.length > 0
+      ? Math.round(walletsCountSum / walletsCountWeekly.length)
+      : 0
 
     const networkUsage =
       'Network weekly fees, wallets, price: ' +

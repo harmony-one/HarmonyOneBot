@@ -1,7 +1,7 @@
 import axios from 'axios'
 import config from '../../config'
-import { abbreviateNumber, getPercentDiff } from './utils'
 import pino from 'pino'
+import moment from 'moment/moment'
 
 const logger = pino({
   name: 'ExplorerAPI',
@@ -16,55 +16,38 @@ export interface MetricsDaily {
   value: string
 }
 
-const { explorerRestApiUrl: apiUrl, explorerRestApiKey: apiKey } = config.schedule
+const { explorerRestApiUrl: apiUrl } = config.schedule
 
-export enum MetricsDailyType {
-  walletsCount = 'wallets_count',
-  transactionsCount = 'transactions_count',
-  averageFee = 'average_fee',
-  blockSize = 'block_size',
-  totalFee = 'total_fee',
-}
-
-export const getDailyMetrics = async (type: MetricsDailyType, limit: number): Promise<MetricsDaily[]> => {
+export const getFees = async (
+  numberOfDays = 7
+): Promise<MetricsDaily[]> => {
   try {
-    const feesUrl = `${apiUrl}/v0/metrics?type=${type}&limit=${limit}`
-    const { data } = await axios.get<MetricsDaily[]>(feesUrl, { headers: { 'X-API-KEY': apiKey } })
-    return data
+    const dateFrom = moment().subtract(numberOfDays + 1, 'days').format('YYYY-MM-DD')
+    const dateTo = moment().subtract(1, 'days').format('YYYY-MM-DD')
+    const url = `${apiUrl}/api/v1/lines/txnsFee?from=${dateFrom}&to=${dateTo}`
+    const { data } = await axios.get<{
+      chart: MetricsDaily[]
+    }>(url)
+    return data.chart
   } catch (e) {
-    logger.error('ERROR', e)
+    logger.error('EXPLORER API ERROR', (e as any).message)
     return []
   }
 }
 
-export const getFeeStats = async (): Promise<{ change: string, value: string }> => {
-  const metrics = await getDailyMetrics(MetricsDailyType.totalFee, 14)
-
-  let feesWeek1 = 0; let feesWeek2 = 0
-
-  metrics.forEach((item, index) => {
-    const value = +item.value
-    if (index < 7) {
-      feesWeek1 += value
-    } else if (index < 14) {
-      feesWeek2 += value
-    }
-  })
-
-  // const walletsValue = wallets.reduce((acc, item) => {
-  //   acc += Number(item.value)
-  //   return acc
-  // }, 0)
-
-  const value = feesWeek1
-  const average = (feesWeek1 + feesWeek2) / 2
-  let change = getPercentDiff(average, value).toFixed(1)
-  if (+change > 0) {
-    change = `+${change}`
-  }
-
-  return {
-    value: abbreviateNumber(value),
-    change
+export const getActiveAccounts = async (
+  numberOfDays = 7
+): Promise<MetricsDaily[]> => {
+  try {
+    const dateFrom = moment().subtract(numberOfDays + 1, 'days').format('YYYY-MM-DD')
+    const dateTo = moment().subtract(1, 'days').format('YYYY-MM-DD')
+    const url = `${apiUrl}/api/v1/lines/activeAccounts?from=${dateFrom}&to=${dateTo}`
+    const { data } = await axios.get<{
+      chart: MetricsDaily[]
+    }>(url)
+    return data.chart
+  } catch (e) {
+    logger.error('EXPLORER API ERROR', (e as any).message)
+    return []
   }
 }
