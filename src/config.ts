@@ -139,8 +139,7 @@ export default {
   schedule: {
     isEnabled: Boolean(parseInt(process.env.SCHEDULE_IS_ENABLED ?? '0')),
     chatId: process.env.SCHEDULE_CHAT_ID ?? '',
-    explorerRestApiUrl: process.env.EXPLORER_REST_API_URL ?? '',
-    explorerRestApiKey: process.env.EXPLORER_REST_API_KEY ?? '',
+    explorerRestApiUrl: process.env.EXPLORER_REST_API_URL ?? 'https://stats.explorer.harmony.one',
     swapSubgraphApiUrl:
       process.env.SWAP_SUBGRAPH_API_URL ??
       'https://api.thegraph.com/subgraphs/name/nick8319/uniswap-v3-harmony' // 'https://api.thegraph.com/subgraphs/name/potvik/uniswap-v3-harmony'
