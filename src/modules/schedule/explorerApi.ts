@@ -1,7 +1,7 @@
 import axios from 'axios'
 import config from '../../config'
 import pino from 'pino'
-import moment from "moment/moment";
+import moment from 'moment/moment'
 
 const logger = pino({
   name: 'ExplorerAPI',
