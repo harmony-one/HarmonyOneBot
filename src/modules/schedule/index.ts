@@ -150,9 +150,10 @@ export class BotSchedule {
 
   public async generateReportEngagementByCommand (days: number): Promise<string> {
     const dbRows = await statsService.getUserEngagementByCommand(days)
-
     const cropIndex = dbRows.length >= 50 ? 50 : dbRows.length - 1
-
+    if (dbRows.length === 0) {
+      return ''
+    }
     let otherCommandCount = 0
     for (let i = cropIndex; i < dbRows.length; i++) {
       otherCommandCount += Number(dbRows[i].commandCount)
@@ -182,7 +183,9 @@ export class BotSchedule {
       engagementByCommand,
       onetimeUsers,
       newUsers,
-      totalUsers
+      totalUsers,
+      totalOnePaidUsers,
+      totalCreditPaidUsers
     ] = await Promise.all([
       this.getBotFeeReport(this.holderAddress),
       getBotFee(this.holderAddress, 7),
@@ -195,15 +198,18 @@ export class BotSchedule {
       this.generateReportEngagementByCommand(7),
       statsService.getOnetimeUsers(),
       statsService.getNewUsers(7),
-      statsService.getUniqueUsersCount()
+      statsService.getUniqueUsersCount(),
+      statsService.getTotalOnePaymentUsers(),
+      statsService.getGroupsPayingInCreditsNotOne()
     ])
 
-    console.log('FCO:::::: JAJAJAJAJAJAJ', await statsService.getTotalCreditPaymentUsers())
     const report = `\nBot fees: *${botFeesReport}*` +
       `\nWeekly bot fees collected: *${abbreviateNumber(botFeesWeekly)}*` +
       `\nDaily Active Users: *${abbreviateNumber(dau)}*` +
       `\nTotal fees users pay in ONE: *${abbreviateNumber(totalOne)}*` +
       `\nTotal fees users pay in free credits: *${abbreviateNumber(totalCredits)}*` +
+      `\nTotal users pay in ONE: *${totalOnePaidUsers}*` +
+      `\nTotal users pay in credits: *${totalCreditPaidUsers}*` +
       `\nWeekly active users: *${abbreviateNumber(weeklyUsers)}*` +
       `\nWeekly new users: *${abbreviateNumber(newUsers)}*` +
       `\nWeekly user engagement (any commands): *${abbreviateNumber(totalMessages)}*` +

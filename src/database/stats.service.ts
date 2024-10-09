@@ -247,13 +247,31 @@ export class StatsService {
     return await queryBuilder.execute()
   }
 
-  public async getTotalCreditPaymentUsers (): Promise<number> {
-    const queryBuilder = logRepository.createQueryBuilder('logs')
-      .select('distinct(logs.tgUserId)')
+  public async getTotalOnePaymentUsers (): Promise<number> {
+    const queryBuilder = await logRepository.createQueryBuilder('logs')
+      .select('COUNT(DISTINCT logs.tgUserId)', 'count')
       .where('logs.amountOne > 0')
-      .getCount()
+      .getRawOne()
 
-    return await queryBuilder
+    return queryBuilder ? parseInt(queryBuilder.count) : 0
+  }
+
+  public async getGroupsPayingInCreditsNotOne (): Promise<number> {
+    const result = await logRepository.createQueryBuilder('l1')
+      .select('COUNT(DISTINCT l1.tgUserId)', 'count_groups_paying_in_credits_not_one')
+      .where('l1.amountCredits > 0')
+      .andWhere(qb => {
+        const subQuery = qb.subQuery()
+          .select('1')
+          .from('logs', 'l2')
+          .where('l2.groupId = l1.groupId')
+          .andWhere('l2.amountOne > 0')
+          .getQuery()
+        return 'NOT EXISTS (' + subQuery + ')'
+      })
+      .getRawOne()
+
+    return result ? parseInt(result.count_groups_paying_in_credits_not_one) : 0
   }
 }
 
