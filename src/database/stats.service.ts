@@ -246,4 +246,17 @@ export class StatsService {
 
     return await queryBuilder.execute()
   }
+
+  public async getTotalCreditPaymentUsers (): Promise<number> {
+    const queryBuilder = logRepository.createQueryBuilder('logs')
+      .select('distinct(logs.tgUserId)')
+      .where('logs.amountOne > 0')
+      .getCount()
+
+    return await queryBuilder
+  }
 }
+
+// SELECT DISTINCT "tgUserId") as count_groups_paying_in_one
+// FROM logs
+// WHERE

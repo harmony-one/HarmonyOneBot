@@ -198,6 +198,7 @@ export class BotSchedule {
       statsService.getUniqueUsersCount()
     ])
 
+    console.log('FCO:::::: JAJAJAJAJAJAJ', await statsService.getTotalCreditPaymentUsers())
     const report = `\nBot fees: *${botFeesReport}*` +
       `\nWeekly bot fees collected: *${abbreviateNumber(botFeesWeekly)}*` +
       `\nDaily Active Users: *${abbreviateNumber(dau)}*` +
