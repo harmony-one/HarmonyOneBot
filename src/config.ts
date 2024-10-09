@@ -144,7 +144,7 @@ export default {
     explorerRestApiUrl: process.env.EXPLORER_REST_API_URL ?? 'https://stats.explorer.harmony.one',
     swapSubgraphApiUrl:
       process.env.SWAP_SUBGRAPH_API_URL ??
-      'https://api.thegraph.com/subgraphs/name/nick8319/uniswap-v3-harmony' // 'https://api.thegraph.com/subgraphs/name/potvik/uniswap-v3-harmony'
+      'https://gateway.thegraph.com/api/c568be64f7d1d4d4739d3881b5e09fc6/subgraphs/id/GVkp9F6TzzC5hY4g18Ukzb6gGcYDfQrpMpcj867jsenJ' // 'https://api.thegraph.com/subgraphs/name/potvik/uniswap-v3-harmony'
   },
   walletConnect: { projectId: process.env.WALLET_CONNECT_PROJECT_ID ?? '' },
   voiceTranslate: { isEnabled: Boolean(parseInt(process.env.BOT_VOICE_TRANSLATE_ENABLE ?? '0')) },
