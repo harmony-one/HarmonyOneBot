@@ -150,6 +150,10 @@ export const isValidUrl = (url: string): boolean => {
   return urlRegex.test(url)
 }
 
+export function isValidDate (date: Date): boolean {
+  return date instanceof Date && !isNaN(date.getTime())
+}
+
 // doesn't get all the special characters like !
 export const hasUserPasswordRegex = (prompt: string): { password: string, user: string } => {
   const pattern =
