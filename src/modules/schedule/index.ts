@@ -10,7 +10,7 @@ import { statsService } from '../../database/services'
 import { abbreviateNumber, lessThan100, precise } from './utils'
 import { getOneRate } from './exchangeApi'
 import { getTradingVolume } from './subgraphAPI'
-import { isValidDate } from '../llms/utils/helpers'
+import { isValidDate, parseDate } from '../llms/utils/helpers'
 
 enum SupportedCommands {
   BOT_STATS = 'botstats',
@@ -138,7 +138,7 @@ export class BotSchedule {
       'Bot weekly earns, active users, new users: ' +
       `*${abbreviateNumber(+weeklyRevenue)}* ONE` +
       `, ${lessThan100(abbreviateNumber(weeklyUsers))}` +
-      `, ${lessThan100(abbreviateNumber(newUsers))}`
+      `, ${lessThan100(abbreviateNumber(newUsers.periodUsers))}`
 
     const oneBotMetrics =
       'Bot total earns, users, messages: ' +
@@ -172,8 +172,10 @@ export class BotSchedule {
   }
 
   public async generateFullReport (date?: Date): Promise<string> {
+    let reportLabel = ''
+
     if (date && !isValidDate(date)) {
-      return 'Invalid date format'
+      return 'Invalid date format. Please use MM/DD/YYYY'
     }
     const [
       botFeesReport,
@@ -187,7 +189,8 @@ export class BotSchedule {
       newUsers,
       totalUsers,
       totalPaidUsers,
-      totalfreePaidUsers
+      totalfreePaidUsers,
+      totalOne
     ] = await Promise.all([
       this.getBotFeeReport(this.holderAddress),
       getBotFee(this.holderAddress, 7),
@@ -197,22 +200,33 @@ export class BotSchedule {
       statsService.getTotalMessages(7, true),
       this.generateReportEngagementByCommand(7),
       statsService.getOnetimeUsers(date),
-      statsService.getNewUsers(7, date),
+      statsService.getNewUsers(90, date),
       statsService.getUniqueUsersCount(date),
       statsService.getPaidUsers(date),
-      statsService.getFreeCreditUsers(date)
+      statsService.getFreeCreditUsers(date),
+      statsService.getTotalONE(date)
     ])
+
+    if (date) {
+      const dateParsed = parseDate(date)
+      reportLabel = `*${dateParsed?.monthName} - ${dateParsed?.year} stats*`
+    } else {
+      reportLabel = '*All-time stats*'
+    }
 
     const report = `\nBot fees: *${botFeesReport}*` +
       `\nWeekly bot fees collected: *${abbreviateNumber(botFeesWeekly)}*` +
       `\nDaily Active Users: *${abbreviateNumber(dau)}*` +
       `\nWeekly active users: *${abbreviateNumber(weeklyUsers)}*` +
-      `\nWeekly new users: *${abbreviateNumber(newUsers)}*` +
+      `\nWeekly new users: *${abbreviateNumber(newUsers.periodUsers)}*` +
       `\nWeekly user engagement (any commands): *${abbreviateNumber(totalMessages)}*` +
       `\nWeekly user engagement (commands supported by bot): *${abbreviateNumber(totalSupportedMessages)}*` +
-      `\n\nTotal users: *${totalUsers}*` +
+      `\n\n${reportLabel}` +
+      `\nTotal users: *${totalUsers}*` +
       `\nOne-time users: *${onetimeUsers}*` +
-      `\nTotal fees users pay in ONE: *${abbreviateNumber(totalPaidUsers.amountCredits + totalPaidUsers.amountOnes)}*` +
+      `${date ? '\nTotal new users: *' + newUsers.monthUsers + '*' : ''}` +
+      `\nTotal fees users pay in ONE: *${abbreviateNumber(totalOne)}*` +
+      `\nTotal fees users pay in credits: *${abbreviateNumber(totalPaidUsers.amountCredits + totalPaidUsers.amountOnes)}*` +
       `\nTotal fees users pay in free credits: *${abbreviateNumber(totalfreePaidUsers.amountFreeCredits + (totalPaidUsers.freeCreditsBurned))}*` +
       `\nTotal free credits reamining: *${abbreviateNumber(totalfreePaidUsers.amountFreeCreditsRemaining)}*` +
       `\nTotal users who paid in ONE: *${totalPaidUsers.users}*` +

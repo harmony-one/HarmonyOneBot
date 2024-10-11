@@ -4,6 +4,7 @@ import moment from 'moment-timezone'
 import { BotLog } from './entities/Log'
 import pino from 'pino'
 import { isValidDate } from '../modules/llms/utils/helpers'
+import config from '../config'
 
 const logger = pino({
   name: 'StatsService',
@@ -12,6 +13,8 @@ const logger = pino({
     options: { colorize: true }
   }
 })
+
+const FREE_CREDITS = config.credits.creditsAmount
 
 const statBotCommandRepository = AppDataSource.getRepository(StatBotCommand)
 const logRepository = AppDataSource.getRepository(BotLog)
@@ -46,9 +49,19 @@ export class StatsService {
     return await logRepository.save(paymentLog)
   }
 
-  async getTotalONE (): Promise<number> {
+  async getTotalONE (date?: Date): Promise<number> {
+    let whereClause = ''
+    const params: any[] = []
     try {
-      const rows = await logRepository.query('select sum("amountOne") from logs')
+      if (date && isValidDate(date)) {
+        whereClause = 'WHERE (EXTRACT(YEAR FROM "createdAt") = $1) AND (EXTRACT(MONTH FROM "createdAt") = $2)'
+        const year = date.getFullYear().toString()
+        const month = (date.getMonth() + 1).toString()
+        params.push(year, month)
+      }
+      const query = `select sum("amountOne") from logs ${whereClause}`
+
+      const rows = await logRepository.query(query, params)
       return rows.length ? +rows[0].sum : 0
     } catch (e) {
       logger.error(e)
@@ -112,15 +125,14 @@ export class StatsService {
   }
 
   // added date for Amanda's monthly report => /allstats MM/DD/YYYY
-  public async getNewUsers (daysPeriod = 0, date?: Date): Promise<number> {
+  public async getNewUsers (daysPeriod: number, date?: Date): Promise<{ periodUsers: number, monthUsers: number }> {
     try {
       const currentTime = moment()
       const dateStart = moment()
         .tz('America/Los_Angeles')
         .set({ hour: 0, minute: 0, second: 0 })
-        .subtract(daysPeriod, 'days')
-        .unix()
-      const dateEnd = currentTime.unix()
+      dateStart.subtract(daysPeriod, 'days')
+      const dateEnd = currentTime
       const query = logRepository
         .createQueryBuilder('logs')
         .select('distinct("first_insert_time")')
@@ -130,17 +142,37 @@ export class StatsService {
             .from(BotLog, 'logs')
             .groupBy('"tgUserId"'), 'first_inserts')
       if (date && isValidDate(date)) {
-        query.where('EXTRACT(YEAR FROM first_insert_time) = :year', { year: date.getFullYear() })
-          .andWhere('EXTRACT(MONTH FROM first_insert_time) = :month', { month: date.getMonth() + 1 })
-      } else if (daysPeriod > 0) {
-        query.where('first_insert_time BETWEEN  TO_TIMESTAMP(:start) AND  TO_TIMESTAMP(:end)', { start: dateStart, end: dateEnd })
+        const year = date.getFullYear()
+        const month = date.getMonth() + 1
+        const monthStart = moment(date).startOf('month')
+        const monthEnd = moment(date).endOf('month')
+        query
+          .where('(first_insert_time BETWEEN :periodStart AND :periodEnd)',
+            { periodStart: dateStart.toDate(), periodEnd: dateEnd.toDate() })
+          .orWhere('(EXTRACT(YEAR FROM first_insert_time) = :year AND EXTRACT(MONTH FROM first_insert_time) = :month)',
+            { year, month })
+
+        const result = await query.execute()
+
+        const periodUsers = result.filter((r: { first_insert_time: moment.MomentInput }) =>
+          moment(r.first_insert_time).isBetween(dateStart, dateEnd)
+        ).length
+
+        const monthUsers = result.filter((r: { first_insert_time: moment.MomentInput }) =>
+          moment(r.first_insert_time).isBetween(monthStart, monthEnd)
+        ).length
+
+        return { periodUsers, monthUsers }
+      } else {
+        query.where('first_insert_time BETWEEN :start AND :end',
+          { start: dateStart.toDate(), end: dateEnd.toDate() })
+
+        const result = await query.execute()
+        return { periodUsers: result.length, monthUsers: 0 }
       }
-      const result = await query.execute()
-      // console.log(dateStart, dateEnd, result.length)
-      return result.length
     } catch (e) {
       logger.error(e)
-      return 0
+      return { periodUsers: 0, monthUsers: 0 }
     }
   }
 
@@ -294,7 +326,7 @@ export class StatsService {
           FROM logs
           ${date ? 'WHERE "createdAt" <= $3' : ''}
           GROUP BY "tgUserId"
-          HAVING SUM("amountCredits") > 100
+          HAVING SUM("amountCredits") > ${FREE_CREDITS}
       ),
       spending AS (
           SELECT 
@@ -308,7 +340,7 @@ export class StatsService {
       )
       SELECT 
           COUNT(*) as user_count,
-          SUM(GREATEST(credits - 100, 0)) as credits_burned,
+          SUM(GREATEST(credits - ${FREE_CREDITS}, 0)) as credits_burned,
           SUM(credits) as total_credits
       FROM spending
     `
@@ -348,7 +380,7 @@ export class StatsService {
           FROM logs
           ${date ? 'WHERE "createdAt" <= $3' : ''}
           GROUP BY "tgUserId"
-          HAVING SUM("amountCredits") > 0 AND SUM("amountCredits") <= 100
+          HAVING SUM("amountCredits") > 0 AND SUM("amountCredits") <= ${FREE_CREDITS}
       ),
       spending AS (
           SELECT 
@@ -363,7 +395,7 @@ export class StatsService {
       SELECT 
           COUNT(*) as users_with_free_credits,
           SUM(credits) as total_free_credits_used,
-          100 * COUNT(*) - SUM(credits) as remaining_free_credits
+          ${FREE_CREDITS} * COUNT(*) - SUM(credits) as remaining_free_credits
       FROM spending
     `
     const result = await logRepository.query(query, params)

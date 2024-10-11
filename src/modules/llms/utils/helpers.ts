@@ -12,6 +12,7 @@ import { getChatModelPrice } from '../api/llmApi'
 import { childrenWords, sexWords } from '../../sd-images/words-blacklist'
 
 import config from '../../../config'
+import { type ParseDate } from './types'
 
 export const PRICE_ADJUSTMENT = config.openAi.chatGpt.priceAdjustment
 
@@ -152,6 +153,17 @@ export const isValidUrl = (url: string): boolean => {
 
 export function isValidDate (date: Date): boolean {
   return date instanceof Date && !isNaN(date.getTime())
+}
+
+export function parseDate (date: Date): ParseDate | null {
+  if (!isValidDate(date)) {
+    return null
+  }
+  const month = date.getMonth() + 1 // getMonth() returns 0-11
+  const year = date.getFullYear()
+  const monthName = new Intl.DateTimeFormat('en-US', { month: 'long' }).format(date)
+
+  return { month, year, monthName }
 }
 
 // doesn't get all the special characters like !
