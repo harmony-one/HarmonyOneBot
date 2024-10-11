@@ -111,7 +111,8 @@ export class StatsService {
     }
   }
 
-  public async getNewUsers (daysPeriod = 0): Promise<number> {
+  // added date for Amanda's monthly report => /allstats MM/DD/YYYY
+  public async getNewUsers (daysPeriod = 0, date?: Date): Promise<number> {
     try {
       const currentTime = moment()
       const dateStart = moment()
@@ -122,14 +123,17 @@ export class StatsService {
       const dateEnd = currentTime.unix()
       const query = logRepository
         .createQueryBuilder('logs')
-        .select('distinct("FirstInsertTime")')
+        .select('distinct("first_insert_time")')
         .from(subQuery =>
           subQuery
-            .select('"tgUserId", MIN("createdAt") AS "FirstInsertTime"')
+            .select('"tgUserId", MIN("createdAt") AS "first_insert_time"')
             .from(BotLog, 'logs')
             .groupBy('"tgUserId"'), 'first_inserts')
-      if (daysPeriod > 0) {
-        query.where(`"FirstInsertTime" BETWEEN TO_TIMESTAMP(${dateStart}) and TO_TIMESTAMP(${dateEnd})`)
+      if (date && isValidDate(date)) {
+        query.where('EXTRACT(YEAR FROM first_insert_time) = :year', { year: date.getFullYear() })
+          .andWhere('EXTRACT(MONTH FROM first_insert_time) = :month', { month: date.getMonth() + 1 })
+      } else if (daysPeriod > 0) {
+        query.where('first_insert_time BETWEEN  TO_TIMESTAMP(:start) AND  TO_TIMESTAMP(:end)', { start: dateStart, end: dateEnd })
       }
       const result = await query.execute()
       // console.log(dateStart, dateEnd, result.length)
@@ -269,75 +273,100 @@ export class StatsService {
   }
 
   // to do port to queryBuilder
+  // Paid User = A user who has spent more than 100 credits (first 100 are free).
   // added date for Amanda's monthly report => /allstats MM/DD/YYYY
   public async getPaidUsers (date?: Date): Promise<{ users: number, freeCreditsBurned: number, amountCredits: number, amountOnes: number }> {
-    let whereClause = ''
-    const params: any[] = []
+    let yearCondition = ''
+    let monthCondition = ''
+    let params: any[] = []
 
-    if (date && isValidDate(date)) {
-      whereClause = 'WHERE (EXTRACT(YEAR FROM "createdAt") = $1) AND (EXTRACT(MONTH FROM "createdAt") = $2)'
-      const year = date.getFullYear().toString()
-      const month = (date.getMonth() + 1).toString()
-      params.push(year, month)
+    if (date && date instanceof Date) {
+      const year = date.getFullYear()
+      const month = date.getMonth() + 1 // JavaScript months are 0-indexed
+      yearCondition = 'AND EXTRACT(YEAR FROM l."createdAt") = $1'
+      monthCondition = 'AND EXTRACT(MONTH FROM l."createdAt") = $2'
+      params = [year, month]
     }
 
     const query = `
+      WITH paid_users AS (
+          SELECT "tgUserId"
+          FROM logs
+          ${date ? 'WHERE "createdAt" <= $3' : ''}
+          GROUP BY "tgUserId"
+          HAVING SUM("amountCredits") > 100
+      ),
+      spending AS (
+          SELECT 
+              l."tgUserId",
+              SUM(l."amountCredits") as credits
+          FROM logs l
+          JOIN paid_users pu ON l."tgUserId" = pu."tgUserId"
+          WHERE 1=1 ${yearCondition} ${monthCondition}
+          GROUP BY l."tgUserId"
+          HAVING SUM(l."amountCredits") > 0
+      )
       SELECT 
-        COUNT(*) as user_count,
-        COUNT(CASE WHEN total_credits > 100 THEN 1 END) as free_credits_burned,
-        SUM(GREATEST(total_credits - 100, 0)) as total_paid_credits,
-        SUM(total_ones) as total_ones_spent
-      FROM (
-        SELECT 
-          "tgUserId",
-          SUM("amountCredits") as total_credits,
-          SUM("amountOne") as total_ones
-        FROM logs
-        ${whereClause}
-        GROUP BY "tgUserId"
-        HAVING SUM("amountCredits") > 100 OR SUM("amountOne") > 0
-      ) as subquery
+          COUNT(*) as user_count,
+          SUM(GREATEST(credits - 100, 0)) as credits_burned,
+          SUM(credits) as total_credits
+      FROM spending
     `
+    if (date) {
+      params.push(date.toISOString())
+    }
     const result = await logRepository.query(query, params)
     return {
-      users: result[0] ? parseInt(result[0].user_count) : 0,
-      freeCreditsBurned: (result[0] && !date) ? parseInt(result[0].free_credits_burned) : 0,
-      amountCredits: result[0] ? parseInt(result[0].total_paid_credits) : 0,
-      amountOnes: result[0] ? parseInt(result[0].total_ones_spent) : 0
+      users: parseInt(result[0]?.user_count) || 0,
+      freeCreditsBurned: !date ? parseFloat(result[0]?.total_credits) - parseFloat(result[0]?.credits_burned) || 0 : 0,
+      amountCredits: parseFloat(result[0]?.total_credits) || 0,
+      amountOnes: 0 // TODO: implement this
     }
   }
 
   // to do port to queryBuilder
   // added date for Amanda's monthly report => /allstats MM/DD/YYYY
   public async getFreeCreditUsers (date?: Date): Promise<{ users: number, amountFreeCredits: number, amountFreeCreditsRemaining: number }> {
-    let whereClause = ''
-    const params: any[] = []
+    let yearCondition = ''
+    let monthCondition = ''
+    let params: any[] = []
 
-    if (date && date instanceof Date && !isNaN(date.getTime())) {
-      whereClause = 'WHERE (EXTRACT(YEAR FROM "createdAt") = $1) AND (EXTRACT(MONTH FROM "createdAt") = $2)'
-      const year = date.getFullYear().toString()
-      const month = (date.getMonth() + 1).toString()
-      params.push(year, month)
+    if (date && date instanceof Date) {
+      const year = date.getFullYear()
+      const month = date.getMonth() + 1 // JavaScript months are 0-indexed
+      yearCondition = 'AND EXTRACT(YEAR FROM l."createdAt") = $1'
+      monthCondition = 'AND EXTRACT(MONTH FROM l."createdAt") = $2'
+      // get the date with the last day of the month
+      const lastDayOfMonth = new Date(year, month, 0).getDate()
+      const endOfMonthDate = new Date(year, month - 1, lastDayOfMonth, 23, 59, 59, 999)
+      params = [year, month, endOfMonthDate.toISOString()]
     }
 
     const query = `
+      WITH paid_users AS (
+          SELECT "tgUserId"
+          FROM logs
+          ${date ? 'WHERE "createdAt" <= $3' : ''}
+          GROUP BY "tgUserId"
+          HAVING SUM("amountCredits") > 0 AND SUM("amountCredits") <= 100
+      ),
+      spending AS (
+          SELECT 
+              l."tgUserId",
+              SUM(l."amountCredits") as credits
+          FROM logs l
+          JOIN paid_users pu ON l."tgUserId" = pu."tgUserId"
+          WHERE 1=1 ${yearCondition} ${monthCondition}
+          GROUP BY l."tgUserId"
+          HAVING SUM(l."amountCredits") > 0
+      )
       SELECT 
           COUNT(*) as users_with_free_credits,
-          SUM(total_credits) as total_free_credits_used,
-          100 * COUNT(*) - SUM(total_credits) as remaining_free_credits
-      FROM (
-          SELECT 
-              "tgUserId",
-              SUM("amountCredits") as total_credits
-          FROM logs
-          ${whereClause}
-          GROUP BY "tgUserId"
-          HAVING SUM("amountCredits") > 0 AND SUM("amountCredits") <= 100 AND SUM("amountOne") = 0
-      ) as subquery
+          SUM(credits) as total_free_credits_used,
+          100 * COUNT(*) - SUM(credits) as remaining_free_credits
+      FROM spending
     `
-
     const result = await logRepository.query(query, params)
-
     return {
       users: result[0] ? parseInt(result[0].users_with_free_credits) : 0,
       amountFreeCredits: result[0] ? parseInt(result[0].total_free_credits_used) : 0,

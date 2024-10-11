@@ -197,11 +197,12 @@ export class BotSchedule {
       statsService.getTotalMessages(7, true),
       this.generateReportEngagementByCommand(7),
       statsService.getOnetimeUsers(date),
-      statsService.getNewUsers(7),
+      statsService.getNewUsers(7, date),
       statsService.getUniqueUsersCount(date),
       statsService.getPaidUsers(date),
       statsService.getFreeCreditUsers(date)
     ])
+
     const report = `\nBot fees: *${botFeesReport}*` +
       `\nWeekly bot fees collected: *${abbreviateNumber(botFeesWeekly)}*` +
       `\nDaily Active Users: *${abbreviateNumber(dau)}*` +
@@ -212,7 +213,7 @@ export class BotSchedule {
       `\n\nTotal users: *${totalUsers}*` +
       `\nOne-time users: *${onetimeUsers}*` +
       `\nTotal fees users pay in ONE: *${abbreviateNumber(totalPaidUsers.amountCredits + totalPaidUsers.amountOnes)}*` +
-      `\nTotal fees users pay in free credits: *${abbreviateNumber(totalfreePaidUsers.amountFreeCredits + (totalPaidUsers.freeCreditsBurned * 100))}*` +
+      `\nTotal fees users pay in free credits: *${abbreviateNumber(totalfreePaidUsers.amountFreeCredits + (totalPaidUsers.freeCreditsBurned))}*` +
       `\nTotal free credits reamining: *${abbreviateNumber(totalfreePaidUsers.amountFreeCreditsRemaining)}*` +
       `\nTotal users who paid in ONE: *${totalPaidUsers.users}*` +
       `\nTotal users who paid in free credits: *${totalfreePaidUsers.users}*` +
