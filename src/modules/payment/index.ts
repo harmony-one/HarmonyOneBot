@@ -363,6 +363,7 @@ export class BotPayments {
     try {
       const accountId = this.getAccountId(ctx)
       let [command = ''] = text.split(' ')
+
       if (!command) {
         if (audio ?? voice) {
           command = '/voice-memo'

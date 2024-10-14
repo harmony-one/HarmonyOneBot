@@ -200,7 +200,7 @@ export class BotSchedule {
       statsService.getTotalMessages(7, true),
       this.generateReportEngagementByCommand(7),
       statsService.getOnetimeUsers(date),
-      statsService.getNewUsers(90, date),
+      statsService.getNewUsers(7, date),
       statsService.getUniqueUsersCount(date),
       statsService.getPaidUsers(date),
       statsService.getFreeCreditUsers(date),

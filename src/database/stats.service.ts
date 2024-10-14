@@ -5,6 +5,7 @@ import { BotLog } from './entities/Log'
 import pino from 'pino'
 import { isValidDate } from '../modules/llms/utils/helpers'
 import config from '../config'
+import { Brackets, type SelectQueryBuilder } from 'typeorm'
 
 const logger = pino({
   name: 'StatsService',
@@ -126,49 +127,55 @@ export class StatsService {
 
   // added date for Amanda's monthly report => /allstats MM/DD/YYYY
   public async getNewUsers (daysPeriod: number, date?: Date): Promise<{ periodUsers: number, monthUsers: number }> {
+    // const validCommands: string[] = ['/start', '/help', '/voice-memo', '/openai', '/ask']
     try {
       const currentTime = moment()
       const dateStart = moment()
         .tz('America/Los_Angeles')
-        .set({ hour: 0, minute: 0, second: 0 })
-      dateStart.subtract(daysPeriod, 'days')
+        .subtract(daysPeriod, 'days')
+        .startOf('day')
       const dateEnd = currentTime
-      const query = logRepository
+
+      const baseSubQuery = (subQuery: SelectQueryBuilder<BotLog>): SelectQueryBuilder<BotLog> =>
+        subQuery
+          .select('"tgUserId", MIN("createdAt") AS "first_insert_time"')
+          .from(BotLog, 'logs')
+          .where(new Brackets(qb => {
+            qb.where('logs."isPrivate" = true')
+              .orWhere(new Brackets(qb2 => {
+                qb2.where('logs."groupId" < 0')
+                  .andWhere('logs."isSupportedCommand" = true')
+              }))
+          }))
+          .groupBy('"tgUserId"')
+
+      const baseQuery = logRepository
         .createQueryBuilder('logs')
-        .select('distinct("first_insert_time")')
-        .from(subQuery =>
-          subQuery
-            .select('"tgUserId", MIN("createdAt") AS "first_insert_time"')
-            .from(BotLog, 'logs')
-            .groupBy('"tgUserId"'), 'first_inserts')
+        .select('COUNT(DISTINCT "first_insert_time")', 'count')
+        .from(baseSubQuery, 'first_inserts')
+
       if (date && isValidDate(date)) {
-        const year = date.getFullYear()
-        const month = date.getMonth() + 1
         const monthStart = moment(date).startOf('month')
         const monthEnd = moment(date).endOf('month')
-        query
-          .where('(first_insert_time BETWEEN :periodStart AND :periodEnd)',
-            { periodStart: dateStart.toDate(), periodEnd: dateEnd.toDate() })
-          .orWhere('(EXTRACT(YEAR FROM first_insert_time) = :year AND EXTRACT(MONTH FROM first_insert_time) = :month)',
-            { year, month })
-
-        const result = await query.execute()
-
-        const periodUsers = result.filter((r: { first_insert_time: moment.MomentInput }) =>
-          moment(r.first_insert_time).isBetween(dateStart, dateEnd)
-        ).length
-
-        const monthUsers = result.filter((r: { first_insert_time: moment.MomentInput }) =>
-          moment(r.first_insert_time).isBetween(monthStart, monthEnd)
-        ).length
-
+        const [periodUsers, monthUsers] = await Promise.all([
+          baseQuery
+            .where('first_insert_time BETWEEN :periodStart AND :periodEnd',
+              { periodStart: dateStart.toDate(), periodEnd: dateEnd.toDate() })
+            .getRawOne()
+            .then(result => parseInt(result.count, 10)),
+          baseQuery
+            .where('first_insert_time BETWEEN :monthStart AND :monthEnd',
+              { monthStart: monthStart.toDate(), monthEnd: monthEnd.toDate() })
+            .getRawOne()
+            .then(result => parseInt(result.count, 10))
+        ])
         return { periodUsers, monthUsers }
       } else {
-        query.where('first_insert_time BETWEEN :start AND :end',
-          { start: dateStart.toDate(), end: dateEnd.toDate() })
-
-        const result = await query.execute()
-        return { periodUsers: result.length, monthUsers: 0 }
+        const { count } = await baseQuery
+          .where('first_insert_time BETWEEN :start AND :end',
+            { start: dateStart.toDate(), end: dateEnd.toDate() })
+          .getRawOne()
+        return { periodUsers: parseInt(count, 10), monthUsers: 0 }
       }
     } catch (e) {
       logger.error(e)
@@ -199,6 +206,7 @@ export class StatsService {
       query.groupBy('"tgUserId"')
       const result = await query.getRawMany()
       const filter = result.filter(row => row.row_count === '1')
+      // console.log('FCO::::: ', filter)
       return filter.length
     } catch (e) {
       logger.error(e)
@@ -234,7 +242,7 @@ export class StatsService {
     }
   }
 
-  public async getUserEngagementByCommand (daysPeriod = 7): Promise<EngagementByCommand[]> {
+  public async getUserEngagementByCommand (daysPeriod = 7, date?: Date): Promise<EngagementByCommand[]> {
     try {
       const currentTime = moment()
       const dateStart = moment()
@@ -245,7 +253,8 @@ export class StatsService {
       const dateEnd = currentTime.unix()
       const rows = await logRepository.createQueryBuilder('logs')
         .select('logs.command, count(logs.command) as "commandCount", SUM(logs.amountOne) as "oneAmount"')
-        .where(`logs.createdAt BETWEEN TO_TIMESTAMP(${dateStart}) and TO_TIMESTAMP(${dateEnd})`)
+        .where('logs.isSupportedCommand=true')
+        .andWhere(`logs.createdAt BETWEEN TO_TIMESTAMP(${dateStart}) and TO_TIMESTAMP(${dateEnd})`)
         .groupBy('logs.command')
         .orderBy('"commandCount"', 'DESC').execute()
       return rows
