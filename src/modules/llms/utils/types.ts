@@ -34,3 +34,9 @@ export interface LLMData {
   chatModels: Record<string, ChatModel>
   imageModels: Record<string, ImageModel>
 }
+
+export interface ParseDate {
+  month: number
+  year: number
+  monthName: string
+}

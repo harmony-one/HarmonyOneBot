@@ -10,6 +10,7 @@ import { statsService } from '../../database/services'
 import { abbreviateNumber, lessThan100, precise } from './utils'
 import { getOneRate } from './exchangeApi'
 import { getTradingVolume } from './subgraphAPI'
+import { isValidDate, parseDate } from '../llms/utils/helpers'
 
 enum SupportedCommands {
   BOT_STATS = 'botstats',
@@ -137,7 +138,7 @@ export class BotSchedule {
       'Bot weekly earns, active users, new users: ' +
       `*${abbreviateNumber(+weeklyRevenue)}* ONE` +
       `, ${lessThan100(abbreviateNumber(weeklyUsers))}` +
-      `, ${lessThan100(abbreviateNumber(newUsers))}`
+      `, ${lessThan100(abbreviateNumber(newUsers.periodUsers))}`
 
     const oneBotMetrics =
       'Bot total earns, users, messages: ' +
@@ -148,11 +149,12 @@ export class BotSchedule {
     return `${networkUsage}\n${assetsUpdate}\n${oneBotWeeklyMetrics}\n${oneBotMetrics}`
   }
 
-  public async generateReportEngagementByCommand (days: number): Promise<string> {
-    const dbRows = await statsService.getUserEngagementByCommand(days)
-
+  public async generateReportEngagementByCommand (days: number, date?: Date): Promise<string> {
+    const dbRows = await statsService.getUserEngagementByCommand(days, date)
     const cropIndex = dbRows.length >= 50 ? 50 : dbRows.length - 1
-
+    if (dbRows.length === 0) {
+      return ''
+    }
     let otherCommandCount = 0
     for (let i = cropIndex; i < dbRows.length; i++) {
       otherCommandCount += Number(dbRows[i].commandCount)
@@ -169,46 +171,66 @@ export class BotSchedule {
     return '```\n' + rows.join('\n') + '\n```'
   }
 
-  public async generateFullReport (): Promise<string> {
+  public async generateFullReport (date?: Date): Promise<string> {
+    let reportLabel = ''
+
+    if (date && !isValidDate(date)) {
+      return 'Invalid date format. Please use MM/DD/YYYY'
+    }
     const [
       botFeesReport,
       botFeesWeekly,
       dau,
-      totalOne,
-      totalCredits,
       weeklyUsers,
       totalMessages,
       totalSupportedMessages,
       engagementByCommand,
       onetimeUsers,
       newUsers,
-      totalUsers
+      totalUsers,
+      totalPaidUsers,
+      totalfreePaidUsers,
+      totalOne
     ] = await Promise.all([
       this.getBotFeeReport(this.holderAddress),
       getBotFee(this.holderAddress, 7),
       statsService.getActiveUsers(0),
-      statsService.getTotalONE(),
-      statsService.getTotalFreeCredits(),
       statsService.getActiveUsers(7),
       statsService.getTotalMessages(7),
       statsService.getTotalMessages(7, true),
-      this.generateReportEngagementByCommand(7),
-      statsService.getOnetimeUsers(),
-      statsService.getNewUsers(7),
-      statsService.getUniqueUsersCount()
+      this.generateReportEngagementByCommand(7, date),
+      statsService.getOnetimeUsers(date),
+      statsService.getNewUsers(7, date),
+      statsService.getUniqueUsersCount(date),
+      statsService.getPaidUsers(date),
+      statsService.getFreeCreditUsers(date),
+      statsService.getTotalONE(date)
     ])
+
+    if (date) {
+      const dateParsed = parseDate(date)
+      reportLabel = `*${dateParsed?.monthName} - ${dateParsed?.year} stats*`
+    } else {
+      reportLabel = '*All-time stats*'
+    }
 
     const report = `\nBot fees: *${botFeesReport}*` +
       `\nWeekly bot fees collected: *${abbreviateNumber(botFeesWeekly)}*` +
       `\nDaily Active Users: *${abbreviateNumber(dau)}*` +
-      `\nTotal fees users pay in ONE: *${abbreviateNumber(totalOne)}*` +
-      `\nTotal fees users pay in free credits: *${abbreviateNumber(totalCredits)}*` +
       `\nWeekly active users: *${abbreviateNumber(weeklyUsers)}*` +
-      `\nWeekly new users: *${abbreviateNumber(newUsers)}*` +
+      `\nWeekly new users: *${abbreviateNumber(newUsers.periodUsers)}*` +
       `\nWeekly user engagement (any commands): *${abbreviateNumber(totalMessages)}*` +
       `\nWeekly user engagement (commands supported by bot): *${abbreviateNumber(totalSupportedMessages)}*` +
+      `\n\n${reportLabel}` +
       `\nTotal users: *${totalUsers}*` +
       `\nOne-time users: *${onetimeUsers}*` +
+      `${date ? '\nTotal new users: *' + newUsers.monthUsers + '*' : ''}` +
+      `\nTotal fees users pay in ONE: *${abbreviateNumber(totalOne)}*` +
+      `\nTotal fees users pay in credits: *${abbreviateNumber(totalPaidUsers.amountCredits + totalPaidUsers.amountOnes)}*` +
+      `\nTotal fees users pay in free credits: *${abbreviateNumber(totalfreePaidUsers.amountFreeCredits + (totalPaidUsers.freeCreditsBurned))}*` +
+      `${!date ? '\nTotal free credits reamining: *' + abbreviateNumber(totalfreePaidUsers.amountFreeCreditsRemaining) + '*' : ''}` +
+      `\nTotal users who paid in credits: *${totalPaidUsers.users}*` +
+      `\nTotal users who paid in free credits: *${totalfreePaidUsers.users}*` +
       `\n\n${engagementByCommand}`
     return report
   }
@@ -233,7 +255,12 @@ export class BotSchedule {
     }
 
     if (ctx.hasCommand(SupportedCommands.ALL_STATS)) {
-      const report = await this.generateFullReport()
+      let date
+      const input = ctx.match
+      if (input) {
+        date = new Date(input)
+      }
+      const report = await this.generateFullReport(date)
       await ctx.reply(report, {
         parse_mode: 'Markdown',
         message_thread_id: ctx.message?.message_thread_id

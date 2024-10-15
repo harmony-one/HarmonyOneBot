@@ -154,7 +154,7 @@ export default {
     maxChatsWhitelist: (process.env.CREDITS_CHATS_WHITELIST ?? '')
       .split(',')
       .map((item) => item.toString().toLowerCase()),
-    creditsAmount: '100'
+    creditsAmount: '100' // todo: handle multiple credits numbers (+ dateSince), considering future number change.
   },
   betteruptime: { botHeartBitId: process.env.BOT_HEARTBIT_ID ?? '' },
   telegramPayments: { token: process.env.TELEGRAM_PAYMENTS_TOKEN ?? '' },
