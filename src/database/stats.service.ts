@@ -86,14 +86,14 @@ export class StatsService {
     const params: any[] = []
     try {
       if (date && isValidDate(date)) {
-        whereClause = 'WHERE (EXTRACT(YEAR FROM "createdAt") = $1) AND (EXTRACT(MONTH FROM "createdAt") = $2)'
+        whereClause = ' AND (EXTRACT(YEAR FROM "createdAt") = $1) AND (EXTRACT(MONTH FROM "createdAt") = $2)'
         const year = date.getFullYear().toString()
         const month = (date.getMonth() + 1).toString()
         params.push(year, month)
       }
 
       const query = `
-        select count(distinct("tgUserId")) from logs
+        select count(distinct("tgUserId")) from logs WHERE "isSupportedCommand" = true
         ${whereClause}
       `
       const result = await logRepository.query(query, params)
@@ -117,6 +117,7 @@ export class StatsService {
         .createQueryBuilder('logs')
         .select('count(distinct(logs."tgUserId"))')
         .where(`logs.createdAt BETWEEN TO_TIMESTAMP(${dateStart}) and TO_TIMESTAMP(${dateEnd})`)
+        .andWhere('logs."isSupportedCommand" = true')
         .execute()
       return rows.length ? +rows[0].count : 0
     } catch (e) {
@@ -197,6 +198,7 @@ export class StatsService {
         .createQueryBuilder('logs')
         .select('count("tgUserId") AS row_count, "tgUserId", MAX("createdAt") AS max_created')
         .where(`"createdAt" < TO_TIMESTAMP(${bufferDate})`)
+        .andWhere('logs.isSupportedCommand=true')
       if (date && isValidDate(date)) {
         const year = date.getFullYear().toString()
         const month = (date.getMonth() + 1).toString()
@@ -206,7 +208,7 @@ export class StatsService {
       query.groupBy('"tgUserId"')
       const result = await query.getRawMany()
       const filter = result.filter(row => row.row_count === '1')
-      // console.log('FCO::::: ', filter)
+
       return filter.length
     } catch (e) {
       logger.error(e)
@@ -243,14 +245,21 @@ export class StatsService {
   }
 
   public async getUserEngagementByCommand (daysPeriod = 7, date?: Date): Promise<EngagementByCommand[]> {
+    let dateEnd, dateStart
+
     try {
-      const currentTime = moment()
-      const dateStart = moment()
-        .tz('America/Los_Angeles')
-        .set({ hour: 0, minute: 0, second: 0 })
-        .subtract(daysPeriod, 'days')
-        .unix()
-      const dateEnd = currentTime.unix()
+      if (date) {
+        dateStart = moment(date).startOf('month').unix()
+        dateEnd = moment(date).endOf('month').unix()
+      } else {
+        const currentTime = moment()
+        dateStart = moment()
+          .tz('America/Los_Angeles')
+          .set({ hour: 0, minute: 0, second: 0 })
+          .subtract(daysPeriod, 'days')
+          .unix()
+        dateEnd = currentTime.unix()
+      }
       const rows = await logRepository.createQueryBuilder('logs')
         .select('logs.command, count(logs.command) as "commandCount", SUM(logs.amountOne) as "oneAmount"')
         .where('logs.isSupportedCommand=true')
@@ -404,7 +413,7 @@ export class StatsService {
       SELECT 
           COUNT(*) as users_with_free_credits,
           SUM(credits) as total_free_credits_used,
-          ${FREE_CREDITS} * COUNT(*) - SUM(credits) as remaining_free_credits
+          (${FREE_CREDITS} * COUNT(*)) - SUM(credits) as remaining_free_credits
       FROM spending
     `
     const result = await logRepository.query(query, params)

@@ -149,8 +149,8 @@ export class BotSchedule {
     return `${networkUsage}\n${assetsUpdate}\n${oneBotWeeklyMetrics}\n${oneBotMetrics}`
   }
 
-  public async generateReportEngagementByCommand (days: number): Promise<string> {
-    const dbRows = await statsService.getUserEngagementByCommand(days)
+  public async generateReportEngagementByCommand (days: number, date?: Date): Promise<string> {
+    const dbRows = await statsService.getUserEngagementByCommand(days, date)
     const cropIndex = dbRows.length >= 50 ? 50 : dbRows.length - 1
     if (dbRows.length === 0) {
       return ''
@@ -198,7 +198,7 @@ export class BotSchedule {
       statsService.getActiveUsers(7),
       statsService.getTotalMessages(7),
       statsService.getTotalMessages(7, true),
-      this.generateReportEngagementByCommand(7),
+      this.generateReportEngagementByCommand(7, date),
       statsService.getOnetimeUsers(date),
       statsService.getNewUsers(7, date),
       statsService.getUniqueUsersCount(date),
@@ -228,8 +228,8 @@ export class BotSchedule {
       `\nTotal fees users pay in ONE: *${abbreviateNumber(totalOne)}*` +
       `\nTotal fees users pay in credits: *${abbreviateNumber(totalPaidUsers.amountCredits + totalPaidUsers.amountOnes)}*` +
       `\nTotal fees users pay in free credits: *${abbreviateNumber(totalfreePaidUsers.amountFreeCredits + (totalPaidUsers.freeCreditsBurned))}*` +
-      `\nTotal free credits reamining: *${abbreviateNumber(totalfreePaidUsers.amountFreeCreditsRemaining)}*` +
-      `\nTotal users who paid in ONE: *${totalPaidUsers.users}*` +
+      `${!date ? '\nTotal free credits reamining: *' + abbreviateNumber(totalfreePaidUsers.amountFreeCreditsRemaining) + '*' : ''}` +
+      `\nTotal users who paid in credits: *${totalPaidUsers.users}*` +
       `\nTotal users who paid in free credits: *${totalfreePaidUsers.users}*` +
       `\n\n${engagementByCommand}`
     return report
