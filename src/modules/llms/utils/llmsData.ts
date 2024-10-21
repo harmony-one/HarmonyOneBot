@@ -1,22 +1,8 @@
+import config from '../../../config'
 import { type LLMData } from './types'
 
 export const llmData: LLMData = {
   chatModels: {
-    'gemini-10': {
-      provider: 'vertex',
-      name: 'gemini-10',
-      botName: 'VertexBot',
-      fullName: 'gemini-1.0-pro',
-      version: 'gemini-1.0-pro',
-      commands: ['gemini', 'g'],
-      prefix: ['g. '],
-      apiSpec: 'https://deepmind.google/technologies/gemini/pro/',
-      inputPrice: 0.000125,
-      outputPrice: 0.000375,
-      maxContextTokens: 30720,
-      chargeType: 'CHAR',
-      stream: true
-    },
     'gemini-15': {
       provider: 'vertex',
       name: 'gemini-15',
@@ -31,19 +17,19 @@ export const llmData: LLMData = {
       chargeType: 'CHAR',
       stream: true
     },
-    'claude-3-opus': {
-      provider: 'claude',
-      name: 'claude-3-opus',
-      fullName: 'Claude Opus',
-      botName: 'ClaudeBot',
-      version: 'claude-3-opus-20240229',
-      commands: ['claude', 'opus', 'c', 'o', 'ctool'],
-      prefix: ['c. '],
-      apiSpec: 'https://www.anthropic.com/news/claude-3-family',
-      inputPrice: 0.015,
-      outputPrice: 0.075,
-      maxContextTokens: 4096,
-      chargeType: 'TOKEN',
+    'gemini-10': {
+      provider: 'vertex',
+      name: 'gemini-10',
+      botName: 'VertexBot',
+      fullName: 'gemini-1.0-pro',
+      version: 'gemini-1.0-pro',
+      commands: ['gemini', 'g'],
+      prefix: ['g. '],
+      apiSpec: 'https://deepmind.google/technologies/gemini/pro/',
+      inputPrice: 0.000125,
+      outputPrice: 0.000375,
+      maxContextTokens: 30720,
+      chargeType: 'CHAR',
       stream: true
     },
     'claude-35-sonnet': {
@@ -61,6 +47,21 @@ export const llmData: LLMData = {
       chargeType: 'TOKEN',
       stream: true
     },
+    'claude-3-opus': {
+      provider: 'claude',
+      name: 'claude-3-opus',
+      fullName: 'Claude Opus',
+      botName: 'ClaudeBot',
+      version: 'claude-3-opus-20240229',
+      commands: ['claude', 'opus', 'c', 'o', 'ctool'],
+      prefix: ['c. '],
+      apiSpec: 'https://www.anthropic.com/news/claude-3-family',
+      inputPrice: 0.015,
+      outputPrice: 0.075,
+      maxContextTokens: 4096,
+      chargeType: 'TOKEN',
+      stream: true
+    },
     'claude-3-haiku': {
       provider: 'claude',
       name: 'claude-3-haiku',
@@ -73,6 +74,21 @@ export const llmData: LLMData = {
       inputPrice: 0.00025,
       outputPrice: 0.00125,
       maxContextTokens: 4096,
+      chargeType: 'TOKEN',
+      stream: true
+    },
+    'gpt-4o': {
+      provider: 'openai',
+      name: 'gpt-4o',
+      fullName: 'GPT-4o',
+      botName: 'OpenAIBot',
+      version: 'gpt-4o',
+      commands: ['gpto', 'ask', 'chat', 'gpt', 'a'],
+      prefix: ['a. ', '. '],
+      apiSpec: 'https://platform.openai.com/docs/models/gpt-4o',
+      inputPrice: 0.005,
+      outputPrice: 0.0015,
+      maxContextTokens: 128000,
       chargeType: 'TOKEN',
       stream: true
     },
@@ -116,21 +132,6 @@ export const llmData: LLMData = {
       inputPrice: 0.03,
       outputPrice: 0.06,
       maxContextTokens: 16000,
-      chargeType: 'TOKEN',
-      stream: true
-    },
-    'gpt-4o': {
-      provider: 'openai',
-      name: 'gpt-4o',
-      fullName: 'GPT-4o',
-      botName: 'OpenAIBot',
-      version: 'gpt-4o',
-      commands: ['gpto', 'ask', 'chat', 'gpt', 'a'],
-      prefix: ['a. ', '. '],
-      apiSpec: 'https://platform.openai.com/docs/models/gpt-4o',
-      inputPrice: 0.005,
-      outputPrice: 0.0015,
-      maxContextTokens: 128000,
       chargeType: 'TOKEN',
       stream: true
     },
@@ -178,6 +179,27 @@ export const llmData: LLMData = {
         '1024x1024': 0.8,
         '1024x1792': 0.12,
         '1792x1024': 0.12
+      }
+    }
+  },
+  providerParameters: {
+    openai: {
+      defaultParameters: {
+        temperature: config.openAi.dalle.completions.temperature,
+        max_completion_tokens: +config.openAi.chatGpt.maxTokens
+      },
+      modelOverrides: { o1: { temperature: 1 } } // uses model name, not model version
+    },
+    claude: {
+      defaultParameters: {
+        system: config.openAi.chatGpt.chatCompletionContext,
+        max_tokens: +config.openAi.chatGpt.maxTokens
+      }
+    },
+    vertex: {
+      defaultParameters: {
+        system: config.openAi.chatGpt.chatCompletionContext,
+        max_tokens: +config.openAi.chatGpt.maxTokens
       }
     }
   }

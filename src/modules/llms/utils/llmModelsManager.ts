@@ -3,7 +3,8 @@ import {
   type Provider,
   type LLMData,
   type LLMModel,
-  type ImageModel
+  type ImageModel,
+  type ModelParameters
 } from './types'
 
 export class LLMModelsManager {
@@ -111,6 +112,20 @@ export class LLMModelsManager {
         throw new Error(`Invalid command: ${String(prop)}`)
       }
     }) as any
+  }
+
+  getModelParameters (modelVersion: string): ModelParameters {
+    const model = this.getModel(modelVersion)
+    if (!model) {
+      throw new Error(`Model ${modelVersion} not found`)
+    }
+    const providerParams = llmData.providerParameters[model.provider]
+    const modelOverrides = providerParams.modelOverrides?.[model.name] ?? {}
+
+    return {
+      ...providerParams.defaultParameters,
+      ...modelOverrides
+    }
   }
 
   isValidModel (model: string): model is (typeof this.modelsEnum)[keyof typeof this.modelsEnum] {

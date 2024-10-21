@@ -36,7 +36,7 @@ export default {
     apiEndpoint: process.env.LLMS_ENDPOINT, // // process.env.LLMS_ENDPOINT, // 'http://127.0.0.1:5000',
     apiKey: process.env.LLMS_API_KEY ?? '',
     wordLimit: 50,
-    model: 'chat-bison',
+    model: 'gpt-4o',
     minimumBalance: 0,
     isEnabled: Boolean(parseInt(process.env.LLMS_ENABLED ?? '1')),
     pdfUrl: process.env.PDF_URL ?? '',
@@ -49,7 +49,7 @@ export default {
       telegramFileUrl: 'https://api.telegram.org/file/bot',
       completions: {
         temperature:
-          (parseInt(process.env.OPENAI_TEMPERATURE ?? '')) ??
+          (parseFloat(process.env.OPENAI_TEMPERATURE ?? '')) ??
           0.8
       },
       defaultPrompt:

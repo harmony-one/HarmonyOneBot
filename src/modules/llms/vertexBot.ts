@@ -14,6 +14,7 @@ import { LlmsBase } from './llmsBase'
 import { vertexCompletion, vertexStreamCompletion } from './api/vertex'
 import { type SubagentBase } from '../subagents'
 import { type ModelVersion } from './utils/llmModelsManager'
+import { type ModelParameters } from './utils/types'
 
 export class VertexBot extends LlmsBase {
   constructor (payments: BotPayments, subagents?: SubagentBase[]) {
@@ -43,20 +44,24 @@ export class VertexBot extends LlmsBase {
     model: ModelVersion,
     ctx: OnMessageContext | OnCallBackQueryData,
     msgId: number,
-    limitTokens: boolean): Promise<LlmCompletion> {
+    limitTokens: boolean,
+    parameters?: ModelParameters): Promise<LlmCompletion> {
     return await vertexStreamCompletion(conversation,
       model,
       ctx,
       msgId,
-      true // telegram messages has a character limit
+      true, // telegram messages has a character limit
+      parameters
     )
   }
 
   async chatCompletion (
     conversation: ChatConversation[],
-    model: ModelVersion
+    model: ModelVersion,
+    usesTools: boolean,
+    parameters?: ModelParameters
   ): Promise<LlmCompletion> {
-    return await vertexCompletion(conversation, model)
+    return await vertexCompletion(conversation, model, parameters)
   }
 
   public async onEvent (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {

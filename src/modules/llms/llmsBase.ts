@@ -27,7 +27,7 @@ import {
 import { type LlmCompletion, deleteCollection } from './api/llmApi'
 import * as Sentry from '@sentry/node'
 import { now } from '../../utils/perf'
-import { type ChatModel, type LLMModel } from './utils/types'
+import { type ModelParameters, type ChatModel, type LLMModel } from './utils/types'
 import { ErrorHandler } from '../errorhandler'
 import { SubagentBase } from '../subagents/subagentBase'
 import {
@@ -104,17 +104,23 @@ export abstract class LlmsBase implements PayableBot {
 
   public abstract getEstimatedPrice (ctx: any): number
 
+  private isSupportedModel (model: string): boolean {
+    return !!this.supportedModels.find(v => v.version === model)
+  }
+
   protected abstract chatStreamCompletion (
     conversation: ChatConversation[],
     model: ModelVersion,
     ctx: OnMessageContext | OnCallBackQueryData,
     msgId: number,
-    limitTokens: boolean): Promise<LlmCompletion>
+    limitTokens: boolean,
+    parameters?: ModelParameters): Promise<LlmCompletion>
 
   protected abstract chatCompletion (
     conversation: ChatConversation[],
     model: ModelVersion,
-    usesTools: boolean
+    usesTools: boolean,
+    parameters?: ModelParameters
   ): Promise<LlmCompletion>
 
   // protected abstract hasPrefix (prompt: string): string
@@ -228,10 +234,10 @@ export abstract class LlmsBase implements PayableBot {
       try {
         const msg = session.requestQueue.shift()
         const prompt = msg?.content as string
-        const model = msg?.model
+        const model = this.isSupportedModel(msg?.model ?? ctx.session.currentModel) ? msg?.model ?? ctx.session.currentModel : this.supportedModels[0].version
         let agentCompletions: string[] = []
         const { chatConversation } = session
-        const minBalance = await getMinBalance(ctx, msg?.model as string)
+        const minBalance = await getMinBalance(ctx, model)
         let enhancedPrompt = ''
         if (await this.hasBalance(ctx, minBalance)) {
           if (!prompt) {
@@ -276,7 +282,7 @@ export abstract class LlmsBase implements PayableBot {
           chatConversation.push(chat)
           const payload = {
             conversation: chatConversation,
-            model: model ?? config.llms.model,
+            model,
             ctx
           }
           let result: { price: number, chat: ChatConversation[] } = { price: 0, chat: [] }
@@ -336,11 +342,13 @@ export abstract class LlmsBase implements PayableBot {
         if (isTypingEnabled) {
           ctx.chatAction = 'typing'
         }
+        const parameters = this.modelManager.getModelParameters(model)
         const completion = await this.chatStreamCompletion(conversation,
           model,
           ctx,
           msgId,
-          true // telegram messages has a character limit
+          true, // telegram messages has a character limit
+          parameters
         )
         if (isTypingEnabled) {
           ctx.chatAction = null
@@ -363,7 +371,8 @@ export abstract class LlmsBase implements PayableBot {
           }
         }
       } else {
-        const response = await this.chatCompletion(conversation, model, usesTools)
+        const parameters = this.modelManager.getModelParameters(model)
+        const response = await this.chatCompletion(conversation, model, usesTools, parameters)
         conversation.push({
           role: 'assistant',
           content: response.completion?.content ?? '',
@@ -394,7 +403,8 @@ export abstract class LlmsBase implements PayableBot {
       await ctx.reply('...', { message_thread_id: ctx.message?.message_thread_id })
     ).message_id
     ctx.chatAction = 'typing'
-    const response = await this.chatCompletion(conversation, model, usesTools)
+    const parameters = this.modelManager.getModelParameters(model)
+    const response = await this.chatCompletion(conversation, model, usesTools, parameters)
     if (response.completion) {
       if (model === this.modelsEnum.O1) {
         const msgs = splitTelegramMessage(response.completion.content as string)

@@ -185,10 +185,7 @@ bot.use(async (ctx: BotContext, next: NextFunction): Promise<void> => {
 
 bot.use(
   session({
-    initial: () => {
-      logger.info('Creating new session')
-      return createInitialSessionData()
-    },
+    initial: createInitialSessionData,
     storage: enhanceStorage<BotSessionData>({
       storage: new MemorySessionStorage<Enhance<BotSessionData>>(),
       millisecondsToLive: config.sessionTimeout * 60 * 60 * 1000 // 48 hours
