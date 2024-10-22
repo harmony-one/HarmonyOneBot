@@ -309,7 +309,7 @@ export const hasCodeSnippet = (ctx: OnMessageContext | OnCallBackQueryData): boo
   return entities.length > 0
 }
 
-export const splitTelegramMessage = (text: string): string[] => {
+export const splitTelegramMessage2 = (text: string): string[] => {
   const maxLength = 4096
   const result: string[] = []
 
@@ -348,5 +348,60 @@ export const splitTelegramMessage = (text: string): string[] => {
     }
   }
 
+  return result
+}
+
+// Find all Markdown entities and their positions
+export const splitTelegramMessage = (text: string): string[] => {
+  const maxLength = 4096
+  const result: string[] = []
+
+  // Regex to match start of Markdown entities
+  const entityStartPatterns = [
+    /\*\*/g, // bold
+    /__/g, // italic
+    /```/g, // code block
+    /`/g, // inline code
+    /\[/g // link start
+  ]
+
+  // Function to find the last safe split position
+  const findSafeSplitPosition = (text: string, endIndex: number): number => {
+    // First try to find the last space before endIndex
+    const lastSpace = text.lastIndexOf(' ', endIndex)
+    if (lastSpace === -1) return endIndex
+
+    // Check for any entity starts between lastSpace and endIndex
+    const textSegment = text.slice(0, lastSpace)
+
+    for (const pattern of entityStartPatterns) {
+      pattern.lastIndex = 0 // Reset regex state
+      const matches = [...textSegment.matchAll(pattern)]
+      if (matches.length % 2 === 1) {
+        // If we have an odd number of entity markers, find the last one
+        const lastEntityStart = matches[matches.length - 1].index
+        // Return position just after the last complete entity
+        return lastEntityStart
+      }
+    }
+
+    return lastSpace
+  }
+
+  let startIndex = 0
+  while (startIndex < text.length) {
+    let endIndex = Math.min(startIndex + maxLength, text.length)
+    if (endIndex < text.length) {
+      endIndex = findSafeSplitPosition(text.slice(startIndex, endIndex), maxLength)
+    }
+
+    const chunk = text.slice(startIndex, startIndex + endIndex).trim()
+    result.push(chunk)
+    startIndex += endIndex
+    // Skip whitespace between chunks
+    while (startIndex < text.length && /\s/.test(text[startIndex])) {
+      startIndex++
+    }
+  }
   return result
 }

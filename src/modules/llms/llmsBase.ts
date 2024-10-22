@@ -234,10 +234,12 @@ export abstract class LlmsBase implements PayableBot {
       try {
         const msg = session.requestQueue.shift()
         const prompt = msg?.content as string
-        const model = this.isSupportedModel(msg?.model ?? ctx.session.currentModel) ? msg?.model ?? ctx.session.currentModel : this.supportedModels[0].version
+        const modelVersion = this.isSupportedModel(msg?.model ?? ctx.session.currentModel) ? msg?.model ?? ctx.session.currentModel : this.supportedModels[0].version
+        const model = this.modelManager.getModel(modelVersion) as ChatModel
+        stream = model?.stream ?? stream
         let agentCompletions: string[] = []
         const { chatConversation } = session
-        const minBalance = await getMinBalance(ctx, model)
+        const minBalance = await getMinBalance(ctx, modelVersion)
         let enhancedPrompt = ''
         if (await this.hasBalance(ctx, minBalance)) {
           if (!prompt) {
@@ -266,23 +268,23 @@ export abstract class LlmsBase implements PayableBot {
               continue
             }
           }
-          if (chatConversation.length === 0 && model !== this.modelsEnum.O1) {
+          if (chatConversation.length === 0 && modelVersion !== this.modelsEnum.O1) {
             chatConversation.push({
               role: 'system',
               content: config.openAi.chatGpt.chatCompletionContext,
-              model
+              model: modelVersion
             })
           }
           // const hasCode = hasCodeSnippet(ctx)
           const chat: ChatConversation = {
             content: enhancedPrompt || prompt,
             role: 'user',
-            model
+            model: modelVersion
           }
           chatConversation.push(chat)
           const payload = {
             conversation: chatConversation,
-            model,
+            model: modelVersion,
             ctx
           }
           let result: { price: number, chat: ChatConversation[] } = { price: 0, chat: [] }
@@ -407,6 +409,7 @@ export abstract class LlmsBase implements PayableBot {
     const response = await this.chatCompletion(conversation, model, usesTools, parameters)
     if (response.completion) {
       if (model === this.modelsEnum.O1) {
+        console.log(response.completion)
         const msgs = splitTelegramMessage(response.completion.content as string)
         await ctx.api.editMessageText(
           ctx.chat.id,
