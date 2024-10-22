@@ -309,48 +309,6 @@ export const hasCodeSnippet = (ctx: OnMessageContext | OnCallBackQueryData): boo
   return entities.length > 0
 }
 
-export const splitTelegramMessage2 = (text: string): string[] => {
-  const maxLength = 4096
-  const result: string[] = []
-
-  // Regular expression to match Markdown entities
-  const markdownRegex = /(\*\*|__|\[.*?\]\(.*?\)|```[\s\S]*?```|`[^`\n]+`)/g
-
-  // Function to find the end index that avoids splitting Markdown entities
-  const findEndIndex = (startIndex: number, chunk: string): number => {
-    const matches = [...chunk.matchAll(markdownRegex)]
-    if (matches.length === 0) return startIndex + maxLength
-
-    const lastMatch = matches[matches.length - 1]
-    const lastMatchEnd = lastMatch.index + lastMatch[0].length
-    return lastMatchEnd > chunk.length ? startIndex + lastMatch.index : startIndex + maxLength
-  }
-
-  let startIndex = 0
-  while (startIndex < text.length) {
-    let endIndex = findEndIndex(startIndex, text.slice(startIndex, startIndex + maxLength))
-    endIndex = Math.min(endIndex, text.length) // Ensure endIndex is within bounds
-
-    // Find a natural break point if necessary
-    if (endIndex < text.length) {
-      const lastSpaceIndex = text.slice(startIndex, endIndex).lastIndexOf(' ')
-      if (lastSpaceIndex > 0) {
-        endIndex = startIndex + lastSpaceIndex
-      }
-    }
-
-    result.push(text.slice(startIndex, endIndex).trim())
-    startIndex = endIndex
-
-    // Move past any spaces or special characters that might cause issues
-    while (startIndex < text.length && /\s/.test(text[startIndex])) {
-      startIndex++
-    }
-  }
-
-  return result
-}
-
 // Find all Markdown entities and their positions
 export const splitTelegramMessage = (text: string): string[] => {
   const maxLength = 4096
@@ -358,11 +316,11 @@ export const splitTelegramMessage = (text: string): string[] => {
 
   // Regex to match start of Markdown entities
   const entityStartPatterns = [
-    /\*\*/g, // bold
-    /__/g, // italic
-    /```/g, // code block
-    /`/g, // inline code
-    /\[/g // link start
+    /\*/g, // bold text (single asterisk)
+    /_/g, // italic text (single underscore)
+    /```/g, // pre-formatted code block (triple backtick)
+    /`/g, // inline fixed-width code (single backtick)
+    /\[/g // inline URL or user mention
   ]
 
   // Function to find the last safe split position
@@ -405,3 +363,45 @@ export const splitTelegramMessage = (text: string): string[] => {
   }
   return result
 }
+
+// export const splitTelegramMessage = (text: string): string[] => {
+//   const maxLength = 4096
+//   const result: string[] = []
+
+//   // Regular expression to match Markdown entities
+//   const markdownRegex = /(\*\*|__|\[.*?\]\(.*?\)|```[\s\S]*?```|`[^`\n]+`)/g
+
+//   // Function to find the end index that avoids splitting Markdown entities
+//   const findEndIndex = (startIndex: number, chunk: string): number => {
+//     const matches = [...chunk.matchAll(markdownRegex)]
+//     if (matches.length === 0) return startIndex + maxLength
+
+//     const lastMatch = matches[matches.length - 1]
+//     const lastMatchEnd = lastMatch.index + lastMatch[0].length
+//     return lastMatchEnd > chunk.length ? startIndex + lastMatch.index : startIndex + maxLength
+//   }
+
+//   let startIndex = 0
+//   while (startIndex < text.length) {
+//     let endIndex = findEndIndex(startIndex, text.slice(startIndex, startIndex + maxLength))
+//     endIndex = Math.min(endIndex, text.length) // Ensure endIndex is within bounds
+
+//     // Find a natural break point if necessary
+//     if (endIndex < text.length) {
+//       const lastSpaceIndex = text.slice(startIndex, endIndex).lastIndexOf(' ')
+//       if (lastSpaceIndex > 0) {
+//         endIndex = startIndex + lastSpaceIndex
+//       }
+//     }
+
+//     result.push(text.slice(startIndex, endIndex).trim())
+//     startIndex = endIndex
+
+//     // Move past any spaces or special characters that might cause issues
+//     while (startIndex < text.length && /\s/.test(text[startIndex])) {
+//       startIndex++
+//     }
+//   }
+
+//   return result
+// }
