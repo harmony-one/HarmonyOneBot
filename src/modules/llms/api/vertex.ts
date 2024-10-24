@@ -7,6 +7,7 @@ import { GrammyError } from 'grammy'
 import { pino } from 'pino'
 import { headers, headersStream } from './helper'
 import { LlmModelsEnum } from '../utils/llmModelsManager'
+import { type ModelParameters } from '../utils/types'
 
 const API_ENDPOINT = config.llms.apiEndpoint // config.llms.apiEndpoint  // 'http://127.0.0.1:5000' // config.llms.apiEndpoint
 
@@ -20,7 +21,8 @@ const logger = pino({
 
 export const vertexCompletion = async (
   conversation: ChatConversation[],
-  model = config.llms.model
+  model = config.llms.model,
+  parameters?: ModelParameters
 ): Promise<LlmCompletion> => {
   const data = {
     model,
@@ -64,13 +66,19 @@ export const vertexStreamCompletion = async (
   model = LlmModelsEnum.CLAUDE_3_OPUS,
   ctx: OnMessageContext | OnCallBackQueryData,
   msgId: number,
-  limitTokens = true
+  limitTokens = true,
+  parameters?: ModelParameters
 ): Promise<LlmCompletion> => {
+  parameters = parameters ?? {
+    system: config.openAi.chatGpt.chatCompletionContext,
+    max_tokens: +config.openAi.chatGpt.maxTokens
+  }
+
   const data = {
     model,
     stream: true, // Set stream to true to receive the completion as a stream
-    system: config.openAi.chatGpt.chatCompletionContext,
-    max_tokens: limitTokens ? +config.openAi.chatGpt.maxTokens : undefined,
+    system: parameters.system,
+    max_tokens: limitTokens ? parameters.max_tokens : undefined,
     messages: conversation.filter(c => c.model === model && c.role !== 'system')
     // .map(m => { return { parts: { text: m.content }, role: m.role !== 'user' ? 'model' : 'user' } })
   }

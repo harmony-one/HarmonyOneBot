@@ -12,7 +12,8 @@ import { pino } from 'pino'
 import {
   type ImageModel,
   type ChatModel,
-  type DalleImageSize
+  type DalleImageSize,
+  type ModelParameters
 } from '../utils/types'
 import type fs from 'fs'
 import { type ChatCompletionMessageParam } from 'openai/resources/chat/completions'
@@ -81,14 +82,19 @@ export async function alterGeneratedImg (
 export async function chatCompletion (
   conversation: ChatConversation[],
   model = config.openAi.chatGpt.model,
-  limitTokens = true
+  limitTokens = true,
+  parameters?: ModelParameters
 ): Promise<LlmCompletion> {
   const messages = conversation.filter(c => c.model === model).map(m => { return { content: m.content, role: m.role } })
+  parameters = parameters ?? {
+    max_completion_tokens: config.openAi.chatGpt.maxTokens,
+    temperature: config.openAi.dalle.completions.temperature
+  }
   const response = await openai.chat.completions.create({
     model,
-    max_completion_tokens: limitTokens ? config.openAi.chatGpt.maxTokens : undefined,
-    temperature: model === LlmModelsEnum.O1 ? 1 : config.openAi.dalle.completions.temperature,
-    messages: messages as ChatCompletionMessageParam[]
+    messages: messages as ChatCompletionMessageParam[],
+    max_completion_tokens: limitTokens ? parameters.max_completion_tokens : undefined,
+    temperature: parameters.temperature
   })
   const chatModel = getChatModel(model)
   if (response.usage?.prompt_tokens === undefined) {
@@ -121,17 +127,22 @@ export const streamChatCompletion = async (
   ctx: OnMessageContext | OnCallBackQueryData,
   model = LlmModelsEnum.GPT_4,
   msgId: number,
-  limitTokens = true
+  limitTokens = true,
+  parameters?: ModelParameters
 ): Promise<LlmCompletion> => {
   let completion = ''
   let wordCountMinimum = 2
   const messages = conversation.filter(c => c.model === model).map(m => { return { content: m.content, role: m.role } })
+  parameters = parameters ?? {
+    max_completion_tokens: config.openAi.chatGpt.maxTokens,
+    temperature: config.openAi.dalle.completions.temperature || 0.8
+  }
   const stream = await openai.chat.completions.create({
     model,
     messages: messages as ChatCompletionMessageParam[], // OpenAI.Chat.Completions.CreateChatCompletionRequestMessage[],
     stream: true,
-    max_completion_tokens: limitTokens ? config.openAi.chatGpt.maxTokens : undefined, // max_tokens:
-    temperature: config.openAi.dalle.completions.temperature || 0.8
+    max_completion_tokens: limitTokens ? parameters.max_completion_tokens : undefined,
+    temperature: parameters.temperature
   })
   let wordCount = 0
   if (!ctx.chat?.id) {

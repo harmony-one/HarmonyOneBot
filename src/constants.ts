@@ -287,7 +287,7 @@ export const PROMPTS = {
 }
 
 export const VOICE_MEMO_FORWARDING = {
-  enabled: 'Voice note forwarding is now active. The next voice note you send will be forwarded automatically. This setting will deactivate after forwarding one voice note.',
+  enabled: 'Voice note forwarding is now active. The next voice note you send will be processed automatically. This setting will deactivate after processing the voice note.',
   restricted: 'Sorry, voice note forwarding can only be enabled by admin users. If you need this feature, please contact an admin for assistance.'
 }
 

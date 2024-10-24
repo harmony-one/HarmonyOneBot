@@ -23,6 +23,7 @@ import {
 } from './api/openai'
 import { type SubagentBase } from '../subagents'
 import { type ModelVersion } from './utils/llmModelsManager'
+import { type ModelParameters } from './utils/types'
 
 export class OpenAIBot extends LlmsBase {
   private readonly gpt4oPrefix: string[]
@@ -69,22 +70,26 @@ export class OpenAIBot extends LlmsBase {
     model: ModelVersion,
     ctx: OnMessageContext | OnCallBackQueryData,
     msgId: number,
-    limitTokens: boolean
+    limitTokens = true, // boolean,
+    parameters?: ModelParameters
   ): Promise<LlmCompletion> {
     return await streamChatCompletion(
       conversation,
       ctx,
       model,
       msgId,
-      true // telegram messages has a character limit
+      true, // telegram messages has a character limit
+      parameters
     )
   }
 
   async chatCompletion (
     conversation: ChatConversation[],
-    model: ModelVersion
+    model: ModelVersion,
+    usesTools: boolean,
+    parameters?: ModelParameters
   ): Promise<LlmCompletion> {
-    return await chatCompletion(conversation, model, model !== this.modelsEnum.O1) // limitTokens doesn't apply for o1-preview
+    return await chatCompletion(conversation, model, model !== this.modelsEnum.O1, parameters) // limitTokens doesn't apply for o1-preview
   }
 
   hasPrefix (prompt: string): string {
@@ -130,35 +135,12 @@ export class OpenAIBot extends LlmsBase {
       return
     }
 
-    // if (ctx.hasCommand(this.commandsEnum.ASK35)) {
-    //   this.updateSessionModel(ctx, this.modelsEnum.GPT_35_TURBO)
-    //   await this.onChat(ctx, this.modelsEnum.GPT_35_TURBO, true, false)
-    //   return
-    // }
-
-    // if (ctx.hasCommand(this.commandsEnum.GPT4)) {
-    //   this.updateSessionModel(ctx, this.modelsEnum.GPT_4)
-    //   await this.onChat(ctx, this.modelsEnum.GPT_4, true, false)
-    //   return
-    // }
-
-    // if (ctx.hasCommand([this.commandsEnum.O1, this.commandsEnum.ASK1])) {
-    //   this.updateSessionModel(ctx, this.modelsEnum.O1)
-    //   await this.onChat(ctx, this.modelsEnum.O1, false, false)
-    //   return
-    // }
-
     const model = this.getModelFromContext(ctx)
     if (model) {
       this.updateSessionModel(ctx, model.version)
       await this.onChat(ctx, model.version, this.getStreamOption(model.version), false)
       return
     }
-    // if (ctx.hasCommand(this.commandsEnum.ASK32)) {
-    //   this.updateSessionModel(ctx, this.modelsEnum.GPT_4_32K)
-    //   await this.onChat(ctx, this.modelsEnum.GPT_4_32K, true, false)
-    //   return
-    // }
 
     if (ctx.hasCommand(SupportedCommands.last)) {
       await this.onLast(ctx)

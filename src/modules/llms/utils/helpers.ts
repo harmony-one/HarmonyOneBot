@@ -12,6 +12,7 @@ import { getChatModelPrice } from '../api/llmApi'
 import { childrenWords, sexWords } from '../../sd-images/words-blacklist'
 
 import config from '../../../config'
+import { type ParseDate } from './types'
 
 export const PRICE_ADJUSTMENT = config.openAi.chatGpt.priceAdjustment
 
@@ -148,6 +149,21 @@ export const isValidUrl = (url: string): boolean => {
   const urlRegex =
   /^(https?:\/\/)?([\w.-]+\.[a-zA-Z]{2,}|[\w.-]+\.[a-zA-Z]{1,3}\.[a-zA-Z]{1,3})(\/\S*)?$/
   return urlRegex.test(url)
+}
+
+export function isValidDate (date: Date): boolean {
+  return date instanceof Date && !isNaN(date.getTime())
+}
+
+export function parseDate (date: Date): ParseDate | null {
+  if (!isValidDate(date)) {
+    return null
+  }
+  const month = date.getMonth() + 1 // getMonth() returns 0-11
+  const year = date.getFullYear()
+  const monthName = new Intl.DateTimeFormat('en-US', { month: 'long' }).format(date)
+
+  return { month, year, monthName }
 }
 
 // doesn't get all the special characters like !
@@ -293,44 +309,99 @@ export const hasCodeSnippet = (ctx: OnMessageContext | OnCallBackQueryData): boo
   return entities.length > 0
 }
 
+// Find all Markdown entities and their positions
 export const splitTelegramMessage = (text: string): string[] => {
   const maxLength = 4096
   const result: string[] = []
 
-  // Regular expression to match Markdown entities
-  const markdownRegex = /(\*\*|__|\[.*?\]\(.*?\)|```[\s\S]*?```|`[^`\n]+`)/g
+  // Regex to match start of Markdown entities
+  const entityStartPatterns = [
+    /\*/g, // bold text (single asterisk)
+    /_/g, // italic text (single underscore)
+    /```/g, // pre-formatted code block (triple backtick)
+    /`/g, // inline fixed-width code (single backtick)
+    /\[/g // inline URL or user mention
+  ]
 
-  // Function to find the end index that avoids splitting Markdown entities
-  const findEndIndex = (startIndex: number, chunk: string): number => {
-    const matches = [...chunk.matchAll(markdownRegex)]
-    if (matches.length === 0) return startIndex + maxLength
+  // Function to find the last safe split position
+  const findSafeSplitPosition = (text: string, endIndex: number): number => {
+    // First try to find the last space before endIndex
+    const lastSpace = text.lastIndexOf(' ', endIndex)
+    if (lastSpace === -1) return endIndex
 
-    const lastMatch = matches[matches.length - 1]
-    const lastMatchEnd = lastMatch.index + lastMatch[0].length
-    return lastMatchEnd > chunk.length ? startIndex + lastMatch.index : startIndex + maxLength
+    // Check for any entity starts between lastSpace and endIndex
+    const textSegment = text.slice(0, lastSpace)
+
+    for (const pattern of entityStartPatterns) {
+      pattern.lastIndex = 0 // Reset regex state
+      const matches = [...textSegment.matchAll(pattern)]
+      if (matches.length % 2 === 1) {
+        // If we have an odd number of entity markers, find the last one
+        const lastEntityStart = matches[matches.length - 1].index
+        // Return position just after the last complete entity
+        return lastEntityStart
+      }
+    }
+
+    return lastSpace
   }
 
   let startIndex = 0
   while (startIndex < text.length) {
-    let endIndex = findEndIndex(startIndex, text.slice(startIndex, startIndex + maxLength))
-    endIndex = Math.min(endIndex, text.length) // Ensure endIndex is within bounds
-
-    // Find a natural break point if necessary
+    let endIndex = Math.min(startIndex + maxLength, text.length)
     if (endIndex < text.length) {
-      const lastSpaceIndex = text.slice(startIndex, endIndex).lastIndexOf(' ')
-      if (lastSpaceIndex > 0) {
-        endIndex = startIndex + lastSpaceIndex
-      }
+      endIndex = findSafeSplitPosition(text.slice(startIndex, endIndex), maxLength)
     }
 
-    result.push(text.slice(startIndex, endIndex).trim())
-    startIndex = endIndex
-
-    // Move past any spaces or special characters that might cause issues
+    const chunk = text.slice(startIndex, startIndex + endIndex).trim()
+    result.push(chunk)
+    startIndex += endIndex
+    // Skip whitespace between chunks
     while (startIndex < text.length && /\s/.test(text[startIndex])) {
       startIndex++
     }
   }
-
   return result
 }
+
+// export const splitTelegramMessage = (text: string): string[] => {
+//   const maxLength = 4096
+//   const result: string[] = []
+
+//   // Regular expression to match Markdown entities
+//   const markdownRegex = /(\*\*|__|\[.*?\]\(.*?\)|```[\s\S]*?```|`[^`\n]+`)/g
+
+//   // Function to find the end index that avoids splitting Markdown entities
+//   const findEndIndex = (startIndex: number, chunk: string): number => {
+//     const matches = [...chunk.matchAll(markdownRegex)]
+//     if (matches.length === 0) return startIndex + maxLength
+
+//     const lastMatch = matches[matches.length - 1]
+//     const lastMatchEnd = lastMatch.index + lastMatch[0].length
+//     return lastMatchEnd > chunk.length ? startIndex + lastMatch.index : startIndex + maxLength
+//   }
+
+//   let startIndex = 0
+//   while (startIndex < text.length) {
+//     let endIndex = findEndIndex(startIndex, text.slice(startIndex, startIndex + maxLength))
+//     endIndex = Math.min(endIndex, text.length) // Ensure endIndex is within bounds
+
+//     // Find a natural break point if necessary
+//     if (endIndex < text.length) {
+//       const lastSpaceIndex = text.slice(startIndex, endIndex).lastIndexOf(' ')
+//       if (lastSpaceIndex > 0) {
+//         endIndex = startIndex + lastSpaceIndex
+//       }
+//     }
+
+//     result.push(text.slice(startIndex, endIndex).trim())
+//     startIndex = endIndex
+
+//     // Move past any spaces or special characters that might cause issues
+//     while (startIndex < text.length && /\s/.test(text[startIndex])) {
+//       startIndex++
+//     }
+//   }
+
+//   return result
+// }
