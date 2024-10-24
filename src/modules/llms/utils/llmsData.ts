@@ -37,7 +37,7 @@ export const llmData: LLMData = {
       name: 'claude-35-sonnet',
       fullName: 'Claude Sonnet 3.5',
       botName: 'ClaudeBot',
-      version: 'claude-3-5-sonnet-20240620',
+      version: 'claude-3-5-sonnet-20241022',
       commands: ['sonnet', 'claudes', 's', 'stool'],
       prefix: ['s. '],
       apiSpec: 'https://www.anthropic.com/news/claude-3-5-sonnet',
