@@ -163,6 +163,21 @@ export const llmData: LLMData = {
       maxContextTokens: 128000,
       chargeType: 'TOKEN',
       stream: false
+    },
+    grok: {
+      provider: 'xai', // using grok through claude api
+      name: 'grok',
+      fullName: 'Grok',
+      botName: 'xAIBot',
+      version: 'grok-beta',
+      commands: ['gk', 'grok'],
+      prefix: ['gk. '],
+      apiSpec: 'https://docs.x.ai/api#introduction',
+      inputPrice: 0.00500,
+      outputPrice: 0.01500,
+      maxContextTokens: 131072,
+      chargeType: 'TOKEN',
+      stream: false
     }
   },
   imageModels: {
@@ -191,6 +206,12 @@ export const llmData: LLMData = {
       modelOverrides: { o1: { temperature: 1 } } // uses model name, not model version
     },
     claude: {
+      defaultParameters: {
+        system: config.openAi.chatGpt.chatCompletionContext,
+        max_tokens: +config.openAi.chatGpt.maxTokens
+      }
+    },
+    xai: {
       defaultParameters: {
         system: config.openAi.chatGpt.chatCompletionContext,
         max_tokens: +config.openAi.chatGpt.maxTokens

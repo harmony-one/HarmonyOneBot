@@ -62,6 +62,47 @@ export const anthropicCompletion = async (
   }
 }
 
+export const xaiCompletion = async (
+  conversation: ChatConversation[],
+  model = LlmModelsEnum.GROK,
+  parameters?: ModelParameters
+): Promise<LlmCompletion> => {
+  logger.info(`Handling ${model} completion`)
+  parameters = parameters ?? {
+    system: config.openAi.chatGpt.chatCompletionContext,
+    max_tokens: +config.openAi.chatGpt.maxTokens
+  }
+  const data = {
+    model,
+    stream: false,
+    messages: conversation.filter(c => c.model === model)
+      .map(m => { return { content: m.content, role: m.role } }),
+    ...parameters
+  }
+  const url = `${API_ENDPOINT}/xai/completions`
+  const response = await axios.post(url, data, headers)
+  const respJson = JSON.parse(response.data)
+  if (response) {
+    const totalInputTokens = respJson.usage.input_tokens
+    const totalOutputTokens = respJson.usage.output_tokens
+    const completion = respJson.content
+    return {
+      completion: {
+        content: completion[0].text,
+        role: 'assistant',
+        model
+      },
+      usage: totalOutputTokens + totalInputTokens,
+      price: 0
+    }
+  }
+  return {
+    completion: undefined,
+    usage: 0,
+    price: 0
+  }
+}
+
 export const anthropicStreamCompletion = async (
   conversation: ChatConversation[],
   model = LlmModelsEnum.CLAUDE_3_OPUS,

@@ -268,13 +268,6 @@ export abstract class LlmsBase implements PayableBot {
               continue
             }
           }
-          if (chatConversation.length === 0 && modelVersion !== this.modelsEnum.O1) {
-            chatConversation.push({
-              role: 'system',
-              content: config.openAi.chatGpt.chatCompletionContext,
-              model: modelVersion
-            })
-          }
           // const hasCode = hasCodeSnippet(ctx)
           const chat: ChatConversation = {
             content: enhancedPrompt || prompt,

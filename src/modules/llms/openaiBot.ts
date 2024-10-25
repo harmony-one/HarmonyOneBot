@@ -26,8 +26,6 @@ import { type ModelVersion } from './utils/llmModelsManager'
 import { type ModelParameters } from './utils/types'
 
 export class OpenAIBot extends LlmsBase {
-  private readonly gpt4oPrefix: string[]
-
   constructor (payments: BotPayments, subagents?: SubagentBase[]) {
     super(payments, 'OpenAIBot', 'chatGpt', subagents)
     // this.gpt4oPrefix = this.modelManager.getPrefixByModel(this.modelsEnum.GPT_4O) ?? []

@@ -6,14 +6,16 @@ import {
 } from '../types'
 import { SupportedCommands } from './utils/helpers'
 import { type LlmCompletion } from './api/llmApi'
-import { anthropicCompletion, anthropicStreamCompletion, toolsChatCompletion } from './api/athropic'
+import { xaiCompletion } from './api/athropic'
 import { LlmsBase } from './llmsBase'
 import { type ModelVersion } from './utils/llmModelsManager'
 import { type ModelParameters } from './utils/types'
 
-export class ClaudeBot extends LlmsBase {
+export class XaiBot extends LlmsBase {
+  private readonly claudeModels: ModelVersion[]
+
   constructor (payments: BotPayments) {
-    super(payments, 'ClaudeBot', 'llms')
+    super(payments, 'xAIBot', 'llms')
   }
 
   public getEstimatedPrice (ctx: any): number {
@@ -42,14 +44,13 @@ export class ClaudeBot extends LlmsBase {
     msgId: number,
     limitTokens: boolean,
     parameters?: ModelParameters): Promise<LlmCompletion> {
-    return await anthropicStreamCompletion(
-      conversation,
-      model,
-      ctx,
-      msgId,
-      true, // telegram messages has a character limit
-      parameters
-    )
+    return {
+      completion: undefined,
+      usage: 0,
+      price: 0,
+      inputTokens: 0,
+      outputTokens: 0
+    }
   }
 
   async chatCompletion (
@@ -58,10 +59,7 @@ export class ClaudeBot extends LlmsBase {
     hasTools: boolean,
     parameters?: ModelParameters
   ): Promise<LlmCompletion> {
-    if (hasTools) {
-      return await toolsChatCompletion(conversation, model, parameters)
-    }
-    return await anthropicCompletion(conversation, model, parameters)
+    return await xaiCompletion(conversation, model, parameters)
   }
 
   public async onEvent (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
@@ -69,14 +67,6 @@ export class ClaudeBot extends LlmsBase {
     const isSupportedEvent = this.isSupportedEvent(ctx)
     if (!isSupportedEvent && ctx.chat?.type !== 'private') {
       this.logger.warn(`### unsupported command ${ctx.message?.text}`)
-      return
-    }
-
-    if (
-      (ctx.hasCommand(SupportedCommands.new) && this.checkModel(ctx))
-    ) {
-      await this.onStop(ctx)
-      await this.onChat(ctx, this.modelsEnum.CLAUDE_3_OPUS, true, false)
       return
     }
 

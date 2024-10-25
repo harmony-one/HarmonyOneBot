@@ -79,13 +79,25 @@ export async function alterGeneratedImg (
   }
 }
 
+const prepareConversation = (conversation: ChatConversation[], model: string): ChatConversation[] => {
+  const messages = conversation.filter(c => c.model === model).map(m => { return { content: m.content, role: m.role } })
+  if (messages.length !== 1 || model === LlmModelsEnum.O1) {
+    return messages
+  }
+  const systemMessage = {
+    role: 'system',
+    content: config.openAi.chatGpt.chatCompletionContext
+  }
+  return [systemMessage, ...messages]
+}
+
 export async function chatCompletion (
   conversation: ChatConversation[],
   model = config.openAi.chatGpt.model,
   limitTokens = true,
   parameters?: ModelParameters
 ): Promise<LlmCompletion> {
-  const messages = conversation.filter(c => c.model === model).map(m => { return { content: m.content, role: m.role } })
+  const messages = prepareConversation(conversation, model)
   parameters = parameters ?? {
     max_completion_tokens: config.openAi.chatGpt.maxTokens,
     temperature: config.openAi.dalle.completions.temperature
@@ -132,7 +144,7 @@ export const streamChatCompletion = async (
 ): Promise<LlmCompletion> => {
   let completion = ''
   let wordCountMinimum = 2
-  const messages = conversation.filter(c => c.model === model).map(m => { return { content: m.content, role: m.role } })
+  const messages = prepareConversation(conversation, model)
   parameters = parameters ?? {
     max_completion_tokens: config.openAi.chatGpt.maxTokens,
     temperature: config.openAi.dalle.completions.temperature || 0.8
