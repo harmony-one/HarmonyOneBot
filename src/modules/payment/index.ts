@@ -441,7 +441,6 @@ export class BotPayments {
         from.username
       }] credits total: ${totalCreditsAmount.toFixed()}, to withdraw: ${totalPayAmount.toFixed()}, total balance after: ${totalBalanceDelta.toFixed()}`
     )
-
     if (totalBalanceDelta.gte(0)) {
       const { userPayment, userCredits: userCreditsAfter } = await chatService.withdrawCredits(accountId, totalPayAmount)
       this.logger.info(`[${from.id} @${

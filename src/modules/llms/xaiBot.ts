@@ -4,7 +4,6 @@ import {
   type OnCallBackQueryData,
   type ChatConversation
 } from '../types'
-import { SupportedCommands } from './utils/helpers'
 import { type LlmCompletion } from './api/llmApi'
 import { xaiCompletion } from './api/athropic'
 import { LlmsBase } from './llmsBase'
@@ -27,9 +26,6 @@ export class XaiBot extends LlmsBase {
   ): boolean {
     const hasCommand = ctx.hasCommand(this.supportedCommands)
 
-    if (ctx.hasCommand(SupportedCommands.new) && this.checkModel(ctx)) {
-      return true
-    }
     const chatPrefix = this.hasPrefix(ctx.message?.text ?? '')
     if (chatPrefix !== '') {
       return true

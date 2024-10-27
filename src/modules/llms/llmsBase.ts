@@ -402,7 +402,6 @@ export abstract class LlmsBase implements PayableBot {
     const response = await this.chatCompletion(conversation, model, usesTools, parameters)
     if (response.completion) {
       if (model === this.modelsEnum.O1) {
-        console.log(response.completion)
         const msgs = splitTelegramMessage(response.completion.content as string)
         await ctx.api.editMessageText(
           ctx.chat.id,

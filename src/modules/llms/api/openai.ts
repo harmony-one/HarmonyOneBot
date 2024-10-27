@@ -127,7 +127,7 @@ export async function chatCompletion (
       content: response.choices[0].message?.content ?? 'Error - no completion available',
       role: 'assistant'
     },
-    usage: 2010, // response.usage?.total_tokens,
+    usage: response.usage?.total_tokens, // 2010
     price: price * config.openAi.chatGpt.priceAdjustment,
     inputTokens,
     outputTokens

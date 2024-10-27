@@ -52,7 +52,9 @@ export const anthropicCompletion = async (
         model
       },
       usage: totalOutputTokens + totalInputTokens,
-      price: 0
+      price: 0,
+      inputTokens: parseInt(totalInputTokens, 10),
+      outputTokens: parseInt(totalOutputTokens, 10)
     }
   }
   return {
@@ -93,7 +95,9 @@ export const xaiCompletion = async (
         model
       },
       usage: totalOutputTokens + totalInputTokens,
-      price: 0
+      price: 0,
+      inputTokens: parseInt(totalInputTokens, 10),
+      outputTokens: parseInt(totalOutputTokens, 10)
     }
   }
   return {
