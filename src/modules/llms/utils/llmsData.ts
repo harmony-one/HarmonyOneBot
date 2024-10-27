@@ -1,15 +1,31 @@
+import config from '../../../config'
 import { type LLMData } from './types'
 
 export const llmData: LLMData = {
   chatModels: {
+    'gemini-15': {
+      provider: 'vertex',
+      name: 'gemini-15',
+      fullName: 'gemini-1.5-pro-latest',
+      botName: 'VertexBot',
+      version: 'gemini-1.5-pro-latest',
+      commands: ['gemini15', 'g'],
+      prefix: ['g. '],
+      apiSpec: 'https://deepmind.google/technologies/gemini/pro/',
+      inputPrice: 0.0025,
+      outputPrice: 0.0075,
+      maxContextTokens: 1048576,
+      chargeType: 'CHAR',
+      stream: true
+    },
     'gemini-10': {
       provider: 'vertex',
       name: 'gemini-10',
       botName: 'VertexBot',
       fullName: 'gemini-1.0-pro',
       version: 'gemini-1.0-pro',
-      commands: ['gemini', 'g'],
-      prefix: ['g. '],
+      commands: ['gemini', 'g10'],
+      prefix: ['g10. '],
       apiSpec: 'https://deepmind.google/technologies/gemini/pro/',
       inputPrice: 0.000125,
       outputPrice: 0.000375,
@@ -17,18 +33,19 @@ export const llmData: LLMData = {
       chargeType: 'CHAR',
       stream: true
     },
-    'gemini-15': {
-      provider: 'vertex',
-      name: 'gemini-15',
-      fullName: 'gemini-1.5-pro-latest',
-      botName: 'VertexBot',
-      version: 'gemini-1.5-pro-latest',
-      commands: ['gemini15', 'g15'],
-      apiSpec: 'https://deepmind.google/technologies/gemini/pro/',
-      inputPrice: 0.0025,
-      outputPrice: 0.0075,
-      maxContextTokens: 1048576,
-      chargeType: 'CHAR',
+    'claude-35-sonnet': {
+      provider: 'claude',
+      name: 'claude-35-sonnet',
+      fullName: 'Claude Sonnet 3.5',
+      botName: 'ClaudeBot',
+      version: 'claude-3-5-sonnet-20241022',
+      commands: ['sonnet', 'claude', 's', 'stool', 'c', 'ctool'],
+      prefix: ['s. ', 'c. '],
+      apiSpec: 'https://www.anthropic.com/news/claude-3-5-sonnet',
+      inputPrice: 0.003,
+      outputPrice: 0.015,
+      maxContextTokens: 8192,
+      chargeType: 'TOKEN',
       stream: true
     },
     'claude-3-opus': {
@@ -37,27 +54,12 @@ export const llmData: LLMData = {
       fullName: 'Claude Opus',
       botName: 'ClaudeBot',
       version: 'claude-3-opus-20240229',
-      commands: ['claude', 'opus', 'c', 'o', 'ctool'],
-      prefix: ['c. '],
+      commands: ['opus', 'o', 'otool'],
+      prefix: ['o. '],
       apiSpec: 'https://www.anthropic.com/news/claude-3-family',
       inputPrice: 0.015,
       outputPrice: 0.075,
       maxContextTokens: 4096,
-      chargeType: 'TOKEN',
-      stream: true
-    },
-    'claude-35-sonnet': {
-      provider: 'claude',
-      name: 'claude-35-sonnet',
-      fullName: 'Claude Sonnet 3.5',
-      botName: 'ClaudeBot',
-      version: 'claude-3-5-sonnet-20240620',
-      commands: ['sonnet', 'claudes', 's', 'stool'],
-      prefix: ['s. '],
-      apiSpec: 'https://www.anthropic.com/news/claude-3-5-sonnet',
-      inputPrice: 0.003,
-      outputPrice: 0.015,
-      maxContextTokens: 8192,
       chargeType: 'TOKEN',
       stream: true
     },
@@ -73,6 +75,21 @@ export const llmData: LLMData = {
       inputPrice: 0.00025,
       outputPrice: 0.00125,
       maxContextTokens: 4096,
+      chargeType: 'TOKEN',
+      stream: true
+    },
+    'gpt-4o': {
+      provider: 'openai',
+      name: 'gpt-4o',
+      fullName: 'GPT-4o',
+      botName: 'OpenAIBot',
+      version: 'gpt-4o',
+      commands: ['gpto', 'ask', 'chat', 'gpt', 'a'],
+      prefix: ['a. ', '. '],
+      apiSpec: 'https://platform.openai.com/docs/models/gpt-4o',
+      inputPrice: 0.005,
+      outputPrice: 0.0015,
+      maxContextTokens: 128000,
       chargeType: 'TOKEN',
       stream: true
     },
@@ -119,21 +136,6 @@ export const llmData: LLMData = {
       chargeType: 'TOKEN',
       stream: true
     },
-    'gpt-4o': {
-      provider: 'openai',
-      name: 'gpt-4o',
-      fullName: 'GPT-4o',
-      botName: 'OpenAIBot',
-      version: 'gpt-4o',
-      commands: ['gpto', 'ask', 'chat', 'gpt', 'a'],
-      prefix: ['a. ', '. '],
-      apiSpec: 'https://platform.openai.com/docs/models/gpt-4o',
-      inputPrice: 0.005,
-      outputPrice: 0.0015,
-      maxContextTokens: 128000,
-      chargeType: 'TOKEN',
-      stream: true
-    },
     o1: {
       provider: 'openai',
       name: 'o1',
@@ -162,6 +164,21 @@ export const llmData: LLMData = {
       maxContextTokens: 128000,
       chargeType: 'TOKEN',
       stream: false
+    },
+    grok: {
+      provider: 'xai', // using grok through claude api
+      name: 'grok',
+      fullName: 'Grok',
+      botName: 'xAIBot',
+      version: 'grok-beta',
+      commands: ['gk', 'grok', 'x'],
+      prefix: ['gk. ', 'x. '],
+      apiSpec: 'https://docs.x.ai/api#introduction',
+      inputPrice: 0.005,
+      outputPrice: 0.015,
+      maxContextTokens: 131072,
+      chargeType: 'TOKEN',
+      stream: false
     }
   },
   imageModels: {
@@ -178,6 +195,33 @@ export const llmData: LLMData = {
         '1024x1024': 0.8,
         '1024x1792': 0.12,
         '1792x1024': 0.12
+      }
+    }
+  },
+  providerParameters: {
+    openai: {
+      defaultParameters: {
+        temperature: config.openAi.dalle.completions.temperature,
+        max_completion_tokens: +config.openAi.chatGpt.maxTokens
+      },
+      modelOverrides: { o1: { temperature: 1 } } // uses model name, not model version
+    },
+    claude: {
+      defaultParameters: {
+        system: config.openAi.chatGpt.chatCompletionContext,
+        max_tokens: +config.openAi.chatGpt.maxTokens
+      }
+    },
+    xai: {
+      defaultParameters: {
+        system: config.openAi.chatGpt.chatCompletionContext,
+        max_tokens: +config.openAi.chatGpt.maxTokens
+      }
+    },
+    vertex: {
+      defaultParameters: {
+        system: config.openAi.chatGpt.chatCompletionContext,
+        max_tokens: +config.openAi.chatGpt.maxTokens
       }
     }
   }

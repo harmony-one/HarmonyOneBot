@@ -363,6 +363,7 @@ export class BotPayments {
     try {
       const accountId = this.getAccountId(ctx)
       let [command = ''] = text.split(' ')
+
       if (!command) {
         if (audio ?? voice) {
           command = '/voice-memo'
@@ -440,7 +441,6 @@ export class BotPayments {
         from.username
       }] credits total: ${totalCreditsAmount.toFixed()}, to withdraw: ${totalPayAmount.toFixed()}, total balance after: ${totalBalanceDelta.toFixed()}`
     )
-
     if (totalBalanceDelta.gte(0)) {
       const { userPayment, userCredits: userCreditsAfter } = await chatService.withdrawCredits(accountId, totalPayAmount)
       this.logger.info(`[${from.id} @${

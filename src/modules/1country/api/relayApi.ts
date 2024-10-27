@@ -86,6 +86,7 @@ export const relayApi = (): {
       async?: boolean
     }) => {
       const { data: { success, sld, mcJobId, nakedJobId, error } } = await base.post('/cert', { domain, address, async })
+      console.log('CERT RESULT:::::', { success, sld, mcJobId, nakedJobId, error })
       return {
         success,
         sld,

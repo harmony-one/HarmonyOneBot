@@ -16,7 +16,7 @@ class ErrorHandler {
   private writeLog (ctx: OnMessageContext | OnCallBackQueryData, errorMessage: string, logger: Logger): void {
     const user = ctx.from.username ? ctx.from.username : ''
     const msg = ctx.message?.text
-    logger.error(`Error msg:: ${errorMessage} | from user ${user} | msg::${msg}`)
+    logger.error(`Error msg::: ${errorMessage} | from user ${user} | msg::: ${msg}`)
   }
 
   async onError (
