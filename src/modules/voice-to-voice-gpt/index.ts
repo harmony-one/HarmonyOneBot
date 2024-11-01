@@ -63,7 +63,7 @@ export class VoiceToVoiceGPTBot implements PayableBot {
     const resultText = await speechToText(fs.createReadStream(filename))
     fs.rmSync(filename)
 
-    const conversation = [{ role: 'user', content: resultText }]
+    const conversation = [{ role: 'user', content: resultText, timestamp: Date.now() }]
     const response = await chatCompletion(conversation, LlmModelsEnum.GPT_35_TURBO)
 
     const voiceResult = await generateVoiceFromText(response.completion?.content as string)

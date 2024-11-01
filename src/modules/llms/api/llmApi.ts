@@ -1,6 +1,6 @@
 import axios from 'axios'
 import config from '../../../config'
-import { type ChatConversation } from '../../types'
+import { type ChatConversationWithoutTimestamp, type ChatConversation } from '../../types'
 import pino from 'pino'
 import { type ChatModel } from '../utils/types'
 import { headers } from './helper'
@@ -36,7 +36,7 @@ interface LlmAddUrlDocument {
 interface QueryUrlDocument {
   collectioName: string
   prompt: string
-  conversation?: ChatConversation[]
+  conversation?: ChatConversationWithoutTimestamp[]
 }
 
 export const getChatModel = (modelName: string): ChatModel | undefined => {
@@ -130,7 +130,8 @@ export const llmCompletion = async (
       completion: {
         content: completion[0].message?.content,
         role: 'system',
-        model
+        model,
+        timestamp: Date.now()
       },
       usage: totalOutputTokens + totalInputTokens,
       price: 0

@@ -19,7 +19,8 @@ export const handlePdf = async (prompt: string): Promise<PdfCompletion> => {
       return {
         completion: {
           content: response.data.response,
-          role: 'system'
+          role: 'system',
+          timestamp: Date.now()
         },
         prompt,
         price: response.data.cost

@@ -58,7 +58,10 @@ export interface ChatConversation {
   content: string | VisionContent[]
   model?: string
   numSubAgents?: number
+  timestamp: number
 }
+
+export type ChatConversationWithoutTimestamp = Omit<ChatConversation, 'timestamp'>
 
 export interface ImageRequest {
   command?: 'dalle' | 'alter' | 'vision'

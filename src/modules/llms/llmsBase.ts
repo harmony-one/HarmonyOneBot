@@ -37,6 +37,7 @@ import {
   type LLMModelsManager,
   type ModelVersion
 } from './utils/llmModelsManager'
+import { conversationManager } from './utils/conversationManager'
 
 export abstract class LlmsBase implements PayableBot {
   public module: string
@@ -205,7 +206,8 @@ export abstract class LlmsBase implements PayableBot {
           id: ctx.message?.message_id,
           model,
           content: await preparePrompt(ctx, prompt as string),
-          numSubAgents: 0
+          numSubAgents: 0,
+          timestamp: Date.now()
         })
         if (!session.isProcessingQueue) {
           session.isProcessingQueue = true
@@ -218,7 +220,8 @@ export abstract class LlmsBase implements PayableBot {
           id: ctx.message?.message_id ?? ctx.message?.message_thread_id ?? 0,
           model,
           content: prompt as string ?? '', // await preparePrompt(ctx, prompt as string),
-          numSubAgents: supportedAgents
+          numSubAgents: supportedAgents,
+          timestamp: Date.now()
         }
         await this.runSubagents(ctx, msg, stream, usesTools) //  prompt as string)
       }
@@ -230,6 +233,8 @@ export abstract class LlmsBase implements PayableBot {
 
   async onChatRequestHandler (ctx: OnMessageContext | OnCallBackQueryData, stream: boolean, usesTools: boolean): Promise<void> {
     const session = this.getSession(ctx)
+    session.chatConversation = conversationManager.manageConversationWindow(session.chatConversation)
+
     while (session.requestQueue.length > 0) {
       try {
         const msg = session.requestQueue.shift()
@@ -272,7 +277,8 @@ export abstract class LlmsBase implements PayableBot {
           const chat: ChatConversation = {
             content: enhancedPrompt || prompt,
             role: 'user',
-            model: modelVersion
+            model: modelVersion,
+            timestamp: Date.now()
           }
           chatConversation.push(chat)
           const payload = {
@@ -358,7 +364,8 @@ export abstract class LlmsBase implements PayableBot {
           conversation.push({
             role: 'assistant',
             content: completion.completion?.content ?? '',
-            model
+            model,
+            timestamp: Date.now()
           })
           return {
             price: price.price,
@@ -371,7 +378,8 @@ export abstract class LlmsBase implements PayableBot {
         conversation.push({
           role: 'assistant',
           content: response.completion?.content ?? '',
-          model
+          model,
+          timestamp: Date.now()
         })
         return {
           price: response.price,
