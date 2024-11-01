@@ -7,6 +7,7 @@ import {
 } from '../types'
 import {
   MAX_TRIES,
+  PRICE_ADJUSTMENT,
   sendMessage
 } from './utils/helpers'
 import * as Sentry from '@sentry/node'
@@ -16,7 +17,7 @@ import { now } from '../../utils/perf'
 import { type ModelVersion } from './utils/llmModelsManager'
 import { Callbacks } from './utils/types'
 import { type LlmCompletion } from './api/llmApi'
-import { getGeneration, lumaGeneration } from './api/luma'
+import { deleteGeneration, getGeneration, lumaGeneration } from './api/luma'
 
 interface VideoGeneration {
   msgId: number
@@ -26,10 +27,13 @@ interface VideoGeneration {
 
 export class LumaBot extends LlmsBase {
   private generationList: VideoGeneration[]
+  protected supportedCommands: string[]
+  protected supportedPrefixes: string[]
 
   constructor (payments: BotPayments) {
     super(payments, 'LumaBot', 'luma')
     this.generationList = []
+
     if (!config.luma.isEnabled) {
       this.logger.warn('Luma AI is disabled in config')
     }
@@ -37,20 +41,9 @@ export class LumaBot extends LlmsBase {
 
   public getEstimatedPrice (ctx: any): number {
     try {
-      return 0
-      // const session = this.getSession(ctx)
-      // if (!this.commands) {
-      //   throw new Error('Not command list found')
-      // }
-      // if (
-      //   ctx.hasCommand(this.commands)
-      // ) {
-      //   const imageNumber = session.numImages
-      //   const imageSize = session.imgSize
-      //   const price = getDalleModelPrice(this.model, imageSize, true, imageNumber) // cents
-      //   return price * PRICE_ADJUSTMENT
-      // }
-      // return 0
+      // $0.0032 per frame or about $0.4 for 5s 24fps video at 1280×720p
+      // price in cents
+      return PRICE_ADJUSTMENT ? 40 * PRICE_ADJUSTMENT : 40 * 2
     } catch (e) {
       Sentry.captureException(e)
       this.logger.error(`getEstimatedPrice error ${e}`)
@@ -138,6 +131,7 @@ export class LumaBot extends LlmsBase {
           await ctx.api.deleteMessages(ctx.chatId, [ctx.msgId, videoGeneration.msgId])
           await ctx.replyWithVideo(videoUrl, { caption: videoGeneration.prompt })
           this.generationList = this.generationList.filter(gen => gen.generationId !== generationId)
+          await deleteGeneration(videoGeneration.generationId)
         }
       }
       await ctx.answerCallbackQuery('Video sent successfully')
