@@ -1,4 +1,4 @@
-export type Provider = 'openai' | 'claude' | 'vertex' | 'xai' // | 'palm' | 'jurassic'
+export type Provider = 'openai' | 'claude' | 'vertex' | 'xai' | 'luma'
 export type ChargeType = 'TOKEN' | 'CHAR'
 
 export type DalleImageSize = '1024x1024' | '1024x1792' | '1792x1024'
@@ -36,7 +36,6 @@ export interface ChatModel extends BaseModel {
 }
 
 export interface ImageModel extends BaseModel {
-  apiSpec: string
   price: ImagePrice
 }
 
@@ -52,4 +51,8 @@ export interface ParseDate {
   month: number
   year: number
   monthName: string
+}
+
+export enum Callbacks {
+  LumaDownloadVideo = 'luma_dl'
 }

@@ -32,8 +32,12 @@ export default {
   sessionTimeout: process.env.SESSION_TIMEOUT
     ? parseInt(process.env.SESSION_TIMEOUT)
     : 48, // in hours
+  luma: {
+    isEnabled: true,
+    apiKey: process.env.LUMAAI_API_KEY
+  },
   llms: {
-    apiEndpoint: process.env.LLMS_ENDPOINT, // // process.env.LLMS_ENDPOINT, // 'http://127.0.0.1:5000',
+    apiEndpoint: 'http://127.0.0.1:5000', // // process.env.LLMS_ENDPOINT, // 'http://127.0.0.1:5000',
     apiKey: process.env.LLMS_API_KEY ?? '',
     wordLimit: 50,
     model: 'gpt-4o',
