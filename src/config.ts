@@ -40,7 +40,7 @@ export default {
     apiEndpoint: 'http://127.0.0.1:5000', // // process.env.LLMS_ENDPOINT, // 'http://127.0.0.1:5000',
     apiKey: process.env.LLMS_API_KEY ?? '',
     wordLimit: 50,
-    model: 'chat-bison',
+    model: 'gpt-4o',
     minimumBalance: 0,
     isEnabled: Boolean(parseInt(process.env.LLMS_ENABLED ?? '1')),
     pdfUrl: process.env.PDF_URL ?? '',
@@ -53,7 +53,7 @@ export default {
       telegramFileUrl: 'https://api.telegram.org/file/bot',
       completions: {
         temperature:
-          (parseInt(process.env.OPENAI_TEMPERATURE ?? '')) ??
+          (parseFloat(process.env.OPENAI_TEMPERATURE ?? '')) ??
           0.8
       },
       defaultPrompt:
@@ -145,11 +145,10 @@ export default {
   schedule: {
     isEnabled: Boolean(parseInt(process.env.SCHEDULE_IS_ENABLED ?? '0')),
     chatId: process.env.SCHEDULE_CHAT_ID ?? '',
-    explorerRestApiUrl: process.env.EXPLORER_REST_API_URL ?? '',
-    explorerRestApiKey: process.env.EXPLORER_REST_API_KEY ?? '',
+    explorerRestApiUrl: process.env.EXPLORER_REST_API_URL ?? 'https://stats.explorer.harmony.one',
     swapSubgraphApiUrl:
       process.env.SWAP_SUBGRAPH_API_URL ??
-      'https://api.thegraph.com/subgraphs/name/nick8319/uniswap-v3-harmony' // 'https://api.thegraph.com/subgraphs/name/potvik/uniswap-v3-harmony'
+      'https://gateway.thegraph.com/api/c568be64f7d1d4d4739d3881b5e09fc6/subgraphs/id/GVkp9F6TzzC5hY4g18Ukzb6gGcYDfQrpMpcj867jsenJ' // 'https://api.thegraph.com/subgraphs/name/potvik/uniswap-v3-harmony'
   },
   walletConnect: { projectId: process.env.WALLET_CONNECT_PROJECT_ID ?? '' },
   voiceTranslate: { isEnabled: Boolean(parseInt(process.env.BOT_VOICE_TRANSLATE_ENABLE ?? '0')) },
@@ -159,7 +158,7 @@ export default {
     maxChatsWhitelist: (process.env.CREDITS_CHATS_WHITELIST ?? '')
       .split(',')
       .map((item) => item.toString().toLowerCase()),
-    creditsAmount: '100'
+    creditsAmount: '100' // todo: handle multiple credits numbers (+ dateSince), considering future number change.
   },
   betteruptime: { botHeartBitId: process.env.BOT_HEARTBIT_ID ?? '' },
   telegramPayments: { token: process.env.TELEGRAM_PAYMENTS_TOKEN ?? '' },

@@ -9,10 +9,9 @@ import { type LlmCompletion } from './api/llmApi'
 import { anthropicCompletion, anthropicStreamCompletion, toolsChatCompletion } from './api/athropic'
 import { LlmsBase } from './llmsBase'
 import { type ModelVersion } from './utils/llmModelsManager'
+import { type ModelParameters } from './utils/types'
 
 export class ClaudeBot extends LlmsBase {
-  private readonly claudeModels: ModelVersion[]
-
   constructor (payments: BotPayments) {
     super(payments, 'ClaudeBot', 'llms')
   }
@@ -41,25 +40,28 @@ export class ClaudeBot extends LlmsBase {
     model: ModelVersion,
     ctx: OnMessageContext | OnCallBackQueryData,
     msgId: number,
-    limitTokens: boolean): Promise<LlmCompletion> {
+    limitTokens: boolean,
+    parameters?: ModelParameters): Promise<LlmCompletion> {
     return await anthropicStreamCompletion(
       conversation,
       model,
       ctx,
       msgId,
-      true // telegram messages has a character limit
+      true, // telegram messages has a character limit
+      parameters
     )
   }
 
   async chatCompletion (
     conversation: ChatConversation[],
     model: ModelVersion,
-    hasTools: boolean
+    hasTools: boolean,
+    parameters?: ModelParameters
   ): Promise<LlmCompletion> {
     if (hasTools) {
-      return await toolsChatCompletion(conversation, model)
+      return await toolsChatCompletion(conversation, model, parameters)
     }
-    return await anthropicCompletion(conversation, model)
+    return await anthropicCompletion(conversation, model, parameters)
   }
 
   public async onEvent (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {

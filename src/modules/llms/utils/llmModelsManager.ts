@@ -3,7 +3,8 @@ import {
   type Provider,
   type LLMData,
   type LLMModel,
-  type ImageModel
+  type ImageModel,
+  type ModelParameters
 } from './types'
 
 export class LLMModelsManager {
@@ -113,6 +114,20 @@ export class LLMModelsManager {
     }) as any
   }
 
+  getModelParameters (modelVersion: string): ModelParameters {
+    const model = this.getModel(modelVersion)
+    if (!model) {
+      throw new Error(`Model ${modelVersion} not found`)
+    }
+    const providerParams = llmData.providerParameters[model.provider]
+    const modelOverrides = providerParams.modelOverrides?.[model.name] ?? {}
+
+    return {
+      ...providerParams.defaultParameters,
+      ...modelOverrides
+    }
+  }
+
   isValidModel (model: string): model is (typeof this.modelsEnum)[keyof typeof this.modelsEnum] {
     return Object.values(this.modelsEnum).includes(model)
   }
@@ -135,7 +150,6 @@ export class LLMModelsManager {
     for (const provider of providers) {
       output += `*${provider.toUpperCase()} models:*\n`
       this.getModelsByProvider(provider).forEach(model => {
-        console.log(model.name, model.provider, model.botName)
         if (model.commands.length > 0) {
           output += `${model.fullName}: [${model.version}](${model.apiSpec})\n`
           output += `Commands: _/${model.commands.join(' /')}_\n`

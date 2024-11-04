@@ -4,21 +4,17 @@ import {
   type OnCallBackQueryData,
   type ChatConversation
 } from '../types'
-import {
-  isMentioned,
-  SupportedCommands
-} from './utils/helpers'
 import { type LlmCompletion } from './api/llmApi'
-
+import { xaiCompletion } from './api/athropic'
 import { LlmsBase } from './llmsBase'
-import { vertexCompletion, vertexStreamCompletion } from './api/vertex'
-import { type SubagentBase } from '../subagents'
 import { type ModelVersion } from './utils/llmModelsManager'
 import { type ModelParameters } from './utils/types'
 
-export class VertexBot extends LlmsBase {
-  constructor (payments: BotPayments, subagents?: SubagentBase[]) {
-    super(payments, 'VertexBot', 'llms', subagents)
+export class XaiBot extends LlmsBase {
+  private readonly claudeModels: ModelVersion[]
+
+  constructor (payments: BotPayments) {
+    super(payments, 'xAIBot', 'llms')
   }
 
   public getEstimatedPrice (ctx: any): number {
@@ -29,9 +25,7 @@ export class VertexBot extends LlmsBase {
     ctx: OnMessageContext | OnCallBackQueryData
   ): boolean {
     const hasCommand = ctx.hasCommand(this.supportedCommands)
-    if (isMentioned(ctx)) {
-      return true
-    }
+
     const chatPrefix = this.hasPrefix(ctx.message?.text ?? '')
     if (chatPrefix !== '') {
       return true
@@ -46,22 +40,22 @@ export class VertexBot extends LlmsBase {
     msgId: number,
     limitTokens: boolean,
     parameters?: ModelParameters): Promise<LlmCompletion> {
-    return await vertexStreamCompletion(conversation,
-      model,
-      ctx,
-      msgId,
-      true, // telegram messages has a character limit
-      parameters
-    )
+    return {
+      completion: undefined,
+      usage: 0,
+      price: 0,
+      inputTokens: 0,
+      outputTokens: 0
+    }
   }
 
   async chatCompletion (
     conversation: ChatConversation[],
     model: ModelVersion,
-    usesTools: boolean,
+    hasTools: boolean,
     parameters?: ModelParameters
   ): Promise<LlmCompletion> {
-    return await vertexCompletion(conversation, model, parameters)
+    return await xaiCompletion(conversation, model, parameters)
   }
 
   public async onEvent (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
@@ -72,10 +66,6 @@ export class VertexBot extends LlmsBase {
       return
     }
 
-    if (ctx.hasCommand([SupportedCommands.pdf, SupportedCommands.ctx]) && this.checkModel(ctx)) {
-      await this.onChat(ctx, ctx.session.currentModel, true, false)
-    }
-
     const model = this.getModelFromContext(ctx)
     if (!model) {
       this.logger.warn(`### unsupported model for command ${ctx.message?.text}`)
@@ -83,6 +73,7 @@ export class VertexBot extends LlmsBase {
     }
     this.updateSessionModel(ctx, model.version)
 
-    await this.onChat(ctx, model.version, this.getStreamOption(model.version), false)
+    const usesTools = ctx.hasCommand([this.commandsEnum.CTOOL, this.commandsEnum.STOOL])
+    await this.onChat(ctx, model.version, usesTools ? false : this.getStreamOption(model.version), usesTools)
   }
 }

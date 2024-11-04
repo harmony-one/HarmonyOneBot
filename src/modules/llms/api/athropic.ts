@@ -9,6 +9,7 @@ import { type LlmCompletion } from './llmApi'
 import { sleep } from '../../sd-images/utils'
 import { headers, headersStream } from './helper'
 import { LlmModelsEnum } from '../utils/llmModelsManager'
+import { type ModelParameters } from '../utils/types'
 
 const logger = pino({
   name: 'anthropic - llmsBot',
@@ -22,16 +23,20 @@ const API_ENDPOINT = config.llms.apiEndpoint // 'http://127.0.0.1:5000' // confi
 
 export const anthropicCompletion = async (
   conversation: ChatConversation[],
-  model = LlmModelsEnum.CLAUDE_3_OPUS
+  model = LlmModelsEnum.CLAUDE_3_OPUS,
+  parameters?: ModelParameters
 ): Promise<LlmCompletion> => {
   logger.info(`Handling ${model} completion`)
+  parameters = parameters ?? {
+    system: config.openAi.chatGpt.chatCompletionContext,
+    max_tokens: +config.openAi.chatGpt.maxTokens
+  }
   const data = {
     model,
     stream: false,
-    system: config.openAi.chatGpt.chatCompletionContext,
-    max_tokens: +config.openAi.chatGpt.maxTokens,
     messages: conversation.filter(c => c.model === model)
-      .map(m => { return { content: m.content, role: m.role } })
+      .map(m => { return { content: m.content, role: m.role } }),
+    ...parameters
   }
   const url = `${API_ENDPOINT}/anthropic/completions`
   const response = await axios.post(url, data, headers)
@@ -47,7 +52,52 @@ export const anthropicCompletion = async (
         model
       },
       usage: totalOutputTokens + totalInputTokens,
-      price: 0
+      price: 0,
+      inputTokens: parseInt(totalInputTokens, 10),
+      outputTokens: parseInt(totalOutputTokens, 10)
+    }
+  }
+  return {
+    completion: undefined,
+    usage: 0,
+    price: 0
+  }
+}
+
+export const xaiCompletion = async (
+  conversation: ChatConversation[],
+  model = LlmModelsEnum.GROK,
+  parameters?: ModelParameters
+): Promise<LlmCompletion> => {
+  logger.info(`Handling ${model} completion`)
+  parameters = parameters ?? {
+    system: config.openAi.chatGpt.chatCompletionContext,
+    max_tokens: +config.openAi.chatGpt.maxTokens
+  }
+  const data = {
+    model,
+    stream: false,
+    messages: conversation.filter(c => c.model === model)
+      .map(m => { return { content: m.content, role: m.role } }),
+    ...parameters
+  }
+  const url = `${API_ENDPOINT}/xai/completions`
+  const response = await axios.post(url, data, headers)
+  const respJson = JSON.parse(response.data)
+  if (response) {
+    const totalInputTokens = respJson.usage.input_tokens
+    const totalOutputTokens = respJson.usage.output_tokens
+    const completion = respJson.content
+    return {
+      completion: {
+        content: completion[0].text,
+        role: 'assistant',
+        model
+      },
+      usage: totalOutputTokens + totalInputTokens,
+      price: 0,
+      inputTokens: parseInt(totalInputTokens, 10),
+      outputTokens: parseInt(totalOutputTokens, 10)
     }
   }
   return {
@@ -62,14 +112,19 @@ export const anthropicStreamCompletion = async (
   model = LlmModelsEnum.CLAUDE_3_OPUS,
   ctx: OnMessageContext | OnCallBackQueryData,
   msgId: number,
-  limitTokens = true
+  limitTokens = true,
+  parameters?: ModelParameters
 ): Promise<LlmCompletion> => {
   logger.info(`Handling ${model} stream completion`)
+  parameters = parameters ?? {
+    system: config.openAi.chatGpt.chatCompletionContext,
+    max_tokens: +config.openAi.chatGpt.maxTokens
+  }
   const data = {
     model,
     stream: true,
-    system: config.openAi.chatGpt.chatCompletionContext,
-    max_tokens: limitTokens ? +config.openAi.chatGpt.maxTokens : undefined,
+    system: parameters.system,
+    max_tokens: limitTokens ? parameters.max_tokens : undefined,
     messages: conversation.filter(c => c.model === model && c.role !== 'system') // .map(m => { return { content: m.content, role: m.role } })
   }
   let wordCount = 0
@@ -158,16 +213,20 @@ export const anthropicStreamCompletion = async (
 
 export const toolsChatCompletion = async (
   conversation: ChatConversation[],
-  model = LlmModelsEnum.CLAUDE_3_OPUS
+  model = LlmModelsEnum.CLAUDE_3_OPUS,
+  parameters?: ModelParameters
 ): Promise<LlmCompletion> => {
   logger.info(`Handling ${model} completion`)
+  parameters = parameters ?? {
+    system: config.openAi.chatGpt.chatCompletionContext,
+    max_tokens: +config.openAi.chatGpt.maxTokens
+  }
   const input = {
     model,
     stream: false,
-    system: config.openAi.chatGpt.chatCompletionContext,
-    max_tokens: +config.openAi.chatGpt.maxTokens,
     messages: conversation.filter(c => c.model === model && c.role !== 'system')
-      .map(m => { return { content: m.content, role: m.role } })
+      .map(m => { return { content: m.content, role: m.role } }),
+    ...parameters
   }
   const url = `${API_ENDPOINT}/anthropic/completions/tools`
   const response = await axios.post(url, input, headers)

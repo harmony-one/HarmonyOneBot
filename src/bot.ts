@@ -60,6 +60,7 @@ import { LlamaAgent } from './modules/subagents'
 import { llmModelManager } from './modules/llms/utils/llmModelsManager'
 import { HmnyBot } from './modules/hmny'
 import { LumaBot } from './modules/llms/lumaBot'
+import { XaiBot } from './modules/llms/xaiBot'
 
 Events.EventEmitter.defaultMaxListeners = 30
 
@@ -186,10 +187,7 @@ bot.use(async (ctx: BotContext, next: NextFunction): Promise<void> => {
 
 bot.use(
   session({
-    initial: () => {
-      logger.info('Creating new session')
-      return createInitialSessionData()
-    },
+    initial: createInitialSessionData,
     storage: enhanceStorage<BotSessionData>({
       storage: new MemorySessionStorage<Enhance<BotSessionData>>(),
       millisecondsToLive: config.sessionTimeout * 60 * 60 * 1000 // 48 hours
@@ -213,6 +211,7 @@ const dalleBot = new DalleBot(payments)
 const lumaBot = new LumaBot(payments)
 const claudeBot = new ClaudeBot(payments)
 const vertexBot = new VertexBot(payments, [llamaAgent])
+const xaiBot = new XaiBot(payments)
 const oneCountryBot = new OneCountryBot(payments)
 const translateBot = new TranslateBot()
 const telegramPayments = new TelegramPayments(payments)
@@ -343,6 +342,7 @@ const PayableBots: Record<string, PayableBotConfig> = {
   claudeBot: { bot: claudeBot },
   vertexBot: { bot: vertexBot },
   lumaBot: { bot: lumaBot },
+  aixBot: { bot: xaiBot },
   openAiBot: {
     enabled: (ctx: OnMessageContext) => ctx.session.dalle.isEnabled,
     bot: openAiBot
@@ -538,7 +538,6 @@ bot.command('support', async (ctx) => {
 
 bot.command('models', async (ctx) => {
   const models = llmModelManager.generateTelegramOutput()
-  console.log(models)
   writeCommandLog(ctx as OnMessageContext).catch(logErrorHandler)
   return await ctx.reply(models, {
     parse_mode: 'Markdown',
