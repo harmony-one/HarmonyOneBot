@@ -1,6 +1,6 @@
 import axios, { type AxiosResponse } from 'axios'
 import config from '../../../config'
-import { type OnMessageContext, type ChatConversation, type OnCallBackQueryData } from '../../types'
+import { type OnMessageContext, type ChatConversation, type OnCallBackQueryData, type ChatConversationWithoutTimestamp } from '../../types'
 import { type LlmCompletion } from './llmApi'
 import { type Readable } from 'stream'
 import { GrammyError } from 'grammy'
@@ -29,7 +29,7 @@ export const vertexCompletion = async (
     stream: false,
     messages: conversation.filter(c => c.model === model)
       .map((msg) => {
-        const msgFiltered: ChatConversation = { content: msg.content, model: msg.model }
+        const msgFiltered: ChatConversationWithoutTimestamp = { content: msg.content, model: msg.model }
         if (model === LlmModelsEnum.CHAT_BISON) {
           msgFiltered.author = msg.role
         } else {
@@ -48,7 +48,8 @@ export const vertexCompletion = async (
       completion: {
         content: response.data._prediction_response[0][0].candidates[0].content,
         role: 'bot', // role replace to author attribute will be done later
-        model
+        model,
+        timestamp: Date.now()
       },
       usage: totalOutputTokens + totalInputTokens,
       price: 0
@@ -145,7 +146,8 @@ export const vertexStreamCompletion = async (
     completion: {
       content: completion,
       role: 'assistant',
-      model
+      model,
+      timestamp: Date.now()
     },
     usage: parseInt(totalOutputTokens, 10) + parseInt(totalInputTokens, 10),
     price: 0,

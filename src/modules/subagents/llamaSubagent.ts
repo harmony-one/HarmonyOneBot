@@ -11,7 +11,8 @@ import {
   type Collection, type OnCallBackQueryData,
   type OnMessageContext,
   type SubagentResult,
-  SubagentStatus
+  SubagentStatus,
+  type ChatConversationWithoutTimestamp
 } from '../types'
 import config from '../../config'
 import { appText } from '../../utils/text'
@@ -305,7 +306,7 @@ export class LlamaAgent extends SubagentBase {
       const session = this.getSession(ctx)
       const collection = ctx.session.collections.activeCollections.find(c => c.url === url)
       if (collection) {
-        const conversation = this.getCollectionConversation(ctx, collection)
+        const conversation = this.getCollectionConversation(ctx, collection) as unknown as ChatConversationWithoutTimestamp[]
         if (conversation.length === 0) {
           conversation.push({
             role: 'system',

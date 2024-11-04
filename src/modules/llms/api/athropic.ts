@@ -49,7 +49,8 @@ export const anthropicCompletion = async (
       completion: {
         content: completion[0].text,
         role: 'assistant',
-        model
+        model,
+        timestamp: Date.now()
       },
       usage: totalOutputTokens + totalInputTokens,
       price: 0,
@@ -92,7 +93,8 @@ export const xaiCompletion = async (
       completion: {
         content: completion[0].text,
         role: 'assistant',
-        model
+        model,
+        timestamp: Date.now()
       },
       usage: totalOutputTokens + totalInputTokens,
       price: 0,
@@ -202,7 +204,8 @@ export const anthropicStreamCompletion = async (
     completion: {
       content: completion,
       role: 'assistant',
-      model
+      model,
+      timestamp: Date.now()
     },
     usage: parseInt(totalOutputTokens, 10) + parseInt(totalInputTokens, 10),
     price: 0,
@@ -252,7 +255,8 @@ export const toolsChatCompletion = async (
         completion: {
           content: completion[0].text,
           role: 'assistant',
-          model
+          model,
+          timestamp: Date.now()
         },
         usage: totalOutputTokens + totalInputTokens,
         price: 0,
@@ -264,7 +268,8 @@ export const toolsChatCompletion = async (
         completion: {
           content: 'Timeout error',
           role: 'assistant',
-          model
+          model,
+          timestamp: Date.now()
         },
         usage: 0,
         price: 0

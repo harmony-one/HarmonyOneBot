@@ -79,7 +79,9 @@ export async function alterGeneratedImg (
   }
 }
 
-const prepareConversation = (conversation: ChatConversation[], model: string): ChatConversation[] => {
+type ConversationOutput = Omit<ChatConversation, 'timestamp' | 'model' | 'id' | 'author' | 'numSubAgents'>
+
+const prepareConversation = (conversation: ChatConversation[], model: string): ConversationOutput[] => {
   const messages = conversation.filter(c => c.model === model).map(m => { return { content: m.content, role: m.role } })
   if (messages.length !== 1 || model === LlmModelsEnum.O1) {
     return messages
@@ -125,7 +127,8 @@ export async function chatCompletion (
   return {
     completion: {
       content: response.choices[0].message?.content ?? 'Error - no completion available',
-      role: 'assistant'
+      role: 'assistant',
+      timestamp: Date.now()
     },
     usage: response.usage?.total_tokens, // 2010
     price: price * config.openAi.chatGpt.priceAdjustment,
@@ -215,7 +218,8 @@ export const streamChatCompletion = async (
   return {
     completion: {
       content: completion,
-      role: 'assistant'
+      role: 'assistant',
+      timestamp: Date.now()
     },
     usage: outputTokens + inputTokens,
     price: 0,
@@ -308,7 +312,8 @@ export const streamChatVisionCompletion = async (
   return {
     completion: {
       content: completion,
-      role: 'assistant'
+      role: 'assistant',
+      timestamp: Date.now()
     },
     usage: outputTokens + inputTokens,
     price: 0,
@@ -319,7 +324,7 @@ export const streamChatVisionCompletion = async (
 
 export async function improvePrompt (promptText: string, model: string): Promise<string> {
   const prompt = `Improve this picture description using max 100 words and don't add additional text to the image: ${promptText} `
-  const conversation = [{ role: 'user', content: prompt }]
+  const conversation = [{ role: 'user', content: prompt, timestamp: Date.now() }]
   const response = await chatCompletion(conversation, model)
   return response.completion?.content as string ?? ''
 }

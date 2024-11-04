@@ -58,7 +58,10 @@ export interface ChatConversation {
   content: string | VisionContent[]
   model?: string
   numSubAgents?: number
+  timestamp: number
 }
+
+export type ChatConversationWithoutTimestamp = Omit<ChatConversation, 'timestamp'>
 
 export interface ImageRequest {
   command?: 'dalle' | 'alter' | 'vision'
@@ -82,6 +85,11 @@ export interface promptRequest {
   commandPrefix?: string
 }
 
+export interface ConversationManagerState {
+  lastCleanupTime: number
+  nextCleanupTime: number
+}
+
 export interface LlmsSessionData {
   model: string
   isEnabled: boolean
@@ -91,6 +99,7 @@ export interface LlmsSessionData {
   price: number
   requestQueue: ChatConversation[]
   isProcessingQueue: boolean
+  cleanupState: ConversationManagerState
 }
 
 export interface OneCountryData {
