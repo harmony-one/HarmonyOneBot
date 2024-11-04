@@ -37,7 +37,7 @@ export default {
     apiKey: process.env.LUMAAI_API_KEY
   },
   llms: {
-    apiEndpoint: 'http://127.0.0.1:5000', // // process.env.LLMS_ENDPOINT, // 'http://127.0.0.1:5000',
+    apiEndpoint: process.env.LLMS_ENDPOINT, // // process.env.LLMS_ENDPOINT, // 'http://127.0.0.1:5000',
     apiKey: process.env.LLMS_API_KEY ?? '',
     wordLimit: 50,
     model: 'gpt-4o',
