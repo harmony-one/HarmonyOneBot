@@ -238,6 +238,12 @@ export const llmData: LLMData = {
         system: config.openAi.chatGpt.chatCompletionContext,
         max_tokens: +config.openAi.chatGpt.maxTokens
       }
+    },
+    luma: {
+      defaultParameters: {
+        system: config.openAi.chatGpt.chatCompletionContext,
+        max_tokens: +config.openAi.chatGpt.maxTokens
+      }
     }
   }
 }
