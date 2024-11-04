@@ -233,8 +233,7 @@ export abstract class LlmsBase implements PayableBot {
 
   async onChatRequestHandler (ctx: OnMessageContext | OnCallBackQueryData, stream: boolean, usesTools: boolean): Promise<void> {
     const session = this.getSession(ctx)
-    session.chatConversation = conversationManager.manageConversationWindow(session.chatConversation)
-
+    session.chatConversation = conversationManager.manageConversationWindow(session.chatConversation, ctx, this.sessionDataKey)
     while (session.requestQueue.length > 0) {
       try {
         const msg = session.requestQueue.shift()
@@ -476,6 +475,49 @@ export abstract class LlmsBase implements PayableBot {
     session.chatConversation = []
     session.usage = 0
     session.price = 0
+  }
+
+  async testCleanup (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
+    const session = this.getSession(ctx)
+    // Force cleanup times for testing
+    const now = new Date()
+    const forcedCleanupTime = new Date(now)
+    forcedCleanupTime.setHours(2, 59, 0, 0) // Set to 2:59 AM
+    session.cleanupState = {
+      nextCleanupTime: forcedCleanupTime.getTime() + (60 * 1000), // 3 AM
+      lastCleanupTime: forcedCleanupTime.getTime() - (24 * 60 * 60 * 1000) // Yesterday 2:59 AM
+    }
+    console.log('Testing cleanup with forced times:', {
+      nextCleanup: new Date(session.cleanupState.nextCleanupTime).toLocaleString(),
+      lastCleanup: new Date(session.cleanupState.lastCleanupTime).toLocaleString(),
+      currentTime: now.toLocaleString()
+    })
+    // Add some test messages with various timestamps
+    if (session.chatConversation.length === 0) {
+      const yesterday = new Date(now)
+      yesterday.setDate(yesterday.getDate() - 1)
+      session.chatConversation = [
+        {
+          role: 'user',
+          content: 'Message from 2 days ago',
+          model: 'test',
+          timestamp: yesterday.getTime() - (24 * 60 * 60 * 1000)
+        },
+        {
+          role: 'assistant',
+          content: 'Message from yesterday',
+          model: 'test',
+          timestamp: yesterday.getTime()
+        },
+        {
+          role: 'user',
+          content: 'Message from today',
+          model: 'test',
+          timestamp: now.getTime()
+        }
+      ]
+    }
+    await this.onChatRequestHandler(ctx, false, false)
   }
 
   async onError (

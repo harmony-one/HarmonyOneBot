@@ -498,6 +498,19 @@ const logErrorHandler = (ex: any): void => {
   logger.error(ex)
 }
 
+// bot.command('testcleanup', async (ctx) => {
+//   await openAiBot.testCleanup(ctx as OnMessageContext)
+// })
+
+bot.command('new', async (ctx) => {
+  writeCommandLog(ctx as OnMessageContext).catch(logErrorHandler)
+  await openAiBot.onStop(ctx as OnMessageContext)
+  return await ctx.reply('Chat history reseted', {
+    parse_mode: 'Markdown',
+    message_thread_id: ctx.message?.message_thread_id
+  })
+})
+
 bot.command('more', async (ctx) => {
   writeCommandLog(ctx as OnMessageContext).catch(logErrorHandler)
   return await ctx.reply(commandsHelpText.more, {

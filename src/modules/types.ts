@@ -85,6 +85,11 @@ export interface promptRequest {
   commandPrefix?: string
 }
 
+export interface ConversationManagerState {
+  lastCleanupTime: number
+  nextCleanupTime: number
+}
+
 export interface LlmsSessionData {
   model: string
   isEnabled: boolean
@@ -94,6 +99,7 @@ export interface LlmsSessionData {
   price: number
   requestQueue: ChatConversation[]
   isProcessingQueue: boolean
+  cleanupState: ConversationManagerState
 }
 
 export interface OneCountryData {

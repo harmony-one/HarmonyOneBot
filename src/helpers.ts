@@ -1,4 +1,5 @@
 import config from './config'
+import { conversationManager } from './modules/llms/utils/conversationManager'
 import { LlmModelsEnum } from './modules/llms/utils/llmModelsManager'
 import { type DalleImageSize } from './modules/llms/utils/types'
 import { type BotSessionData } from './modules/types'
@@ -26,7 +27,8 @@ export function createInitialSessionData (): BotSessionData {
       price: 0,
       usage: 0,
       isProcessingQueue: false,
-      requestQueue: []
+      requestQueue: [],
+      cleanupState: conversationManager.initializeCleanupTimes()
     },
     chatGpt: {
       model: config.llms.model,
@@ -36,7 +38,8 @@ export function createInitialSessionData (): BotSessionData {
       price: 0,
       usage: 0,
       isProcessingQueue: false,
-      requestQueue: []
+      requestQueue: [],
+      cleanupState: conversationManager.initializeCleanupTimes()
     },
     dalle: {
       numImages: config.openAi.dalle.sessionDefault.numImages,
