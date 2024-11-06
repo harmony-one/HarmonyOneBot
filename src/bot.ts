@@ -516,7 +516,19 @@ const logErrorHandler = (ex: any): void => {
 bot.command('new', async (ctx) => {
   writeCommandLog(ctx as OnMessageContext).catch(logErrorHandler)
   await openAiBot.onStop(ctx as OnMessageContext)
+  await claudeBot.onStop(ctx as OnMessageContext) // any Bot with 'llms' as sessionKey works.
   return await ctx.reply('Chat history reseted', {
+    parse_mode: 'Markdown',
+    message_thread_id: ctx.message?.message_thread_id
+  })
+})
+
+bot.command('prompt', async (ctx) => {
+  const context = ctx.match
+  if (context) {
+    ctx.session.currentPrompt = context
+  }
+  await ctx.reply(`Prompt set to: _${ctx.session.currentPrompt}_`, {
     parse_mode: 'Markdown',
     message_thread_id: ctx.message?.message_thread_id
   })

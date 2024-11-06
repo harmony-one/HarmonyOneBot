@@ -120,6 +120,7 @@ export abstract class LlmsBase implements PayableBot {
   protected abstract chatCompletion (
     conversation: ChatConversation[],
     model: ModelVersion,
+    ctx: OnMessageContext | OnCallBackQueryData,
     usesTools: boolean,
     parameters?: ModelParameters
   ): Promise<LlmCompletion>
@@ -373,7 +374,7 @@ export abstract class LlmsBase implements PayableBot {
         }
       } else {
         const parameters = this.modelManager.getModelParameters(model)
-        const response = await this.chatCompletion(conversation, model, usesTools, parameters)
+        const response = await this.chatCompletion(conversation, model, ctx, usesTools, parameters)
         conversation.push({
           role: 'assistant',
           content: response.completion?.content ?? '',
@@ -406,7 +407,7 @@ export abstract class LlmsBase implements PayableBot {
     ).message_id
     ctx.chatAction = 'typing'
     const parameters = this.modelManager.getModelParameters(model)
-    const response = await this.chatCompletion(conversation, model, usesTools, parameters)
+    const response = await this.chatCompletion(conversation, model, ctx, usesTools, parameters)
     if (response.completion) {
       if (model === this.modelsEnum.O1) {
         const msgs = splitTelegramMessage(response.completion.content as string)

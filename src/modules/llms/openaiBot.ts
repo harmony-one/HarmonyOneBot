@@ -73,8 +73,8 @@ export class OpenAIBot extends LlmsBase {
   ): Promise<LlmCompletion> {
     return await streamChatCompletion(
       conversation,
-      ctx,
       model,
+      ctx,
       msgId,
       true, // telegram messages has a character limit
       parameters
@@ -84,10 +84,11 @@ export class OpenAIBot extends LlmsBase {
   async chatCompletion (
     conversation: ChatConversation[],
     model: ModelVersion,
+    ctx: OnMessageContext | OnCallBackQueryData,
     usesTools: boolean,
     parameters?: ModelParameters
   ): Promise<LlmCompletion> {
-    return await chatCompletion(conversation, model, model !== this.modelsEnum.O1, parameters) // limitTokens doesn't apply for o1-preview
+    return await chatCompletion(conversation, model, ctx, model !== this.modelsEnum.O1, parameters) // limitTokens doesn't apply for o1-preview
   }
 
   hasPrefix (prompt: string): string {

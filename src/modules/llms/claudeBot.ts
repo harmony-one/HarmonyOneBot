@@ -42,6 +42,9 @@ export class ClaudeBot extends LlmsBase {
     msgId: number,
     limitTokens: boolean,
     parameters?: ModelParameters): Promise<LlmCompletion> {
+    if (parameters) {
+      parameters.system = ctx.session.currentPrompt
+    }
     return await anthropicStreamCompletion(
       conversation,
       model,
@@ -55,13 +58,17 @@ export class ClaudeBot extends LlmsBase {
   async chatCompletion (
     conversation: ChatConversation[],
     model: ModelVersion,
+    ctx: OnMessageContext | OnCallBackQueryData,
     hasTools: boolean,
     parameters?: ModelParameters
   ): Promise<LlmCompletion> {
-    if (hasTools) {
-      return await toolsChatCompletion(conversation, model, parameters)
+    if (parameters) {
+      parameters.system = ctx.session.currentPrompt
     }
-    return await anthropicCompletion(conversation, model, parameters)
+    if (hasTools) {
+      return await toolsChatCompletion(conversation, model, ctx, parameters)
+    }
+    return await anthropicCompletion(conversation, model, ctx, parameters)
   }
 
   public async onEvent (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {

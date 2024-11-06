@@ -187,6 +187,7 @@ export interface BotSessionData {
   subagents: SubagentSessionData
   dalle: ImageGenSessionData
   currentModel: ModelVersion
+  currentPrompt: string
   lastBroadcast: string
   voiceMemo: VoiceMemoSessionData
 }

@@ -24,11 +24,12 @@ const API_ENDPOINT = config.llms.apiEndpoint // 'http://127.0.0.1:5000' // confi
 export const anthropicCompletion = async (
   conversation: ChatConversation[],
   model = LlmModelsEnum.CLAUDE_3_OPUS,
+  ctx: OnMessageContext | OnCallBackQueryData,
   parameters?: ModelParameters
 ): Promise<LlmCompletion> => {
   logger.info(`Handling ${model} completion`)
   parameters = parameters ?? {
-    system: config.openAi.chatGpt.chatCompletionContext,
+    system: ctx.session.currentPrompt,
     max_tokens: +config.openAi.chatGpt.maxTokens
   }
   const data = {
@@ -68,11 +69,12 @@ export const anthropicCompletion = async (
 export const xaiCompletion = async (
   conversation: ChatConversation[],
   model = LlmModelsEnum.GROK,
+  ctx: OnMessageContext | OnCallBackQueryData,
   parameters?: ModelParameters
 ): Promise<LlmCompletion> => {
   logger.info(`Handling ${model} completion`)
   parameters = parameters ?? {
-    system: config.openAi.chatGpt.chatCompletionContext,
+    system: ctx.session.currentPrompt,
     max_tokens: +config.openAi.chatGpt.maxTokens
   }
   const data = {
@@ -119,7 +121,7 @@ export const anthropicStreamCompletion = async (
 ): Promise<LlmCompletion> => {
   logger.info(`Handling ${model} stream completion`)
   parameters = parameters ?? {
-    system: config.openAi.chatGpt.chatCompletionContext,
+    system: ctx.session.currentPrompt,
     max_tokens: +config.openAi.chatGpt.maxTokens
   }
   const data = {
@@ -217,11 +219,12 @@ export const anthropicStreamCompletion = async (
 export const toolsChatCompletion = async (
   conversation: ChatConversation[],
   model = LlmModelsEnum.CLAUDE_3_OPUS,
+  ctx: OnMessageContext | OnCallBackQueryData,
   parameters?: ModelParameters
 ): Promise<LlmCompletion> => {
   logger.info(`Handling ${model} completion`)
   parameters = parameters ?? {
-    system: config.openAi.chatGpt.chatCompletionContext,
+    system: ctx.session.currentPrompt,
     max_tokens: +config.openAi.chatGpt.maxTokens
   }
   const input = {

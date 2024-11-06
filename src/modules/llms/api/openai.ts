@@ -81,14 +81,14 @@ export async function alterGeneratedImg (
 
 type ConversationOutput = Omit<ChatConversation, 'timestamp' | 'model' | 'id' | 'author' | 'numSubAgents'>
 
-const prepareConversation = (conversation: ChatConversation[], model: string): ConversationOutput[] => {
+const prepareConversation = (conversation: ChatConversation[], model: string, ctx: OnMessageContext | OnCallBackQueryData): ConversationOutput[] => {
   const messages = conversation.filter(c => c.model === model).map(m => { return { content: m.content, role: m.role } })
   if (messages.length !== 1 || model === LlmModelsEnum.O1) {
     return messages
   }
   const systemMessage = {
     role: 'system',
-    content: config.openAi.chatGpt.chatCompletionContext
+    content: ctx.session.currentPrompt
   }
   return [systemMessage, ...messages]
 }
@@ -96,10 +96,11 @@ const prepareConversation = (conversation: ChatConversation[], model: string): C
 export async function chatCompletion (
   conversation: ChatConversation[],
   model = config.openAi.chatGpt.model,
+  ctx: OnMessageContext | OnCallBackQueryData,
   limitTokens = true,
   parameters?: ModelParameters
 ): Promise<LlmCompletion> {
-  const messages = prepareConversation(conversation, model)
+  const messages = prepareConversation(conversation, model, ctx)
   parameters = parameters ?? {
     max_completion_tokens: config.openAi.chatGpt.maxTokens,
     temperature: config.openAi.dalle.completions.temperature
@@ -139,15 +140,15 @@ export async function chatCompletion (
 
 export const streamChatCompletion = async (
   conversation: ChatConversation[],
-  ctx: OnMessageContext | OnCallBackQueryData,
   model = LlmModelsEnum.GPT_4,
+  ctx: OnMessageContext | OnCallBackQueryData,
   msgId: number,
   limitTokens = true,
   parameters?: ModelParameters
 ): Promise<LlmCompletion> => {
   let completion = ''
   let wordCountMinimum = 2
-  const messages = prepareConversation(conversation, model)
+  const messages = prepareConversation(conversation, model, ctx)
   parameters = parameters ?? {
     max_completion_tokens: config.openAi.chatGpt.maxTokens,
     temperature: config.openAi.dalle.completions.temperature || 0.8
@@ -322,10 +323,10 @@ export const streamChatVisionCompletion = async (
   }
 }
 
-export async function improvePrompt (promptText: string, model: string): Promise<string> {
+export async function improvePrompt (promptText: string, model: string, ctx: OnMessageContext | OnCallBackQueryData): Promise<string> {
   const prompt = `Improve this picture description using max 100 words and don't add additional text to the image: ${promptText} `
   const conversation = [{ role: 'user', content: prompt, timestamp: Date.now() }]
-  const response = await chatCompletion(conversation, model)
+  const response = await chatCompletion(conversation, model, ctx)
   return response.completion?.content as string ?? ''
 }
 

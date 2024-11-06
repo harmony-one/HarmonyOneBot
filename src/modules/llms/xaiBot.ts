@@ -52,10 +52,14 @@ export class XaiBot extends LlmsBase {
   async chatCompletion (
     conversation: ChatConversation[],
     model: ModelVersion,
+    ctx: OnMessageContext | OnCallBackQueryData,
     hasTools: boolean,
     parameters?: ModelParameters
   ): Promise<LlmCompletion> {
-    return await xaiCompletion(conversation, model, parameters)
+    if (parameters) {
+      parameters.system = ctx.session.currentPrompt
+    }
+    return await xaiCompletion(conversation, model, ctx, parameters)
   }
 
   public async onEvent (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {

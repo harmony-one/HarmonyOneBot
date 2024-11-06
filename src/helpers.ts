@@ -56,6 +56,7 @@ export function createInitialSessionData (): BotSessionData {
       isVoiceForwardingEnabled: config.voiceMemo.isVoiceForwardingEnabled
     },
     currentModel: LlmModelsEnum.GPT_4O,
+    currentPrompt: config.openAi.chatGpt.chatCompletionContext,
     lastBroadcast: ''
   }
 }
