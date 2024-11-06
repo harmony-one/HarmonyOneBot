@@ -64,7 +64,7 @@ export class VoiceToVoiceGPTBot implements PayableBot {
     fs.rmSync(filename)
 
     const conversation = [{ role: 'user', content: resultText, timestamp: Date.now() }]
-    const response = await chatCompletion(conversation, LlmModelsEnum.GPT_35_TURBO)
+    const response = await chatCompletion(conversation, LlmModelsEnum.GPT_35_TURBO, ctx)
 
     const voiceResult = await generateVoiceFromText(response.completion?.content as string)
     // const voiceResult = await gcTextToSpeedClient.ssmlTextToSpeech({ text: response.completion, ssmlGender: 'MALE', languageCode: 'en-US' })

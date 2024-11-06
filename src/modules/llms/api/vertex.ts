@@ -22,10 +22,12 @@ const logger = pino({
 export const vertexCompletion = async (
   conversation: ChatConversation[],
   model = config.llms.model,
+  ctx: OnMessageContext | OnCallBackQueryData,
   parameters?: ModelParameters
 ): Promise<LlmCompletion> => {
   const data = {
     model,
+    system: ctx.session.currentPrompt,
     stream: false,
     messages: conversation.filter(c => c.model === model)
       .map((msg) => {
@@ -71,10 +73,9 @@ export const vertexStreamCompletion = async (
   parameters?: ModelParameters
 ): Promise<LlmCompletion> => {
   parameters = parameters ?? {
-    system: config.openAi.chatGpt.chatCompletionContext,
+    system: ctx.session.currentPrompt,
     max_tokens: +config.openAi.chatGpt.maxTokens
   }
-
   const data = {
     model,
     stream: true, // Set stream to true to receive the completion as a stream

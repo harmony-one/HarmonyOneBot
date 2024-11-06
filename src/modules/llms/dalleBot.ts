@@ -133,8 +133,8 @@ export class DalleBot extends LlmsBase {
   ): Promise<LlmCompletion> {
     return await streamChatCompletion(
       conversation,
-      ctx,
       model,
+      ctx,
       msgId,
       true // telegram messages has a character limit
     )
@@ -142,9 +142,10 @@ export class DalleBot extends LlmsBase {
 
   async chatCompletion (
     conversation: ChatConversation[],
-    model: ModelVersion
+    model: ModelVersion,
+    ctx: OnMessageContext | OnCallBackQueryData
   ): Promise<LlmCompletion> {
-    return await chatCompletion(conversation, model)
+    return await chatCompletion(conversation, model, ctx)
   }
 
   hasPrefix (prompt: string): string {

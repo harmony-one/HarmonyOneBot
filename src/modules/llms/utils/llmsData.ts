@@ -223,25 +223,25 @@ export const llmData: LLMData = {
     },
     claude: {
       defaultParameters: {
-        system: config.openAi.chatGpt.chatCompletionContext,
+        // system: config.openAi.chatGpt.chatCompletionContext,
         max_tokens: +config.openAi.chatGpt.maxTokens
       }
     },
     xai: {
       defaultParameters: {
-        system: config.openAi.chatGpt.chatCompletionContext,
+        // system: config.openAi.chatGpt.chatCompletionContext,
         max_tokens: +config.openAi.chatGpt.maxTokens
       }
     },
     vertex: {
       defaultParameters: {
-        system: config.openAi.chatGpt.chatCompletionContext,
+        // system: config.openAi.chatGpt.chatCompletionContext,
         max_tokens: +config.openAi.chatGpt.maxTokens
       }
     },
     luma: {
       defaultParameters: {
-        system: config.openAi.chatGpt.chatCompletionContext,
+        // system: config.openAi.chatGpt.chatCompletionContext,
         max_tokens: +config.openAi.chatGpt.maxTokens
       }
     }

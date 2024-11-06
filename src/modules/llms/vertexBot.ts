@@ -46,6 +46,9 @@ export class VertexBot extends LlmsBase {
     msgId: number,
     limitTokens: boolean,
     parameters?: ModelParameters): Promise<LlmCompletion> {
+    if (parameters) {
+      parameters.system = ctx.session.currentPrompt
+    }
     return await vertexStreamCompletion(conversation,
       model,
       ctx,
@@ -58,10 +61,14 @@ export class VertexBot extends LlmsBase {
   async chatCompletion (
     conversation: ChatConversation[],
     model: ModelVersion,
+    ctx: OnMessageContext | OnCallBackQueryData,
     usesTools: boolean,
     parameters?: ModelParameters
   ): Promise<LlmCompletion> {
-    return await vertexCompletion(conversation, model, parameters)
+    if (parameters) {
+      parameters.system = ctx.session.currentPrompt
+    }
+    return await vertexCompletion(conversation, model, ctx, parameters)
   }
 
   public async onEvent (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
