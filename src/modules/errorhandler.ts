@@ -7,6 +7,7 @@ import { GrammyError } from 'grammy'
 import { sendMessage } from './llms/utils/helpers'
 import { now } from '../utils/perf'
 import OpenAI from 'openai'
+import config from '../config'
 
 // const MAX_TRIES = 3 // Define the maximum number of retries
 
@@ -31,12 +32,16 @@ class ErrorHandler {
     Sentry.setContext('llms', { retryCount, msg })
     Sentry.captureException(e)
     ctx.chatAction = null
+    const reportAccount = config.llms.reportAcount
     if (retryCount === 0) {
       // Retry limit reached, log an error or take alternative action
       logger.error(`Retry limit reached for error: ${e}`)
       return
     }
     if (e instanceof GrammyError) {
+      if (reportAccount && ctx.chat?.id) {
+        await ctx.api.sendMessage(reportAccount, `On method "${e.method}" in chat ${ctx.chat.id} | ${e.error_code} - ${e.description}`)
+      }
       if (e.error_code === 400 && e.description.includes('not enough rights')) {
         const errorMsg = 'Error: The bot does not have permission to send photos in chat'
         this.writeLog(ctx, errorMsg, logger)
@@ -70,6 +75,9 @@ class ErrorHandler {
         await sendMessage(ctx, 'Error handling your request').catch(async (e) => { await this.onError(ctx, e, retryCount - 1, logger) })
       }
     } else if (e instanceof OpenAI.APIError) {
+      if (reportAccount && ctx.chat?.id) {
+        await ctx.api.sendMessage(reportAccount, `${ctx.session.chatGpt.model} : Error reported in chat ${ctx.chat?.id} => (${e.code}) ${e.message}`)
+      }
       // 429 RateLimitError
       // e.status = 400 || e.code = BadRequestError
       const errorMsg = `OPENAI Error ${e.status}(${e.code}) - ${e.message}`
@@ -92,6 +100,8 @@ class ErrorHandler {
     } else if (e instanceof AxiosError) {
       const errorMsg = `${e.message}`
       this.writeLog(ctx, errorMsg, logger)
+      console.log(e.message, e.cause)
+      console.log(e.stack)
       await sendMessage(ctx, 'Error handling your request').catch(async (e) => {
         await this.onError(ctx, e, retryCount - 1, logger)
       })

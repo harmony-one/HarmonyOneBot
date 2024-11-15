@@ -44,7 +44,8 @@ export default {
     minimumBalance: 0,
     isEnabled: Boolean(parseInt(process.env.LLMS_ENABLED ?? '1')),
     pdfUrl: process.env.PDF_URL ?? '',
-    processingTime: 300000
+    processingTime: 300000,
+    reportAcount: process.env.REPORT_ACCOUNT
   },
   openAi: {
     dalle: {
