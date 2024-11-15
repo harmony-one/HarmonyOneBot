@@ -4,12 +4,12 @@ import {
   type OnCallBackQueryData,
   type ChatConversation
 } from '../types'
-import { SupportedCommands } from './utils/helpers'
 import { type LlmCompletion } from './api/llmApi'
 import { anthropicCompletion, anthropicStreamCompletion, toolsChatCompletion } from './api/athropic'
 import { LlmsBase } from './llmsBase'
 import { type ModelVersion } from './utils/llmModelsManager'
 import { type ModelParameters } from './utils/types'
+import { SupportedCommands } from './utils/helpers'
 
 export class ClaudeBot extends LlmsBase {
   constructor (payments: BotPayments) {
@@ -25,9 +25,9 @@ export class ClaudeBot extends LlmsBase {
   ): boolean {
     const hasCommand = ctx.hasCommand(this.supportedCommands)
 
-    if (ctx.hasCommand(SupportedCommands.new) && this.checkModel(ctx)) {
-      return true
-    }
+    // if (ctx.hasCommand(SupportedCommands.new) && this.checkModel(ctx)) {
+    //   return true
+    // }
     const chatPrefix = this.hasPrefix(ctx.message?.text ?? '')
     if (chatPrefix !== '') {
       return true
@@ -79,21 +79,18 @@ export class ClaudeBot extends LlmsBase {
       return
     }
 
-    if (
-      (ctx.hasCommand(SupportedCommands.new) && this.checkModel(ctx))
-    ) {
-      await this.onStop(ctx)
-      await this.onChat(ctx, this.modelsEnum.CLAUDE_3_OPUS, true, false)
-      return
-    }
-
     const model = this.getModelFromContext(ctx)
     if (!model) {
       this.logger.warn(`### unsupported model for command ${ctx.message?.text}`)
       return
     }
-    this.updateSessionModel(ctx, model.version)
 
+    if ((ctx.message?.text ?? '').startsWith(SupportedCommands.c0) || ctx.hasCommand(SupportedCommands.c0)) {
+      await this.onStop(ctx)
+      await this.onStop(ctx, 'chatGpt')
+    }
+
+    this.updateSessionModel(ctx, model.version)
     const usesTools = ctx.hasCommand([this.commandsEnum.CTOOL, this.commandsEnum.STOOL])
     await this.onChat(ctx, model.version, usesTools ? false : this.getStreamOption(model.version), usesTools)
   }

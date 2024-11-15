@@ -49,9 +49,9 @@ export class OpenAIBot extends LlmsBase {
   ): boolean {
     const commands = ['last', ...this.supportedCommands]
     const hasCommand = ctx.hasCommand(commands)
-    if (ctx.hasCommand(SupportedCommands.new) && this.checkModel(ctx)) {
-      return true
-    }
+    // if (ctx.hasCommand(SupportedCommands.new) && this.checkModel(ctx)) {
+    //   return true
+    // }
     if (isMentioned(ctx)) {
       return true
     }
@@ -123,16 +123,16 @@ export class OpenAIBot extends LlmsBase {
       return
     }
 
-    if (
-      (ctx.hasCommand(SupportedCommands.new) ||
-      hasNewPrefix(ctx.message?.text ?? '') ||
-      (ctx.message?.text?.startsWith('new ') && ctx.chat?.type === 'private') && this.checkModel(ctx))
-    ) {
-      await this.onStop(ctx)
-      this.updateSessionModel(ctx, this.modelsEnum.GPT_4O)
-      await this.onChat(ctx, this.modelsEnum.GPT_4O, true, false)
-      return
-    }
+    // if (
+    //   (ctx.hasCommand(SupportedCommands.new) ||
+    //   hasNewPrefix(ctx.message?.text ?? '') ||
+    //   (ctx.message?.text?.startsWith('new ') && ctx.chat?.type === 'private') && this.checkModel(ctx))
+    // ) {
+    //   await this.onStop(ctx)
+    //   this.updateSessionModel(ctx, this.modelsEnum.GPT_4O)
+    //   await this.onChat(ctx, this.modelsEnum.GPT_4O, true, false)
+    //   return
+    // }
 
     const model = this.getModelFromContext(ctx)
     if (model) {
