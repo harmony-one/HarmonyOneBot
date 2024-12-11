@@ -16,7 +16,7 @@ import { ComfyClient } from './comfy/ComfyClient'
 import crypto from 'crypto'
 import buildQRWorkflow from './comfy/buildQRWorkflow'
 import pino, { type Logger } from 'pino'
-import * as Sentry from '@sentry/node'
+import { Sentry } from '../../monitoring/instrument'
 import { now } from '../../utils/perf'
 
 enum SupportedCommands {

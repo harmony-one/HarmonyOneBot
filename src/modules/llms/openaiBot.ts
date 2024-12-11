@@ -12,7 +12,7 @@ import {
   SupportedCommands
 } from './utils/helpers'
 import { type LlmCompletion } from './api/llmApi'
-import * as Sentry from '@sentry/node'
+import { Sentry } from '../../monitoring/instrument'
 import { LlmsBase } from './llmsBase'
 import config from '../../config'
 import { now } from '../../utils/perf'

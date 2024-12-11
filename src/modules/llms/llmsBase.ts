@@ -25,7 +25,7 @@ import {
   splitTelegramMessage
 } from './utils/helpers'
 import { type LlmCompletion, deleteCollection } from './api/llmApi'
-import * as Sentry from '@sentry/node'
+import { Sentry } from '../../monitoring/instrument'
 import { now } from '../../utils/perf'
 import { type ModelParameters, type ChatModel, type LLMModel } from './utils/types'
 import { ErrorHandler } from '../errorhandler'

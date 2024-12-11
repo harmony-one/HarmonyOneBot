@@ -1,4 +1,4 @@
-import { Sentry } from './instrument'
+import { Sentry } from './monitoring/instrument'
 import express from 'express'
 import asyncHandler from 'express-async-handler'
 import {
@@ -96,15 +96,6 @@ bot.use(
 )
 
 ES.init()
-
-try {
-  console.log('FCO:::: Sentry.isInitialized()', Sentry.isInitialized())
-  throw new Error('ERROR')
-} catch (e) {
-  console.log('FCO::::: HERE', e)
-  Sentry.captureException(e)
-  console.log('FCO::::: AFTER')
-}
 
 bot.use(async (ctx: BotContext, next: NextFunction): Promise<void> => {
   ctx.transient = {
