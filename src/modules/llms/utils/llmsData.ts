@@ -3,14 +3,29 @@ import { type LLMData } from './types'
 
 export const llmData: LLMData = {
   chatModels: {
+    'gemini-2.0': {
+      provider: 'vertex',
+      name: 'gemini-2.0',
+      fullName: 'gemini-2.0-flash-exp',
+      botName: 'VertexBot',
+      version: 'gemini-2.0-flash-exp',
+      commands: ['g2', 'g'],
+      prefix: ['g. '],
+      apiSpec: 'https://cloud.google.com/vertex-ai/generative-ai/docs/gemini-v2',
+      inputPrice: 0.0025, // TBD
+      outputPrice: 0.0075, // TBD
+      maxContextTokens: 1048576, // TBD
+      chargeType: 'CHAR',
+      stream: true
+    },
     'gemini-15': {
       provider: 'vertex',
       name: 'gemini-15',
       fullName: 'gemini-1.5-pro-latest',
       botName: 'VertexBot',
       version: 'gemini-1.5-pro-latest',
-      commands: ['gemini15', 'g'],
-      prefix: ['g. '],
+      commands: ['gemini15', 'g15'],
+      prefix: ['g15. '],
       apiSpec: 'https://deepmind.google/technologies/gemini/pro/',
       inputPrice: 0.0025,
       outputPrice: 0.0075,
