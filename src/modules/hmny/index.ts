@@ -1,5 +1,5 @@
 import { GrammyError } from 'grammy'
-import * as Sentry from '@sentry/node'
+import { Sentry } from '../../monitoring/instrument'
 import { type Logger, pino } from 'pino'
 import {
   type OnMessageContext,

@@ -10,7 +10,7 @@ import { LRUCache } from 'lru-cache'
 import { freeCreditsFeeCounter } from '../../metrics/prometheus'
 import { type BotPaymentLog } from '../../database/stats.service'
 import { sendMessage } from '../llms/utils/helpers'
-import * as Sentry from '@sentry/node'
+import { Sentry } from '../../monitoring/instrument'
 import { InlineKeyboard } from 'grammy'
 import { Callbacks } from '../types'
 import { type InvoiceParams } from '../../database/invoice.service'
@@ -237,7 +237,7 @@ export class BotPayments {
     try {
       const web3 = new Web3(this.rpcURL)
       web3.eth.accounts.wallet.add(accountFrom)
-
+      this.logger.error(`Transfering funds from ${accountFrom.address} to ${addressTo}`)
       const gasPrice = await web3.eth.getGasPrice()
 
       let nonce
@@ -435,7 +435,6 @@ export class BotPayments {
     const totalPayAmount = await this.getPriceInONE(amountUSD)
     const { totalCreditsAmount } = await chatService.getUserCredits(accountId)
     const totalBalanceDelta = totalCreditsAmount.minus(totalPayAmount)
-
     this.logger.info(
       `[${from.id} @${
         from.username

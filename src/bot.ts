@@ -1,3 +1,4 @@
+import { Sentry } from './monitoring/instrument'
 import express from 'express'
 import asyncHandler from 'express-async-handler'
 import {
@@ -44,9 +45,7 @@ import { run } from '@grammyjs/runner'
 import { runBotHeartBit } from './monitoring/monitoring'
 import { type BotPaymentLog } from './database/stats.service'
 import { TelegramPayments } from './modules/telegram_payment'
-import * as Sentry from '@sentry/node'
 import * as Events from 'events'
-import { ProfilingIntegration } from '@sentry/profiling-node'
 import { ES } from './es'
 import { hydrateFiles } from '@grammyjs/files'
 import { VoiceTranslateBot } from './modules/voice-translate'
@@ -96,18 +95,6 @@ bot.use(
   })
 )
 
-Sentry.init({
-  dsn: config.sentry.dsn,
-  release: config.commitHash,
-  integrations: [
-    new ProfilingIntegration()
-  ],
-  tracesSampleRate: 1.0, // Performance Monitoring. Should use 0.1 in production
-  profilesSampleRate: 1.0 // Set sampling rate for profiling - this is relative to tracesSampleRate
-})
-
-Sentry.setTags({ botName: config.botName })
-
 ES.init()
 
 bot.use(async (ctx: BotContext, next: NextFunction): Promise<void> => {
@@ -126,28 +113,45 @@ bot.use(async (ctx: BotContext, next: NextFunction): Promise<void> => {
       paymentFiatCredits: 0
     }
   }
-  const transaction = Sentry.startTransaction({ name: 'bot-command' })
-  const entities = ctx.entities()
-  const startTime = now()
-  let command = ''
-  for (const ent of entities) {
-    if (ent.type === 'bot_command') {
-      command = ent.text.substring(1)
-      const userId = ctx.message?.from?.id
-      const username = ctx.message?.from?.username
-      if (userId) {
-        Sentry.setUser({ id: userId, username })
-      }
-      if (command) {
-        Sentry.setTag('command', command)
-      }
-      // there should be only one bot command
-      break
-    }
-  }
 
-  await next()
-  transaction.finish()
+  const startTime = now()
+  const entities = ctx.entities()
+  let command = ''
+
+  await Sentry.startSpan(
+    {
+      name: 'Bot Command Processing',
+      op: 'bot.command'
+    },
+    async (span) => {
+      // Process bot commands and set Sentry context
+      for (const ent of entities) {
+        if (ent.type === 'bot_command') {
+          command = ent.text.substring(1)
+          const userId = ctx.message?.from?.id
+          const username = ctx.message?.from?.username
+          if (userId) {
+            Sentry.setUser({ id: userId, username })
+          }
+          if (command) {
+            Sentry.setTag('command', command)
+            span?.setTag('command', command)
+          }
+          break
+        }
+      }
+
+      try {
+        await next()
+      } catch (error) {
+        if (span) {
+          span.setStatus('error')
+          Sentry.captureException(error)
+        }
+        throw error
+      }
+    }
+  )
 
   if (ctx.transient.analytics.module) {
     const userId = Number(ctx.message?.from?.id ?? '0')

@@ -17,10 +17,10 @@ import { type ParseDate } from './types'
 export const PRICE_ADJUSTMENT = config.openAi.chatGpt.priceAdjustment
 
 export enum SupportedCommands {
+  c0 = 'c0',
   sum = 'sum',
   ctx = 'ctx',
   pdf = 'pdf',
-  new = 'new',
   last = 'last',
   on = 'on',
   off = 'off',

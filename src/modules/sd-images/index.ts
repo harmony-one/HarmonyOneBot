@@ -4,7 +4,7 @@ import { SDImagesBotBase } from './SDImagesBotBase'
 import { COMMAND, type IOperation, parseCtx, promptHasBadWords } from './helpers'
 import { getModelByParam, MODELS_CONFIGS } from './api'
 import { sendMessage } from '../llms/utils/helpers'
-import * as Sentry from '@sentry/node'
+import { Sentry } from '../../monitoring/instrument'
 import { OPERATION_STATUS, completeOperation } from './balancer'
 import { now } from '../../utils/perf'
 

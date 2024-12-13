@@ -4,6 +4,8 @@ import { abbreviateNumber, getPercentDiff } from './utils'
 
 const rpcUrl = 'https://rpc.s0.t.hmny.io'
 
+// 'https://api.harmony.one'
+
 const rpcRequest = async (method: string, params: any[] = []): Promise<any> => {
   const { data } = await axios.post(rpcUrl, {
     jsonrpc: '2.0',
@@ -37,17 +39,13 @@ export const getAddressBalance = async (address: string): Promise<number> => {
 
 export const getBotFee = async (address: string, daysCount: number): Promise<number> => {
   const history = await getAddressHistory(address)
-
-  const startTimestamp = moment().subtract(daysCount, 'days').unix()
-
+  const startTimestamp = moment().subtract(7, 'days').unix()
   const total = history.reduce((acc, item) => {
     if (item.timestamp < startTimestamp) {
       return acc
     }
-
     return acc + item.value
   }, 0)
-
   return total / Math.pow(10, 18)
 }
 

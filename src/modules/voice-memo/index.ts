@@ -12,7 +12,7 @@ import { Kagi } from './kagi'
 import MessageMediaDocument = Api.MessageMediaDocument
 import { InputFile } from 'grammy'
 import { bot } from '../../bot'
-import * as Sentry from '@sentry/node'
+import { Sentry } from '../../monitoring/instrument'
 import { now } from '../../utils/perf'
 import { isAdmin } from '../llms/utils/context'
 import { VOICE_MEMO_FORWARDING } from '../../constants'

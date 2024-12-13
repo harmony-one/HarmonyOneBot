@@ -1,5 +1,6 @@
 import axios from 'axios'
 import moment from 'moment'
+// import { Sentry } from '../../monitoring/instrument'
 import { abbreviateNumber, getPercentDiff } from './utils'
 import { BigNumber } from 'bignumber.js'
 import pino from 'pino'
@@ -182,6 +183,7 @@ export const getAvgStakes = async (): Promise<number> => {
     }, BigNumber(0)).div(values.length).div(10 ** 18).toNumber()
   } catch (e) {
     logger.error(e)
+    // Sentry.captureException(e)
     return 0
   }
 }
