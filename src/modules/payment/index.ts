@@ -14,6 +14,7 @@ import { Sentry } from '../../monitoring/instrument'
 import { InlineKeyboard } from 'grammy'
 import { Callbacks } from '../types'
 import { type InvoiceParams } from '../../database/invoice.service'
+import { ErrorHandler } from '../errorhandler'
 
 interface CoinGeckoResponse {
   harmony: {
@@ -26,6 +27,7 @@ export class BotPayments {
   private readonly logger: Logger
   private readonly web3: Web3
   private ONERate: number = 0
+  errorHandler: ErrorHandler
   private ONERateUpdateTimestamp = 0
   private readonly rpcURL: string = 'https://api.harmony.one'
   private readonly noncePending = new LRUCache<string, number>({
@@ -35,7 +37,7 @@ export class BotPayments {
 
   constructor () {
     this.web3 = new Web3(this.rpcURL)
-
+    this.errorHandler = new ErrorHandler()
     this.logger = pino({
       name: 'Payments',
       transport: {
@@ -407,7 +409,7 @@ export class BotPayments {
       await sendMessage(
         ctx,
         `Cannot get @${from.username}(${from.id}) blockchain account`
-      )
+      ).catch(async (e) => { await this.onError(ctx, e) })
       return false
     }
 
@@ -473,7 +475,7 @@ export class BotPayments {
           replyId: message_id,
           reply_markup: buyCreditsButton
         }
-      )
+      ).catch(async (e) => { await this.onError(ctx, e) })
       return false
     }
   }
@@ -522,7 +524,7 @@ export class BotPayments {
         await sendMessage(
           ctx,
           `Cannot get @${from.username}(${from.id}) blockchain account`
-        )
+        ).catch(async (e) => { await this.onError(ctx, e) })
         return false
       }
       const userBalance = await this.getUserBalance(accountId)
@@ -548,7 +550,7 @@ export class BotPayments {
           if (ctx.chat?.id) {
             await ctx.api.editMessageText(ctx.chat?.id, msgId, `You can check your inscription in [${oneCountryDomain}.country](https://${oneCountryDomain}.country)`, { parse_mode: 'Markdown' })
           } else {
-            await sendMessage(ctx, `You can check your inscription in [${oneCountryDomain}.country](https://${oneCountryDomain}.country)`, { parseMode: 'Markdown' })
+            await sendMessage(ctx, `You can check your inscription in [${oneCountryDomain}.country](https://${oneCountryDomain}.country)`, { parseMode: 'Markdown' }).catch(async (e) => { await this.onError(ctx, e) })
           }
         }
         this.logger.info('Inscription TX', tx)
@@ -557,7 +559,7 @@ export class BotPayments {
         if (ctx.chat?.id) {
           await ctx.api.editMessageText(ctx.chat?.id, msgId, `Insufficient ONE balance to cover gas fees. Please send 1 ONE to \`${userAccount.address}\` to cover gas fees`, { parse_mode: 'Markdown' })
         } else {
-          await sendMessage(ctx, `Insufficient ONE balance to cover gas fees. Please send 1 ONE to \`${userAccount.address}\` to cover gas fees`, { parseMode: 'Markdown' })
+          await sendMessage(ctx, `Insufficient ONE balance to cover gas fees. Please send 1 ONE to \`${userAccount.address}\` to cover gas fees`, { parseMode: 'Markdown' }).catch(async (e) => { await this.onError(ctx, e) })
         }
       }
       return false
@@ -569,7 +571,7 @@ export class BotPayments {
         await sendMessage(
           ctx,
           'There was an error processing your request'
-        )
+        ).catch(async (e) => { await this.onError(ctx, e) })
       }
     }
     return false
@@ -640,7 +642,7 @@ To recharge, send ONE to: \`${account.address}\`. Buy tokens on harmony.one/buy.
       } catch (e) {
         Sentry.captureException(e)
         this.logger.error(e)
-        await sendMessage(ctx, 'Error retrieving credits')
+        await sendMessage(ctx, 'Error retrieving credits').catch(async (e) => { await this.onError(ctx, e) })
       }
     } else if (text === '/migrate') {
       const amount = await this.migrateFunds(accountId)
@@ -658,7 +660,16 @@ To recharge, send ONE to: \`${account.address}\`. Buy tokens on harmony.one/buy.
           2
         )} ONE`
       }
-      await sendMessage(ctx, replyText, { parseMode: 'Markdown' })
+      await sendMessage(ctx, replyText, { parseMode: 'Markdown' }).catch(async (e) => { await this.onError(ctx, e) })
     }
+  }
+
+  async onError (
+    ctx: OnMessageContext | OnCallBackQueryData,
+    e: any,
+    retryCount: number = this.errorHandler.maxTries,
+    msg = ''
+  ): Promise<void> {
+    await this.errorHandler.onError(ctx, e, retryCount, this.logger, msg)
   }
 }
