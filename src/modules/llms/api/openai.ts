@@ -231,7 +231,7 @@ export const streamChatCompletion = async (
 
 export const streamChatVisionCompletion = async (
   ctx: OnMessageContext | OnCallBackQueryData,
-  model = LlmModelsEnum.GPT_4_VISION,
+  model = LlmModelsEnum.GPT_4O, // GPT_4_VISION => Deprecated
   prompt: string,
   imgUrls: string[],
   msgId: number,

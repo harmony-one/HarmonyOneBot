@@ -356,7 +356,7 @@ export class DalleBot extends LlmsBase {
               ctx.message?.reply_to_message?.message_thread_id
           })
         ).message_id
-        const model = this.modelsEnum.GPT_4_VISION
+        const model = this.modelsEnum.GPT_4O
         const completion = await streamChatVisionCompletion(ctx, model, prompt ?? '', imgList, msgId, true)
         if (completion) {
           ctx.transient.analytics.sessionState = RequestState.Success
