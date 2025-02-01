@@ -17,7 +17,7 @@ import {
   sendMessage
 } from './utils/helpers'
 import { type LlmCompletion } from './api/llmApi'
-import * as Sentry from '@sentry/node'
+import { Sentry } from '../../monitoring/instrument'
 import { LlmsBase } from './llmsBase'
 import config from '../../config'
 import { now } from '../../utils/perf'
@@ -356,7 +356,7 @@ export class DalleBot extends LlmsBase {
               ctx.message?.reply_to_message?.message_thread_id
           })
         ).message_id
-        const model = this.modelsEnum.GPT_4_VISION
+        const model = this.modelsEnum.GPT_4O
         const completion = await streamChatVisionCompletion(ctx, model, prompt ?? '', imgList, msgId, true)
         if (completion) {
           ctx.transient.analytics.sessionState = RequestState.Success

@@ -1,5 +1,5 @@
 import { AxiosError } from 'axios'
-import * as Sentry from '@sentry/node' // Import Sentry for error capturing
+import { Sentry } from '../monitoring/instrument'
 import { RequestState, type OnCallBackQueryData, type OnMessageContext } from './types'
 import { sleep } from './sd-images/utils'
 import { type Logger } from 'pino'
@@ -8,8 +8,6 @@ import { sendMessage } from './llms/utils/helpers'
 import { now } from '../utils/perf'
 import OpenAI from 'openai'
 import config from '../config'
-
-// const MAX_TRIES = 3 // Define the maximum number of retries
 
 class ErrorHandler {
   public maxTries = 3

@@ -1,6 +1,6 @@
 import { GrammyError, InlineKeyboard } from 'grammy'
 import { AxiosError } from 'axios'
-import * as Sentry from '@sentry/node'
+import { Sentry } from '../../monitoring/instrument'
 import { type Logger, pino } from 'pino'
 
 import { chatService } from '../../database/services'

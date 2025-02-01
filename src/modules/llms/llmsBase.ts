@@ -25,7 +25,7 @@ import {
   splitTelegramMessage
 } from './utils/helpers'
 import { type LlmCompletion, deleteCollection } from './api/llmApi'
-import * as Sentry from '@sentry/node'
+import { Sentry } from '../../monitoring/instrument'
 import { now } from '../../utils/perf'
 import { type ModelParameters, type ChatModel, type LLMModel } from './utils/types'
 import { ErrorHandler } from '../errorhandler'
@@ -153,8 +153,9 @@ export abstract class LlmsBase implements PayableBot {
     this.subagents = subagents
   }
 
-  protected getSession (ctx: OnMessageContext | OnCallBackQueryData): LlmsSessionData & ImageGenSessionData {
-    return (ctx.session[this.sessionDataKey as keyof BotSessionData] as LlmsSessionData & ImageGenSessionData)
+  protected getSession (ctx: OnMessageContext | OnCallBackQueryData, dataKey?: string): LlmsSessionData & ImageGenSessionData {
+    dataKey = dataKey ?? this.sessionDataKey
+    return (ctx.session[dataKey as keyof BotSessionData] as LlmsSessionData & ImageGenSessionData)
   }
 
   protected updateSessionModel (ctx: OnMessageContext | OnCallBackQueryData, model: ModelVersion): void {
@@ -462,8 +463,8 @@ export abstract class LlmsBase implements PayableBot {
     ctx.transient.analytics.actualResponseTime = now()
   }
 
-  async onStop (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
-    const session = this.getSession(ctx)
+  async onStop (ctx: OnMessageContext | OnCallBackQueryData, sessionKey?: string): Promise<void> {
+    const session = this.getSession(ctx, sessionKey)
     for (const c of ctx.session.collections.activeCollections) {
       this.logger.info(`Deleting collection ${c.collectionName}`)
       await deleteCollection(c.collectionName)
@@ -476,6 +477,7 @@ export abstract class LlmsBase implements PayableBot {
     session.chatConversation = []
     session.usage = 0
     session.price = 0
+    ctx.session.currentPrompt = config.openAi.chatGpt.chatCompletionContext
   }
 
   async testCleanup (ctx: OnMessageContext | OnCallBackQueryData): Promise<void> {
