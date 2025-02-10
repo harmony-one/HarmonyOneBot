@@ -209,6 +209,21 @@ export const llmData: LLMData = {
       maxContextTokens: 131072,
       chargeType: 'TOKEN',
       stream: false
+    },
+    deepSeek: {
+      provider: 'deepseek',
+      name: 'gpt-35-turbo',
+      fullName: 'GPT-3.5 Turbo',
+      botName: 'deepSeekBot',
+      version: 'gpt-3.5-turbo',
+      commands: ['ds'],
+      prefix: ['ds. '],
+      apiSpec: 'https://docs.x.ai/api#introduction',
+      inputPrice: 0.005,
+      outputPrice: 0.015,
+      maxContextTokens: 131072,
+      chargeType: 'TOKEN',
+      stream: true
     }
   },
   imageModels: {
@@ -264,6 +279,12 @@ export const llmData: LLMData = {
       }
     },
     vertex: {
+      defaultParameters: {
+        // system: config.openAi.chatGpt.chatCompletionContext,
+        max_tokens: +config.openAi.chatGpt.maxTokens
+      }
+    },
+    deepseek: {
       defaultParameters: {
         // system: config.openAi.chatGpt.chatCompletionContext,
         max_tokens: +config.openAi.chatGpt.maxTokens

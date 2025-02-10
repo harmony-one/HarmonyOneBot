@@ -1,4 +1,4 @@
-export type Provider = 'openai' | 'claude' | 'vertex' | 'xai' | 'luma'
+export type Provider = 'openai' | 'claude' | 'vertex' | 'xai' | 'luma' | 'deepseek'
 export type ChargeType = 'TOKEN' | 'CHAR'
 
 export type DalleImageSize = '1024x1024' | '1024x1792' | '1792x1024'
