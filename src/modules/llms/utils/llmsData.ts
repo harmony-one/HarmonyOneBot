@@ -136,21 +136,21 @@ export const llmData: LLMData = {
       chargeType: 'TOKEN',
       stream: true
     },
-    // 'gpt-4-vision': {   DEPRECATED
-    //   provider: 'openai',
-    //   name: 'gpt-4-vision',
-    //   fullName: 'GPT-4 Vision',
-    //   botName: 'OpenAIBot',
-    //   version: 'gpt-4-vision-preview',
-    //   commands: ['vision', 'v'],
-    //   prefix: ['v. '],
-    //   apiSpec: 'https://platform.openai.com/docs/guides/vision',
-    //   inputPrice: 0.03,
-    //   outputPrice: 0.06,
-    //   maxContextTokens: 16000,
-    //   chargeType: 'TOKEN',
-    //   stream: true
-    // },
+    'gpt-4-vision': {
+      provider: 'openai',
+      name: 'gpt-4-vision',
+      fullName: 'GPT-4 Vision',
+      botName: 'OpenAIBot',
+      version: 'gpt-4-vision-preview', // gpt-4-vision-preview deprecated, will use gpt-4o
+      commands: ['vision', 'v'],
+      prefix: ['v. '],
+      apiSpec: 'https://platform.openai.com/docs/guides/vision',
+      inputPrice: 0.03,
+      outputPrice: 0.06,
+      maxContextTokens: 16000,
+      chargeType: 'TOKEN',
+      stream: true
+    },
     o1: {
       provider: 'openai',
       name: 'o1',
