@@ -210,18 +210,18 @@ export const llmData: LLMData = {
       chargeType: 'TOKEN',
       stream: false
     },
-    deepSeek: {
+    'deepseek-chat-free': {
       provider: 'deepseek',
-      name: 'gpt-35-turbo',
-      fullName: 'GPT-3.5 Turbo',
+      name: 'deepseek-chat-free',
+      fullName: 'deepseek-chat',
       botName: 'deepSeekBot',
-      version: 'gpt-3.5-turbo',
+      version: 'deepseek-chat',
       commands: ['ds'],
       prefix: ['ds. '],
-      apiSpec: 'https://docs.x.ai/api#introduction',
-      inputPrice: 0.005,
-      outputPrice: 0.015,
-      maxContextTokens: 131072,
+      apiSpec: 'https://www.deepseek.com/',
+      inputPrice: 0,
+      outputPrice: 0,
+      maxContextTokens: 163840,
       chargeType: 'TOKEN',
       stream: true
     }

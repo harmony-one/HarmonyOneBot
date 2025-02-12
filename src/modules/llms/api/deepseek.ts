@@ -37,9 +37,8 @@ export const deepSeekStreamCompletion = async (
   const data = {
     model,
     stream: true,
-    system: parameters.system,
     max_tokens: limitTokens ? parameters.max_tokens : undefined,
-    messages: prepareConversation(conversation, model, ctx) // .map(m => { return { content: m.content, role: m.role } })
+    messages: prepareConversation(conversation, model, ctx)
   }
   let wordCount = 0
   let wordCountMinimum = 2
@@ -47,7 +46,6 @@ export const deepSeekStreamCompletion = async (
   if (!ctx.chat?.id) {
     throw new Error('Context chat id should not be empty after openAI streaming')
   }
-
   const response: AxiosResponse = await axios.post(url, data, headersStream)
 
   const completionStream: Readable = response.data
@@ -98,7 +96,7 @@ export const deepSeekStreamCompletion = async (
     }
   }
   completion = completion.replaceAll('...', '')
-  await ctx.api
+  completion !== '' && await ctx.api
     .editMessageText(ctx.chat?.id, msgId, completion)
     .catch((e: any) => {
       if (e instanceof GrammyError) {
