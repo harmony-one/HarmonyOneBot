@@ -81,7 +81,7 @@ export async function alterGeneratedImg (
 
 type ConversationOutput = Omit<ChatConversation, 'timestamp' | 'model' | 'id' | 'author' | 'numSubAgents'>
 
-const prepareConversation = (conversation: ChatConversation[], model: string, ctx: OnMessageContext | OnCallBackQueryData): ConversationOutput[] => {
+export const prepareConversation = (conversation: ChatConversation[], model: string, ctx: OnMessageContext | OnCallBackQueryData): ConversationOutput[] => {
   const messages = conversation.filter(c => c.model === model).map(m => { return { content: m.content, role: m.role } })
   if (messages.length !== 1 || model === LlmModelsEnum.O1) {
     return messages
