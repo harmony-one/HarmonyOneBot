@@ -19,6 +19,7 @@ export interface ModelParameters {
   temperature?: number
   max_tokens?: number
   max_completion_tokens?: number
+  max_tokens_to_sample?: number
   system?: string
 }
 

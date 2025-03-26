@@ -19,7 +19,12 @@ const logger = pino({
   }
 })
 
-const API_ENDPOINT = config.llms.apiEndpoint
+const hasValidContent = (text: string): boolean => {
+  const trimmed = text.trim()
+  return trimmed.length > 0 && trimmed !== '\n' && !/^\s+$/.test(trimmed)
+}
+
+const API_ENDPOINT = config.llms.apiEndpoint // 'http://127.0.0.1:5000' // config.llms.apiEndpoint
 
 export const deepSeekStreamCompletion = async (
   conversation: ChatConversation[],
@@ -96,7 +101,7 @@ export const deepSeekStreamCompletion = async (
     }
   }
   completion = completion.replaceAll('...', '')
-  completion !== '' && await ctx.api
+  hasValidContent(completion) && await ctx.api
     .editMessageText(ctx.chat?.id, msgId, completion)
     .catch((e: any) => {
       if (e instanceof GrammyError) {

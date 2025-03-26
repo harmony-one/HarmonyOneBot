@@ -33,12 +33,12 @@ export const llmData: LLMData = {
       chargeType: 'CHAR',
       stream: true
     },
-    'claude-35-sonnet': {
+    'claude-37-sonnet': {
       provider: 'claude',
-      name: 'claude-35-sonnet',
-      fullName: 'Claude Sonnet 3.5',
+      name: 'claude-37-sonnet',
+      fullName: 'Claude Sonnet 3.7',
       botName: 'ClaudeBot',
-      version: 'claude-3-5-sonnet-20241022',
+      version: 'claude-3-7-sonnet-latest',
       commands: ['sonnet', 'claude', 's', 'stool', 'c', 'ctool', 'c0'],
       prefix: ['s. ', 'c. ', 'c0. '],
       apiSpec: 'https://www.anthropic.com/news/claude-3-5-sonnet',
@@ -48,6 +48,21 @@ export const llmData: LLMData = {
       chargeType: 'TOKEN',
       stream: true
     },
+    // 'claude-35-sonnet': {
+    //   provider: 'claude',
+    //   name: 'claude-35-sonnet',
+    //   fullName: 'Claude Sonnet 3.5',
+    //   botName: 'ClaudeBot',
+    //   version: 'claude-3-5-sonnet-20241022',
+    //   commands: ['sonnet', 'claude', 's', 'stool', 'c', 'ctool', 'c0'],
+    //   prefix: ['s. ', 'c. ', 'c0. '],
+    //   apiSpec: 'https://www.anthropic.com/news/claude-3-5-sonnet',
+    //   inputPrice: 0.003,
+    //   outputPrice: 0.015,
+    //   maxContextTokens: 8192,
+    //   chargeType: 'TOKEN',
+    //   stream: true
+    // },
     'claude-3-opus': {
       provider: 'claude',
       name: 'claude-3-opus',
@@ -210,17 +225,32 @@ export const llmData: LLMData = {
       chargeType: 'TOKEN',
       stream: false
     },
+    'deepseek-r1': {
+      provider: 'deepseek',
+      name: 'deepseek-r1',
+      fullName: 'deepseek-r1',
+      botName: 'deepSeekBot',
+      version: 'deepseek-r1',
+      commands: ['ds'],
+      prefix: ['ds. '],
+      apiSpec: 'https://www.deepseek.com/',
+      inputPrice: 0,
+      outputPrice: 0,
+      maxContextTokens: 128000,
+      chargeType: 'TOKEN',
+      stream: true
+    },
     'deepseek-chat-free': {
       provider: 'deepseek',
       name: 'deepseek-chat-free',
       fullName: 'deepseek-chat',
       botName: 'deepSeekBot',
       version: 'deepseek-chat',
-      commands: ['ds'],
-      prefix: ['ds. '],
+      commands: ['dsf'],
+      prefix: ['dsf. '],
       apiSpec: 'https://www.deepseek.com/',
-      inputPrice: 0,
-      outputPrice: 0,
+      inputPrice: 0.0008,
+      outputPrice: 0.0024,
       maxContextTokens: 163840,
       chargeType: 'TOKEN',
       stream: true
