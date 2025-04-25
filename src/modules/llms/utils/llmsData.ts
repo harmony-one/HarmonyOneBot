@@ -33,12 +33,12 @@ export const llmData: LLMData = {
       chargeType: 'CHAR',
       stream: true
     },
-    'claude-35-sonnet': {
+    'claude-37-sonnet': {
       provider: 'claude',
-      name: 'claude-35-sonnet',
-      fullName: 'Claude Sonnet 3.5',
+      name: 'claude-37-sonnet',
+      fullName: 'Claude Sonnet 3.7',
       botName: 'ClaudeBot',
-      version: 'claude-3-5-sonnet-20241022',
+      version: 'claude-3-7-sonnet-latest',
       commands: ['sonnet', 'claude', 's', 'stool', 'c', 'ctool', 'c0'],
       prefix: ['s. ', 'c. ', 'c0. '],
       apiSpec: 'https://www.anthropic.com/news/claude-3-5-sonnet',
@@ -48,6 +48,21 @@ export const llmData: LLMData = {
       chargeType: 'TOKEN',
       stream: true
     },
+    // 'claude-35-sonnet': {
+    //   provider: 'claude',
+    //   name: 'claude-35-sonnet',
+    //   fullName: 'Claude Sonnet 3.5',
+    //   botName: 'ClaudeBot',
+    //   version: 'claude-3-5-sonnet-20241022',
+    //   commands: ['sonnet', 'claude', 's', 'stool', 'c', 'ctool', 'c0'],
+    //   prefix: ['s. ', 'c. ', 'c0. '],
+    //   apiSpec: 'https://www.anthropic.com/news/claude-3-5-sonnet',
+    //   inputPrice: 0.003,
+    //   outputPrice: 0.015,
+    //   maxContextTokens: 8192,
+    //   chargeType: 'TOKEN',
+    //   stream: true
+    // },
     'claude-3-opus': {
       provider: 'claude',
       name: 'claude-3-opus',
@@ -102,23 +117,24 @@ export const llmData: LLMData = {
       commands: ['gpto', 'ask', 'chat', 'gpt', 'a'],
       prefix: ['a. ', '. '],
       apiSpec: 'https://platform.openai.com/docs/models/gpt-4o',
-      inputPrice: 0.005,
-      outputPrice: 0.0015,
+      inputPrice: 0.0025,
+      outputPrice: 0.01,
       maxContextTokens: 128000,
       chargeType: 'TOKEN',
       stream: true
     },
-    'gpt-4': {
+    'gpt-4-1': {
       provider: 'openai',
-      name: 'gpt-4',
-      fullName: 'GPT-4',
+      name: 'gpt-4.1',
+      fullName: 'GPT-4.1',
       botName: 'OpenAIBot',
-      version: 'gpt-4',
-      commands: ['gpt4'],
-      apiSpec: 'https://openai.com/index/gpt-4/',
-      inputPrice: 0.03,
-      outputPrice: 0.06,
-      maxContextTokens: 8192,
+      version: 'gpt-4.1-2025-04-14',
+      commands: ['gpt41', 'ask41'],
+      prefix: ['a41. '],
+      apiSpec: 'https://platform.openai.com/docs/models/gpt-4.1',
+      inputPrice: 0.002,
+      outputPrice: 0.008,
+      maxContextTokens: 32768,
       chargeType: 'TOKEN',
       stream: true
     },
@@ -130,9 +146,9 @@ export const llmData: LLMData = {
       version: 'gpt-3.5-turbo',
       commands: ['ask35'],
       apiSpec: 'https://platform.openai.com/docs/models/gpt-3-5-turbo',
-      inputPrice: 0.0015,
-      outputPrice: 0.002,
-      maxContextTokens: 4000,
+      inputPrice: 0.0005,
+      outputPrice: 0.0015,
+      maxContextTokens: 4096,
       chargeType: 'TOKEN',
       stream: true
     },
@@ -151,34 +167,49 @@ export const llmData: LLMData = {
     //   chargeType: 'TOKEN',
     //   stream: true
     // },
-    o1: {
+    o3: {
       provider: 'openai',
-      name: 'o1',
-      fullName: 'O1 Preview',
+      name: 'o3',
+      fullName: 'O3',
       botName: 'OpenAIBot',
-      version: 'o1-preview',
-      commands: ['o1', 'ask1'],
-      prefix: ['o1. '],
+      version: 'o3-2025-04-16',
+      commands: ['o3'],
+      prefix: ['o3. '],
       apiSpec: 'https://platform.openai.com/docs/models/o1',
-      inputPrice: 0.015,
-      outputPrice: 0.06,
-      maxContextTokens: 128000,
+      inputPrice: 0.01,
+      outputPrice: 0.04,
+      maxContextTokens: 200000,
       chargeType: 'TOKEN',
       stream: false
     },
-    'o1-mini': {
+    // 'o1-mini': {
+    //   provider: 'openai',
+    //   name: 'o1-mini',
+    //   fullName: 'O1 Mini',
+    //   botName: 'OpenAIBot',
+    //   version: 'o1-mini',
+    //   commands: ['omini', 'o1m'],
+    //   apiSpec: 'https://platform.openai.com/docs/models/o1',
+    //   inputPrice: 0.0011,
+    //   outputPrice: 0.0044,
+    //   maxContextTokens: 128000,
+    //   chargeType: 'TOKEN',
+    //   stream: true
+    // },
+    'o3-mini': {
       provider: 'openai',
-      name: 'o1-mini',
-      fullName: 'O1 Mini',
+      name: 'o3-mini',
+      fullName: 'O3 Mini',
       botName: 'OpenAIBot',
-      version: 'o1-mini-2024-09-12',
-      commands: ['omini'],
+      version: 'o3-mini',
+      commands: ['omini3', 'o3m', 'r'],
+      prefix: ['r. '],
       apiSpec: 'https://platform.openai.com/docs/models/o1',
-      inputPrice: 0.003,
-      outputPrice: 0.012,
-      maxContextTokens: 128000,
+      inputPrice: 0.0011,
+      outputPrice: 0.0044,
+      maxContextTokens: 200000,
       chargeType: 'TOKEN',
-      stream: false
+      stream: true
     },
     grok: {
       provider: 'xai', // using grok through claude api
@@ -194,6 +225,36 @@ export const llmData: LLMData = {
       maxContextTokens: 131072,
       chargeType: 'TOKEN',
       stream: false
+    },
+    'deepseek-r1': {
+      provider: 'deepseek',
+      name: 'deepseek-r1',
+      fullName: 'deepseek-r1',
+      botName: 'deepSeekBot',
+      version: 'deepseek-r1',
+      commands: ['ds'],
+      prefix: ['ds. '],
+      apiSpec: 'https://www.deepseek.com/',
+      inputPrice: 0,
+      outputPrice: 0,
+      maxContextTokens: 128000,
+      chargeType: 'TOKEN',
+      stream: true
+    },
+    'deepseek-chat-free': {
+      provider: 'deepseek',
+      name: 'deepseek-chat-free',
+      fullName: 'deepseek-chat',
+      botName: 'deepSeekBot',
+      version: 'deepseek-chat',
+      commands: ['dsf'],
+      prefix: ['dsf. '],
+      apiSpec: 'https://www.deepseek.com/',
+      inputPrice: 0.0008,
+      outputPrice: 0.0024,
+      maxContextTokens: 163840,
+      chargeType: 'TOKEN',
+      stream: true
     }
   },
   imageModels: {
@@ -207,8 +268,8 @@ export const llmData: LLMData = {
       prefix: ['i. ', ', ', 'd. '],
       apiSpec: 'https://openai.com/index/dall-e-3/',
       price: {
-        '1024x1024': 0.8,
-        '1024x1792': 0.12,
+        '1024x1024': 0.04,
+        '1024x1792': 0.08,
         '1792x1024': 0.12
       }
     },
@@ -234,7 +295,7 @@ export const llmData: LLMData = {
         temperature: config.openAi.dalle.completions.temperature,
         max_completion_tokens: +config.openAi.chatGpt.maxTokens
       },
-      modelOverrides: { o1: { temperature: 1 } } // uses model name, not model version
+      modelOverrides: { o3: { temperature: 1 }, 'o3-mini': { temperature: undefined } } // uses model name, not model version
     },
     claude: {
       defaultParameters: {
@@ -249,6 +310,12 @@ export const llmData: LLMData = {
       }
     },
     vertex: {
+      defaultParameters: {
+        // system: config.openAi.chatGpt.chatCompletionContext,
+        max_tokens: +config.openAi.chatGpt.maxTokens
+      }
+    },
+    deepseek: {
       defaultParameters: {
         // system: config.openAi.chatGpt.chatCompletionContext,
         max_tokens: +config.openAi.chatGpt.maxTokens

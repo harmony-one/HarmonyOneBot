@@ -8,3 +8,4 @@ yarn.lock
 .sentryclirc
 .DS_Store
 public/
+.qodo

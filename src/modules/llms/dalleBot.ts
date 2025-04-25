@@ -9,7 +9,7 @@ import {
   getMessageExtras,
   getMinBalance,
   getPromptPrice,
-  getUrlFromText,
+  // getUrlFromText,
   hasCommandPrefix,
   MAX_TRIES,
   PRICE_ADJUSTMENT,
@@ -109,10 +109,10 @@ export class DalleBot extends LlmsBase {
     if (photo && session.isEnabled) {
       const prompt = ctx.message?.caption ?? ctx.message?.text
       if (
-        prompt &&
-        (ctx.chat?.type === 'private' ||
-          ctx.hasCommand(this.commandsEnum.VISION))
-      ) {
+        prompt && ctx.chat?.type === 'private') {
+      //   (ctx.chat?.type === 'private' ||
+      //     ctx.hasCommand(this.commandsEnum.VISION))
+      // ) {
         // && !isNaN(+prompt)
         return true
       }
@@ -189,23 +189,23 @@ export class DalleBot extends LlmsBase {
       return
     }
 
-    if (ctx.hasCommand(this.commandsEnum.VISION)) {
-      const photoUrl = getUrlFromText(ctx)
-      if (photoUrl) {
-        const prompt = ctx.match
-        session.imgRequestQueue.push({
-          prompt,
-          photoUrl,
-          command: 'vision' // !isNaN(+prompt) ? 'alter' : 'vision'
-        })
-        if (!session.isProcessingQueue) {
-          session.isProcessingQueue = true
-          await this.onImgRequestHandler(ctx).then(() => {
-            session.isProcessingQueue = false
-          })
-        }
-      }
-    }
+    // if (ctx.hasCommand(this.commandsEnum.VISION)) {
+    //   const photoUrl = getUrlFromText(ctx)
+    //   if (photoUrl) {
+    //     const prompt = ctx.match
+    //     session.imgRequestQueue.push({
+    //       prompt,
+    //       photoUrl,
+    //       command: 'vision' // !isNaN(+prompt) ? 'alter' : 'vision'
+    //     })
+    //     if (!session.isProcessingQueue) {
+    //       session.isProcessingQueue = true
+    //       await this.onImgRequestHandler(ctx).then(() => {
+    //         session.isProcessingQueue = false
+    //       })
+    //     }
+    //   }
+    // }
 
     if (
       ctx.hasCommand(this.commands) ||

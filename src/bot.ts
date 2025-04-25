@@ -60,6 +60,7 @@ import { llmModelManager } from './modules/llms/utils/llmModelsManager'
 import { HmnyBot } from './modules/hmny'
 import { LumaBot } from './modules/llms/lumaBot'
 import { XaiBot } from './modules/llms/xaiBot'
+import { DeepSeekBot } from './modules/llms/deepSeekBot'
 
 Events.EventEmitter.defaultMaxListeners = 30
 
@@ -216,6 +217,7 @@ const lumaBot = new LumaBot(payments)
 const claudeBot = new ClaudeBot(payments)
 const vertexBot = new VertexBot(payments, [llamaAgent])
 const xaiBot = new XaiBot(payments)
+const deepSeekBot = new DeepSeekBot(payments)
 const oneCountryBot = new OneCountryBot(payments)
 const translateBot = new TranslateBot()
 const telegramPayments = new TelegramPayments(payments)
@@ -347,6 +349,7 @@ const PayableBots: Record<string, PayableBotConfig> = {
   vertexBot: { bot: vertexBot },
   lumaBot: { bot: lumaBot },
   aixBot: { bot: xaiBot },
+  deepSeekBot: { bot: deepSeekBot },
   openAiBot: {
     enabled: (ctx: OnMessageContext) => ctx.session.dalle.isEnabled,
     bot: openAiBot
