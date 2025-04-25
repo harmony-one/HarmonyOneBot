@@ -123,20 +123,21 @@ export const llmData: LLMData = {
       chargeType: 'TOKEN',
       stream: true
     },
-    // 'gpt-4': {
-    //   provider: 'openai',
-    //   name: 'gpt-4',
-    //   fullName: 'GPT-4',
-    //   botName: 'OpenAIBot',
-    //   version: 'gpt-4',
-    //   commands: ['gpt4'],
-    //   apiSpec: 'https://openai.com/index/gpt-4/',
-    //   inputPrice: 0.03,
-    //   outputPrice: 0.06,
-    //   maxContextTokens: 8192,
-    //   chargeType: 'TOKEN',
-    //   stream: true
-    // },
+    'gpt-4-1': {
+      provider: 'openai',
+      name: 'gpt-4.1',
+      fullName: 'GPT-4.1',
+      botName: 'OpenAIBot',
+      version: 'gpt-4.1-2025-04-14',
+      commands: ['gpt41', 'ask41'],
+      prefix: ['a41. '],
+      apiSpec: 'https://platform.openai.com/docs/models/gpt-4.1',
+      inputPrice: 0.002,
+      outputPrice: 0.008,
+      maxContextTokens: 32768,
+      chargeType: 'TOKEN',
+      stream: true
+    },
     'gpt-35-turbo': {
       provider: 'openai',
       name: 'gpt-35-turbo',
@@ -145,9 +146,9 @@ export const llmData: LLMData = {
       version: 'gpt-3.5-turbo',
       commands: ['ask35'],
       apiSpec: 'https://platform.openai.com/docs/models/gpt-3-5-turbo',
-      inputPrice: 0.003,
-      outputPrice: 0.006,
-      maxContextTokens: 4000,
+      inputPrice: 0.0005,
+      outputPrice: 0.0015,
+      maxContextTokens: 4096,
       chargeType: 'TOKEN',
       stream: true
     },
@@ -166,17 +167,17 @@ export const llmData: LLMData = {
     //   chargeType: 'TOKEN',
     //   stream: true
     // },
-    o1: {
+    o3: {
       provider: 'openai',
-      name: 'o1',
-      fullName: 'O1 Preview',
+      name: 'o3',
+      fullName: 'O3',
       botName: 'OpenAIBot',
-      version: 'o1-preview',
-      commands: ['o1', 'ask1'],
-      prefix: ['o1. '],
+      version: 'o3-2025-04-16',
+      commands: ['o3'],
+      prefix: ['o3. '],
       apiSpec: 'https://platform.openai.com/docs/models/o1',
-      inputPrice: 0.015,
-      outputPrice: 0.06,
+      inputPrice: 0.01,
+      outputPrice: 0.04,
       maxContextTokens: 200000,
       chargeType: 'TOKEN',
       stream: false
@@ -294,7 +295,7 @@ export const llmData: LLMData = {
         temperature: config.openAi.dalle.completions.temperature,
         max_completion_tokens: +config.openAi.chatGpt.maxTokens
       },
-      modelOverrides: { o1: { temperature: 1 }, 'o3-mini': { temperature: undefined } } // uses model name, not model version
+      modelOverrides: { o3: { temperature: 1 }, 'o3-mini': { temperature: undefined } } // uses model name, not model version
     },
     claude: {
       defaultParameters: {

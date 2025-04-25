@@ -88,7 +88,7 @@ export class OpenAIBot extends LlmsBase {
     usesTools: boolean,
     parameters?: ModelParameters
   ): Promise<LlmCompletion> {
-    return await chatCompletion(conversation, model, ctx, model !== this.modelsEnum.O1, parameters) // limitTokens doesn't apply for o1-preview
+    return await chatCompletion(conversation, model, ctx, model !== this.modelsEnum.O3, parameters) // limitTokens doesn't apply for o1-preview
   }
 
   hasPrefix (prompt: string): string {

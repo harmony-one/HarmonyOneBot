@@ -83,7 +83,7 @@ type ConversationOutput = Omit<ChatConversation, 'timestamp' | 'model' | 'id' | 
 
 export const prepareConversation = (conversation: ChatConversation[], model: string, ctx: OnMessageContext | OnCallBackQueryData): ConversationOutput[] => {
   const messages = conversation.filter(c => c.model === model).map(m => { return { content: m.content, role: m.role } })
-  if (messages.length !== 1 || model === LlmModelsEnum.O1 || model.includes('deep')) {
+  if (messages.length !== 1 || model === LlmModelsEnum.O3 || model.includes('deep')) {
     return messages
   }
   const systemMessage = {
