@@ -1,6 +1,7 @@
 /* eslint-disable import/first */
 import * as Events from 'events'
 Events.EventEmitter.defaultMaxListeners = 30
+
 import { Sentry } from './monitoring/instrument'
 import express from 'express'
 import asyncHandler from 'express-async-handler'
@@ -865,20 +866,26 @@ async function bootstrap (): Promise<void> {
     }, restartDelay)
   }
 
-  if (dbConnected) {
-    // Periodically check database connection and attempt to reconnect if needed
-    setInterval(() => {
-      void (async () => {
-        try {
-          if (!AppDataSource.isInitialized) {
-            logger.warn('Database connection lost, attempting to reconnect...')
-            await connectToDatabase(3) // Use fewer retries for periodic checks
-          }
-        } catch (error) {
-          logger.error(`Database monitoring error: ${(error as Error).message}`)
-        }
-      })()
-    }, 5 * 60 * 1000) // Check every minute
+  try {
+    payments.bootstrap()
+  } catch (error) {
+    logger.error(`Payments bootstrap error: ${error}`)
+    // Continue despite payment initialization errors
+  }
+
+  if (dbConnected && AppDataSource.driver) {
+    try {
+      // Handle any driver-level errors that bubble up
+      const driver = AppDataSource.driver as any
+      // Only attach to events if they're available, don't force it
+      if (driver.eventEmitter && typeof driver.eventEmitter.on === 'function') {
+        driver.eventEmitter.on('error', (error: any) => {
+          logger.error(`Database error event: ${error.message}`)
+        })
+      }
+    } catch (error) {
+      logger.warn(`Could not set up database error listener: ${(error as Error).message}`)
+    }
   }
 }
 
