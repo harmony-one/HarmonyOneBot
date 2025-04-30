@@ -1,3 +1,6 @@
+/* eslint-disable import/first */
+import * as Events from 'events'
+Events.EventEmitter.defaultMaxListeners = 30
 import { Sentry } from './monitoring/instrument'
 import express from 'express'
 import asyncHandler from 'express-async-handler'
@@ -41,11 +44,11 @@ import prometheusRegister, { PrometheusMetrics } from './metrics/prometheus'
 import { chatService, statsService } from './database/services'
 import { AppDataSource } from './database/datasource'
 import { autoRetry } from '@grammyjs/auto-retry'
-import { run } from '@grammyjs/runner'
+import { run, type RunnerHandle } from '@grammyjs/runner'
 import { runBotHeartBit } from './monitoring/monitoring'
 import { type BotPaymentLog } from './database/stats.service'
 import { TelegramPayments } from './modules/telegram_payment'
-import * as Events from 'events'
+
 import { ES } from './es'
 import { hydrateFiles } from '@grammyjs/files'
 import { VoiceTranslateBot } from './modules/voice-translate'
@@ -61,8 +64,6 @@ import { HmnyBot } from './modules/hmny'
 import { LumaBot } from './modules/llms/lumaBot'
 import { XaiBot } from './modules/llms/xaiBot'
 import { DeepSeekBot } from './modules/llms/deepSeekBot'
-
-Events.EventEmitter.defaultMaxListeners = 30
 
 const logger = pino({
   name: 'bot',
@@ -364,7 +365,7 @@ const UtilityBots: Record<string, UtilityBot> = {
 }
 
 const executeOrRefund = async (ctx: OnMessageContext, price: number, bot: PayableBot): Promise<void> => {
-  const refund = (reason?: string): void => {}
+  const refund = (reason?: string): void => { }
   await bot.onEvent(ctx, refund).catch((ex: any) => {
     Sentry.captureException(ex)
     logger.error(ex?.message ?? 'Unknown error')
@@ -704,19 +705,114 @@ app.get('/metrics', asyncHandler(async (req, res): Promise<void> => {
 async function bootstrap (): Promise<void> {
   const httpServer = app.listen(config.port, () => {
     logger.info(`Bot listening on port ${config.port}`)
-    // bot.start({
-    //   allowed_updates: ["callback_query"], // Needs to be set for menu middleware, but bot doesn't work with current configuration.
-    // });
   })
 
-  await AppDataSource.initialize()
-  payments.bootstrap()
+  // Database connection retry logic
+  const connectToDatabase = async (maxRetries = 5): Promise<boolean> => {
+    let retries = 0
+    let connected = false
 
-  const prometheusMetrics = new PrometheusMetrics()
-  await prometheusMetrics.bootstrap()
+    while (!connected && retries < maxRetries) {
+      try {
+        logger.info(`Database connection attempt ${retries + 1}/${maxRetries}...`)
+        // Check if already initialized
+        if (AppDataSource.isInitialized) {
+          logger.info('Database already initialized')
+          return true
+        }
+        await AppDataSource.initialize()
+        logger.info('Database initalizated')
+        connected = true
+        return true
+      } catch (error) {
+        retries++
+        logger.error(`Database connection failed: ${(error as Error).message}`)
+        if (retries >= maxRetries) {
+          logger.error('Maximum database connection retry attempts reached')
+          return false
+        }
+        // Exponential backoff
+        const delay = Math.min(1000 * (2 ** retries), 30000)
+        logger.info(`Waiting ${delay / 1000} seconds before retrying database connection...`)
+        await new Promise(resolve => setTimeout(resolve, delay))
+      }
+    }
+    return connected
+  }
 
-  const runner = run(bot)
+  // Connect to database with retries
+  const dbConnected = await connectToDatabase()
+  if (!dbConnected) {
+    logger.error('Failed to connect to database after multiple attempts')
+    // Continue running but bot functionality will be limited
+  }
 
+  try {
+    payments.bootstrap()
+  } catch (error) {
+    logger.error(`Payments bootstrap error: ${error}`)
+    // Continue despite payment initialization errors
+  }
+
+  // Only try to initialize Prometheus metrics if database is connected
+  let prometheusMetrics: PrometheusMetrics | null = null
+  if (dbConnected) {
+    try {
+      prometheusMetrics = new PrometheusMetrics()
+      await prometheusMetrics.bootstrap()
+    } catch (error) {
+      logger.error(`Prometheus metrics bootstrap error: ${error}`)
+      // Continue despite metrics initialization errors
+    }
+  } else {
+    logger.warn('Skipping Prometheus metrics initialization due to database connection failure')
+  }
+
+  // Telegram connection retry logic
+  const connectToTelegram = async (maxRetries = 5): Promise<RunnerHandle | undefined> => {
+    let retries = 0
+    let connected = false
+    let runner: RunnerHandle | undefined
+
+    logger.info('Starting Telegram bot connection attempt...')
+
+    while (!connected && retries < maxRetries) {
+      try {
+        logger.info(`Attempt ${retries + 1}/${maxRetries} to connect to Telegram API...`)
+        // First test the connection to Telegram's API
+        await bot.api.getMe()
+        logger.info('Successfully connected to Telegram API')
+        // If connection test succeeded, initialize the runner
+        runner = run(bot)
+        logger.info('Bot runner started successfully')
+        connected = true
+        return runner
+      } catch (error) {
+        retries++
+        logger.error(`Failed to connect to Telegram: ${(error as Error).message}`)
+        if (retries >= maxRetries) {
+          logger.error('Maximum Telegram connection retry attempts reached')
+          return undefined
+        }
+        // Calculate backoff delay
+        const delay = Math.min(1000 * (2 ** retries), 30000)
+        logger.info(`Waiting ${delay / 1000} seconds before retry ${retries + 1}...`)
+        await new Promise(resolve => setTimeout(resolve, delay))
+      }
+    }
+    return undefined
+  }
+
+  // Try to connect to Telegram with retry logic
+  let runner: RunnerHandle | undefined
+  try {
+    runner = await connectToTelegram()
+  } catch (error) {
+    logger.error(`Error in Telegram connection retry process: ${(error as Error).message}`)
+    // Don't exit yet, we'll handle this gracefully
+  }
+
+  // Set up application shutdown handler
   const stopApplication = async (): Promise<void> => {
     console.warn('Terminating the bot...')
 
@@ -742,10 +838,12 @@ async function bootstrap (): Promise<void> {
     }
   }
 
+  // Setup signal handlers
   process.on('SIGINT', () => { stopApplication().catch(logger.error) })
   process.on('SIGTERM', () => { stopApplication().catch(logger.error) })
 
-  if (config.betteruptime.botHeartBitId) {
+  // Setup heartbeat monitor if configured
+  if (config.betteruptime.botHeartBitId && runner) {
     const task = await runBotHeartBit(runner, config.betteruptime.botHeartBitId)
     const stopHeartBit = (): void => {
       logger.info('heart bit stopping')
@@ -753,6 +851,34 @@ async function bootstrap (): Promise<void> {
     }
     process.once('SIGINT', stopHeartBit)
     process.once('SIGTERM', stopHeartBit)
+  }
+
+  // If both database and Telegram had connection issues, schedule a restart
+  if (!dbConnected || !runner) {
+    logger.error('Critical services failed to initialize.')
+    // Schedule a restart after a delay to avoid rapid restart cycles
+    const restartDelay = 5 * 60 * 1000 // 5 minutes
+    logger.info(`Scheduling application restart in ${restartDelay / 1000} seconds...`)
+    setTimeout(() => {
+      logger.info('Executing scheduled restart after initialization failures')
+      process.exit(1) // This will trigger a restart by Fly.io
+    }, restartDelay)
+  }
+
+  if (dbConnected) {
+    // Periodically check database connection and attempt to reconnect if needed
+    setInterval(() => {
+      void (async () => {
+        try {
+          if (!AppDataSource.isInitialized) {
+            logger.warn('Database connection lost, attempting to reconnect...')
+            await connectToDatabase(3) // Use fewer retries for periodic checks
+          }
+        } catch (error) {
+          logger.error(`Database monitoring error: ${(error as Error).message}`)
+        }
+      })()
+    }, 5 * 60 * 1000) // Check every minute
   }
 }
 
