@@ -74,7 +74,7 @@ export const vertexStreamCompletion = async (
 ): Promise<LlmCompletion> => {
   parameters = parameters ?? {
     system: ctx.session.currentPrompt,
-    max_tokens: +config.openAi.chatGpt.maxTokens
+    max_tokens_to_sample: +config.openAi.chatGpt.maxTokens
   }
   const data = {
     model,

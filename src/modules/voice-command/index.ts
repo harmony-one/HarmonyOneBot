@@ -39,7 +39,7 @@ export class VoiceCommand implements PayableBot {
       }
     })
     this.voiceCommandList = [
-      this.commandsEnum.VISION,
+      // this.commandsEnum.VISION,
       this.commandsEnum.ASK,
       this.commandsEnum.DALLE,
       OpenAISupportedCommands.talk
