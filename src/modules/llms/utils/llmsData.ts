@@ -33,18 +33,18 @@ export const llmData: LLMData = {
       chargeType: 'CHAR',
       stream: true
     },
-    'claude-37-sonnet': {
+    'claude-4-sonnet': {
       provider: 'claude',
-      name: 'claude-37-sonnet',
-      fullName: 'Claude Sonnet 3.7',
+      name: 'claude-4-sonnet',
+      fullName: 'Claude Sonnet 4',
       botName: 'ClaudeBot',
-      version: 'claude-3-7-sonnet-latest',
+      version: 'claude-sonnet-4-0',
       commands: ['sonnet', 'claude', 's', 'stool', 'c', 'ctool', 'c0'],
       prefix: ['s. ', 'c. ', 'c0. '],
-      apiSpec: 'https://www.anthropic.com/news/claude-3-5-sonnet',
+      apiSpec: 'https://www-cdn.anthropic.com/6be99a52cb68eb70eb9572b4cafad13df32ed995.pdf',
       inputPrice: 0.003,
       outputPrice: 0.015,
-      maxContextTokens: 8192,
+      maxContextTokens: 64000,
       chargeType: 'TOKEN',
       stream: true
     },
@@ -63,18 +63,18 @@ export const llmData: LLMData = {
     //   chargeType: 'TOKEN',
     //   stream: true
     // },
-    'claude-3-opus': {
+    'claude-4-opus': {
       provider: 'claude',
-      name: 'claude-3-opus',
-      fullName: 'Claude Opus',
+      name: 'claude-4-opus',
+      fullName: 'Claude Opus 4',
       botName: 'ClaudeBot',
-      version: 'claude-3-opus-20240229',
+      version: 'claude-opus-4-20250514',
       commands: ['opus', 'o', 'otool'],
       prefix: ['o. '],
       apiSpec: 'https://www.anthropic.com/news/claude-3-family',
       inputPrice: 0.015,
       outputPrice: 0.075,
-      maxContextTokens: 4096,
+      maxContextTokens: 32000,
       chargeType: 'TOKEN',
       stream: true
     },
